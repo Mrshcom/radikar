@@ -192,18 +192,33 @@ main { width: calc(100% - var(--sidebar-width)); min-width: 0; margin-inline-sta
   .section-title { display: block; }.section-title .primary-btn, .section-title .secondary-btn { margin-top: 16px; width: 100%; }.career-card { min-height: 390px; padding: 27px; align-items: flex-start; }.score-ring { position: absolute; left: 24px; bottom: 24px; width: 105px; height: 105px; min-width: 105px; }.score-ring::before { width: 88px; height: 88px; }.career-copy h2 { font-size: 21px; }.stats-row, .resume-grid, .resume-template-gallery, .job-cards, .job-list-page { grid-template-columns: 1fr; }.application-row { grid-template-columns: 36px 1fr auto; }.application-row .date-cell, .application-row .icon-button { display: none; }.weekly-panel { min-height: 300px; }.job-results-head { align-items: flex-start; gap: 12px; flex-direction: column; }.job-results-head div { overflow-x: auto; max-width: 100%; }.resume-preview { height: 330px; }.interview-hero { padding: 28px; min-height: 390px; align-items: flex-start; }.interview-hero h2 { font-size: 21px; line-height: 1.6; }.orb { position: absolute; left: 25px; bottom: 25px; width: 100px; height: 100px; min-width: 100px; }.pipeline-summary { overflow-x: auto; }.notice-popover { left: 0; }.modal-backdrop { padding: 10px; }.modal-card { max-height: calc(100vh - 20px); padding: 17px; border-radius: 15px; }.template-modal-grid { grid-template-columns: 1fr; }.modal-actions, .session-actions { flex-direction: column-reverse; }.modal-actions button, .session-actions button { width: 100%; }.filter-panel { align-items: flex-start; flex-direction: column; }.question-box h2 { font-size: 13px; }.saved-draft-bar, .template-card-info, .builder-preview-head { align-items: stretch; flex-direction: column; }.template-card-info .primary-btn { width: 100%; }.field-pair { grid-template-columns: 1fr; }.builder-preview-head { height: auto; padding: 12px; }.builder-preview-head > div:last-child { display: grid; grid-template-columns: repeat(2, 1fr); }.resume-page-stage { height: 560px; padding: 12px; }.builder-preview { min-height: 630px; }
 }
 
-/* Keep long form values from expanding the editor and crushing the live preview. */
-.builder-form { width: 430px; min-width: 0; max-width: 430px; }
+/* Resume builder owns a real two-column canvas; generic modal rules cannot shrink it. */
+.modal-card.wide-modal { width: min(1440px, calc(100vw - 32px)); max-width: 1440px; overflow: hidden; }
+.resume-builder {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 430px;
+  grid-template-areas: "preview form";
+  direction: ltr;
+}
+.builder-form { grid-area: form; width: auto; min-width: 0; max-width: none; direction: rtl; }
+.builder-preview { grid-area: preview; min-width: 0; direction: rtl; }
 .builder-fields, .builder-fields label, .field-pair { min-width: 0; }
 .field-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .builder-fields input, .builder-fields textarea { min-width: 0; max-width: 100%; }
 
 @media (max-width: 1120px) and (min-width: 821px) {
-  .builder-form { width: 380px; max-width: 380px; }
+  .resume-builder { grid-template-columns: minmax(0, 1fr) 380px; }
 }
 
 @media (max-width: 820px) {
-  .builder-form { width: 100%; max-width: none; min-width: 0; }
+  .modal-card.wide-modal { width: calc(100vw - 20px); max-width: none; overflow: auto; }
+  .resume-builder {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "form" "preview";
+    height: auto;
+  }
+  .builder-form { width: auto; max-width: none; min-width: 0; }
 }
 
 @media (max-width: 560px) {
