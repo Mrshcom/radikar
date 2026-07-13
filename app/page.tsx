@@ -462,7 +462,7 @@ function InterviewPage({ notify }: { notify: Notify }) {
 
 export default function Home() {
   const [activePage, setActivePage] = useState<PageKey>("dashboard");
-  const [noticeOpen, setNoticeOpen] = useState(true);
+  const [noticeOpen, setNoticeOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [globalDialog, setGlobalDialog] = useState<"search" | "settings" | "plan" | null>(null);
   const title = useMemo(() => menuItems.find((item) => item.id === activePage)?.label, [activePage]);
