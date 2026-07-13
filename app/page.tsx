@@ -13,16 +13,21 @@ import {
   ChevronLeft,
   CircleUserRound,
   Clock3,
+  Download,
   FileCheck2,
   FilePlus2,
   FileText,
   Gauge,
-  Layers3,
+  Globe2,
   LayoutDashboard,
   MessageSquareText,
+  Mail,
+  MapPin,
   MoreHorizontal,
   Plus,
+  Phone,
   Search,
+  Save,
   Settings,
   SlidersHorizontal,
   Sparkles,
@@ -56,7 +61,7 @@ const applications = [
   { company: "Quera", role: "Product Manager", stage: "ارسال شده", stageClass: "blue", date: "۱۸ تیر", logo: "Q" },
 ];
 
-function Modal({ title, description, children, onClose }: { title: string; description?: string; children: ReactNode; onClose: () => void }) {
+function Modal({ title, description, children, onClose, wide = false }: { title: string; description?: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => event.key === "Escape" && onClose();
     window.addEventListener("keydown", closeOnEscape);
@@ -65,7 +70,7 @@ function Modal({ title, description, children, onClose }: { title: string; descr
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
-      <section className="modal-card" role="dialog" aria-modal="true" aria-label={title} onMouseDown={(event) => event.stopPropagation()}>
+      <section className={`modal-card ${wide ? "wide-modal" : ""}`} role="dialog" aria-modal="true" aria-label={title} onMouseDown={(event) => event.stopPropagation()}>
         <header><div><h2>{title}</h2>{description && <p>{description}</p>}</div><button className="icon-button" onClick={onClose} aria-label="بستن"><X size={20} /></button></header>
         {children}
       </section>
@@ -172,42 +177,143 @@ function JobCard({ job, onMatch, saved = false, onSave }: { job: (typeof jobs)[n
   );
 }
 
-function Resumes({ notify }: { notify: Notify }) {
-  const [created, setCreated] = useState(false);
-  const [dialog, setDialog] = useState<"create" | "edit" | "templates" | null>(null);
-  const [resumeName, setResumeName] = useState("مدیر محصول — نسخه جدید");
-  const [selectedTemplate, setSelectedTemplate] = useState("مینیمال ATS");
+type ResumeData = {
+  fullName: string;
+  jobTitle: string;
+  email: string;
+  phone: string;
+  location: string;
+  website: string;
+  summary: string;
+  experienceTitle: string;
+  company: string;
+  experienceDate: string;
+  experience: string;
+  education: string;
+  skills: string;
+  languages: string;
+};
 
-  const saveResume = () => {
-    setCreated(true);
-    setDialog(null);
-    notify(`رزومه «${resumeName}» ذخیره شد`);
+const resumeTemplates = [
+  { id: "ats", name: "مینیمال ATS", subtitle: "ساده و مناسب سیستم‌های استخدام", tag: "پیشنهادی" },
+  { id: "emerald", name: "مدرن سبز", subtitle: "حرفه‌ای برای محصول و مارکتینگ", tag: "مدرن" },
+  { id: "classic", name: "کلاسیک رسمی", subtitle: "مناسب شرکت‌های رسمی و حقوقی", tag: "رسمی" },
+  { id: "navy", name: "دو ستونه حرفه‌ای", subtitle: "خوانا با تفکیک دقیق اطلاعات", tag: "محبوب" },
+  { id: "creative", name: "خلاق مرجانی", subtitle: "مناسب طراحی و صنایع خلاق", tag: "خلاق" },
+  { id: "executive", name: "مدیریتی Executive", subtitle: "ویژه مدیران ارشد و رهبران", tag: "مدیریتی" },
+  { id: "tech", name: "تکنولوژی", subtitle: "برای توسعه‌دهندگان و متخصصان داده", tag: "فنی" },
+  { id: "academic", name: "دانشگاهی", subtitle: "مناسب پژوهش، تدریس و اپلای", tag: "آکادمیک" },
+  { id: "global", name: "بین‌المللی Clean", subtitle: "استاندارد اپلای خارج از ایران", tag: "English-ready" },
+  { id: "persian", name: "فارسی اصیل", subtitle: "راست‌چین با هویت ایرانی", tag: "فارسی" },
+] as const;
+
+const defaultResumeData: ResumeData = {
+  fullName: "سینا احمدی",
+  jobTitle: "مدیر محصول ارشد",
+  email: "sina.ahmadi@example.com",
+  phone: "۰۹۱۲ ۱۲۳ ۴۵۶۷",
+  location: "تهران، ایران",
+  website: "sinaahmadi.ir",
+  summary: "مدیر محصول با بیش از ۶ سال تجربه در طراحی، توسعه و رشد محصولات دیجیتال داده‌محور. متخصص در تبدیل مسائل پیچیده کاربران به راهکارهای ساده و قابل‌اندازه‌گیری.",
+  experienceTitle: "مدیر محصول ارشد",
+  company: "شرکت راهکارهای هوشمند",
+  experienceDate: "۱۴۰۱ — اکنون",
+  experience: "رهبری تیم چندتخصصی ۱۲ نفره و تدوین نقشه راه محصول\nافزایش ۲۸ درصدی نرخ فعال‌سازی با بازطراحی جریان ورود\nطراحی و اجرای بیش از ۲۰ آزمایش A/B داده‌محور",
+  education: "کارشناسی ارشد مدیریت کسب‌وکار — دانشگاه تهران",
+  skills: "استراتژی محصول، تحلیل داده، Agile، A/B Testing، Figma، SQL",
+  languages: "فارسی — زبان مادری | انگلیسی — پیشرفته",
+};
+
+function ResumeDocument({ templateId, data, compact = false }: { templateId: string; data: ResumeData; compact?: boolean }) {
+  const skills = data.skills.split(/،|,/).map((skill) => skill.trim()).filter(Boolean);
+  const bullets = data.experience.split("\n").filter(Boolean);
+  const initials = data.fullName.split(" ").map((part) => part[0]).join("").slice(0, 2);
+  return (
+    <article className={`resume-document template-${templateId} ${compact ? "compact-resume" : "resume-print-area"}`}>
+      <header className="resume-doc-header">
+        <div className="resume-avatar">{initials}</div>
+        <div className="resume-identity"><h1>{data.fullName || "نام و نام خانوادگی"}</h1><p>{data.jobTitle || "عنوان حرفه‌ای"}</p></div>
+        <div className="resume-contact"><span><Mail size={11} />{data.email}</span><span><Phone size={11} />{data.phone}</span><span><MapPin size={11} />{data.location}</span><span><Globe2 size={11} />{data.website}</span></div>
+      </header>
+      <div className="resume-doc-body">
+        <aside className="resume-doc-side">
+          <section><h2>مهارت‌ها</h2><div className="resume-skills">{skills.map((skill) => <span key={skill}>{skill}</span>)}</div></section>
+          <section><h2>تحصیلات</h2><p>{data.education}</p></section>
+          <section><h2>زبان‌ها</h2><p>{data.languages}</p></section>
+        </aside>
+        <div className="resume-doc-main">
+          <section><h2>درباره من</h2><p>{data.summary}</p></section>
+          <section><h2>سوابق حرفه‌ای</h2><div className="resume-position"><div><h3>{data.experienceTitle}</h3><strong>{data.company}</strong></div><time>{data.experienceDate}</time></div><ul>{bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul></section>
+          <section className="resume-project"><h2>دستاورد منتخب</h2><p>طراحی چارچوب سنجش سلامت محصول و هم‌راستاکردن اهداف تیم با شاخص‌های کلیدی کسب‌وکار.</p></section>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function Resumes({ notify }: { notify: Notify }) {
+  const [builderOpen, setBuilderOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState("ats");
+  const [data, setData] = useState<ResumeData>(defaultResumeData);
+  const [savedDraft, setSavedDraft] = useState(false);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("masir-resume-draft");
+    if (!saved) return;
+    let parsed: { data?: ResumeData; templateId?: string };
+    try {
+      parsed = JSON.parse(saved) as { data?: ResumeData; templateId?: string };
+    } catch { return; }
+    const timer = window.setTimeout(() => {
+      if (parsed.data) setData(parsed.data);
+      if (parsed.templateId) setSelectedTemplate(parsed.templateId);
+      setSavedDraft(true);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const updateData = (field: keyof ResumeData, value: string) => setData((current) => ({ ...current, [field]: value }));
+  const openBuilder = (templateId: string) => { setSelectedTemplate(templateId); setBuilderOpen(true); };
+  const saveDraft = () => {
+    window.localStorage.setItem("masir-resume-draft", JSON.stringify({ data, templateId: selectedTemplate }));
+    setSavedDraft(true);
+    notify("پیش‌نویس رزومه روی این دستگاه ذخیره شد");
   };
 
   return (
     <>
-      <SectionTitle title="رزومه‌های من" description="رزومه مادر و نسخه‌های اختصاصی هر فرصت را اینجا مدیریت کن." action={<button className="primary-btn" onClick={() => setDialog("create")}><FilePlus2 size={18} /> رزومه جدید</button>} />
-      {created && <div className="success-banner"><CheckCircle2 size={20} /><div><strong>نسخه تازه آماده شد</strong><span>یک پیش‌نویس جدید براساس رزومه مادر ساخته شد.</span></div><button onClick={() => setCreated(false)}><X size={18} /></button></div>}
-      <div className="resume-grid">
-        <article className="resume-card featured">
-          <div className="resume-preview classic"><div className="paper-head"><span>سینا احمدی</span><small>PRODUCT MANAGER</small></div><i /><i /><i /><b /><i /><i /></div>
-          <div className="resume-info"><div><span className="base-label">رزومه مادر</span><h3>مدیر محصول — فارسی</h3><p>آخرین ویرایش: امروز، ۱۰:۴۵</p></div><button className="secondary-btn" onClick={() => setDialog("edit")}>ویرایش رزومه</button></div>
-        </article>
-        <article className="resume-card">
-          <div className="resume-preview modern"><div className="preview-side" /><div className="preview-lines"><b /><i /><i /><strong /><i /><i /><strong /><i /></div></div>
-          <div className="resume-info"><div><span className="match-label">تطبیق ۹۱٪</span><h3>برای مدیر محصول ارشد</h3><p>دیجی‌کالا · ۲۲ تیر</p></div><button className="icon-button" onClick={() => setDialog("edit")} aria-label="ویرایش"><MoreHorizontal size={19} /></button></div>
-        </article>
-        <article className="resume-card">
-          <div className="resume-preview minimal"><div className="paper-head"><span>SINA AHMADI</span><small>SENIOR PRODUCT MANAGER</small></div><i /><i /><b /><i /><i /><b /><i /></div>
-          <div className="resume-info"><div><span className="match-label">تطبیق ۸۶٪</span><h3>Senior Product Manager</h3><p>Snapp! · ۲۰ تیر</p></div><button className="icon-button" onClick={() => setDialog("edit")} aria-label="ویرایش"><MoreHorizontal size={19} /></button></div>
-        </article>
-        <button className="new-resume-card" onClick={() => setDialog("create")}><span><Plus size={26} /></span><strong>ساخت رزومه جدید</strong><small>از صفر یا با یکی از قالب‌ها</small></button>
+      <SectionTitle title="قالب‌های رزومه" description="یکی از ۱۰ قالب آماده را انتخاب کن و فقط اطلاعات خودت را وارد کن." action={<button className="primary-btn" onClick={() => openBuilder(selectedTemplate)}><FilePlus2 size={18} /> ساخت رزومه</button>} />
+      {savedDraft && <div className="saved-draft-bar"><div><CheckCircle2 size={20} /><span><strong>پیش‌نویس ذخیره‌شده</strong><small>{data.fullName} · {resumeTemplates.find((template) => template.id === selectedTemplate)?.name}</small></span></div><button className="secondary-btn" onClick={() => setBuilderOpen(true)}>ادامه ویرایش</button></div>}
+      <div className="resume-template-gallery">
+        {resumeTemplates.map((template) => (
+          <article className="resume-template-card" key={template.id}>
+            <div className="template-preview-frame"><ResumeDocument templateId={template.id} data={defaultResumeData} compact /></div>
+            <div className="template-card-info"><div><span>{template.tag}</span><h3>{template.name}</h3><p>{template.subtitle}</p></div><button className="primary-btn" onClick={() => openBuilder(template.id)}>استفاده از قالب</button></div>
+          </article>
+        ))}
       </div>
-      <div className="panel templates-strip"><div className="panel-head"><div><h3>قالب‌های پیشنهادی</h3><p>قالب‌های استاندارد برای حوزه محصول و فناوری</p></div><button className="text-btn" onClick={() => setDialog("templates")}>دیدن همه قالب‌ها <ChevronLeft size={16} /></button></div><div className="template-chips">{["مینیمال ATS", "مدرن محصول", "مدیریتی بین‌المللی", "تک‌ستونه فارسی"].map((template) => <button key={template} onClick={() => { setSelectedTemplate(template); setDialog("create"); }}>{template}</button>)}</div></div>
 
-      {dialog === "create" && <Modal title="ساخت رزومه جدید" description="نام و قالب اولیه را انتخاب کن؛ بعداً همه بخش‌ها قابل ویرایش‌اند." onClose={() => setDialog(null)}><div className="form-stack"><label>نام رزومه<input value={resumeName} onChange={(event) => setResumeName(event.target.value)} /></label><label>قالب<select value={selectedTemplate} onChange={(event) => setSelectedTemplate(event.target.value)}><option>مینیمال ATS</option><option>مدرن محصول</option><option>مدیریتی بین‌المللی</option><option>تک‌ستونه فارسی</option></select></label><div className="modal-actions"><button className="secondary-btn" onClick={() => setDialog(null)}>انصراف</button><button className="primary-btn" onClick={saveResume} disabled={!resumeName.trim()}><FilePlus2 size={17} /> ساخت پیش‌نویس</button></div></div></Modal>}
-      {dialog === "edit" && <Modal title="ویرایش رزومه مادر" description="این تغییرات در دموی فعلی داخل همین جلسه نگهداری می‌شوند." onClose={() => setDialog(null)}><div className="form-stack"><label>عنوان حرفه‌ای<input defaultValue="مدیر محصول ارشد" /></label><label>خلاصه حرفه‌ای<textarea defaultValue="مدیر محصول با بیش از ۶ سال تجربه در طراحی و رشد محصولات دیجیتال داده‌محور." /></label><label>دستاورد شاخص<textarea defaultValue="افزایش ۲۸ درصدی نرخ فعال‌سازی با بازطراحی جریان ورود کاربران." /></label><div className="modal-actions"><button className="secondary-btn" onClick={() => notify("پیش‌نمایش PDF آماده شد")}>پیش‌نمایش</button><button className="primary-btn" onClick={() => { setDialog(null); notify("تغییرات رزومه ذخیره شد"); }}>ذخیره تغییرات</button></div></div></Modal>}
-      {dialog === "templates" && <Modal title="کتابخانه قالب‌ها" description="قالب مناسب با بازار و نوع موقعیت را انتخاب کن." onClose={() => setDialog(null)}><div className="template-modal-grid">{["مینیمال ATS", "مدرن محصول", "مدیریتی بین‌المللی", "تک‌ستونه فارسی", "استارتاپی", "Executive"].map((template) => <button key={template} onClick={() => { setSelectedTemplate(template); setDialog("create"); }}><Layers3 size={22} /><strong>{template}</strong><span>انتخاب قالب</span></button>)}</div></Modal>}
+      {builderOpen && <Modal wide title="رزومه‌ساز مسیر" description="اطلاعات را وارد کن؛ پیش‌نمایش قالب هم‌زمان به‌روز می‌شود." onClose={() => setBuilderOpen(false)}><div className="resume-builder">
+        <aside className="builder-form">
+          <div className="builder-template-select"><strong>انتخاب قالب</strong><div>{resumeTemplates.map((template) => <button key={template.id} title={template.name} className={selectedTemplate === template.id ? "active" : ""} onClick={() => setSelectedTemplate(template.id)}>{template.name}</button>)}</div></div>
+          <div className="builder-fields">
+            <h3>اطلاعات فردی</h3>
+            <div className="field-pair"><label>نام و نام خانوادگی<input value={data.fullName} onChange={(event) => updateData("fullName", event.target.value)} /></label><label>عنوان حرفه‌ای<input value={data.jobTitle} onChange={(event) => updateData("jobTitle", event.target.value)} /></label></div>
+            <div className="field-pair"><label>ایمیل<input value={data.email} onChange={(event) => updateData("email", event.target.value)} /></label><label>شماره تماس<input value={data.phone} onChange={(event) => updateData("phone", event.target.value)} /></label></div>
+            <div className="field-pair"><label>محل سکونت<input value={data.location} onChange={(event) => updateData("location", event.target.value)} /></label><label>وب‌سایت یا لینکدین<input value={data.website} onChange={(event) => updateData("website", event.target.value)} /></label></div>
+            <label>خلاصه حرفه‌ای<textarea value={data.summary} onChange={(event) => updateData("summary", event.target.value)} /></label>
+            <h3>سابقه کاری</h3>
+            <div className="field-pair"><label>عنوان شغلی<input value={data.experienceTitle} onChange={(event) => updateData("experienceTitle", event.target.value)} /></label><label>شرکت<input value={data.company} onChange={(event) => updateData("company", event.target.value)} /></label></div>
+            <label>بازه همکاری<input value={data.experienceDate} onChange={(event) => updateData("experienceDate", event.target.value)} /></label>
+            <label>دستاوردها — هر مورد در یک خط<textarea value={data.experience} onChange={(event) => updateData("experience", event.target.value)} /></label>
+            <h3>اطلاعات تکمیلی</h3>
+            <label>تحصیلات<input value={data.education} onChange={(event) => updateData("education", event.target.value)} /></label>
+            <label>مهارت‌ها<input value={data.skills} onChange={(event) => updateData("skills", event.target.value)} /></label>
+            <label>زبان‌ها<input value={data.languages} onChange={(event) => updateData("languages", event.target.value)} /></label>
+          </div>
+        </aside>
+        <section className="builder-preview"><div className="builder-preview-head"><div><span>پیش‌نمایش زنده</span><strong>{resumeTemplates.find((template) => template.id === selectedTemplate)?.name}</strong></div><div><button className="secondary-btn" onClick={saveDraft}><Save size={16} /> ذخیره</button><button className="primary-btn" onClick={() => { saveDraft(); window.setTimeout(() => window.print(), 100); }}><Download size={16} /> دریافت PDF</button></div></div><div className="resume-page-stage"><ResumeDocument templateId={selectedTemplate} data={data} /></div></section>
+      </div></Modal>}
     </>
   );
 }
