@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   BarChart3,
@@ -38,6 +39,19 @@ import {
 } from "lucide-react";
 
 type PageKey = "dashboard" | "resumes" | "match" | "jobs" | "applications" | "interview";
+
+const pageRoutes: Record<PageKey, string> = {
+  dashboard: "/dashboard",
+  resumes: "/resumes",
+  match: "/match",
+  jobs: "/jobs",
+  applications: "/applications",
+  interview: "/interview",
+};
+
+const routePages = Object.fromEntries(
+  Object.entries(pageRoutes).map(([page, route]) => [route, page]),
+) as Record<string, PageKey>;
 type Notify = (message: string) => void;
 
 const menuItems: { id: PageKey; label: string; icon: typeof LayoutDashboard }[] = [
@@ -460,13 +474,20 @@ function InterviewPage({ notify }: { notify: Notify }) {
   );
 }
 
-export default function Home() {
-  const [activePage, setActivePage] = useState<PageKey>("dashboard");
+export function MasirApp({ initialPage = "dashboard" }: { initialPage?: PageKey }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const activePage = routePages[pathname] ?? initialPage;
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [toast, setToast] = useState("");
   const [globalDialog, setGlobalDialog] = useState<"search" | "settings" | "plan" | null>(null);
   const title = useMemo(() => menuItems.find((item) => item.id === activePage)?.label, [activePage]);
   const notify = (message: string) => setToast(message);
+  const navigate = (page: PageKey) => router.push(pageRoutes[page]);
+
+  useEffect(() => {
+    if (pathname === "/") router.replace(pageRoutes.dashboard);
+  }, [pathname, router]);
 
   useEffect(() => {
     if (!toast) return;
@@ -483,10 +504,10 @@ export default function Home() {
   }, []);
 
   const content = {
-    dashboard: <Dashboard onNavigate={setActivePage} notify={notify} />,
+    dashboard: <Dashboard onNavigate={navigate} notify={notify} />,
     resumes: <Resumes notify={notify} />,
     match: <MatchPage notify={notify} />,
-    jobs: <JobsPage onNavigate={setActivePage} notify={notify} />,
+    jobs: <JobsPage onNavigate={navigate} notify={notify} />,
     applications: <ApplicationsPage notify={notify} />,
     interview: <InterviewPage notify={notify} />,
   }[activePage];
@@ -494,10 +515,10 @@ export default function Home() {
   return (
     <div className="app-shell" dir="rtl">
       <aside className="sidebar">
-        <button className="brand" onClick={() => setActivePage("dashboard")}><span><Sparkles size={19} /></span><div><strong>مسیر</strong><small>همراه حرفه‌ای تو</small></div></button>
+        <button className="brand" onClick={() => navigate("dashboard")}><span><Sparkles size={19} /></span><div><strong>مسیر</strong><small>همراه حرفه‌ای تو</small></div></button>
         <nav aria-label="منوی اصلی">
           <span className="nav-caption">فضای کاری</span>
-          {menuItems.map((item) => { const Icon = item.icon; return <button key={item.id} className={activePage === item.id ? "active" : ""} onClick={() => setActivePage(item.id)}><Icon size={19} /><span>{item.label}</span>{item.id === "jobs" && <em>۱۲</em>}</button>; })}
+          {menuItems.map((item) => { const Icon = item.icon; return <button key={item.id} className={activePage === item.id ? "active" : ""} onClick={() => navigate(item.id)}><Icon size={19} /><span>{item.label}</span>{item.id === "jobs" && <em>۱۲</em>}</button>; })}
         </nav>
         <div className="sidebar-upgrade"><div className="upgrade-icon"><Sparkles size={18} /></div><strong>۷۰٪ از سهمیه این ماه</strong><p>۱۵ تحلیل هوشمند دیگر باقی مانده است.</p><div><i /></div><button onClick={() => setGlobalDialog("plan")}>مشاهده پلن حرفه‌ای</button></div>
         <div className="sidebar-user"><div className="avatar">سا</div><div><strong>سینا احمدی</strong><span>پلن حرفه‌ای</span></div><button aria-label="تنظیمات" onClick={() => setGlobalDialog("settings")}><Settings size={18} /></button></div>
@@ -507,16 +528,18 @@ export default function Home() {
         <header className="topbar">
           <div className="mobile-brand"><span><Sparkles size={17} /></span><strong>مسیر</strong></div>
           <span className="current-page">{title}</span>
-          <div className="topbar-actions"><button className="search-button" onClick={() => setGlobalDialog("search")}><Search size={18} /><span>جست‌وجو...</span><kbd>⌘ K</kbd></button><button className="notification-button" onClick={() => setNoticeOpen((value) => !value)} aria-label="اعلان‌ها"><Bell size={19} /><i /></button>{noticeOpen && <div className="notice-popover"><strong>یک فرصت تازه برای تو</strong><p>موقعیت Product Lead با تطابق ۸۹٪ پیدا شد.</p><button onClick={() => { setActivePage("jobs"); setNoticeOpen(false); }}>مشاهده فرصت</button></div>}</div>
+          <div className="topbar-actions"><button className="search-button" onClick={() => setGlobalDialog("search")}><Search size={18} /><span>جست‌وجو...</span><kbd>⌘ K</kbd></button><button className="notification-button" onClick={() => setNoticeOpen((value) => !value)} aria-label="اعلان‌ها"><Bell size={19} /><i /></button>{noticeOpen && <div className="notice-popover"><strong>یک فرصت تازه برای تو</strong><p>موقعیت Product Lead با تطابق ۸۹٪ پیدا شد.</p><button onClick={() => { navigate("jobs"); setNoticeOpen(false); }}>مشاهده فرصت</button></div>}</div>
         </header>
         <div className="content">{content}</div>
       </main>
 
-      <nav className="mobile-nav" aria-label="منوی موبایل">{menuItems.slice(0, 5).map((item) => { const Icon = item.icon; return <button key={item.id} className={activePage === item.id ? "active" : ""} onClick={() => setActivePage(item.id)}><Icon size={19} /><span>{item.label.split(" ")[0]}</span></button>; })}</nav>
+      <nav className="mobile-nav" aria-label="منوی موبایل">{menuItems.slice(0, 5).map((item) => { const Icon = item.icon; return <button key={item.id} className={activePage === item.id ? "active" : ""} onClick={() => navigate(item.id)}><Icon size={19} /><span>{item.label.split(" ")[0]}</span></button>; })}</nav>
       {toast && <div className="toast" role="status"><CheckCircle2 size={19} />{toast}</div>}
-      {globalDialog === "search" && <Modal title="جست‌وجوی سریع" description="مستقیم به هر بخش یا اقدام برو." onClose={() => setGlobalDialog(null)}><div className="command-search"><div><Search size={18} /><input autoFocus placeholder="مثلاً رزومه، فرصت شغلی یا مصاحبه..." /></div>{menuItems.map((item) => { const Icon = item.icon; return <button key={item.id} onClick={() => { setActivePage(item.id); setGlobalDialog(null); }}><Icon size={18} /><span>{item.label}</span><ChevronLeft size={16} /></button>; })}</div></Modal>}
+      {globalDialog === "search" && <Modal title="جست‌وجوی سریع" description="مستقیم به هر بخش یا اقدام برو." onClose={() => setGlobalDialog(null)}><div className="command-search"><div><Search size={18} /><input autoFocus placeholder="مثلاً رزومه، فرصت شغلی یا مصاحبه..." /></div>{menuItems.map((item) => { const Icon = item.icon; return <button key={item.id} onClick={() => { navigate(item.id); setGlobalDialog(null); }}><Icon size={18} /><span>{item.label}</span><ChevronLeft size={16} /></button>; })}</div></Modal>}
       {globalDialog === "settings" && <Modal title="تنظیمات پروفایل" description="ترجیحات کاری برای پیشنهادهای دقیق‌تر استفاده می‌شوند." onClose={() => setGlobalDialog(null)}><div className="form-stack"><label>نام و نام خانوادگی<input defaultValue="سینا احمدی" /></label><label>عنوان هدف<input defaultValue="Senior Product Manager" /></label><label>نوع همکاری<select defaultValue="هیبرید"><option>هیبرید</option><option>دورکاری</option><option>حضوری</option></select></label><div className="modal-actions"><button className="secondary-btn" onClick={() => setGlobalDialog(null)}>انصراف</button><button className="primary-btn" onClick={() => { setGlobalDialog(null); notify("تنظیمات پروفایل ذخیره شد"); }}>ذخیره تنظیمات</button></div></div></Modal>}
       {globalDialog === "plan" && <Modal title="پلن حرفه‌ای مسیر" description="امکانات فعال حساب و سهمیه ماهانه تو." onClose={() => setGlobalDialog(null)}><div className="plan-card"><div><Sparkles size={23} /><strong>حرفه‌ای</strong><span>فعال تا ۲۲ مرداد</span></div><ul><li><Check size={15} /> ۵۰ تحلیل هوشمند در ماه</li><li><Check size={15} /> رزومه و خروجی PDF نامحدود</li><li><Check size={15} /> تمرین مصاحبه و بازخورد</li><li><Check size={15} /> پیگیری نامحدود اپلای‌ها</li></ul><button className="primary-btn full" onClick={() => { setGlobalDialog(null); notify("صفحه مدیریت اشتراک آماده شد"); }}>مدیریت اشتراک</button></div></Modal>}
     </div>
   );
 }
+
+export default MasirApp;
