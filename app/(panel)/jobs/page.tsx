@@ -1,22 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { JobCard } from "../_components/job-card";
+import { JobCardsSkeleton } from "../_components/loading-skeletons";
 import { SectionTitle } from "../_components/ui";
 import { useToast } from "../_components/panel-shell";
-import { jobs, type Job } from "../_data/jobs";
-
-const allJobs: Job[] = [...jobs, { company: "Miro", role: "Product Manager, AI", match: 79, place: "Remote · اروپا", age: "۲ روز پیش", tone: "violet", letter: "M" }];
+import { jobStore } from "@/lib/data/stores";
+import type { JobRecord } from "@/lib/data/models";
 
 export default function JobsPage() {
   const notify = useToast();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("همه");
+  const [minMatch, setMinMatch] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [savedJobs, setSavedJobs] = useState<string[]>([]);
-  const filteredJobs = allJobs.filter((job) => `${job.company} ${job.role} ${job.place}`.toLowerCase().includes(query.toLowerCase()) && (category === "همه" || (category === "داخل ایران" && job.place.includes("تهران")) || (category === "بین‌المللی" && !job.place.includes("تهران")) || (category === "دورکاری" && job.place.includes("Remote"))));
-  const toggleSave = (company: string) => { const saved = savedJobs.includes(company); setSavedJobs((current) => saved ? current.filter((item) => item !== company) : [...current, company]); notify(saved ? "فرصت از ذخیره‌ها حذف شد" : "فرصت شغلی ذخیره شد"); };
+  const [jobs, setJobs] = useState<JobRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  return <><SectionTitle title="فرصت‌های شغلی" description="پیشنهادهایی که با مسیر حرفه‌ای و ترجیحات تو هم‌خوانی دارند." action={<button className={`secondary-btn ${filtersOpen ? "selected" : ""}`} onClick={() => setFiltersOpen((value) => !value)}><SlidersHorizontal size={18} /> فیلترها</button>} /><div className="search-box"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="جست‌وجوی فرصت شغلی" placeholder="عنوان شغل، شرکت یا مهارت..." /><button className="primary-btn" onClick={() => notify(`${filteredJobs.length} نتیجه پیدا شد`)}>جست‌وجو</button></div>{filtersOpen && <div className="filter-panel"><label>حداقل تطابق<input type="range" min="60" max="95" defaultValue="75" /></label><label><input type="checkbox" defaultChecked /> فقط فرصت‌های جدید</label><label><input type="checkbox" /> فقط شرکت‌های تاییدشده</label></div>}<div className="job-results-head"><strong>{filteredJobs.length} فرصت پیشنهادی</strong><div>{["همه", "داخل ایران", "بین‌المللی", "دورکاری"].map((item) => <button key={item} className={category === item ? "active" : ""} onClick={() => setCategory(item)}>{item}</button>)}</div></div>{filteredJobs.length ? <div className="job-list-page">{filteredJobs.map((job) => <JobCard key={job.company} job={job} saved={savedJobs.includes(job.company)} onSave={() => toggleSave(job.company)} />)}</div> : <div className="empty-results"><Search size={34} /><h3>فرصتی پیدا نشد</h3><p>عبارت جست‌وجو یا فیلترها را تغییر بده.</p><button className="secondary-btn" onClick={() => { setQuery(""); setCategory("همه"); }}>پاک‌کردن فیلترها</button></div>}</>;
+  const loadJobs = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setJobs(await jobStore.list());
+    } catch (event) {
+      setError(event instanceof Error ? event.message : "خواندن فرصت‌های ذخیره‌شده ناموفق بود.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let active = true;
+    jobStore.list()
+      .then((records) => {
+        if (active) setJobs(records);
+      })
+      .catch((event: unknown) => {
+        if (active) setError(event instanceof Error ? event.message : "خواندن فرصت‌های ذخیره‌شده ناموفق بود.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, []);
+
+  const visibleJobs = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase("fa");
+    return jobs.filter((job) => {
+      const matchesQuery = !normalizedQuery || [job.role, job.company, job.description, job.reason]
+        .some((value) => value?.toLocaleLowerCase("fa").includes(normalizedQuery));
+      const matchesCategory = category === "همه"
+        || (category === "داخل ایران" && /ایران|تهران|کرج|اصفهان|شیراز|مشهد/i.test(job.place))
+        || (category === "بین‌المللی" && Boolean(job.place) && !/ایران|تهران|کرج|اصفهان|شیراز|مشهد/i.test(job.place))
+        || (category === "دورکاری" && /remote|دورکاری/i.test(job.place));
+      return matchesQuery && matchesCategory && job.match >= minMatch;
+    });
+  }, [category, jobs, minMatch, query]);
+
+  const toggleSave = async (job: JobRecord) => {
+    const updated = { ...job, saved: !job.saved, updatedAt: new Date().toISOString() };
+    await jobStore.put(updated);
+    setJobs((current) => current.map((item) => item.id === updated.id ? updated : item));
+    notify(updated.saved ? "فرصت شغلی ذخیره شد" : "فرصت از ذخیره‌ها حذف شد");
+  };
+
+  return <><SectionTitle title="فرصت‌های شغلی" description="فقط فرصت‌هایی نمایش داده می‌شوند که از یک آگهی واقعی وارد و تحلیل کرده‌ای." action={<button className={`secondary-btn ${filtersOpen ? "selected" : ""}`} onClick={() => setFiltersOpen((value) => !value)}><SlidersHorizontal size={18} /> فیلترها</button>} /><div className="search-box"><Search size={19} /><input value={query} onChange={(event) => setQuery(event.target.value)} aria-label="جست‌وجوی فرصت شغلی" placeholder="عنوان شغل، شرکت یا مهارت..." /></div>{filtersOpen && <div className="filter-panel"><label>حداقل تطابق {minMatch}٪<input type="range" min="0" max="95" value={minMatch} onChange={(event) => setMinMatch(Number(event.target.value))} /></label></div>}<div className="job-results-head"><strong>{loading ? "در حال خواندن فرصت‌ها" : `${visibleJobs.length} فرصت ذخیره‌شده`}</strong><div>{["همه", "داخل ایران", "بین‌المللی", "دورکاری"].map((item) => <button key={item} className={category === item ? "active" : ""} onClick={() => setCategory(item)}>{item}</button>)}</div></div>{error ? <div className="empty-results"><Search size={34} /><h3>خواندن فرصت‌ها ناموفق بود</h3><p>{error}</p><button className="secondary-btn" onClick={loadJobs}>تلاش دوباره</button></div> : loading ? <JobCardsSkeleton count={6} /> : visibleJobs.length ? <div className="job-list-page">{visibleJobs.map((job) => <JobCard key={job.id} job={job} saved={job.saved} onSave={() => void toggleSave(job)} />)}</div> : <div className="empty-results"><Search size={34} /><h3>{jobs.length ? "فرصتی با این فیلتر پیدا نشد" : "هنوز فرصت شغلی وارد نکرده‌ای"}</h3><p>{jobs.length ? "عبارت جست‌وجو یا فیلترها را تغییر بده." : "در بخش تطبیق هوشمند، متن یا لینک یک آگهی واقعی را تحلیل کن."}</p>{!jobs.length && <Link className="secondary-btn" href="/match">وارد کردن آگهی شغلی</Link>}</div>}</>;
 }

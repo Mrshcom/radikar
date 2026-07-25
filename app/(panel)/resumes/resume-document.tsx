@@ -87,8 +87,8 @@ function StandardResume({ templateId, data, compact }: ResumeDocumentProps) {
       <header className="resume-doc-header">
         <ProfilePhoto data={data} className="resume-avatar" />
         <div className="resume-identity">
-          <h1>{data.fullName || "نام و نام خانوادگی"}</h1>
-          <p>{data.jobTitle || "عنوان حرفه‌ای"}</p>
+          <h1>{data.fullName || "\u00a0"}</h1>
+          <p>{data.jobTitle || "\u00a0"}</p>
         </div>
         <ContactDetails data={data} className="resume-contact" />
       </header>
@@ -101,7 +101,6 @@ function StandardResume({ templateId, data, compact }: ResumeDocumentProps) {
         <div className="resume-doc-main">
           <section><h2>درباره من</h2><p>{data.summary}</p></section>
           <ExperienceSection data={data} bullets={bullets} />
-          <section className="resume-project"><h2>دستاورد منتخب</h2><p>طراحی چارچوب سنجش سلامت محصول و هم‌راستاکردن اهداف تیم با شاخص‌های کلیدی کسب‌وکار.</p></section>
         </div>
       </div>
     </article>
@@ -118,8 +117,8 @@ function TwoColumnResume({ templateId, data, compact }: ResumeDocumentProps) {
       <header className="two-resume-header">
         <ProfilePhoto data={data} className="two-resume-avatar" />
         <div className="two-resume-identity">
-          <h1>{data.fullName || "نام و نام خانوادگی"}</h1>
-          <p>{data.jobTitle || "عنوان حرفه‌ای"}</p>
+          <h1>{data.fullName || "\u00a0"}</h1>
+          <p>{data.jobTitle || "\u00a0"}</p>
         </div>
         <ContactDetails data={data} className="two-resume-header-contact" />
       </header>
@@ -138,7 +137,6 @@ function TwoColumnResume({ templateId, data, compact }: ResumeDocumentProps) {
           <section className="two-resume-summary"><h2>درباره من</h2><p>{data.summary}</p></section>
           <ExperienceSection data={data} bullets={bullets} />
           <section className="two-resume-education"><h2>تحصیلات</h2><p>{data.education}</p></section>
-          <section className="two-resume-project"><h2>دستاورد منتخب</h2><p>طراحی چارچوب سنجش سلامت محصول و هم‌راستاکردن اهداف تیم با شاخص‌های کلیدی کسب‌وکار.</p></section>
         </div>
       </div>
     </article>
@@ -178,7 +176,7 @@ function ColorSplashResume({ data, compact }: ResumeDocumentProps) {
         <ExperienceSection data={data} bullets={bullets} />
         <section className="splash-skills">
           <h2>مهارت‌ها</h2>
-          <div>{skills.map((skill) => <span key={skill}>{skill}<b>حرفه‌ای</b></span>)}</div>
+          <div>{skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
         </section>
       </div>
     </article>
@@ -211,7 +209,6 @@ function OrganicPortraitResume({ data, compact }: ResumeDocumentProps) {
         <aside className="organic-portrait-side">
           <section><h2>اطلاعات تماس</h2><ContactDetails data={data} className="organic-portrait-contact" /></section>
           <section><h2>مهارت‌ها</h2><div className="organic-portrait-skills">{skills.slice(0, 5).map((skill) => <span key={skill}>{skill}</span>)}</div></section>
-          <section><h2>معرف‌ها</h2><p><strong>در صورت درخواست ارائه می‌شود</strong><br />سوابق همکاری و اطلاعات تماس معرف‌های حرفه‌ای آماده ارائه است.</p></section>
         </aside>
       </div>
 

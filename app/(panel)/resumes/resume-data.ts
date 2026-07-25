@@ -24,4 +24,25 @@ export const resumeTemplates = [
   { id: "sector-green", name: "سبز مالی", subtitle: "هدر تیره، نوار تماس و بخش‌بندی سبز", tag: "رنگی" },
 ] as const;
 
-export const defaultResumeData: ResumeData = { fullName: "سینا احمدی", jobTitle: "مدیر محصول ارشد", photoUrl: "/images/default-resume-profile.png", email: "sina.ahmadi@example.com", phone: "۰۹۱۲ ۱۲۳ ۴۵۶۷", location: "تهران، ایران", website: "sinaahmadi.ir", summary: "مدیر محصول با بیش از ۶ سال تجربه در طراحی، توسعه و رشد محصولات دیجیتال داده‌محور. متخصص در تبدیل مسائل پیچیده کاربران به راهکارهای ساده و قابل‌اندازه‌گیری.", experienceTitle: "مدیر محصول ارشد", company: "شرکت راهکارهای هوشمند", experienceDate: "۱۴۰۱ — اکنون", experience: "رهبری تیم چندتخصصی ۱۲ نفره و تدوین نقشه راه محصول\nافزایش ۲۸ درصدی نرخ فعال‌سازی با بازطراحی جریان ورود\nطراحی و اجرای بیش از ۲۰ آزمایش A/B داده‌محور", education: "کارشناسی ارشد مدیریت کسب‌وکار — دانشگاه تهران", skills: "استراتژی محصول، تحلیل داده، Agile، A/B Testing، Figma، SQL", languages: "فارسی — زبان مادری | انگلیسی — پیشرفته" };
+export const emptyResumeData: ResumeData = {
+  fullName: "",
+  jobTitle: "",
+  photoUrl: "",
+  email: "",
+  phone: "",
+  location: "",
+  website: "",
+  summary: "",
+  experienceTitle: "",
+  company: "",
+  experienceDate: "",
+  experience: "",
+  education: "",
+  skills: "",
+  languages: "",
+};
+
+export function hasResumeContent(resume: Partial<ResumeData> | undefined): resume is ResumeData {
+  if (!resume) return false;
+  return Object.entries(resume).some(([key, value]) => key !== "photoUrl" && typeof value === "string" && value.trim().length > 0);
+}
