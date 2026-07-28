@@ -85,6 +85,8 @@ export default function DashboardPage() {
               knowledge: knowledge ? {
                 experiences: knowledge.experiences,
                 qualifications: knowledge.qualifications,
+                skills: knowledge.skills,
+                languages: knowledge.languages,
                 careerGoals: knowledge.careerGoals,
                 preferredRoles: knowledge.preferredRoles,
                 preferredIndustries: knowledge.preferredIndustries,

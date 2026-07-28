@@ -97,6 +97,8 @@ export default function ResumesPage() {
     await knowledgeProfileStore.put({
       id: profileId,
       resumeData: nextData,
+      skills: nextData.skills,
+      languages: nextData.languages,
       experiences: [
         {
           id: firstExperience?.id ?? createRecordId("experience"),
@@ -125,11 +127,13 @@ export default function ResumesPage() {
         {
           id: firstQualification?.id ?? createRecordId("qualification"),
           education: nextData.education,
-          skills: nextData.skills,
-          languages: nextData.languages,
           certifications: firstQualification?.certifications ?? knowledge?.certifications ?? "",
         },
-        ...(knowledge?.qualifications?.slice(1) ?? []),
+        ...(knowledge?.qualifications?.slice(1).map((qualification) => ({
+          id: qualification.id,
+          education: qualification.education ?? "",
+          certifications: qualification.certifications ?? "",
+        })) ?? []),
       ],
       careerGoals: knowledge?.careerGoals ?? "",
       preferredRoles: knowledge?.preferredRoles ?? "",

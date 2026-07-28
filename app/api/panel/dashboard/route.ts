@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
     knowledge?: {
       experiences?: KnowledgeExperience[];
       qualifications?: KnowledgeQualification[];
+      skills?: string;
+      languages?: string;
       careerGoals?: string;
       preferredRoles?: string;
       preferredIndustries?: string;

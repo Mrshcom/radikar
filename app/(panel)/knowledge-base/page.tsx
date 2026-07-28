@@ -142,8 +142,8 @@ export default function KnowledgeBasePage() {
         : "",
       experience: experience?.description ?? "",
       education: qualification?.education ?? "",
-      skills: qualification?.skills ?? "",
-      languages: qualification?.languages ?? "",
+      skills: form.skills,
+      languages: form.languages,
     };
   }, [form]);
 
@@ -161,10 +161,13 @@ export default function KnowledgeBasePage() {
           ...emptyKnowledge,
           ...knowledge,
           resumeData: storedResume,
+          skills: knowledge.skills || knowledge.qualifications?.map((item) => item.skills).filter(Boolean).join("، ") || storedResume.skills,
+          languages: knowledge.languages || knowledge.qualifications?.map((item) => item.languages).filter(Boolean).join("، ") || storedResume.languages,
+          workPreferences: normalizeWorkMode(knowledge.workPreferences || profile?.workMode),
           experiences: knowledge.experiences?.length
             ? knowledge.experiences.map(normalizeExperience)
             : [experienceFromResume(storedResume, knowledge)],
-          qualifications: knowledge.qualifications?.length ? knowledge.qualifications : [qualificationFromResume(storedResume, knowledge)],
+          qualifications: knowledge.qualifications?.length ? knowledge.qualifications.map(normalizeQualification) : [qualificationFromResume(storedResume, knowledge)],
         });
         setCreatedAt(knowledge.createdAt);
       } else {
@@ -177,6 +180,8 @@ export default function KnowledgeBasePage() {
         setForm({
           ...emptyKnowledge,
           resumeData: storedResume,
+          skills: storedResume.skills,
+          languages: storedResume.languages,
           experiences: [experienceFromResume(storedResume)],
           qualifications: [qualificationFromResume(storedResume)],
           workPreferences: profile?.workMode ?? "",
@@ -215,7 +220,9 @@ export default function KnowledgeBasePage() {
       { label: "هدف شغلی را توضیح بده", complete: Boolean(form.careerGoals.trim()) },
       { label: "نقش‌های شغلی موردنظر را اضافه کن", complete: Boolean(form.preferredRoles.trim()) },
       { label: "صنایع موردعلاقه را مشخص کن", complete: Boolean(form.preferredIndustries.trim()) },
-      { label: "ترجیحات محیط کار را وارد کن", complete: Boolean(form.workPreferences.trim()) },
+      { label: "نحوه همکاری را انتخاب کن", complete: Boolean(form.workPreferences.trim()) },
+      { label: "مهارت‌های عمومی را اضافه کن", complete: Boolean(form.skills.trim()) },
+      { label: "زبان‌ها را مشخص کن", complete: Boolean(form.languages.trim()) },
       { label: "زمینه مصاحبه را توضیح بده", complete: Boolean(form.interviewContext.trim()) },
       { label: "چالش‌های مصاحبه را اضافه کن", complete: Boolean(form.interviewChallenges.trim()) },
     ];
@@ -234,8 +241,6 @@ export default function KnowledgeBasePage() {
       const number = String(index + 1).toLocaleString("fa-IR");
       items.push(
         { label: `تحصیلات مورد ${number} را وارد کن`, complete: Boolean(qualification.education.trim()) },
-        { label: `مهارت‌های مورد ${number} را اضافه کن`, complete: Boolean(qualification.skills.trim()) },
-        { label: `زبان‌های مورد ${number} را مشخص کن`, complete: Boolean(qualification.languages.trim()) },
         { label: `گواهی‌ها و دوره‌های مورد ${number} را اضافه کن`, complete: Boolean(qualification.certifications.trim()) },
       );
     });
@@ -288,12 +293,14 @@ export default function KnowledgeBasePage() {
           ? result.experiences.map((item) => normalizeExperience({ ...item, id: createRecordId("experience") }))
           : current.experiences,
         qualifications: result.qualifications?.length
-          ? result.qualifications.map((item) => ({ ...item, id: createRecordId("qualification") }))
+          ? result.qualifications.map((item) => normalizeQualification({ ...item, id: createRecordId("qualification") }))
           : current.qualifications,
+        skills: result.qualifications?.map((item) => item.skills).filter(Boolean).join("، ") || current.skills,
+        languages: result.qualifications?.map((item) => item.languages).filter(Boolean).join("، ") || current.languages,
         careerGoals: result.careerGoals || current.careerGoals,
         preferredRoles: result.preferredRoles || current.preferredRoles,
         preferredIndustries: result.preferredIndustries || current.preferredIndustries,
-        workPreferences: result.workPreferences || current.workPreferences,
+        workPreferences: normalizeWorkMode(result.workPreferences) || current.workPreferences,
         interviewContext: result.interviewContext || current.interviewContext,
         interviewChallenges: result.interviewChallenges || current.interviewChallenges,
       }));
@@ -319,7 +326,7 @@ export default function KnowledgeBasePage() {
         id: profileId,
         fullName: resume.fullName.trim(),
         targetTitle: resume.jobTitle.trim(),
-        workMode: previousProfile?.workMode ?? "",
+        workMode: normalizeWorkMode(form.workPreferences) || previousProfile?.workMode || "",
         createdAt: previousProfile?.createdAt ?? now,
         updatedAt: now,
       };
@@ -377,6 +384,17 @@ export default function KnowledgeBasePage() {
         <Field textarea label="درباره من" value={resume.summary} onChange={setResumeField("summary")} />
       </KnowledgeSection>
 
+      <KnowledgeSection icon={<Settings2 size={18} />} title="اطلاعات عمومی" description="مهارت‌ها، زبان‌ها و شیوه همکاری ترجیحی تو.">
+        <MultiSkillAutocomplete label="مهارت‌ها" value={form.skills} onChange={(skills) => setForm((current) => ({ ...current, skills }))} />
+        <Field label="زبان‌ها" value={form.languages} onChange={setField("languages")} placeholder="مثلاً فارسی، انگلیسی، آلمانی" />
+        <SelectField label="نحوه همکاری" value={form.workPreferences} onChange={(workPreferences) => setForm((current) => ({ ...current, workPreferences }))} options={[
+          { value: "", label: "انتخاب کنید" },
+          { value: "remote", label: "دورکاری" },
+          { value: "hybrid", label: "هیبرید" },
+          { value: "onsite", label: "حضوری" },
+        ]} />
+      </KnowledgeSection>
+
       <KnowledgeSection icon={<BriefcaseBusiness size={18} />} title="تجربه حرفه‌ای" description="همه تجربه‌ها، مسئولیت‌ها و دستاوردهای قابل ارائه." action={<button className="knowledge-add-button" onClick={addExperience}><Plus size={15} /> افزودن تجربه</button>}>
         <div className="knowledge-experience-list">
           {form.experiences.map((experience, index) => {
@@ -403,12 +421,10 @@ export default function KnowledgeBasePage() {
         </div>
       </KnowledgeSection>
 
-      <KnowledgeSection icon={<GraduationCap size={18} />} title="توانمندی‌ها و تحصیلات" description="همه سوابق تحصیلی، مهارت‌ها، زبان‌ها و مدارک." action={<button className="knowledge-add-button" onClick={() => setForm((current) => ({ ...current, qualifications: [...current.qualifications, blankQualification()] }))}><Plus size={15} /> افزودن مورد</button>}>
+      <KnowledgeSection icon={<GraduationCap size={18} />} title="تحصیلات و مدارک" description="همه سوابق تحصیلی، گواهی‌ها و دوره‌های حرفه‌ای." action={<button className="knowledge-add-button" onClick={() => setForm((current) => ({ ...current, qualifications: [...current.qualifications, blankQualification()] }))}><Plus size={15} /> افزودن مورد</button>}>
         {form.qualifications.map((qualification, index) => <div className="knowledge-repeat-item" key={qualification.id}>
           <div className="knowledge-repeat-head"><strong>مورد {String(index + 1).toLocaleString("fa-IR")}</strong><button disabled={form.qualifications.length === 1} onClick={() => setForm((current) => ({ ...current, qualifications: current.qualifications.filter((item) => item.id !== qualification.id) }))} aria-label="حذف مورد"><Trash2 size={15} /> حذف</button></div>
           <Field label="تحصیلات" value={qualification.education} onChange={setQualificationField(qualification.id, "education")} />
-          <Field label="مهارت‌ها" value={qualification.skills} onChange={setQualificationField(qualification.id, "skills")} placeholder="با ویرگول جدا کن" />
-          <Field label="زبان‌ها" value={qualification.languages} onChange={setQualificationField(qualification.id, "languages")} />
           <Field textarea label="گواهی‌ها و دوره‌ها" value={qualification.certifications} onChange={setQualificationField(qualification.id, "certifications")} />
         </div>)}
       </KnowledgeSection>
@@ -416,7 +432,6 @@ export default function KnowledgeBasePage() {
       <KnowledgeSection icon={<Sparkles size={18} />} title="هدف شغلی و آمادگی مصاحبه" description="زمینه لازم برای شخصی‌سازی پیشنهادها و تمرین‌ها.">
         <Field textarea label="هدف شغلی" value={form.careerGoals} onChange={setField("careerGoals")} placeholder="در یک تا سه سال آینده می‌خواهی به چه جایگاهی برسی؟" />
         <div className="field-pair"><Field label="نقش‌های موردنظر" value={form.preferredRoles} onChange={setField("preferredRoles")} /><Field label="صنایع موردعلاقه" value={form.preferredIndustries} onChange={setField("preferredIndustries")} /></div>
-        <Field label="ترجیحات محیط کار" value={form.workPreferences} onChange={setField("workPreferences")} placeholder="دورکاری، حضوری، شهر، نوع شرکت و..." />
         <Field textarea label="زمینه و تجربه مصاحبه" value={form.interviewContext} onChange={setField("interviewContext")} />
         <Field textarea label="چالش‌ها و نگرانی‌های مصاحبه" value={form.interviewChallenges} onChange={setField("interviewChallenges")} />
       </KnowledgeSection>
@@ -453,6 +468,10 @@ function Field({ label, textarea, type, value, placeholder, disabled, onChange }
   return <label className={textarea ? "knowledge-multiline-field" : undefined}>{label}{textarea
     ? <textarea value={value} placeholder={placeholder} onChange={onChange} />
     : <input type={type} value={value} placeholder={placeholder} disabled={disabled} onChange={onChange} />}</label>;
+}
+
+function SelectField({ label, value, options, onChange }: { label: string; value: string; options: Array<{ value: string; label: string }>; onChange: (value: string) => void }) {
+  return <label>{label}<select value={value} onChange={(event) => onChange(event.target.value)}>{options.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>;
 }
 
 function parseSkills(value: string) {
