@@ -6,7 +6,7 @@ import { ArrowLeft, BriefcaseBusiness, CheckCircle2, ChevronLeft, CircleUserRoun
 import { SectionTitle } from "../_components/ui";
 import { FeedbackSkeleton, InterviewSkeleton } from "../_components/loading-skeletons";
 import { useToast } from "../_components/panel-shell";
-import { createRecordId, getLatestResume, interviewSessionStore } from "@/lib/data/stores";
+import { createRecordId, getActiveProfileId, getLatestResume, interviewSessionStore, knowledgeProfileStore } from "@/lib/data/stores";
 import type { InterviewFeedbackRecord, InterviewSessionRecord } from "@/lib/data/models";
 
 type PracticeCard = { title: string; text: string; tone: string };
@@ -31,9 +31,10 @@ export default function InterviewPage() {
     let active = true;
     const loadStoredData = async () => {
       try {
-        const [resume, sessions] = await Promise.all([getLatestResume(), interviewSessionStore.list()]);
+        const profileId = await getActiveProfileId();
+        const [resume, knowledge, sessions] = await Promise.all([getLatestResume(), knowledgeProfileStore.get(profileId), interviewSessionStore.list()]);
         if (!active) return;
-        setHasResume(Boolean(resume));
+        setHasResume(Boolean(resume || knowledge));
         setSessionRecord(sessions[0] || null);
         if (sessions[0]) setMode(sessions[0].mode);
       } catch (event) {
@@ -50,12 +51,14 @@ export default function InterviewPage() {
     setLoading(true);
     setError("");
     try {
-      const resume = await getLatestResume();
-      if (!resume) throw new Error("برای ساخت جلسه مصاحبه ابتدا رزومه را تکمیل کن.");
+      const profileId = await getActiveProfileId();
+      const [resume, knowledge] = await Promise.all([getLatestResume(), knowledgeProfileStore.get(profileId)]);
+      const resumeData = resume?.data ?? knowledge?.resumeData;
+      if (!resumeData) throw new Error("برای ساخت جلسه مصاحبه ابتدا پایگاه دانش یا رزومه را تکمیل کن.");
       const response = await fetch("/api/interview/session", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ resume: resume.data, mode: selectedMode }),
+        body: JSON.stringify({ resume: resumeData, knowledge, mode: selectedMode }),
       });
       const result = await response.json() as SessionData & { error?: string };
       if (!response.ok) throw new Error(result.error || "ساخت جلسه مصاحبه ناموفق بود.");
@@ -127,7 +130,7 @@ export default function InterviewPage() {
   };
 
   if (loading) return <InterviewSkeleton />;
-  if (!hasResume) return <div className="empty-results"><FileCheck2 size={34} /><h3>رزومه‌ای برای تمرین وجود ندارد</h3><p>ابتدا رزومه خودت را بساز تا سؤال‌ها براساس اطلاعات واقعی تو تولید شوند.</p><Link className="primary-btn" href="/resumes">ساخت رزومه</Link></div>;
+  if (!hasResume) return <div className="empty-results"><FileCheck2 size={34} /><h3>اطلاعاتی برای تمرین وجود ندارد</h3><p>ابتدا پایگاه دانش را کامل کن تا سؤال‌ها براساس اطلاعات واقعی تو تولید شوند.</p><Link className="primary-btn" href="/knowledge-base">تکمیل پایگاه دانش</Link></div>;
 
   return <><SectionTitle title="آمادگی مصاحبه" description="جلسه‌ها و بازخوردهای تولیدشده ذخیره می‌شوند و از اطلاعات واقعی رزومه استفاده می‌کنند." />{error && <div className="success-banner warning-banner"><Sparkles size={20} /><div><strong>ساخت جلسه انجام نشد</strong><span>{error}</span></div><button onClick={() => setError("")}><X size={18} /></button></div>}<div className="interview-hero"><div><span className="soft-badge"><Sparkles size={14} /> تمرین مدل‌محور</span><h2>{sessionRecord?.title || "هنوز جلسه‌ای ساخته نشده است"}</h2><p>{sessionRecord?.subtitle || "یک جلسه تازه بساز تا سؤال‌ها براساس رزومه واقعی تو تولید شوند."}</p><div className="interview-meta"><span><Clock3 size={15} /> {sessionRecord?.duration || "—"}</span><span><MessageSquareText size={15} /> {sessionRecord?.feedbacks.length || 0} بازخورد ذخیره‌شده</span></div><button className="light-btn" onClick={() => sessionRecord ? setStarted(true) : void loadSession()}>{sessionRecord ? "شروع مصاحبه آزمایشی" : "ساخت جلسه مصاحبه"} <ArrowLeft size={17} /></button></div><div className="orb"><MessageSquareText size={40} /></div></div>{started && sessionRecord && <section className="panel interview-session"><div className="session-head"><div><span className="great-label">جلسه فعال</span><h3>{mode}</h3></div><button className="icon-button" onClick={() => setStarted(false)}><X size={19} /></button></div><div className="question-box"><span>سؤال {questionIndex + 1} از {sessionRecord.questions.length}</span><h2>{currentQuestion}</h2></div><label>پاسخ تو<textarea value={answer} onChange={(event) => { setAnswer(event.target.value); setFeedback(null); }} placeholder="پاسخ خودت را وارد کن..." /></label>{feedbackLoading && <FeedbackSkeleton />}{feedback && <div className="feedback-box"><CheckCircle2 size={19} /><div><strong>{feedback.title}</strong><p>{feedback.text}</p></div></div>}<div className="session-actions"><button className="secondary-btn" onClick={() => { setQuestionIndex((current) => Math.min(current + 1, sessionRecord.questions.length - 1)); setAnswer(""); setFeedback(null); notify("سؤال بعدی نمایش داده شد"); }}>سؤال بعدی <ArrowLeft size={16} /></button><button className="primary-btn" disabled={!answer.trim() || feedbackLoading} onClick={() => void requestFeedback()}><Sparkles size={17} /> {feedbackLoading ? "در حال دریافت بازخورد..." : "دریافت بازخورد"}</button></div></section>}<div className="practice-grid">{(sessionRecord?.cards || []).map((item, index) => { const Icon = icons[index] || CircleUserRound; return <article className="panel" key={item.title}><div className={`icon-tile ${item.tone}`}><Icon size={22} /></div><h3>{item.title}</h3><p>{item.text}</p><button className="text-btn" onClick={() => startPractice(item.title)}>شروع تمرین <ChevronLeft size={16} /></button></article>; })}</div></>;
 }

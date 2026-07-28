@@ -6,6 +6,8 @@ import { Modal } from "../_components/ui";
 import { ResumePreviewSkeleton } from "../_components/loading-skeletons";
 import { ResumeDocument } from "./resume-document";
 import { resumeTemplates, type ResumeData } from "./resume-data";
+import { getActiveProfileId, knowledgeProfileStore } from "@/lib/data/stores";
+import { scheduleFieldDirectionRefresh } from "@/lib/field-direction";
 
 const steps = [
   { title: "اطلاعات فردی", description: "مشخصات تماس و عنوان حرفه‌ای", icon: UserRound },
@@ -36,10 +38,12 @@ export function ResumeBuilder({ data, selectedTemplate, onClose, onDataChange, o
     setGenerating(true);
     setModelError("");
     try {
-      const response = await fetch("/api/resume/generate", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ resume: data }) });
+      const knowledge = await knowledgeProfileStore.get(await getActiveProfileId());
+      const response = await fetch("/api/resume/generate", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ resume: data, knowledge }) });
       const result = await response.json() as { resume?: ResumeData; error?: string };
       if (!response.ok || !result.resume) throw new Error(result.error || "مدل رزومه‌ساز پاسخ نداد.");
       await onDataMerge(result.resume);
+      scheduleFieldDirectionRefresh();
     } catch (error) {
       setModelError(error instanceof Error ? error.message : "مدل رزومه‌ساز پاسخ نداد.");
     } finally {

@@ -2,7 +2,10 @@ import type { JobTone } from "@/app/(panel)/_data/jobs";
 import type { ResumeData } from "@/app/(panel)/resumes/resume-data";
 
 export type DataCollection =
+  | "appProfiles"
+  | "workspaceState"
   | "userProfiles"
+  | "knowledgeProfiles"
   | "resumes"
   | "jobs"
   | "applications"
@@ -14,12 +17,64 @@ export type BaseRecord = {
   id: string;
   createdAt: string;
   updatedAt: string;
+  profileId?: string;
+};
+
+export type AppProfileRecord = BaseRecord & {
+  fullName: string;
+  targetTitle: string;
+};
+
+export type WorkspaceStateRecord = BaseRecord & {
+  activeProfileId: string;
 };
 
 export type UserProfileRecord = BaseRecord & {
   fullName: string;
   targetTitle: string;
   workMode: "" | "remote" | "hybrid" | "onsite";
+};
+
+export type KnowledgeExperience = {
+  id: string;
+  jobTitle: string;
+  company: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  date?: string;
+  description: string;
+  technologies: string;
+  /** @deprecated فقط برای مهاجرت داده‌های قدیمی */
+  achievements?: string;
+};
+
+export type KnowledgeQualification = {
+  id: string;
+  education: string;
+  certifications: string;
+  /** @deprecated فقط برای مهاجرت داده‌های قدیمی */
+  skills?: string;
+  /** @deprecated فقط برای مهاجرت داده‌های قدیمی */
+  languages?: string;
+};
+
+export type KnowledgeProfileRecord = BaseRecord & {
+  resumeData: ResumeData;
+  experiences: KnowledgeExperience[];
+  qualifications: KnowledgeQualification[];
+  skills: string;
+  languages: string;
+  careerGoals: string;
+  preferredRoles: string;
+  preferredIndustries: string;
+  workPreferences: string;
+  /** @deprecated فقط برای مهاجرت داده‌های قدیمی */
+  achievements?: string;
+  certifications?: string;
+  interviewContext: string;
+  interviewChallenges: string;
 };
 
 export type ResumeRecord = BaseRecord & {
@@ -89,6 +144,9 @@ export type MatchAnalysisRecord = BaseRecord & {
 
 export type DashboardSnapshotRecord = BaseRecord & {
   resumeId: string;
+  sourceId?: string;
+  sourceType?: "knowledge" | "resume";
+  sourceUpdatedAt?: string;
   greeting: string;
   subtitle: string;
   profileScore: number;

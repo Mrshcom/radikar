@@ -8,8 +8,9 @@ import { JobCard } from "../_components/job-card";
 import { DashboardSkeleton } from "../_components/loading-skeletons";
 import { SectionTitle } from "../_components/ui";
 import { useToast } from "../_components/panel-shell";
-import { applicationStore, dashboardSnapshotStore, jobStore, resumeStore } from "@/lib/data/stores";
+import { applicationStore, dashboardSnapshotStore, jobStore, knowledgeProfileStore, resumeStore } from "@/lib/data/stores";
 import type { ApplicationRecord, ApplicationStage, DashboardSnapshotRecord, JobRecord, ResumeRecord } from "@/lib/data/models";
+import { hasResumeContent } from "../resumes/resume-data";
 
 type DashboardState = {
   snapshot: DashboardSnapshotRecord;
@@ -43,14 +44,17 @@ export default function DashboardPage() {
       setLoading(true);
       setError("");
       try {
-        const [resumes, jobs, applications, snapshots] = await Promise.all([
+        const [resumes, jobs, applications, snapshots, knowledgeProfiles] = await Promise.all([
           resumeStore.list(),
           jobStore.list(),
           applicationStore.list(),
           dashboardSnapshotStore.list(),
+          knowledgeProfileStore.list(),
         ]);
         const resume = resumes[0];
-        if (!resume) {
+        const knowledge = knowledgeProfiles[0];
+        const analysisResume = knowledge?.resumeData ?? resume?.data;
+        if (!hasResumeContent(analysisResume)) {
           if (active) {
             setHasResume(false);
             setData(null);
@@ -59,20 +63,47 @@ export default function DashboardPage() {
         }
 
         if (active) setHasResume(true);
-        const cachedSnapshot = snapshots.find((snapshot) => snapshot.resumeId === resume.id);
+        const sourceId = knowledge?.id ?? resume!.id;
+        const sourceType = knowledge ? "knowledge" : "resume";
+        const sourceUpdatedAt = knowledge?.updatedAt ?? resume!.updatedAt;
+        const cachedSnapshot = snapshots.find((snapshot) =>
+          snapshot.sourceId === sourceId && snapshot.sourceType === sourceType
+        ) ?? (!knowledge ? snapshots.find((snapshot) => snapshot.resumeId === resume!.id) : undefined);
+        const snapshotIsCurrent = cachedSnapshot?.sourceUpdatedAt === sourceUpdatedAt;
+
+        if (cachedSnapshot && snapshotIsCurrent) {
+          if (active) setData({ snapshot: cachedSnapshot, resumes, jobs, applications });
+          return;
+        }
+
         try {
           const response = await fetch("/api/panel/dashboard", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ resume: resume.data }),
+            body: JSON.stringify({
+              resume: analysisResume,
+              knowledge: knowledge ? {
+                experiences: knowledge.experiences,
+                qualifications: knowledge.qualifications,
+                careerGoals: knowledge.careerGoals,
+                preferredRoles: knowledge.preferredRoles,
+                preferredIndustries: knowledge.preferredIndustries,
+                workPreferences: knowledge.workPreferences,
+                interviewContext: knowledge.interviewContext,
+                interviewChallenges: knowledge.interviewChallenges,
+              } : undefined,
+            }),
           });
           const result = await response.json() as Omit<DashboardSnapshotRecord, "id" | "resumeId" | "createdAt" | "updatedAt"> & { error?: string };
           if (!response.ok) throw new Error(result.error || "تحلیل داشبورد ناموفق بود.");
           const now = new Date().toISOString();
           const snapshot: DashboardSnapshotRecord = {
             ...result,
-            id: cachedSnapshot?.id || `dashboard-${resume.id}`,
-            resumeId: resume.id,
+            id: cachedSnapshot?.id || `dashboard-${sourceType}-${sourceId}`,
+            resumeId: resume?.id ?? "",
+            sourceId,
+            sourceType,
+            sourceUpdatedAt,
             createdAt: cachedSnapshot?.createdAt || now,
             updatedAt: now,
           };

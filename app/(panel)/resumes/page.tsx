@@ -7,7 +7,8 @@ import { useToast } from "../_components/panel-shell";
 import { ResumeBuilder } from "./resume-builder";
 import { ResumeDocument } from "./resume-document";
 import { emptyResumeData, resumeTemplates, type ResumeData } from "./resume-data";
-import { createRecordId, getLatestResume, resumeStore } from "@/lib/data/stores";
+import { templatePreviewData } from "./template-preview-data";
+import { createRecordId, getActiveProfileId, getLatestResume, knowledgeProfileStore, resumeStore } from "@/lib/data/stores";
 import type { ResumeRecord } from "@/lib/data/models";
 
 const templateCategories = ["همه", "ساده", "مدرن", "حرفه‌ای", "خلاق", "رنگی"] as const;
@@ -49,6 +50,7 @@ export default function ResumesPage() {
   const [selectedTemplate, setSelectedTemplate] = useState("ats");
   const [activeCategory, setActiveCategory] = useState<TemplateCategory>("همه");
   const [data, setData] = useState<ResumeData>(emptyResumeData);
+  const [knowledgeData, setKnowledgeData] = useState<ResumeData | null>(null);
   const [activeResumeId, setActiveResumeId] = useState("");
   const [savedDraft, setSavedDraft] = useState(false);
   const filteredTemplates = activeCategory === "همه"
@@ -57,12 +59,17 @@ export default function ResumesPage() {
 
   useEffect(() => {
     let active = true;
-    void getLatestResume().then((resume) => {
-      if (!active || !resume) return;
-      setData({ ...emptyResumeData, ...resume.data });
-      setSelectedTemplate(resume.templateId);
-      setActiveResumeId(resume.id);
-      setSavedDraft(true);
+    void getActiveProfileId().then((profileId) => Promise.all([getLatestResume(), knowledgeProfileStore.get(profileId)])).then(([resume, knowledge]) => {
+      if (!active) return;
+      if (knowledge) setKnowledgeData({ ...emptyResumeData, ...knowledge.resumeData });
+      if (resume) {
+        setData({ ...emptyResumeData, ...resume.data });
+        setSelectedTemplate(resume.templateId);
+        setActiveResumeId(resume.id);
+        setSavedDraft(true);
+        return;
+      }
+      if (knowledge) setData({ ...emptyResumeData, ...knowledge.resumeData });
     }).catch(() => {
       if (active) notify("خواندن پیش‌نویس‌های ذخیره‌شده ناموفق بود");
     });
@@ -83,6 +90,56 @@ export default function ResumesPage() {
       createdAt: previous?.createdAt || now,
       updatedAt: now,
     });
+    const profileId = await getActiveProfileId();
+    const knowledge = await knowledgeProfileStore.get(profileId);
+    const firstExperience = knowledge?.experiences?.[0];
+    const firstQualification = knowledge?.qualifications?.[0];
+    await knowledgeProfileStore.put({
+      id: profileId,
+      resumeData: nextData,
+      experiences: [
+        {
+          id: firstExperience?.id ?? createRecordId("experience"),
+          jobTitle: nextData.experienceTitle,
+          company: nextData.company,
+          location: firstExperience?.location ?? "",
+          startDate: firstExperience?.startDate ?? firstExperience?.date ?? nextData.experienceDate,
+          endDate: firstExperience?.endDate ?? "",
+          isCurrent: firstExperience?.isCurrent ?? false,
+          description: nextData.experience,
+          technologies: firstExperience?.technologies ?? firstExperience?.achievements ?? knowledge?.achievements ?? "",
+        },
+        ...(knowledge?.experiences?.slice(1).map((experience) => ({
+          id: experience.id,
+          jobTitle: experience.jobTitle ?? "",
+          company: experience.company ?? "",
+          location: experience.location ?? "",
+          startDate: experience.startDate ?? experience.date ?? "",
+          endDate: experience.endDate ?? "",
+          isCurrent: Boolean(experience.isCurrent),
+          description: experience.description ?? "",
+          technologies: experience.technologies ?? experience.achievements ?? "",
+        })) ?? []),
+      ],
+      qualifications: [
+        {
+          id: firstQualification?.id ?? createRecordId("qualification"),
+          education: nextData.education,
+          skills: nextData.skills,
+          languages: nextData.languages,
+          certifications: firstQualification?.certifications ?? knowledge?.certifications ?? "",
+        },
+        ...(knowledge?.qualifications?.slice(1) ?? []),
+      ],
+      careerGoals: knowledge?.careerGoals ?? "",
+      preferredRoles: knowledge?.preferredRoles ?? "",
+      preferredIndustries: knowledge?.preferredIndustries ?? "",
+      workPreferences: knowledge?.workPreferences ?? "",
+      interviewContext: knowledge?.interviewContext ?? "",
+      interviewChallenges: knowledge?.interviewChallenges ?? "",
+      createdAt: knowledge?.createdAt ?? now,
+      updatedAt: now,
+    });
     setActiveResumeId(id);
     setSavedDraft(true);
   };
@@ -90,7 +147,13 @@ export default function ResumesPage() {
     setData(nextData);
     await persistResume(nextData);
   };
-  const openBuilder = (templateId: string) => { setSelectedTemplate(templateId); setBuilderOpen(true); };
+  const openBuilder = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    if (knowledgeData) setData({ ...emptyResumeData, ...knowledgeData });
+    setActiveResumeId("");
+    setSavedDraft(false);
+    setBuilderOpen(true);
+  };
   const saveDraft = async () => {
     await persistResume(data);
     notify("پیش‌نویس رزومه در فضای محلی امن ذخیره شد");
@@ -103,7 +166,7 @@ export default function ResumesPage() {
     <div className="template-filters"><div><SlidersHorizontal size={17} /><span>فیلتر قالب‌ها</span></div><div className="template-filter-list">{templateCategories.map((category) => { const count = category === "همه" ? resumeTemplates.length : resumeTemplates.filter((template) => getTemplateCategory(template.tag) === category).length; return <button key={category} className={activeCategory === category ? "active" : ""} onClick={() => setActiveCategory(category)}>{category}<span>{count}</span></button>; })}</div></div>
 
     <div className="template-results-meta"><strong>{filteredTemplates.length} قالب</strong><span>{activeCategory === "همه" ? "نمایش همه سبک‌ها" : `دسته ${activeCategory}`}</span></div>
-    <div className="resume-template-gallery">{filteredTemplates.map((template) => <article className="resume-template-card" key={template.id}><div className="template-preview-frame"><ResumeDocument templateId={template.id} data={emptyResumeData} compact /></div><div className="template-card-info"><div><span>{template.tag}</span><h3>{template.name}</h3><p>{template.subtitle}</p></div><button className="primary-btn" onClick={() => openBuilder(template.id)}>استفاده از قالب</button></div></article>)}</div>
+    <div className="resume-template-gallery">{filteredTemplates.map((template) => <article className="resume-template-card" key={template.id}><div className="template-preview-frame"><ResumeDocument templateId={template.id} data={templatePreviewData} compact /></div><div className="template-card-info"><div><span>{template.tag}</span><h3>{template.name}</h3><p>{template.subtitle}</p></div><button className="primary-btn" onClick={() => openBuilder(template.id)}>استفاده از قالب</button></div></article>)}</div>
 
     {builderOpen && <ResumeBuilder data={data} selectedTemplate={selectedTemplate} onClose={() => setBuilderOpen(false)} onDataChange={updateData} onDataMerge={mergeData} onTemplateChange={setSelectedTemplate} onSave={saveDraft} />}
   </>;

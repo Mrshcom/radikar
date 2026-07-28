@@ -8,10 +8,16 @@ export interface DataRepository {
   clear(collection: DataCollection): Promise<void>;
 }
 
-const DATABASE_NAME = "masir-resume-maker";
-const DATABASE_VERSION = 2;
+const DATABASE_NAME = "radicar-resume-maker";
+const DATABASE_VERSION = 3;
+const LEGACY_DATABASE_NAME = ["ma", "sir", "-resume-maker"].join("");
+const INTERNAL_STORE = "__radicar_meta";
+const LEGACY_MIGRATION_KEY = "legacy-database-migrated";
 const COLLECTIONS: DataCollection[] = [
+  "appProfiles",
+  "workspaceState",
   "userProfiles",
+  "knowledgeProfiles",
   "resumes",
   "jobs",
   "applications",
@@ -38,28 +44,79 @@ function transactionToPromise(transaction: IDBTransaction): Promise<void> {
 class IndexedDbRepository implements DataRepository {
   private databasePromise?: Promise<IDBDatabase>;
 
+  private openNamedDatabase(name: string, version?: number) {
+    return new Promise<IDBDatabase>((resolve, reject) => {
+      const request = version ? indexedDB.open(name, version) : indexedDB.open(name);
+
+      request.onupgradeneeded = () => {
+        if (name !== DATABASE_NAME) return;
+        const database = request.result;
+        COLLECTIONS.forEach((collection) => {
+          if (!database.objectStoreNames.contains(collection)) {
+            database.createObjectStore(collection, { keyPath: "id" });
+          }
+        });
+        if (!database.objectStoreNames.contains(INTERNAL_STORE)) {
+          database.createObjectStore(INTERNAL_STORE);
+        }
+      };
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error ?? new Error("بازکردن IndexedDB ناموفق بود."));
+      request.onblocked = () => reject(new Error("نسخه دیگری از برنامه مانع ارتقای IndexedDB شده است."));
+    });
+  }
+
+  private async migrateLegacyDatabase(database: IDBDatabase) {
+    const markerTransaction = database.transaction(INTERNAL_STORE, "readonly");
+    const migrated = await requestToPromise(markerTransaction.objectStore(INTERNAL_STORE).get(LEGACY_MIGRATION_KEY));
+    if (migrated) return;
+
+    const availableDatabases = await indexedDB.databases();
+    if (!availableDatabases.some(({ name }) => name === LEGACY_DATABASE_NAME)) {
+      const transaction = database.transaction(INTERNAL_STORE, "readwrite");
+      transaction.objectStore(INTERNAL_STORE).put(true, LEGACY_MIGRATION_KEY);
+      await transactionToPromise(transaction);
+      return;
+    }
+
+    const legacyDatabase = await this.openNamedDatabase(LEGACY_DATABASE_NAME);
+    try {
+      const existingCollections = COLLECTIONS.filter((collection) => legacyDatabase.objectStoreNames.contains(collection));
+      for (const collection of existingCollections) {
+        const readTransaction = legacyDatabase.transaction(collection, "readonly");
+        const records = await requestToPromise(readTransaction.objectStore(collection).getAll()) as BaseRecord[];
+        if (!records.length) continue;
+
+        const writeTransaction = database.transaction(collection, "readwrite");
+        const store = writeTransaction.objectStore(collection);
+        records.forEach((record) => store.put(record));
+        await transactionToPromise(writeTransaction);
+      }
+    } finally {
+      legacyDatabase.close();
+    }
+
+    const transaction = database.transaction(INTERNAL_STORE, "readwrite");
+    transaction.objectStore(INTERNAL_STORE).put(true, LEGACY_MIGRATION_KEY);
+    await transactionToPromise(transaction);
+  }
+
   private openDatabase() {
     if (typeof indexedDB === "undefined") {
       return Promise.reject(new Error("IndexedDB در این محیط در دسترس نیست."));
     }
 
     if (!this.databasePromise) {
-      this.databasePromise = new Promise((resolve, reject) => {
-        const request = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
-
-        request.onupgradeneeded = () => {
-          const database = request.result;
-          COLLECTIONS.forEach((collection) => {
-            if (!database.objectStoreNames.contains(collection)) {
-              database.createObjectStore(collection, { keyPath: "id" });
-            }
-          });
-        };
-
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error ?? new Error("بازکردن IndexedDB ناموفق بود."));
-        request.onblocked = () => reject(new Error("نسخه دیگری از برنامه مانع ارتقای IndexedDB شده است."));
-      });
+      this.databasePromise = this.openNamedDatabase(DATABASE_NAME, DATABASE_VERSION)
+        .then(async (database) => {
+          await this.migrateLegacyDatabase(database);
+          return database;
+        })
+        .catch((error) => {
+          this.databasePromise = undefined;
+          throw error;
+        });
     }
 
     return this.databasePromise;

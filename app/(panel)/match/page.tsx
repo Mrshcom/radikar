@@ -235,7 +235,7 @@ export default function MatchPage() {
         <label htmlFor="job-description">متن آگهی شغلی</label>
         <textarea id="job-description" value={description} dir={description.trim() ? getJobTextDirection(description) : "rtl"} lang={description.trim() && getJobTextDirection(description) === "ltr" ? "en" : "fa"} placeholder="شرح موقعیت شغلی، مسئولیت‌ها و مهارت‌های موردنیاز را اینجا وارد کن..." onChange={(event) => { setDescription(event.target.value); setAnalysisDescription(""); setAnalyzed(false); }} />
         <div className="input-actions"><span>{description.length} نویسه</span></div>
-      </div> : <div className="job-source-content">
+      </div> : <div className="job-source-content url-mode">
         <label htmlFor="job-url">لینک آگهی شغلی</label>
         <div className="job-url-import"><Link2 size={18} /><input id="job-url" value={jobUrl} onChange={(event) => { setJobUrl(event.target.value); setImportedDescription(""); setCopiedImportedDescription(false); setAnalysisDescription(""); setAnalyzed(false); setImportError(""); }} dir="ltr" inputMode="url" placeholder="https://www.linkedin.com/jobs/view/..." /></div>
         <p className="job-source-hint">هنگام تحلیل، متن آگهی از همین لینک دریافت و سپس برای مدل ارسال می‌شود.</p>
