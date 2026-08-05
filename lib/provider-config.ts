@@ -11,7 +11,9 @@ function getEnv(prefix: "LLM" | "LLM_WRITE", key: string) {
   return process.env[`${prefix}_${key}`] ?? process.env[`LLM_${key}`] ?? "";
 }
 
-function buildFreeDeepseekAPIConfig(prefix: "LLM" | "LLM_WRITE"): ProviderConfig {
+function buildFreeDeepseekAPIConfig(
+  prefix: "LLM" | "LLM_WRITE",
+): ProviderConfig {
   const port = process.env.FREE_DEEPSEEK_PORT ?? "9655";
 
   return {
@@ -22,9 +24,12 @@ function buildFreeDeepseekAPIConfig(prefix: "LLM" | "LLM_WRITE"): ProviderConfig
   };
 }
 
-function buildOpenAICompatibleConfig(prefix: "LLM" | "LLM_WRITE"): ProviderConfig {
+function buildOpenAICompatibleConfig(
+  prefix: "LLM" | "LLM_WRITE",
+): ProviderConfig {
   return {
-    provider: (getEnv(prefix, "PROVIDER") || "openai-compatible") as ProviderName,
+    provider: (getEnv(prefix, "PROVIDER") ||
+      "openai-compatible") as ProviderName,
     model: getEnv(prefix, "MODEL"),
     apiKey: getEnv(prefix, "API_KEY"),
     baseUrl: getEnv(prefix, "BASE_URL"),
@@ -46,7 +51,8 @@ export function getAnalyzeConfig(): ProviderConfig {
 }
 
 export function getWriteConfig(): ProviderConfig {
-  const provider = process.env.LLM_WRITE_PROVIDER ?? process.env.LLM_PROVIDER ?? "";
+  const provider =
+    process.env.LLM_WRITE_PROVIDER ?? process.env.LLM_PROVIDER ?? "";
 
   switch (provider) {
     case "freeDeepseekAPI":
@@ -55,6 +61,8 @@ export function getWriteConfig(): ProviderConfig {
     case "local":
       return buildOpenAICompatibleConfig("LLM_WRITE");
     default:
-      throw new Error(`Unknown LLM write provider: ${provider || "not configured"}`);
+      throw new Error(
+        `Unknown LLM write provider: ${provider || "not configured"}`,
+      );
   }
 }

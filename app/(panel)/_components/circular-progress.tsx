@@ -25,16 +25,21 @@ export function CircularProgress({
 
   return (
     <div
-      className={`circular-progress ${className}`}
+      className={`relative grid shrink-0 place-items-center rounded-full ${className}`}
       role="progressbar"
       aria-label={label}
       aria-valuemin={0}
       aria-valuemax={safeMax}
       aria-valuenow={value}
     >
-      <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+      <svg
+        className="absolute inset-0 z-1 h-full w-full overflow-visible"
+        viewBox="0 0 100 100"
+        aria-hidden="true"
+        focusable="false"
+      >
         <circle
-          className="circular-progress__track"
+          className="fill-none stroke-[var(--progress-track,#dcefe7)]"
           cx="50"
           cy="50"
           r={radius}
@@ -42,7 +47,7 @@ export function CircularProgress({
           strokeWidth={strokeWidth}
         />
         <circle
-          className="circular-progress__value"
+          className="fill-none stroke-[var(--progress-value,#60c6a8)] transition-[stroke-dashoffset] duration-350"
           cx="50"
           cy="50"
           r={radius}
@@ -54,7 +59,9 @@ export function CircularProgress({
           transform={`rotate(${startAngle} 50 50)`}
         />
       </svg>
-      <div className="circular-progress__content">{children}</div>
+      <div className="relative z-2 flex flex-col items-center justify-center">
+        {children}
+      </div>
     </div>
   );
 }

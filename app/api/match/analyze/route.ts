@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatJson } from "@/lib/llm-client";
 import { getAnalyzeConfig } from "@/lib/provider-config";
-import { emptyResumeData, hasResumeContent, type ResumeData } from "@/app/(panel)/resumes/resume-data";
+import {
+  emptyResumeData,
+  hasResumeContent,
+  type ResumeData,
+} from "@/app/(panel)/resumes/resume-data";
 import { validateJobDescription } from "@/lib/job-description-validation";
 
 type AnalyzeResponse = {
@@ -29,7 +33,10 @@ function clampScore(value: unknown) {
 
 function normalizeAnalysis(result: ModelAnalyzeResponse): AnalyzeResponse {
   if (result.isJobPosting !== true) {
-    throw new Error(result.invalidReason?.trim() || "متن واردشده یک آگهی شغلی قابل تحلیل نیست.");
+    throw new Error(
+      result.invalidReason?.trim() ||
+        "متن واردشده یک آگهی شغلی قابل تحلیل نیست.",
+    );
   }
 
   if (!Array.isArray(result.breakdown) || result.breakdown.length < 4) {
@@ -37,19 +44,23 @@ function normalizeAnalysis(result: ModelAnalyzeResponse): AnalyzeResponse {
   }
 
   const breakdown = result.breakdown.slice(0, 4).map((item, index) => ({
-    label: item.label?.trim() || [
-      "تناسب عنوان و حوزه شغلی",
-      "همپوشانی مهارت‌های الزامی",
-      "ارتباط سابقه و مسئولیت‌ها",
-      "تحصیلات و شرایط تکمیلی",
-    ][index],
+    label:
+      item.label?.trim() ||
+      [
+        "تناسب عنوان و حوزه شغلی",
+        "همپوشانی مهارت‌های الزامی",
+        "ارتباط سابقه و مسئولیت‌ها",
+        "تحصیلات و شرایط تکمیلی",
+      ][index],
     value: clampScore(item.value),
   }));
 
-  const score = Math.round(breakdown.reduce(
-    (total, item, index) => total + item.value * BREAKDOWN_WEIGHTS[index],
-    0,
-  ));
+  const score = Math.round(
+    breakdown.reduce(
+      (total, item, index) => total + item.value * BREAKDOWN_WEIGHTS[index],
+      0,
+    ),
+  );
 
   return {
     score,
@@ -62,7 +73,10 @@ function normalizeAnalysis(result: ModelAnalyzeResponse): AnalyzeResponse {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({})) as { jobDescription?: string; resume?: Partial<ResumeData> };
+  const body = (await request.json().catch(() => ({}))) as {
+    jobDescription?: string;
+    resume?: Partial<ResumeData>;
+  };
   const jobDescription = body.jobDescription?.trim() ?? "";
   const validation = validateJobDescription(jobDescription);
 
@@ -70,7 +84,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: validation.error }, { status: 422 });
   }
   if (!hasResumeContent(body.resume)) {
-    return NextResponse.json({ error: "رزومه مبنا خالی است." }, { status: 422 });
+    return NextResponse.json(
+      { error: "رزومه مبنا خالی است." },
+      { status: 422 },
+    );
   }
 
   const resume = { ...emptyResumeData, ...body.resume };
@@ -79,7 +96,8 @@ export async function POST(request: NextRequest) {
     const result = await chatJson<ModelAnalyzeResponse>(getAnalyzeConfig(), [
       {
         role: "system",
-        content: "تو یک متخصص سخت‌گیر ATS هستی. فقط JSON معتبر بدون markdown برگردان. هیچ امتیازی را بر اساس کیفیت کلی رزومه یا حدس خودت نده؛ فقط همپوشانی صریح رزومه با نیازمندی‌های همین آگهی ملاک است.",
+        content:
+          "تو یک متخصص سخت‌گیر ATS هستی. فقط JSON معتبر بدون markdown برگردان. هیچ امتیازی را بر اساس کیفیت کلی رزومه یا حدس خودت نده؛ فقط همپوشانی صریح رزومه با نیازمندی‌های همین آگهی ملاک است.",
       },
       {
         role: "user",
@@ -106,8 +124,12 @@ ${jobDescription}
 
     return NextResponse.json(normalizeAnalysis(result));
   } catch (error) {
-    const message = error instanceof Error ? error.message : "تحلیل مدل ناموفق بود.";
+    const message =
+      error instanceof Error ? error.message : "تحلیل مدل ناموفق بود.";
     const invalidInput = message.includes("آگهی شغلی قابل تحلیل نیست");
-    return NextResponse.json({ error: message }, { status: invalidInput ? 422 : 502 });
+    return NextResponse.json(
+      { error: message },
+      { status: invalidInput ? 422 : 502 },
+    );
   }
 }

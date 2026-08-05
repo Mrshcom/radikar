@@ -1,5 +1,8 @@
 import type { JobTone } from "@/app/(panel)/_data/jobs";
-import type { ResumeData } from "@/app/(panel)/resumes/resume-data";
+import type {
+  ResumeColorId,
+  ResumeData,
+} from "@/app/(panel)/resumes/resume-data";
 
 export type DataCollection =
   | "appProfiles"
@@ -21,8 +24,11 @@ export type BaseRecord = {
 };
 
 export type AppProfileRecord = BaseRecord & {
-  fullName: string;
-  targetTitle: string;
+  workspaceName: string;
+  /** @deprecated فقط برای مهاجرت فضای کاری قدیمی */
+  fullName?: string;
+  /** @deprecated فقط برای مهاجرت فضای کاری قدیمی */
+  targetTitle?: string;
 };
 
 export type WorkspaceStateRecord = BaseRecord & {
@@ -52,12 +58,25 @@ export type KnowledgeExperience = {
 
 export type KnowledgeQualification = {
   id: string;
-  education: string;
-  certifications: string;
+  institution: string;
+  credential: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  /** @deprecated فقط برای مهاجرت داده‌های قدیمی */
+  education?: string;
+  /** @deprecated فقط برای مهاجرت داده‌های قدیمی */
+  certifications?: string;
   /** @deprecated فقط برای مهاجرت داده‌های قدیمی */
   skills?: string;
   /** @deprecated فقط برای مهاجرت داده‌های قدیمی */
   languages?: string;
+};
+
+export type KnowledgeLanguage = {
+  id: string;
+  name: string;
+  proficiency: string;
 };
 
 export type KnowledgeProfileRecord = BaseRecord & {
@@ -66,6 +85,7 @@ export type KnowledgeProfileRecord = BaseRecord & {
   qualifications: KnowledgeQualification[];
   skills: string;
   languages: string;
+  languageItems: KnowledgeLanguage[];
   careerGoals: string;
   preferredRoles: string;
   preferredIndustries: string;
@@ -80,8 +100,12 @@ export type KnowledgeProfileRecord = BaseRecord & {
 export type ResumeRecord = BaseRecord & {
   name: string;
   templateId: string;
+  colorId?: ResumeColorId;
   data: ResumeData;
   source: "user" | "tailored";
+  targetJobId?: string;
+  targetJobTitle?: string;
+  targetCompany?: string;
 };
 
 export type JobRecord = BaseRecord & {

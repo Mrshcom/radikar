@@ -2,7 +2,10 @@ import type { BaseRecord, DataCollection } from "./models";
 
 export interface DataRepository {
   list<T extends BaseRecord>(collection: DataCollection): Promise<T[]>;
-  get<T extends BaseRecord>(collection: DataCollection, id: string): Promise<T | undefined>;
+  get<T extends BaseRecord>(
+    collection: DataCollection,
+    id: string,
+  ): Promise<T | undefined>;
   put<T extends BaseRecord>(collection: DataCollection, record: T): Promise<T>;
   remove(collection: DataCollection, id: string): Promise<void>;
   clear(collection: DataCollection): Promise<void>;
@@ -29,15 +32,18 @@ const COLLECTIONS: DataCollection[] = [
 function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error("عملیات IndexedDB ناموفق بود."));
+    request.onerror = () =>
+      reject(request.error ?? new Error("عملیات IndexedDB ناموفق بود."));
   });
 }
 
 function transactionToPromise(transaction: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error ?? new Error("تراکنش IndexedDB ناموفق بود."));
-    transaction.onabort = () => reject(transaction.error ?? new Error("تراکنش IndexedDB لغو شد."));
+    transaction.onerror = () =>
+      reject(transaction.error ?? new Error("تراکنش IndexedDB ناموفق بود."));
+    transaction.onabort = () =>
+      reject(transaction.error ?? new Error("تراکنش IndexedDB لغو شد."));
   });
 }
 
@@ -46,7 +52,9 @@ class IndexedDbRepository implements DataRepository {
 
   private openNamedDatabase(name: string, version?: number) {
     return new Promise<IDBDatabase>((resolve, reject) => {
-      const request = version ? indexedDB.open(name, version) : indexedDB.open(name);
+      const request = version
+        ? indexedDB.open(name, version)
+        : indexedDB.open(name);
 
       request.onupgradeneeded = () => {
         if (name !== DATABASE_NAME) return;
@@ -62,14 +70,20 @@ class IndexedDbRepository implements DataRepository {
       };
 
       request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error ?? new Error("بازکردن IndexedDB ناموفق بود."));
-      request.onblocked = () => reject(new Error("نسخه دیگری از برنامه مانع ارتقای IndexedDB شده است."));
+      request.onerror = () =>
+        reject(request.error ?? new Error("بازکردن IndexedDB ناموفق بود."));
+      request.onblocked = () =>
+        reject(
+          new Error("نسخه دیگری از برنامه مانع ارتقای IndexedDB شده است."),
+        );
     });
   }
 
   private async migrateLegacyDatabase(database: IDBDatabase) {
     const markerTransaction = database.transaction(INTERNAL_STORE, "readonly");
-    const migrated = await requestToPromise(markerTransaction.objectStore(INTERNAL_STORE).get(LEGACY_MIGRATION_KEY));
+    const migrated = await requestToPromise(
+      markerTransaction.objectStore(INTERNAL_STORE).get(LEGACY_MIGRATION_KEY),
+    );
     if (migrated) return;
 
     const availableDatabases = await indexedDB.databases();
@@ -82,10 +96,17 @@ class IndexedDbRepository implements DataRepository {
 
     const legacyDatabase = await this.openNamedDatabase(LEGACY_DATABASE_NAME);
     try {
-      const existingCollections = COLLECTIONS.filter((collection) => legacyDatabase.objectStoreNames.contains(collection));
+      const existingCollections = COLLECTIONS.filter((collection) =>
+        legacyDatabase.objectStoreNames.contains(collection),
+      );
       for (const collection of existingCollections) {
-        const readTransaction = legacyDatabase.transaction(collection, "readonly");
-        const records = await requestToPromise(readTransaction.objectStore(collection).getAll()) as BaseRecord[];
+        const readTransaction = legacyDatabase.transaction(
+          collection,
+          "readonly",
+        );
+        const records = (await requestToPromise(
+          readTransaction.objectStore(collection).getAll(),
+        )) as BaseRecord[];
         if (!records.length) continue;
 
         const writeTransaction = database.transaction(collection, "readwrite");
@@ -108,7 +129,10 @@ class IndexedDbRepository implements DataRepository {
     }
 
     if (!this.databasePromise) {
-      this.databasePromise = this.openNamedDatabase(DATABASE_NAME, DATABASE_VERSION)
+      this.databasePromise = this.openNamedDatabase(
+        DATABASE_NAME,
+        DATABASE_VERSION,
+      )
         .then(async (database) => {
           await this.migrateLegacyDatabase(database);
           return database;
@@ -125,13 +149,17 @@ class IndexedDbRepository implements DataRepository {
   async list<T extends BaseRecord>(collection: DataCollection) {
     const database = await this.openDatabase();
     const transaction = database.transaction(collection, "readonly");
-    return requestToPromise(transaction.objectStore(collection).getAll()) as Promise<T[]>;
+    return requestToPromise(
+      transaction.objectStore(collection).getAll(),
+    ) as Promise<T[]>;
   }
 
   async get<T extends BaseRecord>(collection: DataCollection, id: string) {
     const database = await this.openDatabase();
     const transaction = database.transaction(collection, "readonly");
-    return requestToPromise(transaction.objectStore(collection).get(id)) as Promise<T | undefined>;
+    return requestToPromise(
+      transaction.objectStore(collection).get(id),
+    ) as Promise<T | undefined>;
   }
 
   async put<T extends BaseRecord>(collection: DataCollection, record: T) {
@@ -167,8 +195,13 @@ class HttpDataRepository implements DataRepository {
     });
 
     if (!response.ok) {
-      const body = await response.json().catch(() => ({})) as { error?: string };
-      throw new Error(body.error || `درخواست سرویس داده با خطای ${response.status} روبه‌رو شد.`);
+      const body = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      throw new Error(
+        body.error ||
+          `درخواست سرویس داده با خطای ${response.status} روبه‌رو شد.`,
+      );
     }
 
     if (response.status === 204) return undefined as T;
@@ -180,7 +213,9 @@ class HttpDataRepository implements DataRepository {
   }
 
   get<T extends BaseRecord>(collection: DataCollection, id: string) {
-    return this.request<T | undefined>(`/${collection}/${encodeURIComponent(id)}`);
+    return this.request<T | undefined>(
+      `/${collection}/${encodeURIComponent(id)}`,
+    );
   }
 
   put<T extends BaseRecord>(collection: DataCollection, record: T) {
@@ -191,7 +226,9 @@ class HttpDataRepository implements DataRepository {
   }
 
   remove(collection: DataCollection, id: string) {
-    return this.request<void>(`/${collection}/${encodeURIComponent(id)}`, { method: "DELETE" });
+    return this.request<void>(`/${collection}/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
   }
 
   clear(collection: DataCollection) {
@@ -205,9 +242,12 @@ export function getDataRepository(): DataRepository {
   if (repository) return repository;
 
   const dataSource = process.env.NEXT_PUBLIC_DATA_SOURCE ?? "indexeddb";
-  repository = dataSource === "api"
-    ? new HttpDataRepository(process.env.NEXT_PUBLIC_DATA_API_BASE_URL ?? "/api/data")
-    : new IndexedDbRepository();
+  repository =
+    dataSource === "api"
+      ? new HttpDataRepository(
+          process.env.NEXT_PUBLIC_DATA_API_BASE_URL ?? "/api/data",
+        )
+      : new IndexedDbRepository();
 
   return repository;
 }

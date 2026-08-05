@@ -1,6 +1,7 @@
 import type {
   AppProfileRecord,
   ApplicationRecord,
+  BaseRecord,
   DashboardSnapshotRecord,
   DataCollection,
   InterviewSessionRecord,
@@ -16,7 +17,9 @@ import { getDataRepository } from "./repository";
 export const DEFAULT_PROFILE_ID = "profile-default";
 const ACTIVE_PROFILE_STATE_ID = "active-profile";
 
-function createUnscopedStore<T extends { id: string; createdAt: string; updatedAt: string }>(collection: DataCollection) {
+function createUnscopedStore<
+  T extends { id: string; createdAt: string; updatedAt: string },
+>(collection: DataCollection) {
   return {
     async list() {
       const records = await getDataRepository().list<T>(collection);
@@ -37,11 +40,16 @@ function createUnscopedStore<T extends { id: string; createdAt: string; updatedA
   };
 }
 
-export const appProfileStore = createUnscopedStore<AppProfileRecord>("appProfiles");
-const workspaceStateStore = createUnscopedStore<WorkspaceStateRecord>("workspaceState");
+export const appProfileStore =
+  createUnscopedStore<AppProfileRecord>("appProfiles");
+const workspaceStateStore =
+  createUnscopedStore<WorkspaceStateRecord>("workspaceState");
 
 export async function getActiveProfileId() {
-  return (await workspaceStateStore.get(ACTIVE_PROFILE_STATE_ID))?.activeProfileId ?? DEFAULT_PROFILE_ID;
+  return (
+    (await workspaceStateStore.get(ACTIVE_PROFILE_STATE_ID))?.activeProfileId ??
+    DEFAULT_PROFILE_ID
+  );
 }
 
 export async function setActiveProfileId(activeProfileId: string) {
@@ -57,17 +65,30 @@ export async function setActiveProfileId(activeProfileId: string) {
 
 export async function ensureDefaultAppProfile() {
   const profiles = await appProfileStore.list();
-  if (profiles.length) return profiles;
+  if (profiles.length) {
+    const normalizedProfiles = profiles.map((profile) => ({
+      ...profile,
+      workspaceName:
+        profile.workspaceName?.trim() ||
+        profile.fullName?.trim() ||
+        "فضای کاری اصلی",
+    }));
+    await Promise.all(
+      normalizedProfiles
+        .filter(
+          (profile, index) =>
+            profile.workspaceName !== profiles[index].workspaceName,
+        )
+        .map((profile) => appProfileStore.put(profile)),
+    );
+    return normalizedProfiles;
+  }
 
-  const legacyProfile = await getDataRepository().get<UserProfileRecord>("userProfiles", "current-user");
-  const latestResume = (await getDataRepository().list<ResumeRecord>("resumes"))
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
   const now = new Date().toISOString();
   const profile: AppProfileRecord = {
     id: DEFAULT_PROFILE_ID,
-    fullName: legacyProfile?.fullName || latestResume?.data.fullName || "پروفایل اصلی",
-    targetTitle: legacyProfile?.targetTitle || latestResume?.data.jobTitle || "",
-    createdAt: legacyProfile?.createdAt ?? now,
+    workspaceName: "فضای کاری اصلی",
+    createdAt: now,
     updatedAt: now,
   };
   await appProfileStore.put(profile);
@@ -75,7 +96,43 @@ export async function ensureDefaultAppProfile() {
   return [profile];
 }
 
-function createStore<T extends { id: string; createdAt: string; updatedAt: string; profileId?: string }>(collection: DataCollection) {
+const SCOPED_COLLECTIONS: DataCollection[] = [
+  "userProfiles",
+  "knowledgeProfiles",
+  "resumes",
+  "jobs",
+  "applications",
+  "interviewSessions",
+  "matchAnalyses",
+  "dashboardSnapshots",
+];
+
+export async function removeWorkspace(profileId: string) {
+  const repository = getDataRepository();
+  await Promise.all(
+    SCOPED_COLLECTIONS.map(async (collection) => {
+      const records = await repository.list<BaseRecord>(collection);
+      const ownedRecords = records.filter(
+        (record) =>
+          record.profileId === profileId ||
+          (!record.profileId && profileId === DEFAULT_PROFILE_ID),
+      );
+      await Promise.all(
+        ownedRecords.map((record) => repository.remove(collection, record.id)),
+      );
+    }),
+  );
+  await appProfileStore.remove(profileId);
+}
+
+function createStore<
+  T extends {
+    id: string;
+    createdAt: string;
+    updatedAt: string;
+    profileId?: string;
+  },
+>(collection: DataCollection) {
   return {
     async list() {
       const [records, profileId] = await Promise.all([
@@ -83,13 +140,22 @@ function createStore<T extends { id: string; createdAt: string; updatedAt: strin
         getActiveProfileId(),
       ]);
       return records
-        .filter((record) => record.profileId === profileId || (!record.profileId && profileId === DEFAULT_PROFILE_ID))
+        .filter(
+          (record) =>
+            record.profileId === profileId ||
+            (!record.profileId && profileId === DEFAULT_PROFILE_ID),
+        )
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     },
     async get(id: string) {
       const profileId = await getActiveProfileId();
       const record = await getDataRepository().get<T>(collection, id);
-      if (record && (record.profileId === profileId || (!record.profileId && profileId === DEFAULT_PROFILE_ID))) return record;
+      if (
+        record &&
+        (record.profileId === profileId ||
+          (!record.profileId && profileId === DEFAULT_PROFILE_ID))
+      )
+        return record;
       if (profileId === DEFAULT_PROFILE_ID && id === DEFAULT_PROFILE_ID) {
         return getDataRepository().get<T>(collection, "current-user");
       }
@@ -105,26 +171,35 @@ function createStore<T extends { id: string; createdAt: string; updatedAt: strin
     },
     async clear() {
       const records = await this.list();
-      await Promise.all(records.map((record) => getDataRepository().remove(collection, record.id)));
+      await Promise.all(
+        records.map((record) =>
+          getDataRepository().remove(collection, record.id),
+        ),
+      );
     },
   };
 }
 
 export function createRecordId(prefix: string) {
-  const randomPart = typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const randomPart =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   return `${prefix}-${randomPart}`;
 }
 
 export const userProfileStore = createStore<UserProfileRecord>("userProfiles");
-export const knowledgeProfileStore = createStore<KnowledgeProfileRecord>("knowledgeProfiles");
+export const knowledgeProfileStore =
+  createStore<KnowledgeProfileRecord>("knowledgeProfiles");
 export const resumeStore = createStore<ResumeRecord>("resumes");
 export const jobStore = createStore<JobRecord>("jobs");
 export const applicationStore = createStore<ApplicationRecord>("applications");
-export const interviewSessionStore = createStore<InterviewSessionRecord>("interviewSessions");
-export const matchAnalysisStore = createStore<MatchAnalysisRecord>("matchAnalyses");
-export const dashboardSnapshotStore = createStore<DashboardSnapshotRecord>("dashboardSnapshots");
+export const interviewSessionStore =
+  createStore<InterviewSessionRecord>("interviewSessions");
+export const matchAnalysisStore =
+  createStore<MatchAnalysisRecord>("matchAnalyses");
+export const dashboardSnapshotStore =
+  createStore<DashboardSnapshotRecord>("dashboardSnapshots");
 
 export async function getLatestResume() {
   return (await resumeStore.list())[0];

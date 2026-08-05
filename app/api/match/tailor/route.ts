@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatJson } from "@/lib/llm-client";
 import { getWriteConfig } from "@/lib/provider-config";
-import { emptyResumeData, hasResumeContent, type ResumeData } from "@/app/(panel)/resumes/resume-data";
+import {
+  emptyResumeData,
+  hasResumeContent,
+  type ResumeData,
+  type ResumeLanguage,
+} from "@/app/(panel)/resumes/resume-data";
 import { validateJobDescription } from "@/lib/job-description-validation";
 
 export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({})) as { jobDescription?: string; resume?: Partial<ResumeData> };
+  const body = (await request.json().catch(() => ({}))) as {
+    jobDescription?: string;
+    resume?: Partial<ResumeData>;
+    language?: ResumeLanguage;
+  };
   const jobDescription = body.jobDescription?.trim() ?? "";
   const validation = validateJobDescription(jobDescription);
 
@@ -13,19 +22,53 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: validation.error }, { status: 422 });
   }
   if (!hasResumeContent(body.resume)) {
-    return NextResponse.json({ error: "رزومه مبنا خالی است." }, { status: 422 });
+    return NextResponse.json(
+      { error: "رزومه مبنا خالی است." },
+      { status: 422 },
+    );
   }
 
   const resume = { ...emptyResumeData, ...body.resume };
+  const language: ResumeLanguage = body.language === "en" ? "en" : "fa";
+  const languageName = language === "en" ? "English" : "Persian";
 
   try {
     const tailored = await chatJson<Partial<ResumeData>>(getWriteConfig(), [
-      { role: "system", content: "تو رزومه‌نویس حرفه‌ای فارسی هستی. فقط JSON معتبر برگردان. اطلاعات غیرواقعی نساز؛ فقط متن رزومه را با تمرکز بر آگهی بازنویسی کن." },
-      { role: "user", content: `رزومه پایه:\n${JSON.stringify(resume, null, 2)}\n\nشرح شغل هدف:\n${jobDescription}\n\nفقط همین فیلدهای JSON را با متن فارسی بهینه برگردان: summary, experienceTitle, experience, skills. experience هر دستاورد را با \n جدا کند.` },
+      {
+        role: "system",
+        content: `You are a professional ${languageName} resume writer. Return valid JSON only. Do not invent facts. Rewrite the resume for the target job and make every human-readable resume field ${languageName}. Preserve photoUrl, email, phone, website and every experiences and educations record with its id. Never collapse multiple records into one.`,
+      },
+      {
+        role: "user",
+        content: `Base resume:\n${JSON.stringify(resume, null, 2)}\n\nTarget job description:\n${jobDescription}\n\nWrite all human-readable fields in ${languageName}, including every item in experiences and educations. Keep all records and ids, tailor each record separately, transliterate proper names when needed, and never invent data. Put each experience achievement on a separate line. Return a JSON object containing every ResumeData field.`,
+      },
     ]);
 
-    return NextResponse.json({ resume: { ...resume, ...tailored } });
+    return NextResponse.json({
+      resume: {
+        ...resume,
+        ...tailored,
+        experiences: Array.isArray(tailored.experiences)
+          ? tailored.experiences
+          : resume.experiences,
+        educations: Array.isArray(tailored.educations)
+          ? tailored.educations
+          : resume.educations,
+        photoUrl: resume.photoUrl,
+        email: resume.email,
+        phone: resume.phone,
+        website: resume.website,
+      },
+    });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "ساخت رزومه اختصاصی با مدل ناموفق بود." }, { status: 502 });
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "ساخت رزومه اختصاصی با مدل ناموفق بود.",
+      },
+      { status: 502 },
+    );
   }
 }

@@ -4,7 +4,11 @@ import * as mammoth from "mammoth";
 import { chatJson } from "@/lib/llm-client";
 import { getAnalyzeConfig } from "@/lib/provider-config";
 import type { ResumeData } from "@/app/(panel)/resumes/resume-data";
-import type { KnowledgeExperience, KnowledgeQualification } from "@/lib/data/models";
+import type {
+  KnowledgeExperience,
+  KnowledgeLanguage,
+  KnowledgeQualification,
+} from "@/lib/data/models";
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const MAX_TEXT_LENGTH = 24_000;
@@ -14,6 +18,14 @@ type ImportedKnowledge = {
   resumeData: Partial<ResumeData>;
   experiences: Array<Omit<KnowledgeExperience, "id">>;
   qualifications: Array<Omit<KnowledgeQualification, "id">>;
+  skills: string;
+  languages: string;
+  languageItems: Array<
+    Omit<KnowledgeLanguage, "id" | "name"> & {
+      languageName?: string;
+      name?: string;
+    }
+  >;
   careerGoals: string;
   preferredRoles: string;
   preferredIndustries: string;
@@ -58,29 +70,55 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData().catch(() => null);
   const file = formData?.get("resume");
   if (!(file instanceof File)) {
-    return NextResponse.json({ error: "فایل رزومه ارسال نشده است." }, { status: 400 });
+    return NextResponse.json(
+      { error: "فایل رزومه ارسال نشده است." },
+      { status: 400 },
+    );
   }
   if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json({ error: "حجم فایل رزومه باید کمتر از ۸ مگابایت باشد." }, { status: 413 });
+    return NextResponse.json(
+      { error: "حجم فایل رزومه باید کمتر از ۸ مگابایت باشد." },
+      { status: 413 },
+    );
   }
   if (!["pdf", "docx", "txt"].includes(extensionOf(file.name))) {
-    return NextResponse.json({ error: "فقط فایل‌های PDF، DOCX و TXT پشتیبانی می‌شوند." }, { status: 415 });
+    return NextResponse.json(
+      { error: "فقط فایل‌های PDF، DOCX و TXT پشتیبانی می‌شوند." },
+      { status: 415 },
+    );
   }
 
   try {
-    const text = (await extractFileText(file)).replace(/\0/g, "").trim().slice(0, MAX_TEXT_LENGTH);
+    const text = (await extractFileText(file))
+      .replace(/\0/g, "")
+      .trim()
+      .slice(0, MAX_TEXT_LENGTH);
     if (text.length < 50) {
-      return NextResponse.json({ error: "متن کافی از فایل استخراج نشد. فایل PDF اسکن‌شده به OCR نیاز دارد." }, { status: 422 });
+      return NextResponse.json(
+        {
+          error:
+            "متن کافی از فایل استخراج نشد. فایل PDF اسکن‌شده به OCR نیاز دارد.",
+        },
+        { status: 422 },
+      );
     }
 
-    const extracted = await chatJson<Partial<ImportedKnowledge>>(getAnalyzeConfig(), [
-      {
-        role: "system",
-        content: "تو سامانه استخراج اطلاعات رزومه هستی. فقط JSON معتبر فارسی برگردان. هیچ اطلاعاتی نساز و برای موارد ناموجود رشته خالی یا آرایه خالی بگذار.",
-      },
-      {
-        role: "user",
-        content: `اطلاعات رزومه زیر را بدون جعل به ساختار مشخص‌شده تبدیل کن.
+    const analyzeConfig = getAnalyzeConfig();
+    const importConfig =
+      analyzeConfig.provider === "freeDeepseekAPI"
+        ? { ...analyzeConfig, model: "deepseek-chat" }
+        : analyzeConfig;
+    const extracted = await chatJson<Partial<ImportedKnowledge>>(
+      importConfig,
+      [
+        {
+          role: "system",
+          content:
+            "تو سامانه استخراج اطلاعات رزومه هستی. فقط JSON معتبر فارسی برگردان. هیچ اطلاعاتی نساز و برای موارد ناموجود رشته خالی یا آرایه خالی بگذار.",
+        },
+        {
+          role: "user",
+          content: `اطلاعات رزومه زیر را بدون جعل به ساختار مشخص‌شده تبدیل کن.
 متن رزومه:
 ${text}
 
@@ -88,7 +126,10 @@ ${text}
 {
   "resumeData":{"fullName":string,"jobTitle":string,"photoUrl":"","email":string,"phone":string,"location":string,"website":string,"summary":string},
   "experiences":[{"jobTitle":string,"company":string,"location":string,"startDate":string,"endDate":string,"isCurrent":boolean,"description":string,"technologies":string}],
-  "qualifications":[{"education":string,"skills":string,"languages":string,"certifications":string}],
+  "qualifications":[{"institution":string,"credential":string,"startDate":string,"endDate":string,"isCurrent":boolean}],
+  "skills":string,
+  "languages":string,
+  "languageItems":[{"languageName":string,"proficiency":"elementary"|"limited-working"|"professional-working"|"full-professional"|"native-bilingual"}],
   "careerGoals":string,
   "preferredRoles":string,
   "preferredIndustries":string,
@@ -96,13 +137,28 @@ ${text}
   "interviewContext":string,
   "interviewChallenges":string
 }`,
-      },
-    ]);
+        },
+      ],
+    );
 
     return NextResponse.json({
       resumeData: extracted.resumeData ?? {},
-      experiences: Array.isArray(extracted.experiences) ? extracted.experiences : [],
-      qualifications: Array.isArray(extracted.qualifications) ? extracted.qualifications : [],
+      experiences: Array.isArray(extracted.experiences)
+        ? extracted.experiences
+        : [],
+      qualifications: Array.isArray(extracted.qualifications)
+        ? extracted.qualifications
+        : [],
+      skills: extracted.skills ?? "",
+      languages: extracted.languages ?? "",
+      languageItems: Array.isArray(extracted.languageItems)
+        ? extracted.languageItems
+            .map((language) => ({
+              name: language.languageName ?? language.name ?? "",
+              proficiency: language.proficiency ?? "",
+            }))
+            .filter((language) => language.name)
+        : [],
       careerGoals: extracted.careerGoals ?? "",
       preferredRoles: extracted.preferredRoles ?? "",
       preferredIndustries: extracted.preferredIndustries ?? "",
@@ -112,6 +168,12 @@ ${text}
       fileName: file.name,
     });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "پردازش رزومه ناموفق بود." }, { status: 502 });
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "پردازش رزومه ناموفق بود.",
+      },
+      { status: 502 },
+    );
   }
 }
