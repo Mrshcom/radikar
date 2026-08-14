@@ -53,6 +53,20 @@ export const templatePreviewData: ResumeData = {
       technologies: "تحلیل بازار، نمونه‌سازی",
     },
   ],
+  projects: [
+    {
+      id: "preview-project-1",
+      name: "سامانه تحلیل رفتار کاربران",
+      role: "پروژه محصول و داده",
+      url: "github.com/ali-mohammadi/product-insights",
+      startDate: "۱۴۰۲",
+      endDate: "۱۴۰۳",
+      isCurrent: false,
+      description:
+        "طراحی داشبورد تحلیل مسیر کاربران و شناسایی نقاط ریزش\nهمکاری با تیم محصول برای تبدیل یافته‌ها به آزمایش‌های بهبود نرخ تبدیل",
+      technologies: "تحلیل داده، طراحی محصول، داشبورد مدیریتی",
+    },
+  ],
   education:
     "کارشناسی ارشد مدیریت فناوری اطلاعات، دانشگاه تهران — ۱۳۹۶\nکارشناسی مهندسی صنایع، دانشگاه علم و صنعت ایران — ۱۳۹۴",
   educations: [

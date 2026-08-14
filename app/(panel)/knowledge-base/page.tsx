@@ -17,6 +17,7 @@ import {
   ChevronDown,
   CircleHelp,
   FileUp,
+  FolderKanban,
   GraduationCap,
   LoaderCircle,
   Plus,
@@ -29,7 +30,11 @@ import {
 } from "lucide-react";
 import { DeleteConfirmModal, SectionTitle } from "../_components/ui";
 import { useToast } from "../_components/panel-shell";
-import { emptyResumeData, type ResumeData } from "../resumes/resume-data";
+import {
+  emptyResumeData,
+  type ResumeData,
+  type ResumeProject,
+} from "../resumes/resume-data";
 import {
   createRecordId,
   getActiveProfileId,
@@ -50,6 +55,8 @@ import { cn } from "@/lib/cn";
 import { formatPersianNumber } from "@/lib/fa-number";
 import { sanitizeLtrField } from "@/lib/ltr-field";
 import { readProfileImage } from "@/lib/image-file";
+import { calculateKnowledgeCompletion } from "@/lib/knowledge-completion";
+import { parseResumeSkills } from "@/lib/resume-skills";
 
 const primaryButton =
   "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] bg-[#0f7b62] px-[15px] text-[11px] font-bold whitespace-nowrap text-white shadow-[0_7px_17px_rgba(15,123,98,.17)] disabled:cursor-not-allowed disabled:opacity-45";
@@ -62,6 +69,47 @@ const repeatGrid =
 const control =
   "min-h-[42px] w-full rounded-[10px] border border-[#dfe5df] bg-[#fbfcfa] px-3 text-[12px] text-right outline-none placeholder:text-right focus:border-[#79b8a5] focus:ring-3 focus:ring-[#e5f2ed] disabled:bg-[#f0f2ef] disabled:text-[#aab3b0]";
 
+const knowledgeTabs = [
+  {
+    id: "personal",
+    label: "اطلاعات فردی و تماس",
+    description: "اطلاعات هویتی و راه‌های تماس",
+    icon: UserRound,
+  },
+  {
+    id: "general",
+    label: "اطلاعات عمومی",
+    description: "مهارت‌ها، زبان‌ها و نحوه همکاری",
+    icon: Settings2,
+  },
+  {
+    id: "experience",
+    label: "تجربه حرفه‌ای",
+    description: "سوابق شغلی، مسئولیت‌ها و دستاوردها",
+    icon: BriefcaseBusiness,
+  },
+  {
+    id: "projects",
+    label: "پروژه‌ها",
+    description: "نمونه‌کارها و پروژه‌های قابل ارائه",
+    icon: FolderKanban,
+  },
+  {
+    id: "education",
+    label: "تحصیلات و مدارک",
+    description: "مدارک دانشگاهی و دوره‌های حرفه‌ای",
+    icon: GraduationCap,
+  },
+  {
+    id: "career",
+    label: "هدف شغلی و مصاحبه",
+    description: "اهداف آینده و آمادگی مصاحبه",
+    icon: Sparkles,
+  },
+] as const;
+
+type KnowledgeTabId = (typeof knowledgeTabs)[number]["id"];
+
 type KnowledgeForm = Omit<
   KnowledgeProfileRecord,
   "id" | "createdAt" | "updatedAt"
@@ -70,6 +118,7 @@ type ImportResult = {
   resumeData?: Partial<ResumeData>;
   experiences?: Array<Omit<KnowledgeExperience, "id">>;
   qualifications?: Array<Omit<KnowledgeQualification, "id">>;
+  projects?: Array<Omit<ResumeProject, "id">>;
   skills?: string;
   languages?: string;
   languageItems?: Array<Omit<KnowledgeLanguage, "id">>;
@@ -87,6 +136,8 @@ const emptyKnowledge: KnowledgeForm = {
   resumeData: emptyResumeData,
   experiences: [],
   qualifications: [],
+  projects: [],
+  sampleProjectsSeeded: false,
   skills: "",
   languages: "",
   languageItems: [],
@@ -118,6 +169,73 @@ const blankQualification = (): KnowledgeQualification => ({
   endDate: "",
   isCurrent: false,
 });
+
+const blankProject = (): ResumeProject => ({
+  id: createRecordId("project"),
+  name: "",
+  role: "",
+  url: "",
+  startDate: "",
+  endDate: "",
+  isCurrent: false,
+  description: "",
+  technologies: "",
+});
+
+const sampleKnowledgeProjects = (): ResumeProject[] => [
+  {
+    id: createRecordId("project-sample"),
+    name: "Radicar AI Career Platform",
+    role: "Lead Frontend Engineer · Personal SaaS Project",
+    url: "github.com/mampel88/radicar",
+    startDate: "2025/01",
+    endDate: "",
+    isCurrent: true,
+    description:
+      "Designed and built a multi-workspace career platform for resume creation, job matching, and interview preparation.\nImplemented reusable A4 resume templates with accurate pagination and PDF export.\nImproved frontend architecture, accessibility, and rendering performance across complex RTL and LTR layouts.",
+    technologies:
+      "Next.js, TypeScript, React, Tailwind CSS, TanStack Query, Zod, IndexedDB",
+  },
+  {
+    id: createRecordId("project-sample"),
+    name: "Enterprise Design System",
+    role: "Frontend Architect · Internal Platform",
+    url: "github.com/mampel88/design-system",
+    startDate: "2023/03",
+    endDate: "2024/12",
+    isCurrent: false,
+    description:
+      "Created a reusable component library and design token system for multiple product teams.\nBuilt accessible, documented UI components with automated visual and interaction tests.\nReduced duplicated frontend code and accelerated delivery of new product features.",
+    technologies:
+      "React, TypeScript, Storybook, Tailwind CSS, Vitest, Playwright, Figma",
+  },
+  {
+    id: createRecordId("project-sample"),
+    name: "Real-Time Analytics Dashboard",
+    role: "Senior Frontend Developer · B2B Product",
+    url: "github.com/mampel88/analytics-dashboard",
+    startDate: "2021/05",
+    endDate: "2023/02",
+    isCurrent: false,
+    description:
+      "Developed a real-time dashboard for monitoring product metrics and operational performance.\nImplemented interactive data visualizations, configurable filters, and role-based views.\nOptimized large datasets and rendering workflows to keep the interface fast and responsive.",
+    technologies:
+      "Next.js, React, TypeScript, TanStack Query, WebSocket, D3.js, Jest",
+  },
+  {
+    id: createRecordId("project-sample"),
+    name: "Headless Commerce Storefront",
+    role: "Frontend Lead · E-commerce Platform",
+    url: "github.com/mampel88/headless-commerce",
+    startDate: "2019/01",
+    endDate: "2021/04",
+    isCurrent: false,
+    description:
+      "Led frontend development of a responsive headless commerce storefront.\nImplemented product discovery, checkout flows, localization, and reusable merchandising components.\nImproved Core Web Vitals, SEO, and conversion-focused user journeys across mobile and desktop.",
+    technologies:
+      "React, Next.js, TypeScript, GraphQL, Node.js, CSS Modules, Cypress",
+  },
+];
 
 const blankLanguage = (): KnowledgeLanguage => ({
   id: createRecordId("language"),
@@ -257,6 +375,32 @@ function isExperienceEmpty(experience: KnowledgeExperience) {
   );
 }
 
+function normalizeProject(item: Partial<ResumeProject>): ResumeProject {
+  return {
+    id: item.id || createRecordId("project"),
+    name: item.name ?? "",
+    role: item.role ?? "",
+    url: item.url ?? "",
+    startDate: item.startDate ?? "",
+    endDate: item.endDate ?? "",
+    isCurrent: Boolean(item.isCurrent),
+    description: item.description ?? "",
+    technologies: item.technologies ?? "",
+  };
+}
+
+function isProjectEmpty(project: ResumeProject) {
+  return (
+    !project.name.trim() &&
+    !project.role.trim() &&
+    !project.url.trim() &&
+    !project.startDate.trim() &&
+    !project.endDate.trim() &&
+    !project.description.trim() &&
+    !project.technologies.trim()
+  );
+}
+
 function qualificationFromResume(
   resume: ResumeData,
   legacy?: Partial<KnowledgeProfileRecord>,
@@ -311,6 +455,8 @@ function normalizeWorkMode(
 export default function KnowledgeBasePage() {
   const notify = useToast();
   const [form, setForm] = useState<KnowledgeForm>(emptyKnowledge);
+  const [activeSection, setActiveSection] =
+    useState<KnowledgeTabId>("personal");
   const [createdAt, setCreatedAt] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -340,6 +486,9 @@ export default function KnowledgeBasePage() {
           item.endDate.trim(),
       )
       .map((item) => ({ ...item }));
+    const projects = form.projects
+      .filter((item) => !isProjectEmpty(item))
+      .map((item) => ({ ...item }));
     return {
       ...form.resumeData,
       experienceTitle: experience?.jobTitle ?? "",
@@ -359,6 +508,7 @@ export default function KnowledgeBasePage() {
         .filter(Boolean)
         .join("\n"),
       educations,
+      projects,
       skills: form.skills,
       languages: languagesSummary(form.languageItems) || form.languages,
     };
@@ -374,13 +524,35 @@ export default function KnowledgeBasePage() {
           userProfileStore.get(profileId),
         ]),
       )
-      .then(([knowledge, latestResume, profile]) => {
+      .then(async ([knowledge, latestResume, profile]) => {
         if (!active) return;
         if (knowledge) {
           const storedResume = { ...emptyResumeData, ...knowledge.resumeData };
           const experiences = knowledge.experiences?.length
             ? knowledge.experiences.map(normalizeExperience)
             : [experienceFromResume(storedResume, knowledge)];
+          const shouldSeedSampleProjects = Boolean(
+            !knowledge.sampleProjectsSeeded &&
+              !knowledge.projects?.length &&
+              !storedResume.projects?.length,
+          );
+          const projects = knowledge.projects?.length
+            ? knowledge.projects.map(normalizeProject)
+            : storedResume.projects?.length
+              ? storedResume.projects.map(normalizeProject)
+              : shouldSeedSampleProjects
+                ? sampleKnowledgeProjects()
+                : [];
+
+          if (shouldSeedSampleProjects) {
+            await knowledgeProfileStore.put({
+              ...knowledge,
+              projects,
+              sampleProjectsSeeded: true,
+              updatedAt: new Date().toISOString(),
+            });
+          }
+
           setForm({
             ...emptyKnowledge,
             ...knowledge,
@@ -415,6 +587,9 @@ export default function KnowledgeBasePage() {
             qualifications: knowledge.qualifications?.length
               ? knowledge.qualifications.map(normalizeQualification)
               : [qualificationFromResume(storedResume, knowledge)],
+            projects,
+            sampleProjectsSeeded:
+              knowledge.sampleProjectsSeeded || shouldSeedSampleProjects,
           });
           if (experiences.length === 1 && isExperienceEmpty(experiences[0]))
             setOpenExperienceId(experiences[0].id);
@@ -437,6 +612,10 @@ export default function KnowledgeBasePage() {
               : [blankLanguage()],
             experiences,
             qualifications: [qualificationFromResume(storedResume)],
+            projects: storedResume.projects?.length
+              ? storedResume.projects.map(normalizeProject)
+              : sampleKnowledgeProjects(),
+            sampleProjectsSeeded: true,
             workPreferences: profile?.workMode ?? "",
           });
           if (isExperienceEmpty(experiences[0]))
@@ -560,6 +739,38 @@ export default function KnowledgeBasePage() {
         },
       );
     });
+    form.projects.forEach((project, index) => {
+      const number = formatPersianNumber(index + 1);
+      items.push(
+        {
+          label: `نام پروژه ${number} را وارد کن`,
+          complete: Boolean(project.name.trim()),
+        },
+        {
+          label: `نقش یا نوع پروژه ${number} را وارد کن`,
+          complete: Boolean(project.role.trim()),
+        },
+        {
+          label: `لینک پروژه ${number} را وارد کن`,
+          complete: Boolean(project.url.trim()),
+        },
+        {
+          label: `بازه زمانی پروژه ${number} را کامل کن`,
+          complete: Boolean(
+            project.startDate.trim() &&
+              (project.isCurrent || project.endDate.trim()),
+          ),
+        },
+        {
+          label: `توضیحات پروژه ${number} را بنویس`,
+          complete: Boolean(project.description.trim()),
+        },
+        {
+          label: `فناوری‌های پروژه ${number} را اضافه کن`,
+          complete: Boolean(project.technologies.trim()),
+        },
+      );
+    });
     form.qualifications.forEach((qualification, index) => {
       const number = formatPersianNumber(index + 1);
       items.push(
@@ -601,11 +812,7 @@ export default function KnowledgeBasePage() {
   const missingCompletionItems = completionItems.filter(
     (item) => !item.complete,
   );
-  const completedFields =
-    completionItems.length - missingCompletionItems.length;
-  const completion = completionItems.length
-    ? Math.round((completedFields / completionItems.length) * 100)
-    : 0;
+  const completion = calculateKnowledgeCompletion(form);
 
   const setResumeField =
     (field: keyof ResumeData) =>
@@ -664,6 +871,20 @@ export default function KnowledgeBasePage() {
         ),
       }));
     };
+  const setProjectField =
+    (id: string, field: keyof Omit<ResumeProject, "id">) =>
+    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value =
+        field === "startDate" || field === "endDate" || field === "url"
+          ? sanitizeLtrField(event.target.value)
+          : event.target.value;
+      setForm((current) => ({
+        ...current,
+        projects: current.projects.map((item) =>
+          item.id === id ? { ...item, [field]: value } : item,
+        ),
+      }));
+    };
   const setLanguageField = (
     id: string,
     field: keyof Omit<KnowledgeLanguage, "id">,
@@ -684,6 +905,11 @@ export default function KnowledgeBasePage() {
     }));
     setOpenExperienceId(experience.id);
   };
+  const addProject = () =>
+    setForm((current) => ({
+      ...current,
+      projects: [...current.projects, blankProject()],
+    }));
   const removeExperience = (id: string) => {
     setForm((current) => ({
       ...current,
@@ -732,6 +958,14 @@ export default function KnowledgeBasePage() {
               }),
             )
           : current.qualifications,
+        projects: result.projects?.length
+          ? result.projects.map((item) =>
+              normalizeProject({
+                ...item,
+                id: createRecordId("project"),
+              }),
+            )
+          : current.projects,
         skills:
           result.skills ||
           result.qualifications
@@ -865,22 +1099,17 @@ export default function KnowledgeBasePage() {
             <span className="text-[9px] font-bold text-[#24423e]">
               {completion.toLocaleString("fa-IR")}٪ تکمیل
             </span>
-            <div className="h-1.5 overflow-hidden rounded-full bg-[#dce8e3]">
+            <div
+              aria-label="درصد تکمیل پایگاه دانش"
+              aria-valuemax={100}
+              aria-valuemin={0}
+              aria-valuenow={completion}
+              className="h-1.5 overflow-hidden rounded-full bg-[#dce8e3]"
+              role="progressbar"
+            >
               <div
-                className={cn(
-                  "h-full rounded-full bg-[#0f7b62]",
-                  completion === 0
-                    ? "w-0"
-                    : completion < 20
-                      ? "w-1/5"
-                      : completion < 40
-                        ? "w-2/5"
-                        : completion < 60
-                          ? "w-3/5"
-                          : completion < 80
-                            ? "w-4/5"
-                            : "w-full",
-                )}
+                className="h-full rounded-full bg-[#0f7b62] transition-[width] duration-300"
+                style={{ width: `${Math.min(100, Math.max(0, completion))}%` }}
               />
             </div>
           </div>
@@ -965,7 +1194,7 @@ export default function KnowledgeBasePage() {
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="m-0 text-[11px]">تکمیل خودکار با رزومه فعلی</h2>
-          <p className="my-1 text-[8px] leading-[1.8] text-[#758582]">
+          <p className="my-1 text-[9px] leading-[1.8] text-[#758582]">
             فایل PDF، DOCX یا TXT را بارگذاری کن تا اطلاعات تماس، تجربه‌ها،
             تحصیلات و مهارت‌ها استخراج و در فرم‌ها درج شوند.
           </p>
@@ -1004,9 +1233,16 @@ export default function KnowledgeBasePage() {
       {importing ? (
         <KnowledgeCardsSkeleton />
       ) : (
-        <div className="grid gap-4">
+        <div className="grid items-start gap-4 min-[1100px]:grid-cols-[250px_minmax(0,1fr)]">
+          <KnowledgeSectionTabs
+            activeSection={activeSection}
+            onChange={setActiveSection}
+          />
+          <div className="min-w-0">
           <KnowledgeSection
+            active={activeSection === "personal"}
             icon={<UserRound size={18} />}
+            tabId="personal"
             title="اطلاعات فردی و تماس"
             description="اطلاعات پایه‌ای که در سربرگ رزومه استفاده می‌شود."
           >
@@ -1115,7 +1351,9 @@ export default function KnowledgeBasePage() {
           </KnowledgeSection>
 
           <KnowledgeSection
+            active={activeSection === "general"}
             icon={<Settings2 size={18} />}
+            tabId="general"
             title="اطلاعات عمومی"
             description="مهارت‌ها، زبان‌ها و شیوه همکاری ترجیحی تو."
           >
@@ -1211,7 +1449,9 @@ export default function KnowledgeBasePage() {
           </KnowledgeSection>
 
           <KnowledgeSection
+            active={activeSection === "experience"}
             icon={<BriefcaseBusiness size={18} />}
+            tabId="experience"
             title="تجربه حرفه‌ای"
             description="همه تجربه‌ها، مسئولیت‌ها و دستاوردهای قابل ارائه."
             action={
@@ -1385,7 +1625,135 @@ export default function KnowledgeBasePage() {
           </KnowledgeSection>
 
           <KnowledgeSection
+            active={activeSection === "projects"}
+            icon={<FolderKanban size={18} />}
+            tabId="projects"
+            title="پروژه‌ها"
+            description="پروژه‌های شخصی، متن‌باز، دانشگاهی یا حرفه‌ای قابل ارائه."
+            action={
+              <button className={addButton} type="button" onClick={addProject}>
+                <Plus size={15} /> افزودن پروژه
+              </button>
+            }
+          >
+            {form.projects.map((project, index) => (
+              <article
+                className="col-span-full grid gap-3 rounded-xl border border-[#e2e7e2] bg-[#fbfcfa] p-3.5"
+                key={project.id}
+              >
+                <header className="flex items-center justify-between gap-3">
+                  <strong className="text-[9px]">
+                    پروژه {formatPersianNumber(index + 1)}
+                  </strong>
+                  <button
+                    className="inline-flex items-center gap-1 bg-transparent text-[8px] text-[#b65e52]"
+                    type="button"
+                    onClick={() =>
+                      requestDelete(
+                        project.name.trim() ||
+                          `پروژه ${formatPersianNumber(index + 1)}`,
+                        () =>
+                          setForm((current) => ({
+                            ...current,
+                            projects: current.projects.filter(
+                              (item) => item.id !== project.id,
+                            ),
+                          })),
+                      )
+                    }
+                    aria-label={`حذف پروژه ${formatPersianNumber(index + 1)}`}
+                  >
+                    <Trash2 size={15} /> حذف
+                  </button>
+                </header>
+                <div className="grid grid-cols-1 gap-3 min-[561px]:grid-cols-2 min-[1121px]:grid-cols-3">
+                  <Field
+                    label="نام پروژه"
+                    value={project.name}
+                    onChange={setProjectField(project.id, "name")}
+                  />
+                  <Field
+                    label="نقش، کارفرما یا نوع پروژه"
+                    value={project.role}
+                    onChange={setProjectField(project.id, "role")}
+                    placeholder="مثلاً متن‌باز یا توسعه‌دهنده اصلی"
+                  />
+                  <Field
+                    ltrOnly
+                    label="لینک پروژه"
+                    value={project.url}
+                    onChange={setProjectField(project.id, "url")}
+                    placeholder="github.com/user/project"
+                  />
+                  <Field
+                    ltrOnly
+                    label="تاریخ شروع"
+                    value={project.startDate}
+                    onChange={setProjectField(project.id, "startDate")}
+                    placeholder="مثلاً 2025/01"
+                  />
+                  <Field
+                    ltrOnly
+                    label="تاریخ پایان"
+                    value={project.endDate}
+                    disabled={project.isCurrent}
+                    onChange={setProjectField(project.id, "endDate")}
+                    placeholder={project.isCurrent ? "Present" : "مثلاً 2025/11"}
+                  />
+                  <label className="flex h-[42px] self-end cursor-pointer items-center gap-2 text-[10px] font-normal transition-colors hover:text-[#0f7b62]">
+                    <input
+                      className="size-4 accent-[#0f7b62]"
+                      type="checkbox"
+                      checked={project.isCurrent}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          projects: current.projects.map((item) =>
+                            item.id === project.id
+                              ? {
+                                  ...item,
+                                  isCurrent: event.target.checked,
+                                  endDate: event.target.checked
+                                    ? ""
+                                    : item.endDate,
+                                }
+                              : item,
+                          ),
+                        }))
+                      }
+                    />
+                    <span>پروژه همچنان فعال است</span>
+                  </label>
+                </div>
+                <Field
+                  textarea
+                  label="توضیحات و دستاوردها"
+                  value={project.description}
+                  onChange={setProjectField(project.id, "description")}
+                  placeholder="هر مورد را در یک خط بنویس."
+                />
+                <Field
+                  label="فناوری‌ها و ابزارها"
+                  value={project.technologies}
+                  onChange={setProjectField(project.id, "technologies")}
+                />
+              </article>
+            ))}
+            {!form.projects.length && (
+              <button
+                className={`${secondaryButton} col-span-full w-full`}
+                type="button"
+                onClick={addProject}
+              >
+                <Plus size={15} /> ثبت اولین پروژه
+              </button>
+            )}
+          </KnowledgeSection>
+
+          <KnowledgeSection
+            active={activeSection === "education"}
             icon={<GraduationCap size={18} />}
+            tabId="education"
             title="تحصیلات و مدارک"
             description="همه سوابق تحصیلی، گواهی‌ها و دوره‌های حرفه‌ای."
             action={
@@ -1507,7 +1875,9 @@ export default function KnowledgeBasePage() {
           </KnowledgeSection>
 
           <KnowledgeSection
+            active={activeSection === "career"}
             icon={<Sparkles size={18} />}
+            tabId="career"
             title="هدف شغلی و آمادگی مصاحبه"
             description="زمینه لازم برای شخصی‌سازی پیشنهادها و تمرین‌ها."
           >
@@ -1541,11 +1911,12 @@ export default function KnowledgeBasePage() {
               onChange={setField("interviewChallenges")}
             />
           </KnowledgeSection>
+          </div>
         </div>
       )}
 
       <div className="sticky bottom-4 z-10 mt-4 flex flex-col items-start justify-between gap-3 rounded-[15px] border border-[#d8e6df] bg-white/95 p-3.5 shadow-[0_14px_40px_rgba(25,49,47,.12)] backdrop-blur min-[561px]:flex-row min-[561px]:items-center">
-        <div className="flex items-center gap-2 text-[8px] text-[#758582]">
+        <div className="flex items-center gap-2 text-[10px] text-[#758582]">
           <CheckCircle2 className="text-[#0f7b62]" size={18} />
           <span>پس از ذخیره، ساخت رزومه جدید با این اطلاعات آغاز می‌شود.</span>
         </div>
@@ -1656,28 +2027,137 @@ function KnowledgePageSkeleton() {
   );
 }
 
+function KnowledgeSectionTabs({
+  activeSection,
+  onChange,
+}: {
+  activeSection: KnowledgeTabId;
+  onChange: (section: KnowledgeTabId) => void;
+}) {
+  return (
+    <aside className="min-w-0 rounded-[18px] border border-[#dce7e1] bg-white p-2 shadow-[0_12px_36px_rgba(27,55,50,.055)] min-[1100px]:sticky min-[1100px]:top-4">
+      <header className="hidden px-3 pb-3 pt-2 min-[1100px]:block">
+        <strong className="text-[11px] text-[#19312f]">
+          بخش‌های پایگاه دانش
+        </strong>
+        <p className="mb-0 mt-1 text-[9px] leading-[1.7] text-[#83918e]">
+          برای تکمیل اطلاعات بین بخش‌ها جابه‌جا شو.
+        </p>
+      </header>
+      <div
+        aria-label="بخش‌های پایگاه دانش"
+        aria-orientation="vertical"
+        className="flex gap-2 overflow-x-auto pb-1 min-[1100px]:grid min-[1100px]:overflow-visible min-[1100px]:pb-0"
+        role="tablist"
+      >
+        {knowledgeTabs.map((tab, index) => {
+          const active = activeSection === tab.id;
+          const Icon = tab.icon;
+          return (
+            <button
+              aria-controls={`knowledge-panel-${tab.id}`}
+              aria-selected={active}
+              className={cn(
+                "relative flex min-w-[210px] items-center gap-3 rounded-[14px] p-3 text-right transition-[background-color,color,box-shadow,transform] duration-200 min-[1100px]:min-w-0",
+                active
+                  ? "bg-[#0f7b62] text-white shadow-[0_9px_24px_rgba(15,123,98,.24)] min-[1100px]:after:absolute min-[1100px]:after:top-1/2 min-[1100px]:after:-left-2 min-[1100px]:after:size-4 min-[1100px]:after:-translate-y-1/2 min-[1100px]:after:rotate-45 min-[1100px]:after:bg-[#0f7b62] min-[1100px]:after:content-['']"
+                  : "text-[#435b57] hover:bg-[#edf7f2] hover:text-[#0f7b62]",
+              )}
+              id={`knowledge-tab-${tab.id}`}
+              key={tab.id}
+              onClick={() => onChange(tab.id)}
+              onKeyDown={(event) => {
+                let nextIndex = index;
+                if (event.key === "ArrowDown" || event.key === "ArrowLeft")
+                  nextIndex = (index + 1) % knowledgeTabs.length;
+                else if (
+                  event.key === "ArrowUp" ||
+                  event.key === "ArrowRight"
+                )
+                  nextIndex =
+                    (index - 1 + knowledgeTabs.length) % knowledgeTabs.length;
+                else if (event.key === "Home") nextIndex = 0;
+                else if (event.key === "End")
+                  nextIndex = knowledgeTabs.length - 1;
+                else return;
+
+                event.preventDefault();
+                const nextTab = knowledgeTabs[nextIndex];
+                onChange(nextTab.id);
+                requestAnimationFrame(() =>
+                  document.getElementById(`knowledge-tab-${nextTab.id}`)?.focus(),
+                );
+              }}
+              role="tab"
+              type="button"
+            >
+              <span
+                className={cn(
+                  "grid size-10 shrink-0 place-items-center rounded-xl",
+                  active ? "bg-white/15" : "bg-[#e6f4ee] text-[#0f7b62]",
+                )}
+              >
+                <Icon size={19} />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <strong className="truncate text-[9px]">{tab.label}</strong>
+                <small
+                  className={cn(
+                    "mt-1 truncate text-[9px]",
+                    active ? "text-white/70" : "text-[#83918e]",
+                  )}
+                >
+                  {tab.description}
+                </small>
+              </span>
+              <span
+                className={cn(
+                  "grid size-6 shrink-0 place-items-center rounded-full text-[7px] font-bold",
+                  active ? "bg-white/15" : "bg-[#f2f6f3] text-[#7b8b87]",
+                )}
+              >
+                {formatPersianNumber(index + 1)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </aside>
+  );
+}
+
 function KnowledgeSection({
+  active,
   icon,
+  tabId,
   title,
   description,
   action,
   children,
 }: {
+  active: boolean;
   icon: ReactNode;
+  tabId: KnowledgeTabId;
   title: string;
   description: string;
   action?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[18px] border border-[#e7ebe6] bg-white p-5 shadow-[0_12px_36px_rgba(27,55,50,.045)]">
+    <section
+      aria-labelledby={`knowledge-tab-${tabId}`}
+      className="rounded-[18px] border border-[#e7ebe6] bg-white p-5 shadow-[0_12px_36px_rgba(27,55,50,.045)]"
+      hidden={!active}
+      id={`knowledge-panel-${tabId}`}
+      role="tabpanel"
+    >
       <header className="mb-5 flex flex-wrap items-center gap-3">
         <span className="grid size-10 place-items-center rounded-xl bg-[#e6f4ee] text-[#0f7b62]">
           {icon}
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="m-0 text-[12px]">{title}</h2>
-          <p className="mt-1 mb-0 text-[8px] leading-[1.7] text-[#83918e]">
+          <p className="mt-1 mb-0 text-[9px] leading-[1.7] text-[#83918e]">
             {description}
           </p>
         </div>
@@ -1788,10 +2268,7 @@ function SelectField({
 }
 
 function parseSkills(value: string) {
-  return value
-    .split(/[,،;؛\n]/)
-    .map((skill) => skill.trim())
-    .filter(Boolean);
+  return parseResumeSkills(value);
 }
 
 function MultiSkillAutocomplete({

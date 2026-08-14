@@ -1,6 +1,17 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import "@fontsource-variable/vazirmatn";
+import "@fontsource/poppins/400.css";
+import "@fontsource/poppins/500.css";
+import "@fontsource/poppins/600.css";
+import "@fontsource/poppins/700.css";
 import "./globals.css";
+
+const matrixMono = localFont({
+  src: "../node_modules/next/dist/next-devtools/server/font/geist-mono-latin.woff2",
+  display: "swap",
+  variable: "--font-matrix-mono",
+});
 
 export const metadata: Metadata = {
   title: "رادیکار | دستیار هوشمند کاریابی",
@@ -26,7 +37,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html className="bg-[#f6f7f2]" lang="fa" dir="rtl">
-      <body className="m-0 bg-[#f6f7f2] font-['Vazirmatn_Variable',Vazirmatn,Tahoma,Arial,sans-serif] text-[#19312f]">
+      <body
+        className={`${matrixMono.variable} m-0 bg-[#f6f7f2] font-sans text-[#19312f]`}
+      >
         {children}
       </body>
     </html>

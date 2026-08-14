@@ -36,11 +36,11 @@ export async function POST(request: NextRequest) {
     const tailored = await chatJson<Partial<ResumeData>>(getWriteConfig(), [
       {
         role: "system",
-        content: `You are a professional ${languageName} resume writer. Return valid JSON only. Do not invent facts. Rewrite the resume for the target job and make every human-readable resume field ${languageName}. Preserve photoUrl, email, phone, website and every experiences and educations record with its id. Never collapse multiple records into one.`,
+        content: `You are a professional ${languageName} resume writer. Return valid JSON only. Do not invent facts. Rewrite the resume for the target job and make every human-readable resume field ${languageName}. Preserve photoUrl, email, phone, website and every experiences, projects and educations record with its id. Never collapse multiple records into one.`,
       },
       {
         role: "user",
-        content: `Base resume:\n${JSON.stringify(resume, null, 2)}\n\nTarget job description:\n${jobDescription}\n\nWrite all human-readable fields in ${languageName}, including every item in experiences and educations. Keep all records and ids, tailor each record separately, transliterate proper names when needed, and never invent data. Put each experience achievement on a separate line. Return a JSON object containing every ResumeData field.`,
+        content: `Base resume:\n${JSON.stringify(resume, null, 2)}\n\nTarget job description:\n${jobDescription}\n\nWrite all human-readable fields in ${languageName}, including every item in experiences, projects and educations. Keep all records and ids, tailor each record separately, transliterate proper names when needed, and never invent data. Put each experience or project achievement on a separate line. Return a JSON object containing every ResumeData field.`,
       },
     ]);
 
@@ -51,6 +51,9 @@ export async function POST(request: NextRequest) {
         experiences: Array.isArray(tailored.experiences)
           ? tailored.experiences
           : resume.experiences,
+        projects: Array.isArray(tailored.projects)
+          ? tailored.projects
+          : resume.projects,
         educations: Array.isArray(tailored.educations)
           ? tailored.educations
           : resume.educations,

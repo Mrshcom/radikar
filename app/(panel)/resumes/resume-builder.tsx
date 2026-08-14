@@ -32,6 +32,7 @@ import {
   type ResumeEducation,
   type ResumeExperience,
   type ResumeLanguage,
+  type ResumeProject,
   supportsResumeColors,
 } from "./resume-data";
 import {
@@ -78,24 +79,204 @@ const steps = [
 
 type Props = {
   data: ResumeData;
+  resumeName: string;
   selectedTemplate: string;
   selectedColor: ResumeColorId;
+  hasBeenSaved: boolean;
   onClose: () => void;
   onDataChange: (field: keyof ResumeData, value: string) => void;
   onDataReplace: (data: ResumeData) => void;
   onDataMerge: (data: ResumeData) => void | Promise<void>;
+  onResumeNameChange: (name: string) => void;
   onColorChange: (colorId: ResumeColorId) => void;
   onSave: () => void | Promise<void>;
 };
 
+type EditableLanguage = {
+  id: string;
+  name: string;
+  proficiency: string;
+};
+
+const proficiencyOptions = [
+  { value: "", label: "انتخاب سطح تسلط" },
+  { value: "elementary", label: "مقدماتی" },
+  { value: "limited-working", label: "توانایی کاری محدود" },
+  { value: "professional-working", label: "توانایی کاری حرفه‌ای" },
+  { value: "full-professional", label: "تسلط کامل حرفه‌ای" },
+  { value: "native-bilingual", label: "زبان مادری یا دوزبانه" },
+] as const;
+
+function proficiencyLabel(value: string) {
+  return (
+    proficiencyOptions.find((option) => option.value === value)?.label || value
+  );
+}
+
+function normalizeProficiency(value: string) {
+  const normalized = value.trim().toLocaleLowerCase();
+  const option = proficiencyOptions.find(
+    (item) =>
+      item.value === normalized || item.label.toLocaleLowerCase() === normalized,
+  );
+  if (option) return option.value;
+  if (/(native|bilingual|مادری|دوزبانه|دو زبانه)/.test(normalized))
+    return "native-bilingual";
+  if (/(full professional|fluent|تسلط کامل)/.test(normalized))
+    return "full-professional";
+  if (/(professional working|حرفه‌ای|حرفه ای)/.test(normalized))
+    return "professional-working";
+  if (/(limited working|intermediate|محدود|متوسط)/.test(normalized))
+    return "limited-working";
+  if (/(elementary|basic|beginner|مقدماتی|پایه)/.test(normalized))
+    return "elementary";
+  return "";
+}
+
+function parseEditableLanguages(value: string): EditableLanguage[] {
+  const items = value
+    .split(/[|،,؛;\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const [name = "", ...levelParts] = item.split(/\s*(?:—|–|:)\s*/);
+      return {
+        id: createRecordId("resume-language"),
+        name: name.trim(),
+        proficiency: normalizeProficiency(levelParts.join(" — ")),
+      };
+    });
+  return items.length
+    ? items
+    : [{ id: createRecordId("resume-language"), name: "", proficiency: "" }];
+}
+
+function serializeLanguages(items: EditableLanguage[]) {
+  return items
+    .filter((item) => item.name.trim())
+    .map((item) =>
+      [item.name.trim(), proficiencyLabel(item.proficiency)]
+        .filter(Boolean)
+        .join(" — "),
+    )
+    .join(" | ");
+}
+
+function ResumeLanguageEditor({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [items, setItems] = useState(() => parseEditableLanguages(value));
+  const lastSerializedValue = useRef(value);
+
+  useEffect(() => {
+    if (value === lastSerializedValue.current) return;
+    setItems(parseEditableLanguages(value));
+    lastSerializedValue.current = value;
+  }, [value]);
+
+  const commit = (nextItems: EditableLanguage[]) => {
+    setItems(nextItems);
+    const serialized = serializeLanguages(nextItems);
+    lastSerializedValue.current = serialized;
+    onChange(serialized);
+  };
+
+  return (
+    <div className="grid gap-3">
+      <div className="flex items-center justify-between gap-3">
+        <strong className="text-[10px] font-normal">زبان‌ها</strong>
+        <button
+          className={secondaryButton}
+          type="button"
+          onClick={() =>
+            setItems((current) => [
+              ...current,
+              {
+                id: createRecordId("resume-language"),
+                name: "",
+                proficiency: "",
+              },
+            ])
+          }
+        >
+          <Plus size={14} /> افزودن زبان
+        </button>
+      </div>
+      {items.map((language, index) => (
+        <div
+          className="grid grid-cols-1 gap-3 rounded-xl border border-[#e2e7e2] bg-[#fbfcfa] p-3 min-[561px]:grid-cols-[1fr_1fr_auto]"
+          key={language.id}
+        >
+          <label>
+            نام زبان
+            <input
+              value={language.name}
+              placeholder="مثلاً English"
+              onChange={(event) =>
+                commit(
+                  items.map((item) =>
+                    item.id === language.id
+                      ? { ...item, name: event.target.value }
+                      : item,
+                  ),
+                )
+              }
+            />
+          </label>
+          <label>
+            سطح تسلط
+            <select
+              className="min-h-[42px] w-full rounded-[10px] border border-[#dfe5df] bg-[#fbfcfa] px-3 text-[11px] outline-none focus:border-[#79b8a5] focus:ring-3 focus:ring-[#e5f2ed]"
+              value={language.proficiency}
+              onChange={(event) =>
+                commit(
+                  items.map((item) =>
+                    item.id === language.id
+                      ? { ...item, proficiency: event.target.value }
+                      : item,
+                  ),
+                )
+              }
+            >
+              {proficiencyOptions.map((option) => (
+                <option value={option.value} key={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="mt-auto grid size-[42px] place-items-center rounded-[10px] border border-[#eccfc9] bg-[#fff5f2] text-[#b65e52] disabled:opacity-40"
+            type="button"
+            disabled={items.length === 1}
+            aria-label={`حذف زبان ${formatPersianNumber(index + 1)}`}
+            onClick={() =>
+              commit(items.filter((item) => item.id !== language.id))
+            }
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ResumeBuilder({
   data,
+  resumeName,
   selectedTemplate,
   selectedColor,
+  hasBeenSaved,
   onClose,
   onDataChange,
   onDataReplace,
   onDataMerge,
+  onResumeNameChange,
   onColorChange,
   onSave,
 }: Props) {
@@ -146,6 +327,7 @@ export function ResumeBuilder({
   }, [printReady, printView]);
   const experiences = getResumeExperiences(data);
   const educations = getResumeEducations(data);
+  const projects = Array.isArray(data.projects) ? data.projects : [];
   const canContinue = [
     Boolean(data.fullName.trim() && data.jobTitle.trim() && data.email.trim()),
     Boolean(
@@ -219,6 +401,8 @@ export function ResumeBuilder({
         .join("\n"),
     });
   };
+  const replaceProjects = (nextProjects: ResumeProject[]) =>
+    onDataReplace({ ...data, projects: nextProjects });
   const updatePhoto = async (file: File) => {
     setPhotoError("");
     try {
@@ -268,6 +452,7 @@ export function ResumeBuilder({
   return (
     <Modal
       wide
+      showCloseButton
       title={selected?.name || "قالب رزومه"}
       headerActions={
         <>
@@ -287,13 +472,15 @@ export function ResumeBuilder({
           >
             <Save size={16} /> ذخیره رزومه
           </button>
-          <button
-            className={primaryButton}
-            type="button"
-            onClick={() => void finish()}
-          >
-            <Download size={16} /> دانلود PDF
-          </button>
+          {hasBeenSaved && (
+            <button
+              className={primaryButton}
+              type="button"
+              onClick={() => void finish()}
+            >
+              <Download size={16} /> دانلود PDF
+            </button>
+          )}
         </>
       }
       onClose={onClose}
@@ -304,28 +491,42 @@ export function ResumeBuilder({
             className="min-h-0 flex-1 overflow-y-auto p-[22px] pb-6"
             data-resume-builder-scroll
           >
-            {supportsResumeColors(selectedTemplate) && (
-              <div className="mb-3 flex flex-wrap items-center gap-2.5 rounded-[14px] border border-[#dfe7e1] bg-[#f8faf8] px-3.5 py-3 shadow-[0_5px_18px_rgba(27,55,50,.035)]">
-                <span className="ml-auto text-[8px] font-bold text-[#5f726d]">
-                  رنگ‌بندی قالب
-                </span>
-                {resumeColorOptions.map((color) => (
-                  <button
-                    key={color.id}
-                    type="button"
-                    aria-label={color.label}
-                    title={color.label}
-                    className={cn(
-                      "size-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#d7dfda] transition-all duration-200 hover:scale-110",
-                      color.swatch,
-                      selectedColor === color.id &&
-                        "scale-110 shadow-[0_0_0_2px_#0f7b62]",
-                    )}
-                    onClick={() => onColorChange(color.id)}
-                  />
-                ))}
-              </div>
-            )}
+            <section
+              className="mb-3 grid gap-3 rounded-[14px] border border-[#dfe7e1] bg-[#f8faf8] px-3.5 py-3 shadow-[0_5px_18px_rgba(27,55,50,.035)]"
+              aria-label="تنظیمات قالب"
+            >
+              <label className="grid gap-1.5 text-[8px] font-bold text-[#5f726d]">
+                نام رزومه
+                <input
+                  className="min-h-10 w-full rounded-[10px] border border-[#dfe5df] bg-white px-3 text-[11px] font-normal text-[#243d39] outline-none transition focus:border-[#79b8a5] focus:ring-3 focus:ring-[#e5f2ed]"
+                  dir="auto"
+                  value={resumeName}
+                  onChange={(event) => onResumeNameChange(event.target.value)}
+                />
+              </label>
+              {supportsResumeColors(selectedTemplate) && (
+                <div className="flex flex-wrap items-center gap-2.5 border-t border-[#e3e9e4] pt-3">
+                  <span className="ml-auto text-[8px] font-bold text-[#5f726d]">
+                    رنگ‌بندی قالب
+                  </span>
+                  {resumeColorOptions.map((color) => (
+                    <button
+                      key={color.id}
+                      type="button"
+                      aria-label={color.label}
+                      title={color.label}
+                      className={cn(
+                        "size-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#d7dfda] transition-all duration-200 hover:scale-110",
+                        color.swatch,
+                        selectedColor === color.id &&
+                          "scale-110 shadow-[0_0_0_2px_#0f7b62]",
+                      )}
+                      onClick={() => onColorChange(color.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
 
             <div
               className="mb-3.5 grid grid-cols-4 gap-1 rounded-[14px] border border-[#dfe7e1] bg-[#f0f4f1] p-1.5"
@@ -714,6 +915,196 @@ export function ResumeBuilder({
               <>
                 <div className="flex items-center justify-between gap-3">
                   <div>
+                    <h3>پروژه‌ها</h3>
+                    <p className="m-0 text-[8px] leading-[1.8] text-[#82908d]">
+                      پروژه‌های شخصی، متن‌باز یا حرفه‌ای قابل ارائه را اضافه کن.
+                    </p>
+                  </div>
+                  <button
+                    className={secondaryButton}
+                    type="button"
+                    onClick={() =>
+                      replaceProjects([
+                        ...projects,
+                        {
+                          id: createRecordId("resume-project"),
+                          name: "",
+                          role: "",
+                          url: "",
+                          startDate: "",
+                          endDate: "",
+                          isCurrent: false,
+                          description: "",
+                          technologies: "",
+                        },
+                      ])
+                    }
+                  >
+                    <Plus size={15} /> افزودن پروژه
+                  </button>
+                </div>
+                {projects.map((project, index) => (
+                  <article
+                    className="grid gap-3 rounded-xl border border-[#dfe8e2] bg-[#f8faf8] p-3"
+                    key={project.id}
+                  >
+                    <header className="flex items-center justify-between gap-3">
+                      <strong className="text-[9px]">
+                        پروژه {formatPersianNumber(index + 1)}
+                      </strong>
+                      <button
+                        className="grid size-7 place-items-center rounded-lg bg-transparent text-[#c95649] transition-colors hover:bg-[#fff0ed]"
+                        type="button"
+                        aria-label={`حذف پروژه ${formatPersianNumber(index + 1)}`}
+                        onClick={() =>
+                          setPendingItemDelete({
+                            itemName:
+                              project.name ||
+                              `پروژه ${formatPersianNumber(index + 1)}`,
+                            action: () =>
+                              replaceProjects(
+                                projects.filter(
+                                  (item) => item.id !== project.id,
+                                ),
+                              ),
+                          })
+                        }
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </header>
+                    <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
+                      {(
+                        [
+                          ["name", "نام پروژه"],
+                          ["role", "نقش، کارفرما یا نوع پروژه"],
+                        ] as const
+                      ).map(([field, label]) => (
+                        <label key={field}>
+                          {label}
+                          <input
+                            value={project[field]}
+                            onChange={(event) =>
+                              replaceProjects(
+                                projects.map((item) =>
+                                  item.id === project.id
+                                    ? { ...item, [field]: event.target.value }
+                                    : item,
+                                ),
+                              )
+                            }
+                          />
+                        </label>
+                      ))}
+                      <label>
+                        لینک پروژه
+                        <input
+                          className="!text-left placeholder:!text-left"
+                          dir="ltr"
+                          inputMode="url"
+                          value={project.url}
+                          onChange={(event) =>
+                            replaceProjects(
+                              projects.map((item) =>
+                                item.id === project.id
+                                  ? {
+                                      ...item,
+                                      url: sanitizeLtrField(event.target.value),
+                                    }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                      {(
+                        [
+                          ["startDate", "تاریخ شروع"],
+                          ["endDate", "تاریخ پایان"],
+                        ] as const
+                      ).map(([field, label]) => (
+                        <label key={field}>
+                          {label}
+                          <input
+                            className="!text-left placeholder:!text-left"
+                            dir="ltr"
+                            disabled={field === "endDate" && project.isCurrent}
+                            value={project[field]}
+                            onChange={(event) =>
+                              replaceProjects(
+                                projects.map((item) =>
+                                  item.id === project.id
+                                    ? {
+                                        ...item,
+                                        [field]: sanitizeLtrField(
+                                          event.target.value,
+                                        ),
+                                      }
+                                    : item,
+                                ),
+                              )
+                            }
+                          />
+                        </label>
+                      ))}
+                    </div>
+                    <label className="!flex items-center gap-2">
+                      <input
+                        className="!size-4 !min-h-0 !w-4"
+                        type="checkbox"
+                        checked={project.isCurrent}
+                        onChange={(event) =>
+                          replaceProjects(
+                            projects.map((item) =>
+                              item.id === project.id
+                                ? {
+                                    ...item,
+                                    isCurrent: event.target.checked,
+                                    endDate: event.target.checked
+                                      ? ""
+                                      : item.endDate,
+                                  }
+                                : item,
+                            ),
+                          )
+                        }
+                      />
+                      پروژه همچنان فعال است
+                    </label>
+                    <label>
+                      توضیحات و دستاوردها — هر مورد در یک خط
+                      <textarea
+                        value={project.description}
+                        onChange={(event) =>
+                          replaceProjects(
+                            projects.map((item) =>
+                              item.id === project.id
+                                ? { ...item, description: event.target.value }
+                                : item,
+                            ),
+                          )
+                        }
+                      />
+                    </label>
+                    <label>
+                      فناوری‌ها و ابزارها
+                      <input
+                        value={project.technologies}
+                        onChange={(event) =>
+                          replaceProjects(
+                            projects.map((item) =>
+                              item.id === project.id
+                                ? { ...item, technologies: event.target.value }
+                                : item,
+                            ),
+                          )
+                        }
+                      />
+                    </label>
+                  </article>
+                ))}
+                <div className="flex items-center justify-between gap-3">
+                  <div>
                     <h3>مهارت و تحصیلات</h3>
                     <p className="m-0 text-[8px] leading-[1.8] text-[#82908d]">
                       همه سوابق آموزشی این رزومه را مستقل ویرایش کن.
@@ -874,10 +1265,10 @@ export function ResumeBuilder({
                   مهارت‌ها
                   <input value={data.skills} onChange={input("skills")} />
                 </label>
-                <label>
-                  زبان‌ها
-                  <input value={data.languages} onChange={input("languages")} />
-                </label>
+                <ResumeLanguageEditor
+                  value={data.languages}
+                  onChange={(value) => onDataChange("languages", value)}
+                />
               </>
             )}
 
@@ -949,9 +1340,13 @@ export function ResumeBuilder({
               >
                 ادامه <ArrowLeft size={16} />
               </button>
-            ) : (
+            ) : hasBeenSaved ? (
               <button className={primaryButton} onClick={finish}>
                 <Download size={16} /> دریافت PDF
+              </button>
+            ) : (
+              <button className={primaryButton} onClick={() => void onSave()}>
+                <Save size={16} /> ذخیره رزومه
               </button>
             )}
           </div>
@@ -1068,7 +1463,39 @@ export function ResumeBuilder({
         createPortal(
           <>
             <style media="print">
-              {"@page { size: A4 portrait; margin: 0; }"}
+              {`@page { size: A4 portrait; margin: 0; }
+                html, body {
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  background: #fff !important;
+                }
+                body > * {
+                  display: none !important;
+                }
+                body > [data-resume-print-root] {
+                  display: block !important;
+                  width: 210mm !important;
+                }
+                [data-resume-print-page] {
+                  box-sizing: border-box !important;
+                  position: relative !important;
+                  width: 210mm !important;
+                  height: 297mm !important;
+                  overflow: hidden !important;
+                  break-after: page !important;
+                }
+                [data-resume-print-page]:last-child {
+                  break-after: auto !important;
+                }
+                [data-resume-print-page] > div {
+                  width: 210mm !important;
+                  min-width: 210mm !important;
+                  max-width: 210mm !important;
+                  height: 297mm !important;
+                  min-height: 297mm !important;
+                  margin: 0 !important;
+                  box-shadow: none !important;
+                }`}
             </style>
             <div
               className="fixed left-[-10000px] top-0 w-[210mm] overflow-visible bg-white print:static print:block"

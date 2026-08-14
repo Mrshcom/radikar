@@ -7,18 +7,24 @@ export function Modal({
   title,
   description,
   headerActions,
+  headerClassName,
+  titleClassName,
   children,
   onClose,
   wide = false,
   document = false,
+  showCloseButton = false,
 }: {
   title: string;
   description?: string;
   headerActions?: ReactNode;
+  headerClassName?: string;
+  titleClassName?: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
   document?: boolean;
+  showCloseButton?: boolean;
 }) {
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) =>
@@ -34,17 +40,23 @@ export function Modal({
       onMouseDown={onClose}
     >
       <section
-        className={`${document ? "w-[min(804px,calc(100vw-32px))] max-w-[804px] overflow-hidden pb-0" : wide ? "w-[min(1440px,calc(100vw-32px))] max-w-[1440px] overflow-hidden pb-0" : "w-[min(520px,100%)]"} max-h-[calc(100vh-40px)] cursor-default overflow-auto rounded-[19px] border border-white/65 bg-white p-[22px] shadow-[0_26px_80px_rgba(10,38,33,.25)] max-[560px]:max-h-[calc(100vh-20px)] max-[560px]:rounded-[15px] max-[560px]:p-[17px]`}
+        className={`${document ? "w-[min(804px,calc(100vw-32px))] max-w-[804px] overflow-hidden pb-0" : wide ? "w-[min(1440px,calc(100vw-32px))] max-w-[1440px] overflow-hidden pb-0" : "w-[min(520px,100%)]"} max-h-[calc(100vh-40px)] cursor-default overflow-auto rounded-[19px] border border-white/65 bg-white p-[22px] text-[12px] shadow-[0_26px_80px_rgba(10,38,33,.25)] max-[560px]:max-h-[calc(100vh-20px)] max-[560px]:rounded-[15px] max-[560px]:p-[17px]`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header className="flex flex-wrap items-center gap-3 border-b border-[#e7ebe6] pb-4">
+        <header
+          className={`flex flex-wrap items-center gap-3 ${headerClassName || ""}`}
+        >
           <div className="min-w-0 flex-1">
-            <h2 className="mb-[5px] mt-0 text-[17px]">{title}</h2>
+            <h2
+              className={`mb-[7px] mt-0 text-[20px] leading-[1.5] ${titleClassName || ""}`}
+            >
+              {title}
+            </h2>
             {description && (
-              <p className="m-0 text-[9px] leading-[1.8] text-[#758582]">
+              <p className="m-0 text-[12px] leading-[1.9] text-[#657672]">
                 {description}
               </p>
             )}
@@ -54,13 +66,16 @@ export function Modal({
               {headerActions}
             </div>
           )}
-          <button
-            className="grid place-items-center border-0 bg-transparent p-[5px] text-[#9ba5a3]"
-            onClick={onClose}
-            aria-label="بستن"
-          >
-            <X size={20} />
-          </button>
+          {showCloseButton && (
+            <button
+              className="grid size-9 shrink-0 place-items-center rounded-full border border-[#dfe5df] bg-white p-0 text-[#7d8b88] transition-colors hover:bg-[#f4f7f5] hover:text-[#19312f]"
+              type="button"
+              onClick={onClose}
+              aria-label="بستن"
+            >
+              <X size={20} />
+            </button>
+          )}
         </header>
         {children}
       </section>
@@ -85,14 +100,14 @@ export function DeleteConfirmModal({
     >
       <div className="mt-5 flex flex-wrap justify-end gap-2">
         <button
-          className="inline-flex min-h-10 items-center justify-center rounded-[10px] border border-[#dfe5df] bg-white px-4 text-[10px] font-bold text-[#526461] hover:bg-[#f7f9f7]"
+          className="inline-flex min-h-10 items-center justify-center rounded-[10px] border border-[#dfe5df] bg-white px-4 text-[12px] font-bold text-[#526461] hover:bg-[#f7f9f7]"
           type="button"
           onClick={onCancel}
         >
           انصراف
         </button>
         <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-[#b9433a] bg-[#c94f45] px-4 text-[10px] font-bold text-white shadow-[0_8px_20px_rgba(185,67,58,.24)] transition-colors duration-200 hover:border-[#a83830] hover:bg-[#b9433a]"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-[#b9433a] bg-[#c94f45] px-4 text-[12px] font-bold text-white shadow-[0_8px_20px_rgba(185,67,58,.24)] transition-colors duration-200 hover:border-[#a83830] hover:bg-[#b9433a]"
           type="button"
           onClick={onConfirm}
         >

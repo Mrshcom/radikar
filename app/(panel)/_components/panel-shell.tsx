@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { createPortal } from "react-dom";
 import {
   createContext,
   useCallback,
@@ -91,6 +92,7 @@ export function PanelShell({ children }: { children: ReactNode }) {
   const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
   const [pendingWorkspaceDelete, setPendingWorkspaceDelete] =
     useState<AppProfileRecord | null>(null);
+  const [armedWorkspaceDeleteId, setArmedWorkspaceDeleteId] = useState("");
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const noticeRef = useRef<HTMLDivElement>(null);
   const title = useMemo(
@@ -220,10 +222,16 @@ export function PanelShell({ children }: { children: ReactNode }) {
   const confirmWorkspaceDelete = async () => {
     const workspace = pendingWorkspaceDelete;
     if (!workspace) return;
+    if (armedWorkspaceDeleteId !== workspace.id) {
+      setArmedWorkspaceDeleteId(workspace.id);
+      notify("برای حذف فضای کاری، دکمه تأیید را یک‌بار دیگر بزن.", "info");
+      return;
+    }
     try {
       await removeWorkspace(workspace.id);
       const remaining = profiles.filter((item) => item.id !== workspace.id);
       setPendingWorkspaceDelete(null);
+      setArmedWorkspaceDeleteId("");
       if (workspace.id === activeProfileId) {
         if (remaining[0]) await setActiveProfileId(remaining[0].id);
         else await ensureDefaultAppProfile();
@@ -417,27 +425,30 @@ export function PanelShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        {toast && (
-          <div
-            className={cn(
-              "fixed bottom-6 left-6 z-100 flex min-h-12 max-w-[min(380px,calc(100vw-32px))] items-center gap-[9px] rounded-xl border px-[15px] py-3 text-[10px] font-semibold shadow-[0_15px_45px_rgba(22,63,55,.16)] max-[820px]:bottom-20 max-[820px]:left-4",
-              toast.variant === "error"
-                ? "border-[#efc9c5] bg-[#fff1ef] text-[#a13f37]"
-                : toast.variant === "info"
-                  ? "border-[#cbdde9] bg-[#f1f7fb] text-[#38677f]"
-                  : "border-[#c9e5da] bg-[#eff9f4] text-[#176b57]",
-            )}
-            role={toast.variant === "error" ? "alert" : "status"}
-            aria-live={toast.variant === "error" ? "assertive" : "polite"}
-          >
-            {toast.variant === "error" ? (
-              <CircleAlert size={19} />
-            ) : (
-              <CheckCircle2 size={19} />
-            )}
-            {toast.message}
-          </div>
-        )}
+        {toast &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <div
+              className={cn(
+                "fixed bottom-6 left-6 z-100 flex min-h-12 max-w-[min(380px,calc(100vw-32px))] items-center gap-[9px] rounded-xl border px-[15px] py-3 text-[12px] font-semibold shadow-[0_15px_45px_rgba(22,63,55,.16)] print:hidden max-[820px]:bottom-20 max-[820px]:left-4",
+                toast.variant === "error"
+                  ? "border-[#efc9c5] bg-[#fff1ef] text-[#a13f37]"
+                  : toast.variant === "info"
+                    ? "border-[#cbdde9] bg-[#f1f7fb] text-[#38677f]"
+                    : "border-[#c9e5da] bg-[#eff9f4] text-[#176b57]",
+              )}
+              role={toast.variant === "error" ? "alert" : "status"}
+              aria-live={toast.variant === "error" ? "assertive" : "polite"}
+            >
+              {toast.variant === "error" ? (
+                <CircleAlert size={19} />
+              ) : (
+                <CheckCircle2 size={19} />
+              )}
+              {toast.message}
+            </div>,
+            document.body,
+          )}
         {dialog === "search" && (
           <Modal
             title="جست‌وجوی سریع"
@@ -551,7 +562,10 @@ export function PanelShell({ children }: { children: ReactNode }) {
                           className="-mr-2 grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#c25b50] transition-colors hover:text-[#a93f36]"
                           type="button"
                           aria-label={`حذف ${item.workspaceName}`}
-                          onClick={() => setPendingWorkspaceDelete(item)}
+                          onClick={() => {
+                            setArmedWorkspaceDeleteId("");
+                            setPendingWorkspaceDelete(item);
+                          }}
                         >
                           <Trash2 size={13} />
                         </button>
@@ -620,7 +634,10 @@ export function PanelShell({ children }: { children: ReactNode }) {
         {pendingWorkspaceDelete && (
           <DeleteConfirmModal
             itemName={`فضای کاری ${pendingWorkspaceDelete.workspaceName} و تمام اطلاعات داخل آن`}
-            onCancel={() => setPendingWorkspaceDelete(null)}
+            onCancel={() => {
+              setArmedWorkspaceDeleteId("");
+              setPendingWorkspaceDelete(null);
+            }}
             onConfirm={() => void confirmWorkspaceDelete()}
           />
         )}

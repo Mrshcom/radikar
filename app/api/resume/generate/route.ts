@@ -29,11 +29,11 @@ export async function POST(request: NextRequest) {
     const generated = await chatJson<Partial<ResumeData>>(getWriteConfig(), [
       {
         role: "system",
-        content: `You are a professional ${languageName} resume writer. Return valid JSON only. Do not invent facts. Complete and polish the existing fields and write every human-readable resume field in ${languageName}. Preserve photoUrl, email, phone, website, every experiences item, every educations item and their ids. Never collapse multiple work or education records into one.`,
+        content: `You are a professional ${languageName} resume writer. Return valid JSON only. Do not invent facts. Complete and polish the existing fields and write every human-readable resume field in ${languageName}. Preserve photoUrl, email, phone, website, every experiences item, every projects item, every educations item and their ids. Never collapse multiple work, project or education records into one.`,
       },
       {
         role: "user",
-        content: `Current resume:\n${JSON.stringify(resume, null, 2)}\nUser knowledge base, including all work and education history:\n${JSON.stringify(body.knowledge || {}, null, 2)}\nUser instruction: ${body.instruction || `Create a professional ATS-friendly resume in ${languageName}.`}\nKeep every item in experiences and educations. Improve each item separately without fabrication. Translate or transliterate human-readable content into ${languageName} when necessary. Return JSON containing every ResumeData field.`,
+        content: `Current resume:\n${JSON.stringify(resume, null, 2)}\nUser knowledge base, including all work, project and education history:\n${JSON.stringify(body.knowledge || {}, null, 2)}\nUser instruction: ${body.instruction || `Create a professional ATS-friendly resume in ${languageName}.`}\nKeep every item in experiences, projects and educations. Improve each item separately without fabrication. Translate or transliterate human-readable content into ${languageName} when necessary. Return JSON containing every ResumeData field.`,
       },
     ]);
     return NextResponse.json({
@@ -43,6 +43,9 @@ export async function POST(request: NextRequest) {
         experiences: Array.isArray(generated.experiences)
           ? generated.experiences
           : resume.experiences,
+        projects: Array.isArray(generated.projects)
+          ? generated.projects
+          : resume.projects,
         educations: Array.isArray(generated.educations)
           ? generated.educations
           : resume.educations,

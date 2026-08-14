@@ -3,7 +3,11 @@ import { extractText as extractPdfText, getDocumentProxy } from "unpdf";
 import * as mammoth from "mammoth";
 import { chatJson } from "@/lib/llm-client";
 import { getAnalyzeConfig } from "@/lib/provider-config";
-import type { ResumeData } from "@/app/(panel)/resumes/resume-data";
+import { serializeResumeSkills } from "@/lib/resume-skills";
+import type {
+  ResumeData,
+  ResumeProject,
+} from "@/app/(panel)/resumes/resume-data";
 import type {
   KnowledgeExperience,
   KnowledgeLanguage,
@@ -18,7 +22,8 @@ type ImportedKnowledge = {
   resumeData: Partial<ResumeData>;
   experiences: Array<Omit<KnowledgeExperience, "id">>;
   qualifications: Array<Omit<KnowledgeQualification, "id">>;
-  skills: string;
+  projects: Array<Omit<ResumeProject, "id">>;
+  skills: string | string[];
   languages: string;
   languageItems: Array<
     Omit<KnowledgeLanguage, "id" | "name"> & {
@@ -114,7 +119,7 @@ export async function POST(request: NextRequest) {
         {
           role: "system",
           content:
-            "تو سامانه استخراج اطلاعات رزومه هستی. فقط JSON معتبر فارسی برگردان. هیچ اطلاعاتی نساز و برای موارد ناموجود رشته خالی یا آرایه خالی بگذار.",
+            "تو سامانه استخراج اطلاعات رزومه هستی. فقط JSON معتبر فارسی برگردان. هیچ اطلاعاتی نساز و برای موارد ناموجود رشته خالی یا آرایه خالی بگذار. هر مهارت را حتماً به‌صورت یک عضو جدا در آرایه skills برگردان، حتی اگر در متن PDF فقط با فاصله از مهارت بعدی جدا شده باشد.",
         },
         {
           role: "user",
@@ -127,7 +132,8 @@ ${text}
   "resumeData":{"fullName":string,"jobTitle":string,"photoUrl":"","email":string,"phone":string,"location":string,"website":string,"summary":string},
   "experiences":[{"jobTitle":string,"company":string,"location":string,"startDate":string,"endDate":string,"isCurrent":boolean,"description":string,"technologies":string}],
   "qualifications":[{"institution":string,"credential":string,"startDate":string,"endDate":string,"isCurrent":boolean}],
-  "skills":string,
+  "projects":[{"name":string,"role":string,"url":string,"startDate":string,"endDate":string,"isCurrent":boolean,"description":string,"technologies":string}],
+  "skills":[string],
   "languages":string,
   "languageItems":[{"languageName":string,"proficiency":"elementary"|"limited-working"|"professional-working"|"full-professional"|"native-bilingual"}],
   "careerGoals":string,
@@ -149,7 +155,8 @@ ${text}
       qualifications: Array.isArray(extracted.qualifications)
         ? extracted.qualifications
         : [],
-      skills: extracted.skills ?? "",
+      projects: Array.isArray(extracted.projects) ? extracted.projects : [],
+      skills: serializeResumeSkills(extracted.skills),
       languages: extracted.languages ?? "",
       languageItems: Array.isArray(extracted.languageItems)
         ? extracted.languageItems

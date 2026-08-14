@@ -2,6 +2,7 @@ import type { JobTone } from "@/app/(panel)/_data/jobs";
 import type {
   ResumeColorId,
   ResumeData,
+  ResumeProject,
 } from "@/app/(panel)/resumes/resume-data";
 
 export type DataCollection =
@@ -83,6 +84,8 @@ export type KnowledgeProfileRecord = BaseRecord & {
   resumeData: ResumeData;
   experiences: KnowledgeExperience[];
   qualifications: KnowledgeQualification[];
+  projects: ResumeProject[];
+  sampleProjectsSeeded?: boolean;
   skills: string;
   languages: string;
   languageItems: KnowledgeLanguage[];
@@ -101,6 +104,7 @@ export type ResumeRecord = BaseRecord & {
   name: string;
   templateId: string;
   colorId?: ResumeColorId;
+  pinnedAt?: string;
   data: ResumeData;
   source: "user" | "tailored";
   targetJobId?: string;

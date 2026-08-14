@@ -1,3 +1,9 @@
+import { enforceResumeSectionFlow } from "./resume-section-flow.ts";
+import {
+  getResumePaginationProfile,
+  getResumeSectionFlow,
+} from "./resume-pagination-profile.ts";
+
 export type ResumeExperience = {
   id: string;
   jobTitle: string;
@@ -19,6 +25,18 @@ export type ResumeEducation = {
   isCurrent: boolean;
 };
 
+export type ResumeProject = {
+  id: string;
+  name: string;
+  role: string;
+  url: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  description: string;
+  technologies: string;
+};
+
 export type ResumeData = {
   fullName: string;
   jobTitle: string;
@@ -35,6 +53,7 @@ export type ResumeData = {
   education: string;
   experiences: ResumeExperience[];
   educations: ResumeEducation[];
+  projects: ResumeProject[];
   skills: string;
   languages: string;
 };
@@ -68,10 +87,20 @@ export const resumeColorOptions: Array<{
 ];
 
 export function getDefaultResumeColor(templateId: string): ResumeColorId {
+  if (templateId === "matrix-dark") return "mint";
+  if (templateId === "navy-reference-simple") return "blue";
   if (templateId === "timeline-classic") return "black";
   if (templateId === "red-administrative") return "coral";
   if (templateId === "orange-pill") return "sand";
   if (templateId === "editorial-sidebar") return "coral";
+  if (templateId === "profile-band") return "blue";
+  if (templateId === "designer-sidebar") return "yellow";
+  if (templateId === "dark-sidebar-timeline") return "gray";
+  if (templateId === "centerline-marketing") return "cyan";
+  if (templateId === "pastel-graduate") return "coral";
+  if (templateId === "split-profile") return "mint";
+  if (templateId === "corporate-competencies") return "blue";
+  if (templateId === "angular-technical") return "sand";
   if (templateId === "sector-yellow") return "yellow";
   return "mint";
 }
@@ -79,21 +108,43 @@ export function getDefaultResumeColor(templateId: string): ResumeColorId {
 export function supportsResumeColors(templateId: string) {
   return [
     "simple-one-column",
+    "navy-reference-simple",
     "timeline-classic",
+    "matrix-dark",
     "banner-modern",
     "red-administrative",
     "orange-pill",
     "editorial-sidebar",
+    "profile-band",
+    "designer-sidebar",
+    "dark-sidebar-timeline",
+    "centerline-marketing",
+    "pastel-graduate",
+    "split-profile",
+    "corporate-competencies",
+    "angular-technical",
     "sector-yellow",
   ].includes(templateId);
 }
 
 export const resumeTemplates = [
   {
+    id: "matrix-dark",
+    name: "ماتریکس دارک",
+    subtitle: "فضای ترمینالی، اکسنت نئونی و کارت‌های فنی",
+    tag: "خلاق",
+  },
+  {
     id: "simple-one-column",
     name: "ساده تک‌ستونه",
     subtitle: "چیدمان خطی، خلوت و مناسب رزومه رسمی",
     tag: "پیشنهادی",
+  },
+  {
+    id: "navy-reference-simple",
+    name: "ساده سرمه‌ای",
+    subtitle: "هدر سرمه‌ای و چیدمان دقیق تاریخ‌محور",
+    tag: "ساده",
   },
   {
     id: "timeline-classic",
@@ -124,6 +175,54 @@ export const resumeTemplates = [
     name: "تحریریه‌ای ظریف",
     subtitle: "چیدمان محتوایی با مهارت‌های امتیازی",
     tag: "خلاق",
+  },
+  {
+    id: "profile-band",
+    name: "نوار هویتی کلاسیک",
+    subtitle: "هدر نواری، عکس دایره‌ای و سوابق تاریخ‌محور",
+    tag: "حرفه‌ای",
+  },
+  {
+    id: "designer-sidebar",
+    name: "طراح سایدبار کلاسیک",
+    subtitle: "پرتره دایره‌ای، اطلاعات کناری و بدنه تحریریه‌ای",
+    tag: "خلاق",
+  },
+  {
+    id: "dark-sidebar-timeline",
+    name: "سایدبار تیره تایم‌لاین",
+    subtitle: "ستون تیره، سوابق خطی و مهارت‌های نواری",
+    tag: "مدرن",
+  },
+  {
+    id: "centerline-marketing",
+    name: "دوستونه خط مرکزی",
+    subtitle: "هدر رسمی، ستون‌های متقارن و جداکننده نقطه‌دار",
+    tag: "حرفه‌ای",
+  },
+  {
+    id: "pastel-graduate",
+    name: "پاستلی فارغ‌التحصیل",
+    subtitle: "پس‌زمینه لطیف، سایدبار روشن و تیترهای نواری",
+    tag: "مدرن",
+  },
+  {
+    id: "split-profile",
+    name: "پروفایل دو‌بخشی",
+    subtitle: "هویت مینیمال، ستون رنگی و سوابق تفصیلی",
+    tag: "خلاق",
+  },
+  {
+    id: "corporate-competencies",
+    name: "سازمانی شایستگی‌ها",
+    subtitle: "نوارهای رسمی، سوابق متراکم و پنل توانمندی‌ها",
+    tag: "سازمانی",
+  },
+  {
+    id: "angular-technical",
+    name: "فنی زاویه‌دار",
+    subtitle: "سایدبار مورب، پرتره برجسته و سوابق تایم‌لاین‌دار",
+    tag: "مدرن",
   },
   {
     id: "ats",
@@ -308,12 +407,22 @@ export const resumeTemplates = [
 ] as const;
 
 const selectableTemplateIds = new Set([
+  "matrix-dark",
   "simple-one-column",
+  "navy-reference-simple",
   "timeline-classic",
   "banner-modern",
   "red-administrative",
   "orange-pill",
   "editorial-sidebar",
+  "profile-band",
+  "designer-sidebar",
+  "dark-sidebar-timeline",
+  "centerline-marketing",
+  "pastel-graduate",
+  "split-profile",
+  "corporate-competencies",
+  "angular-technical",
   "sector-yellow",
 ]);
 
@@ -337,6 +446,7 @@ export const emptyResumeData: ResumeData = {
   education: "",
   experiences: [],
   educations: [],
+  projects: [],
   skills: "",
   languages: "",
 };
@@ -389,6 +499,20 @@ export function getResumeEducations(data: ResumeData): ResumeEducation[] {
     }));
 }
 
+export function getResumeProjects(data: ResumeData): ResumeProject[] {
+  if (!Array.isArray(data.projects)) return [];
+  return data.projects.filter(
+    (project) =>
+      project.name.trim() ||
+      project.role.trim() ||
+      project.url.trim() ||
+      project.startDate.trim() ||
+      project.endDate.trim() ||
+      project.description.trim() ||
+      project.technologies.trim(),
+  );
+}
+
 function experienceWeight(experience: ResumeExperience) {
   const descriptionLines = experience.description
     .split("\n")
@@ -400,9 +524,22 @@ function experienceWeight(experience: ResumeExperience) {
   );
 }
 
+function projectWeight(project: ResumeProject) {
+  const descriptionLines = project.description
+    .split("\n")
+    .filter((line) => line.trim()).length;
+  return (
+    2 +
+    Math.max(descriptionLines, Math.ceil(project.description.length / 180)) +
+    (project.url.trim() ? 0.5 : 0) +
+    (project.technologies.trim() ? 1 : 0)
+  );
+}
+
 type OneColumnPageDraft = {
   experiences: ResumeExperience[];
   educations: ResumeEducation[];
+  projects: ResumeProject[];
   skills: string;
   languages: string;
   usedCapacity: number;
@@ -413,6 +550,7 @@ function paginateOneColumnResume(data: ResumeData): ResumeData[] {
   const continuationPageCapacity = 34;
   const experiences = getResumeExperiences(data);
   const educations = getResumeEducations(data);
+  const projects = getResumeProjects(data);
   const summaryWeight = data.summary.trim()
     ? 2 + Math.ceil(data.summary.length / 350)
     : 0;
@@ -420,6 +558,7 @@ function paginateOneColumnResume(data: ResumeData): ResumeData[] {
     {
       experiences: [],
       educations: [],
+      projects: [],
       skills: "",
       languages: "",
       usedCapacity: summaryWeight,
@@ -432,6 +571,7 @@ function paginateOneColumnResume(data: ResumeData): ResumeData[] {
     pages.push({
       experiences: [],
       educations: [],
+      projects: [],
       skills: "",
       languages: "",
       usedCapacity: 0,
@@ -446,6 +586,12 @@ function paginateOneColumnResume(data: ResumeData): ResumeData[] {
     const weight = experienceWeight(experience);
     reserveBlock(weight);
     currentPage().experiences.push(experience);
+  }
+
+  for (const project of projects) {
+    const headingWeight = currentPage().projects.length ? 0 : 2;
+    reserveBlock(headingWeight + projectWeight(project));
+    currentPage().projects.push(project);
   }
 
   for (const education of educations) {
@@ -483,6 +629,7 @@ function paginateOneColumnResume(data: ResumeData): ResumeData[] {
     experience: "",
     education: "",
     educations: page.educations,
+    projects: page.projects,
     skills: page.skills,
     languages: page.languages,
   }));
@@ -492,37 +639,58 @@ export function paginateResumeData(
   data: ResumeData,
   templateId?: string,
 ): ResumeData[] {
-  const isOneColumnTemplate = templateId === "simple-one-column";
-  if (isOneColumnTemplate) return paginateOneColumnResume(data);
-  const isOrangePillTemplate = templateId === "orange-pill";
+  const isOneColumnTemplate = [
+    "simple-one-column",
+    "navy-reference-simple",
+  ].includes(templateId || "");
+  if (isOneColumnTemplate) {
+    return enforceResumeSectionFlow(paginateOneColumnResume(data));
+  }
   const isEditorialTemplate = templateId === "editorial-sidebar";
   const isTimelineTemplate = templateId === "timeline-classic";
+  const isOrangePillTemplate = templateId === "orange-pill";
+  const isProfileBandTemplate = templateId === "profile-band";
   const firstPageCapacity = isEditorialTemplate
     ? 27
     : isTimelineTemplate
       ? 27
       : isOrangePillTemplate
         ? 30
-    : 22;
+      : isProfileBandTemplate
+          ? 30
+          : 22;
   const continuationPageCapacity =
-    isEditorialTemplate || isOrangePillTemplate ? 32 : 30;
-  const usesIndependentSidebar = Boolean(
-    templateId &&
-      templateId !== "simple-one-column" &&
-      templateId !== "orange-pill",
-  );
+    isEditorialTemplate ||
+    isOrangePillTemplate ||
+    isProfileBandTemplate
+      ? 32
+      : 30;
+  const paginationProfile = getResumePaginationProfile(templateId);
   const experiences = getResumeExperiences(data);
   const educations = getResumeEducations(data);
+  const projects = getResumeProjects(data);
   const summaryWeight = data.summary.trim()
     ? 2 + Math.ceil(data.summary.length / 350)
     : 0;
+  const summaryIsInMain =
+    getResumeSectionFlow(paginationProfile, "summary") !== "sidebar";
+  const educationsAreInMain =
+    getResumeSectionFlow(paginationProfile, "educations") !== "sidebar";
+  const skillsAreInMain =
+    getResumeSectionFlow(paginationProfile, "skills") !== "sidebar";
+  const languagesAreInMain =
+    getResumeSectionFlow(paginationProfile, "languages") !== "sidebar";
+  const mainSummaryWeight = summaryIsInMain ? summaryWeight : 0;
   const trailingContentWeight =
-    (educations.length ? Math.min(5, educations.length * 1.5) : 0) +
-    (usesIndependentSidebar ? 0 : data.skills.trim() ? 2 : 0) +
-    (usesIndependentSidebar ? 0 : data.languages.trim() ? 1 : 0);
+    (educationsAreInMain && educations.length
+      ? Math.min(5, educations.length * 1.5)
+      : 0) +
+    (skillsAreInMain && data.skills.trim() ? 2 : 0) +
+    (languagesAreInMain && data.languages.trim() ? 1 : 0);
   const totalWeight =
-    summaryWeight +
+    mainSummaryWeight +
     trailingContentWeight +
+    projects.reduce((total, project) => total + projectWeight(project), 0) +
     experiences.reduce(
       (total, experience) => total + experienceWeight(experience),
       0,
@@ -537,7 +705,7 @@ export function paginateResumeData(
     const weight = experienceWeight(experience);
     const capacity =
       pages.length === 0
-        ? firstPageCapacity - summaryWeight
+        ? firstPageCapacity - mainSummaryWeight
         : continuationPageCapacity;
     if (currentPage.length && currentWeight + weight > capacity) {
       pages.push(currentPage);
@@ -549,91 +717,87 @@ export function paginateResumeData(
   }
   if (currentPage.length) pages.push(currentPage);
   if (!pages.length) pages.push([]);
-  if (usesIndependentSidebar) {
-    const firstExperienceWeight = pages[0].reduce(
+  const pageProjects: ResumeProject[][] = pages.map(() => []);
+  let projectPageIndex = pages.length - 1;
+  let projectPageWeight =
+    pages[projectPageIndex].reduce(
       (total, experience) => total + experienceWeight(experience),
       0,
-    );
-    const firstEducationCount =
-      pages.length === 1
-        ? Math.min(
-            educations.length,
-            Math.max(
-              0,
-              Math.floor(
-                (firstPageCapacity - summaryWeight - firstExperienceWeight) /
-                  1.5,
-              ),
-            ),
-          )
-        : 0;
-    const remainingEducations = educations.slice(firstEducationCount);
-    const lastExperienceWeight = pages.at(-1)!.reduce(
-      (total, experience) => total + experienceWeight(experience),
-      0,
-    );
-    const remainingEducationWeight = remainingEducations.length * 1.5;
-    const lastPageCapacity =
-      pages.length === 1 ? firstPageCapacity : continuationPageCapacity;
-    if (
-      remainingEducations.length &&
-      lastExperienceWeight + remainingEducationWeight > lastPageCapacity
-    ) {
+    ) + (projectPageIndex === 0 ? mainSummaryWeight : 0);
+  for (const project of projects) {
+    const weight = projectWeight(project);
+    const capacity =
+      projectPageIndex === 0 ? firstPageCapacity : continuationPageCapacity;
+    if (projectPageWeight && projectPageWeight + weight > capacity) {
       pages.push([]);
+      pageProjects.push([]);
+      projectPageIndex += 1;
+      projectPageWeight = 0;
     }
-
-    return pages.map((pageExperiences, index) => {
-      const isFirst = index === 0;
-      const isLast = index === pages.length - 1;
-      const pageEducations = isFirst
-        ? educations.slice(0, firstEducationCount)
-        : isLast
-          ? remainingEducations
-          : [];
-      return {
-        ...data,
-        summary: isFirst ? data.summary : "",
-        experiences: pageExperiences,
-        experienceTitle: "",
-        company: "",
-        experienceDate: "",
-        experience: "",
-        education: "",
-        educations: pageEducations,
-        skills: isFirst ? data.skills : "",
-        languages: isFirst ? data.languages : "",
-      };
-    });
+    pageProjects[projectPageIndex].push(project);
+    projectPageWeight += weight;
   }
   const lastPageExperienceWeight = pages.at(-1)!.reduce(
     (total, experience) => total + experienceWeight(experience),
     0,
+  ) + pageProjects.at(-1)!.reduce(
+    (total, project) => total + projectWeight(project),
+    0,
   );
   const lastPageBaseWeight =
-    lastPageExperienceWeight + (pages.length === 1 ? summaryWeight : 0);
+    lastPageExperienceWeight + (pages.length === 1 ? mainSummaryWeight : 0);
   const lastPageCapacity =
     pages.length === 1 ? firstPageCapacity : continuationPageCapacity;
-  if (lastPageBaseWeight + trailingContentWeight > lastPageCapacity) {
+  if (
+    trailingContentWeight &&
+    lastPageBaseWeight + trailingContentWeight > lastPageCapacity
+  ) {
     pages.push([]);
+    pageProjects.push([]);
   }
 
-  return pages.map((pageExperiences, index) => {
+  const paginated = pages.map((pageExperiences, index) => {
     const isFirst = index === 0;
     const isLast = index === pages.length - 1;
     return {
       ...data,
       summary: isFirst ? data.summary : "",
       experiences: pageExperiences,
+      projects: pageProjects[index] ?? [],
       experienceTitle: "",
       company: "",
       experienceDate: "",
       experience: "",
-      education: isLast ? data.education : "",
-      educations: isLast ? educations : [],
-      skills: isLast ? data.skills : "",
-      languages: isLast ? data.languages : "",
+      education:
+        educationsAreInMain && isLast
+          ? data.education
+          : !educationsAreInMain && isFirst
+            ? data.education
+            : "",
+      educations:
+        educationsAreInMain && isLast
+          ? educations
+          : !educationsAreInMain && isFirst
+            ? educations
+            : [],
+      skills:
+        skillsAreInMain && isLast
+          ? data.skills
+          : !skillsAreInMain && isFirst
+            ? data.skills
+            : "",
+      languages:
+        languagesAreInMain && isLast
+          ? data.languages
+          : !languagesAreInMain && isFirst
+            ? data.languages
+            : "",
     };
   });
+
+  return educationsAreInMain
+    ? enforceResumeSectionFlow(paginated)
+    : paginated;
 }
 
 export function hasResumeContent(
@@ -643,7 +807,7 @@ export function hasResumeContent(
   return Object.entries(resume).some(
     ([key, value]) =>
       key !== "photoUrl" &&
-      typeof value === "string" &&
-      value.trim().length > 0,
+      ((typeof value === "string" && value.trim().length > 0) ||
+        (Array.isArray(value) && value.length > 0)),
   );
 }

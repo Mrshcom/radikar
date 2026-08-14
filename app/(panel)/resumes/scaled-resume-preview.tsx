@@ -4,8 +4,9 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { type ResumeColorId, type ResumeData } from "./resume-data";
 import { ResumeDocumentPage } from "./resume-document";
 import { useRenderedResumePagination } from "./use-rendered-resume-pagination";
+import { ResumePaginationProbe } from "./resume-pagination-components";
 
-const DOCUMENT_WIDTH = 720;
+const DOCUMENT_WIDTH = 793.700787;
 const DOCUMENT_HEIGHT = DOCUMENT_WIDTH * (297 / 210);
 
 export function ScaledResumePreview({
@@ -21,7 +22,7 @@ export function ScaledResumePreview({
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
-  const { candidate, pages, probeRef } = useRenderedResumePagination(
+  const { candidate, pages, pagesRef, probeRef } = useRenderedResumePagination(
     data,
     templateId,
   );
@@ -48,6 +49,7 @@ export function ScaledResumePreview({
       data-resume-scale-container
     >
       <div
+        ref={pagesRef}
         className="relative mx-auto"
         style={{
           width: scale ? DOCUMENT_WIDTH * scale : 0,
@@ -56,7 +58,7 @@ export function ScaledResumePreview({
         }}
       >
         <div
-          className="absolute top-0 left-0 grid w-[720px] origin-top-left gap-5"
+          className="absolute top-0 left-0 grid w-[793.700787px] origin-top-left gap-5"
           style={{ transform: `scale(${scale})` }}
         >
           {visiblePages.map((pageData, index) => (
@@ -71,11 +73,7 @@ export function ScaledResumePreview({
         </div>
       </div>
       {candidate && (
-        <div
-          ref={probeRef}
-          className="invisible fixed top-0 left-[-10000px] w-[720px] pointer-events-none"
-          data-resume-pagination-probe
-        >
+        <ResumePaginationProbe probeRef={probeRef}>
           <ResumeDocumentPage
             templateId={templateId}
             data={candidate.page}
@@ -83,7 +81,7 @@ export function ScaledResumePreview({
             continuation={candidate.boundary > 0}
             key={candidate.key}
           />
-        </div>
+        </ResumePaginationProbe>
       )}
     </div>
   );

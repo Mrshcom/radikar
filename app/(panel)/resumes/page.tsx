@@ -1,13 +1,16 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   BriefcaseBusiness,
   CalendarDays,
+  Check,
   FilePlus2,
   Pencil,
   SlidersHorizontal,
   Sparkles,
+  Star,
   Trash2,
 } from "lucide-react";
 import { DeleteConfirmModal, Modal, SectionTitle } from "../_components/ui";
@@ -39,6 +42,7 @@ import type {
 } from "@/lib/data/models";
 import { cn } from "@/lib/cn";
 import { formatPersianNumber } from "@/lib/fa-number";
+import { calculateKnowledgeCompletion } from "@/lib/knowledge-completion";
 
 const templateCategories = [
   "همه",
@@ -83,6 +87,16 @@ function getTemplateCategory(tag: string) {
   return categoryByTag[tag] ?? "حرفه‌ای";
 }
 
+function getDefaultResumeName(data: ResumeData, templateId: string) {
+  const fullNameParts = data.fullName.trim().split(/\s+/).filter(Boolean);
+  const ownerName =
+    fullNameParts[0] || data.jobTitle.trim() || "رزومه بدون عنوان";
+  const templateName =
+    resumeTemplates.find((template) => template.id === templateId)?.name ||
+    "قالب رزومه";
+  return `${ownerName} — ${templateName}`;
+}
+
 function resumeFromKnowledge(knowledge: KnowledgeProfileRecord): ResumeData {
   const stored = { ...emptyResumeData, ...knowledge.resumeData };
   const experiences = (knowledge.experiences || [])
@@ -121,10 +135,14 @@ function resumeFromKnowledge(knowledge: KnowledgeProfileRecord): ResumeData {
       endDate: item.endDate || "",
       isCurrent: item.isCurrent,
     }));
+  const projects = (knowledge.projects || []).map((project) => ({
+    ...project,
+  }));
   return {
     ...stored,
     experiences: experiences.length ? experiences : stored.experiences,
     educations: educations.length ? educations : stored.educations,
+    projects: projects.length ? projects : stored.projects,
   };
 }
 
@@ -173,7 +191,18 @@ async function restoreTailoredJobDetails(
   return restored;
 }
 
+function prioritizePinnedResumes(resumes: ResumeRecord[]) {
+  return [...resumes].sort((left, right) => {
+    if (left.pinnedAt && right.pinnedAt)
+      return right.pinnedAt.localeCompare(left.pinnedAt);
+    if (left.pinnedAt) return -1;
+    if (right.pinnedAt) return 1;
+    return right.updatedAt.localeCompare(left.updatedAt);
+  });
+}
+
 export default function ResumesPage() {
+  const router = useRouter();
   const notify = useToast();
   const [activeTab, setActiveTab] = useState<ResumePageTab>("resumes");
   const [builderOpen, setBuilderOpen] = useState(false);
@@ -185,7 +214,11 @@ export default function ResumesPage() {
   const [activeCategory, setActiveCategory] = useState<TemplateCategory>("همه");
   const [data, setData] = useState<ResumeData>(emptyResumeData);
   const [knowledgeData, setKnowledgeData] = useState<ResumeData | null>(null);
+  const [knowledgeCompletion, setKnowledgeCompletion] = useState(0);
+  const [knowledgeRequirementOpen, setKnowledgeRequirementOpen] =
+    useState(false);
   const [activeResumeId, setActiveResumeId] = useState("");
+  const [resumeName, setResumeName] = useState<string | null>(null);
   const [savedResumes, setSavedResumes] = useState<ResumeRecord[]>([]);
   const [resumeToDelete, setResumeToDelete] = useState<ResumeRecord | null>(
     null,
@@ -217,8 +250,11 @@ export default function ResumesPage() {
         const restoredResumes = await restoreTailoredJobDetails(resumes, jobs);
         if (!active) return;
         const resume = restoredResumes[0];
-        setSavedResumes(restoredResumes);
-        if (knowledge) setKnowledgeData(resumeFromKnowledge(knowledge));
+        setSavedResumes(prioritizePinnedResumes(restoredResumes));
+        if (knowledge) {
+          setKnowledgeData(resumeFromKnowledge(knowledge));
+          setKnowledgeCompletion(calculateKnowledgeCompletion(knowledge));
+        }
         if (resume) {
           setData({ ...emptyResumeData, ...resume.data });
           setSelectedTemplate(resume.templateId);
@@ -226,6 +262,7 @@ export default function ResumesPage() {
             resume.colorId || getDefaultResumeColor(resume.templateId),
           );
           setActiveResumeId(resume.id);
+          setResumeName(resume.name);
           return;
         }
         if (knowledge) setData(resumeFromKnowledge(knowledge));
@@ -253,11 +290,11 @@ export default function ResumesPage() {
     const record: ResumeRecord = {
       id,
       name:
-        nextData.fullName.trim() ||
-        nextData.jobTitle.trim() ||
-        "رزومه بدون عنوان",
+        resumeName?.trim() ||
+        getDefaultResumeName(nextData, selectedTemplate),
       templateId: selectedTemplate,
       colorId: selectedColor,
+      pinnedAt: previous?.pinnedAt,
       data: nextData,
       source: previous?.source ?? source,
       targetJobId: previous?.targetJobId,
@@ -267,23 +304,31 @@ export default function ResumesPage() {
       updatedAt: now,
     };
     await resumeStore.put(record);
-    setSavedResumes((current) => [
-      record,
-      ...current.filter((resume) => resume.id !== record.id),
-    ]);
+    setSavedResumes((current) =>
+      prioritizePinnedResumes([
+        record,
+        ...current.filter((resume) => resume.id !== record.id),
+      ]),
+    );
     setActiveResumeId(id);
+    setResumeName(record.name);
   };
   const mergeData = async (nextData: ResumeData) => {
     setData(nextData);
     await persistResume(nextData);
   };
   const openBuilder = (templateId: string) => {
+    if (knowledgeCompletion < 10) {
+      setKnowledgeRequirementOpen(true);
+      return;
+    }
     setSelectedTemplate(templateId);
     setSelectedColor(
       templateColors[templateId] || getDefaultResumeColor(templateId),
     );
     if (knowledgeData) setData({ ...emptyResumeData, ...knowledgeData });
     setActiveResumeId("");
+    setResumeName(null);
     setBuilderOpen(true);
   };
   const openSavedResume = (resume: ResumeRecord) => {
@@ -293,20 +338,54 @@ export default function ResumesPage() {
       resume.colorId || getDefaultResumeColor(resume.templateId),
     );
     setActiveResumeId(resume.id);
+    setResumeName(resume.name);
     setBuilderOpen(true);
   };
   const saveDraft = async () => {
     await persistResume(data);
-    notify("رزومه در فضای محلی امن ذخیره شد");
+    notify("رزومه با موفقیت ذخیره شد.");
+  };
+  const toggleResumePin = async (resume: ResumeRecord) => {
+    const pinned = !resume.pinnedAt;
+    const nextResume: ResumeRecord = {
+      ...resume,
+      pinnedAt: pinned ? new Date().toISOString() : undefined,
+    };
+    try {
+      await resumeStore.put(nextResume);
+      setSavedResumes((current) =>
+        prioritizePinnedResumes(
+          current.map((item) =>
+            item.id === nextResume.id ? nextResume : item,
+          ),
+        ),
+      );
+      notify(pinned ? "رزومه نشان شد" : "نشان رزومه برداشته شد");
+    } catch {
+      notify("تغییر نشان رزومه ناموفق بود", "error");
+    }
   };
   const deleteResume = async () => {
     if (!resumeToDelete) return;
+    const resumeId = resumeToDelete.id;
+    const expectedRemainingResumes = savedResumes.filter(
+      (resume) => resume.id !== resumeId,
+    );
     try {
-      await resumeStore.remove(resumeToDelete.id);
-      setSavedResumes((current) =>
-        current.filter((resume) => resume.id !== resumeToDelete.id),
+      await resumeStore.remove(resumeId);
+      let storedResumes = await resumeStore.list();
+      const storedResumeIds = new Set(storedResumes.map((resume) => resume.id));
+      const unexpectedlyRemovedResumes = expectedRemainingResumes.filter(
+        (resume) => !storedResumeIds.has(resume.id),
       );
-      if (activeResumeId === resumeToDelete.id) {
+      if (unexpectedlyRemovedResumes.length > 0) {
+        await Promise.all(
+          unexpectedlyRemovedResumes.map((resume) => resumeStore.put(resume)),
+        );
+        storedResumes = await resumeStore.list();
+      }
+      setSavedResumes(prioritizePinnedResumes(storedResumes));
+      if (activeResumeId === resumeId) {
         setActiveResumeId("");
         setBuilderOpen(false);
       }
@@ -392,12 +471,16 @@ export default function ResumesPage() {
                   key={resume.id}
                 >
                   <button
-                    className="grid h-[260px] w-full place-items-center overflow-hidden border-0 bg-[#e9eeea] p-3 transition-colors duration-200 hover:bg-[#e1e8e3] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#0f7b62]"
+                    className="relative grid h-[260px] w-full place-items-center overflow-hidden border-0 bg-[#e9eeea] p-3 transition-colors duration-200 hover:bg-[#e1e8e3] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#0f7b62]"
                     type="button"
                     aria-label={`مشاهده و ویرایش ${resume.name}`}
                     onClick={() => openSavedResume(resume)}
                   >
-                    <div className="mx-auto w-full max-w-[166px]">
+                    <div
+                      className="pointer-events-none mx-auto w-full max-w-[166px] select-none"
+                      inert
+                      aria-hidden="true"
+                    >
                       <ScaledResumePreview
                         templateId={resume.templateId}
                         data={resume.data}
@@ -407,36 +490,38 @@ export default function ResumesPage() {
                         }
                       />
                     </div>
+                    <span
+                      className="absolute inset-0 z-10 cursor-pointer"
+                      aria-hidden="true"
+                    />
                   </button>
-                  <div className="grid min-w-0 gap-3 border-t border-[#e5ebe6] p-4">
+                  <div
+                    className="grid min-w-0 gap-3 border-t border-[#e5ebe6] p-4 text-right"
+                    dir="rtl"
+                  >
                     <div className="flex min-w-0 items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1 overflow-hidden">
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[7px] font-bold",
-                            tailored
-                              ? "bg-[#e8e1f5] text-[#725aa7]"
-                              : "bg-[#e6f4ee] text-[#0f7b62]",
-                          )}
-                        >
-                          {tailored ? (
-                            <Sparkles size={11} />
-                          ) : (
-                            <FilePlus2 size={11} />
-                          )}
-                          {tailored ? "نسخه اختصاصی" : "رزومه شخصی"}
-                        </span>
-                        <h3
-                          className="mb-0 mt-2 max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-[11px]"
-                          dir="auto"
-                        >
-                          {resume.name}
-                        </h3>
-                      </div>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[7px] font-bold",
+                          tailored
+                            ? "bg-[#e8e1f5] text-[#725aa7]"
+                            : "bg-[#e6f4ee] text-[#0f7b62]",
+                        )}
+                      >
+                        {tailored ? (
+                          <Sparkles size={11} />
+                        ) : (
+                          <FilePlus2 size={11} />
+                        )}
+                        {tailored ? "نسخه اختصاصی" : "رزومه شخصی"}
+                      </span>
                       <span className="max-w-[38%] shrink-0 truncate text-[7px] text-[#899692]">
                         {template?.name || "قالب ذخیره‌شده"}
                       </span>
                     </div>
+                    <h3 className="m-0 block w-full overflow-hidden text-ellipsis whitespace-nowrap text-right text-[11px]">
+                      {resume.name}
+                    </h3>
                     {tailored && (
                       <div className="min-w-0 overflow-hidden rounded-xl border border-[#d9e8e1] bg-[#eff8f4] p-3">
                         <span className="flex items-center gap-1 text-[7px] font-bold text-[#43816f]">
@@ -466,6 +551,24 @@ export default function ResumesPage() {
                         </span>
                       </small>
                       <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          className={cn(
+                            "grid size-8 shrink-0 place-items-center rounded-lg transition-colors duration-200",
+                            resume.pinnedAt
+                              ? "bg-[#fff4d7] text-[#b77908] hover:bg-[#f9e7b8]"
+                              : "bg-transparent text-[#83918d] hover:bg-[#edf2ef] hover:text-[#51625e]",
+                          )}
+                          type="button"
+                          aria-label={`${resume.pinnedAt ? "برداشتن نشان از" : "نشان کردن"} ${resume.name}`}
+                          title={resume.pinnedAt ? "برداشتن نشان" : "نشان کردن رزومه"}
+                          aria-pressed={Boolean(resume.pinnedAt)}
+                          onClick={() => void toggleResumePin(resume)}
+                        >
+                          <Star
+                            className={resume.pinnedAt ? "fill-current" : undefined}
+                            size={14}
+                          />
+                        </button>
                         <button
                           className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg bg-[#edf7f2] px-2.5 text-[8px] font-bold text-[#0f7b62] transition-colors duration-200 hover:bg-[#dceee6]"
                           onClick={() => openSavedResume(resume)}
@@ -514,8 +617,8 @@ export default function ResumesPage() {
 
       {activeTab === "templates" && (
         <>
-          <div className="mb-4 flex items-center gap-[13px] overflow-hidden rounded-[15px] border border-[#e7ebe6] bg-white px-[13px] py-[11px] shadow-[0_12px_36px_rgba(27,55,50,.055)]">
-        <div className="flex shrink-0 items-center gap-[7px] border-l border-[#e8ece8] pl-[13px] text-[10px] font-bold whitespace-nowrap text-[#123c37]">
+          <div className="mb-4 flex items-center gap-[13px] overflow-hidden rounded-[15px] border border-[#d8e5df] bg-[linear-gradient(135deg,#ffffff_0%,#fbfcfb_52%,#f0f7f3_100%)] px-[13px] py-[11px] shadow-[0_12px_32px_rgba(33,68,58,.09)]">
+        <div className="flex shrink-0 items-center gap-[7px] rounded-[11px] bg-[#e7f4ef] px-[11px] py-[9px] text-[10px] font-bold whitespace-nowrap text-[#155f50] shadow-[inset_0_0_0_1px_rgba(21,95,80,.06)]">
           <SlidersHorizontal size={17} />
           <span>فیلتر قالب‌ها</span>
         </div>
@@ -533,20 +636,31 @@ export default function ResumesPage() {
               <button
                 key={category}
                 className={cn(
-                  "inline-flex min-h-[31px] shrink-0 items-center gap-[7px] rounded-full border px-[9px] py-1 text-[9px] transition",
+                  "inline-flex h-[34px] shrink-0 items-stretch overflow-hidden rounded-full border p-0 text-[10px] font-semibold transition-all duration-200",
                   active
-                    ? "border-[#b9dccf] bg-[#e5f3ed] text-[#0c7058]"
-                    : "border-transparent bg-[#f3f6f3] text-[#667773] hover:border-[#d2e3dc] hover:bg-[#edf5f1] hover:text-[#123c37]",
+                    ? "border-[#0e765e] bg-[linear-gradient(135deg,#16876b_0%,#0a6956_100%)] text-white shadow-[0_5px_14px_rgba(13,112,88,.26)]"
+                    : "border-[#dbe6e1] bg-[#f4f7f5] text-[#526862] hover:border-[#9ec3b6] hover:bg-[#ebf5f0] hover:text-[#155f50]",
                 )}
+                type="button"
+                aria-pressed={active}
                 onClick={() => setActiveCategory(category)}
               >
-                {category}
+                <span className="flex items-center gap-[7px] px-[11px] py-1">
+                  {active && (
+                    <Check
+                      aria-hidden="true"
+                      size={12}
+                      strokeWidth={3}
+                    />
+                  )}
+                  <span>{category}</span>
+                </span>
                 <span
                   className={cn(
-                    "grid size-5 min-w-5 place-items-center rounded-full text-[7px]",
+                    "m-px flex size-[30px] shrink-0 items-center justify-center self-center rounded-full text-[10px] font-bold",
                     active
-                      ? "bg-[#0f7b62] text-white"
-                      : "bg-white/80 text-[#7c8d88]",
+                      ? "bg-white/16 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,.1)]"
+                      : "bg-white text-[#47766a] shadow-[0_1px_4px_rgba(32,75,62,.1),inset_0_0_0_1px_#e2ebe7]",
                   )}
                 >
                   {formatPersianNumber(count)}
@@ -578,7 +692,7 @@ export default function ResumesPage() {
               key={template.id}
             >
               <button
-                className="grid min-h-[360px] w-full place-items-center overflow-hidden border-0 bg-[#eef1ee] p-5 transition-colors duration-200 hover:bg-[#e5ebe7] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#0f7b62]"
+                className="relative grid min-h-[360px] w-full place-items-center overflow-hidden border-0 bg-[#eef1ee] p-5 transition-colors duration-200 hover:bg-[#e5ebe7] focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-[#0f7b62]"
                 type="button"
                 aria-label={`پیش‌نمایش قالب ${template.name}`}
                 onClick={() =>
@@ -589,20 +703,28 @@ export default function ResumesPage() {
                   })
                 }
               >
-                <div className="w-full max-w-[226px]">
+                <div
+                  className="pointer-events-none w-full max-w-[226px] select-none"
+                  inert
+                  aria-hidden="true"
+                >
                   <ScaledResumePreview
                     templateId={template.id}
                     data={templatePreviewData}
                     colorId={templateColor}
                   />
                 </div>
+                <span
+                  className="absolute inset-0 z-10 cursor-pointer"
+                  aria-hidden="true"
+                />
+                <span className="absolute bottom-3 left-3 rounded-md bg-[#e7f4ee] px-2 py-1 text-[7px] text-[#0d765c] shadow-sm">
+                  {template.tag}
+                </span>
               </button>
               <div className="grid gap-3 border-t border-[#edf0ec] p-[15px]">
                 <div className="flex items-end justify-between gap-3">
                   <div className="min-w-0">
-                    <span className="rounded-md bg-[#e7f4ee] px-1.5 py-1 text-[7px] text-[#0d765c]">
-                      {template.tag}
-                    </span>
                     <h3 className="my-1.5 text-[11px]">{template.name}</h3>
                     <p className="m-0 text-[8px] text-[#98a3a0]">
                       {template.subtitle}
@@ -653,12 +775,17 @@ export default function ResumesPage() {
       {builderOpen && (
         <ResumeBuilder
           data={data}
+          resumeName={
+            resumeName ?? getDefaultResumeName(data, selectedTemplate)
+          }
           selectedTemplate={selectedTemplate}
           selectedColor={selectedColor}
+          hasBeenSaved={Boolean(activeResumeId)}
           onClose={() => setBuilderOpen(false)}
           onDataChange={updateData}
           onDataReplace={setData}
           onDataMerge={mergeData}
+          onResumeNameChange={setResumeName}
           onColorChange={setSelectedColor}
           onSave={saveDraft}
         />
@@ -670,11 +797,53 @@ export default function ResumesPage() {
           onConfirm={() => void deleteResume()}
         />
       )}
+      {knowledgeRequirementOpen && (
+        <Modal
+          title="پایگاه دانش هنوز کامل نیست"
+          description="اطلاعات پایگاه دانشت باید حداقل ۱۰٪ تکمیل شده باشد تا بتوانی یک رزومه بسازی."
+          onClose={() => setKnowledgeRequirementOpen(false)}
+        >
+          <div className="mt-5 flex flex-wrap justify-end gap-2">
+            <button
+              className="inline-flex min-h-10 items-center justify-center rounded-[10px] border border-[#dfe5df] bg-white px-4 text-[10px] font-bold text-[#526461] hover:bg-[#f7f9f7]"
+              type="button"
+              onClick={() => setKnowledgeRequirementOpen(false)}
+            >
+              فعلاً نه
+            </button>
+            <button
+              className={primaryButton}
+              type="button"
+              onClick={() => {
+                setKnowledgeRequirementOpen(false);
+                router.push("/knowledge-base");
+              }}
+            >
+              تکمیل پایگاه دانش
+            </button>
+          </div>
+        </Modal>
+      )}
       {templatePreview && (
         <Modal
           document
+          showCloseButton
           title={`پیش‌نمایش ${templatePreview.name}`}
-          description="نمایش قالب با اطلاعات نمونه؛ برای ساخت رزومه از دکمه استفاده از قالب کمک بگیر."
+          titleClassName="!mb-0 !text-[16px] !leading-[1.5]"
+          headerClassName="pb-[22px]"
+          headerActions={
+            <button
+              className={primaryButton}
+              type="button"
+              onClick={() => {
+                const templateId = templatePreview.id;
+                setTemplatePreview(null);
+                openBuilder(templateId);
+              }}
+            >
+              استفاده از قالب
+            </button>
+          }
           onClose={() => setTemplatePreview(null)}
         >
           <div className="max-h-[calc(100vh-160px)] overflow-auto bg-[#e9eeea] p-5">
