@@ -1,0 +1,7 @@
+node_modules
+.next
+dist
+.git
+graphify-out
+npm-debug.log
+.env*

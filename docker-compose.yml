@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: radicar
+      POSTGRES_USER: radicar
+      POSTGRES_PASSWORD: radicar
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - radicar_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U radicar -d radicar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - apps/api/.env
+    environment:
+      # The compose profile is intended for local development. Production
+      # requires a real OTP webhook and hardened auth settings.
+      NODE_ENV: development
+      API_HOST: 0.0.0.0
+      API_PORT: 3162
+      DATABASE_URL: postgresql://radicar:radicar@postgres:5432/radicar
+      CORS_ORIGINS: http://localhost:3161
+    ports:
+      - "127.0.0.1:3162:3162"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >-
+      sh -c "npm run db:migrate && npm run start:api"
+    restart: unless-stopped
+
+volumes:
+  radicar_postgres_data:

@@ -1,0 +1,25 @@
+{
+  "name": "@radicar/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "node --env-file-if-exists=../../apps/api/.env ../../node_modules/drizzle-kit/bin.cjs generate --config drizzle.config.ts",
+    "db:migrate": "node --env-file-if-exists=../../apps/api/.env --import tsx src/migrate.ts",
+    "db:seed": "node --env-file-if-exists=../../apps/api/.env --import tsx src/seed.ts"
+  },
+  "dependencies": {
+    "@radicar/shared-types": "*",
+    "drizzle-orm": "0.45.2",
+    "postgres": "^3.4.7",
+    "tsx": "^4.20.6"
+  },
+  "devDependencies": {
+    "drizzle-kit": "0.31.10",
+    "typescript": "^5.9.3"
+  }
+}

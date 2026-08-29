@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Vazirmatn Variable", Vazirmatn, Tahoma, Arial, sans-serif;
+  --font-resume-rtl: "Vazirmatn Variable", Vazirmatn, Tahoma, Arial,
+    sans-serif;
+  --font-resume-latin: "Poppins", Arial, sans-serif;
+  --font-matrix: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Vazirmatn Variable", Vazirmatn, Tahoma, monospace;
+}

@@ -1,0 +1,44 @@
+
+> @radicar/web@0.1.0 build
+> next build --turbopack
+
+▲ Next.js 16.3.3 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.ts took 23ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.3s
+  Running TypeScript ...
+  Finished TypeScript in 5.0s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/20) ...
+  Generating static pages using 7 workers (5/20) 
+  Generating static pages using 7 workers (10/20) 
+  Generating static pages using 7 workers (15/20) 
+✓ Generating static pages using 7 workers (20/20) in 439ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /account
+├ ○ /admin
+├ ○ /admin/memberships
+├ ○ /admin/orders
+├ ○ /admin/payments
+├ ○ /applications
+├ ○ /billing/result
+├ ○ /dashboard
+├ ○ /interview
+├ ○ /jobs
+├ ○ /knowledge-base
+├ ○ /login
+├ ○ /match
+├ ○ /orders
+├ ○ /resumes
+├ ○ /settings
+└ ○ /upgrade
+
+
+○  (Static)  prerendered as static content
+

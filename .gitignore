@@ -14,9 +14,9 @@
 /coverage
 
 # next.js
-/.next/
-/.vinext/
+**/.next/
 /out/
+/.turbo/
 
 # misc
 .DS_Store
@@ -29,14 +29,16 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+**/.env*
+!**/.env.example
 
 # vercel
 .vercel
 
 # typescript
 next-env.d.ts
-/dist/
-/.wrangler/
+**/dist/
+**/*.tsbuildinfo
 /outputs/
 /work/
+/graphify-out/cache/
