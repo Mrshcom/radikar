@@ -2,15 +2,21 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, UserCog } from "lucide-react";
+import { UserCog } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { normalizeDigits } from "@radicar/validators";
 import { z } from "zod";
 import { useAuth } from "@/app/_components/auth";
 import { useToast } from "../../_components/panel-shell";
 import { apiRequest } from "@/lib/api-client";
 import { usePlans, type Membership, type Plan } from "@/lib/billing";
-import { AdminNav } from "../_components/admin-nav";
+import {
+  AdminFilterSelect,
+  AdminTableEmptyState,
+  AdminTablePagination,
+  AdminTableToolbar,
+} from "../_components/admin-table-controls";
 
 type MembershipUser = {
   user: { id: string; phone: string; fullName: string | null; status: "active" | "suspended" };
@@ -18,10 +24,23 @@ type MembershipUser = {
   plan: Plan | null;
 };
 type Response = { items: MembershipUser[]; total: number; page: number; pageSize: number };
-const searchSchema = z.object({ search: z.string().trim().max(100) });
 const grantSchema = z.object({ planId: z.string().min(1) });
-const extendSchema = z.object({ days: z.coerce.number().int().min(1).max(3650) });
-const creditSchema = z.object({ resource: z.enum(["resume", "pdf", "ai", "match", "interview"]), units: z.coerce.number().int().min(-100000).max(100000).refine((value) => value !== 0), reason: z.string().trim().max(500).optional() });
+function localizedNumber<T extends z.ZodType>(schema: T) {
+  return z.preprocess(
+    (value) => typeof value === "string" ? normalizeDigits(value) : value,
+    schema,
+  );
+}
+const extendSchema = z.object({
+  days: localizedNumber(z.coerce.number().int().min(1).max(3650)),
+});
+const creditSchema = z.object({
+  resource: z.enum(["resume", "pdf", "ai", "match", "interview"]),
+  units: localizedNumber(
+    z.coerce.number().int().min(-100000).max(100000).refine((value) => value !== 0),
+  ),
+  reason: z.string().trim().max(500).optional(),
+});
 const cancelSchema = z.object({ reason: z.string().trim().max(500).optional() });
 
 export default function MembershipsAdminPage() {
@@ -31,15 +50,18 @@ export default function MembershipsAdminPage() {
   const plans = usePlans();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [planId, setPlanId] = useState("");
+  const [membershipStatus, setMembershipStatus] = useState("");
+  const [userStatus, setUserStatus] = useState("");
   const [selected, setSelected] = useState<MembershipUser | null>(null);
-  const searchForm = useForm({ resolver: zodResolver(searchSchema), defaultValues: { search: "" } });
   const grantForm = useForm({ resolver: zodResolver(grantSchema), defaultValues: { planId: "job-search" } });
   const extendForm = useForm({ resolver: zodResolver(extendSchema), defaultValues: { days: 30 } });
   const creditForm = useForm({ resolver: zodResolver(creditSchema), defaultValues: { resource: "ai" as const, units: 10, reason: "" } });
   const cancelForm = useForm({ resolver: zodResolver(cancelSchema), defaultValues: { reason: "" } });
   const users = useQuery({
-    queryKey: ["admin", "memberships", search, page],
-    queryFn: () => apiRequest<Response>(`/api/admin/memberships?search=${encodeURIComponent(search)}&page=${page}&pageSize=20`),
+    queryKey: ["admin", "memberships", search, planId, membershipStatus, userStatus, page, pageSize],
+    queryFn: () => apiRequest<Response>(`/api/admin/memberships?search=${encodeURIComponent(search)}&planId=${planId}&membershipStatus=${membershipStatus}&userStatus=${userStatus}&page=${page}&pageSize=${pageSize}`),
     enabled: user?.role !== "user",
     staleTime: 15_000,
     placeholderData: keepPreviousData,
@@ -75,15 +97,24 @@ export default function MembershipsAdminPage() {
   const endpoint = (actionName: string) => `/api/admin/users/${selected!.user.id}/membership/${actionName}`;
   return (
     <div className="grid gap-6">
-      <AdminNav />
       <header><span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]"><UserCog size={18} /> مدیریت کاربران و عضویت</span><h1 className="mb-0 mt-3 text-[25px] font-black">عضویت و اعتبار کاربران</h1></header>
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
-        <div className="flex items-center justify-between gap-4 border-b border-[#edf0ec] p-5">
+        <div className="border-b border-[#edf0ec] p-5">
           <span className="text-[10px] text-[#71817e]">{Number(users.data?.total ?? 0).toLocaleString("fa-IR")} کاربر</span>
-          <form className="flex h-10 min-w-[280px] items-center gap-2 rounded-[11px] border border-[#dfe6e0] px-3" onSubmit={searchForm.handleSubmit(({ search: value }) => { setSearch(value); setPage(1); })}><Search size={16} /><input className="min-w-0 flex-1 border-0 bg-transparent text-[10px] outline-none" placeholder="نام یا شماره همراه" {...searchForm.register("search")} /><button className="border-0 bg-transparent text-[10px] font-bold text-[#0f7b62]">جست‌وجو</button></form>
+          <AdminTableToolbar
+            search={search}
+            searchPlaceholder="نام یا شماره همراه"
+            activeFilterCount={Number(Boolean(planId)) + Number(Boolean(membershipStatus)) + Number(Boolean(userStatus))}
+            onSearch={(value) => { setSearch(value); setPage(1); }}
+            onResetFilters={() => { setPlanId(""); setMembershipStatus(""); setUserStatus(""); setPage(1); }}
+          >
+            <AdminFilterSelect label="پلن" value={planId} onChange={(value) => { setPlanId(value); setPage(1); }} options={[{ value: "", label: "همه پلن‌ها" }, ...(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))]} />
+            <AdminFilterSelect label="وضعیت عضویت" value={membershipStatus} onChange={(value) => { setMembershipStatus(value); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "expired", label: "منقضی" }, { value: "canceled", label: "لغوشده" }]} />
+            <AdminFilterSelect label="وضعیت حساب" value={userStatus} onChange={(value) => { setUserStatus(value); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "suspended", label: "تعلیق‌شده" }]} />
+          </AdminTableToolbar>
         </div>
-        <div className="overflow-x-auto"><table className="w-full min-w-[850px] border-collapse text-right text-[10px]"><thead className="bg-[#f7f9f6] text-[#71817e]"><tr>{["کاربر", "پلن", "وضعیت حساب", "وضعیت عضویت", "انقضا", "اعتبار AI", "مدیریت"].map((title) => <th className="px-4 py-3" key={title}>{title}</th>)}</tr></thead><tbody>{(users.data?.items ?? []).map((item) => <tr className="border-t border-[#edf0ec]" key={item.user.id}><td className="px-4 py-3"><strong className="block text-[11px]">{item.user.fullName || "بدون نام"}</strong><span dir="ltr" className="mt-1 block w-fit text-[#899592]">{item.user.phone}</span></td><td className="px-4 py-3">{item.plan?.name || "ثبت‌نشده"}</td><td className="px-4 py-3">{item.user.status === "active" ? "فعال" : "تعلیق‌شده"}</td><td className="px-4 py-3">{item.membership?.status === "active" ? "فعال" : item.membership?.status === "canceled" ? "لغوشده" : "منقضی"}</td><td className="px-4 py-3">{item.membership?.expiresAt ? new Date(item.membership.expiresAt).toLocaleDateString("fa-IR") : "—"}</td><td className="px-4 py-3">{item.membership?.aiCreditsRemaining?.toLocaleString("fa-IR") ?? "—"}</td><td className="px-4 py-3"><div className="flex gap-2"><button className="rounded-lg border border-[#dfe5df] bg-white px-3 py-2 text-[9px] font-bold" onClick={() => setSelected(item)}>عضویت</button><button className="rounded-lg border border-[#e6d5d1] bg-white px-3 py-2 text-[9px] font-bold text-[#9b4a42]" disabled={changeStatus.isPending || item.user.id === user?.id} onClick={() => changeStatus.mutate(item)}>{item.user.status === "active" ? "تعلیق" : "فعال‌سازی"}</button></div></td></tr>)}</tbody></table></div>
-        <div className="flex items-center justify-between border-t border-[#edf0ec] p-4 text-[9px]"><button disabled={page === 1} onClick={() => setPage((value) => value - 1)}>صفحه قبل</button><span>صفحه {page.toLocaleString("fa-IR")}</span><button disabled={(users.data?.items.length ?? 0) < 20} onClick={() => setPage((value) => value + 1)}>صفحه بعد</button></div>
+        {!users.isLoading && (users.data?.items.length ?? 0) === 0 ? <AdminTableEmptyState filtered={Boolean(search || planId || membershipStatus || userStatus)} /> : <div className="overflow-x-auto"><table className="w-full min-w-[850px] border-collapse text-right text-[10px]"><thead className="bg-[#f7f9f6] text-[#71817e]"><tr>{["کاربر", "پلن", "وضعیت حساب", "وضعیت عضویت", "انقضا", "اعتبار AI", "مدیریت"].map((title) => <th className="px-4 py-3" key={title}>{title}</th>)}</tr></thead><tbody>{(users.data?.items ?? []).map((item) => <tr className="border-t border-[#edf0ec]" key={item.user.id}><td className="px-4 py-3"><strong className="block text-[11px]">{item.user.fullName || "بدون نام"}</strong><span dir="ltr" className="mt-1 block w-fit text-[#899592]">{item.user.phone}</span></td><td className="px-4 py-3">{item.plan?.name || "ثبت‌نشده"}</td><td className="px-4 py-3">{item.user.status === "active" ? "فعال" : "تعلیق‌شده"}</td><td className="px-4 py-3">{item.membership?.status === "active" ? "فعال" : item.membership?.status === "canceled" ? "لغوشده" : "منقضی"}</td><td className="px-4 py-3">{item.membership?.expiresAt ? new Date(item.membership.expiresAt).toLocaleDateString("fa-IR") : "—"}</td><td className="px-4 py-3">{item.membership?.aiCreditsRemaining?.toLocaleString("fa-IR") ?? "—"}</td><td className="px-4 py-3"><div className="flex gap-2"><button className="rounded-lg border border-[#dfe5df] bg-white px-3 py-2 text-[9px] font-bold" onClick={() => setSelected(item)}>عضویت</button><button className="rounded-lg border border-[#e6d5d1] bg-white px-3 py-2 text-[9px] font-bold text-[#9b4a42]" disabled={changeStatus.isPending || item.user.id === user?.id} onClick={() => changeStatus.mutate(item)}>{item.user.status === "active" ? "تعلیق" : "فعال‌سازی"}</button></div></td></tr>)}</tbody></table></div>}
+        <AdminTablePagination page={page} pageSize={pageSize} total={users.data?.total ?? 0} onPageChange={setPage} onPageSizeChange={(value) => { setPageSize(value); setPage(1); }} />
       </section>
       {selected && (
         <section className="grid gap-5 rounded-[20px] border border-[#b9d9cc] bg-[#f7fbf8] p-6">

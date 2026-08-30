@@ -26,15 +26,11 @@ export type Permission =
 const rolePermissions: Record<UserRole, ReadonlySet<Permission>> = {
   user: new Set(["own:data:read", "own:data:write"]),
   admin: new Set([
-    "own:data:read",
-    "own:data:write",
     "orders:read:any",
     "payments:read:any",
     "memberships:manage:any",
   ]),
   superadmin: new Set([
-    "own:data:read",
-    "own:data:write",
     "users:read:any",
     "reports:read:any",
     "orders:read:any",

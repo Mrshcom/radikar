@@ -85,7 +85,7 @@ cp apps/api/.env.example apps/api/.env
 تنظیم پیش‌فرض Web:
 
 ```dotenv
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:3162
+NEXT_PUBLIC_API_BASE_URL=http://localhost:3162
 ```
 
 تنظیم پیش‌فرض اتصال API به PostgreSQL محلی:
@@ -122,7 +122,8 @@ npm run db:migrate
 npm run db:seed
 ```
 
-Seed فضای کاری اولیه را ایجاد می‌کند و تکرار اجرای آن داده تکراری نمی‌سازد.
+Seed فضای کاری اولیه و سه پلن عضویت را ایجاد می‌کند و تکرار اجرای آن داده تکراری
+نمی‌سازد.
 
 ### ۶. اجرای هم‌زمان Web و API
 
@@ -141,8 +142,8 @@ npm run dev:stack
 سلامت API و اتصال دیتابیس را می‌توانید با این دو فرمان بررسی کنید:
 
 ```bash
-curl http://127.0.0.1:3162/health
-curl http://127.0.0.1:3162/ready
+curl http://localhost:3162/health
+curl http://localhost:3162/ready
 ```
 
 خروجی موفق endpoint دوم باید شبیه زیر باشد:
@@ -234,6 +235,48 @@ BOOTSTRAP_SUPERADMIN_PHONE=09123456789
 پس از ساخت اولین سوپرادمین، بهتر است `ALLOW_FIRST_USER_SUPERADMIN` را `false`
 کنید.
 
+## پلن‌ها و درگاه زرین‌پال Sandbox
+
+سه پلن اولیه هنگام اجرای `npm run db:seed` ثبت می‌شوند:
+
+| پلن | قیمت | مدت | رزومه | PDF | AI | تطبیق | مصاحبه |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| رایگان | ۰ | ۳۰ روز | ۱ | ۳ | ۵ | ۱ | ۱ |
+| جست‌وجوی شغلی | ۴۹۹٬۰۰۰ تومان | ۳۰ روز | ۵ | نامحدود | ۴۰ | ۱۵ | ۵ |
+| حرفه‌ای | ۷۹۹٬۰۰۰ تومان | ۳۰ روز | نامحدود | نامحدود | ۱۵۰ | ۵۰ | ۱۵ |
+
+پلن رایگان فقط یک‌بار و هم‌زمان با اولین ثبت‌نام کاربر اعطا می‌شود و خودکار
+تمدید نمی‌شود. تمدید پلن فعلی، ۳۰ روز و اعتبارهای همان پلن را اضافه می‌کند. ارتقا
+فوری است و ۳۰ روز جدید به تاریخ انقضای موجود افزوده می‌شود. خرید پلن پایین‌تر تا
+پایان پلن بالاتر غیرفعال است.
+
+برای توسعه، تنظیمات زیر در `apps/api/.env` قرار می‌گیرند:
+
+```dotenv
+API_PUBLIC_URL=http://localhost:3162
+WEB_APP_URL=http://localhost:3161
+ZARINPAL_BASE_URL=https://sandbox.zarinpal.com
+ZARINPAL_MERCHANT_ID=00000000-0000-4000-8000-000000000000
+```
+
+Sandbox طبق مستندات زرین‌پال هر UUID معتبر را به‌عنوان Merchant ID می‌پذیرد.
+مبالغ ارسالی به API زرین‌پال بر حسب ریال هستند و رابط کاربری آن‌ها را به تومان
+نمایش می‌دهد. callback روی `/api/billing/callback` دریافت و سپس نتیجه به
+`/billing/result` در Web هدایت می‌شود.
+
+صفحات کاربر:
+
+- `/upgrade`: خرید و ارتقای بسته
+- `/orders`: سفارش‌ها و کدهای پیگیری کاربر
+- `/account`: نام و اطلاعات حساب؛ شماره همراه قابل تغییر نیست
+- `/settings`: تنظیمات امنیت و نشست
+
+صفحات مدیریت:
+
+- `/admin/memberships`: اعطای پلن، تمدید، تغییر اعتبار، لغو و تعلیق کاربر
+- `/admin/orders`: سفارش‌ها و وضعیت پیگیری
+- `/admin/payments`: تراکنش‌ها و واریزی‌های درگاه
+
 ## تنظیم مدل هوش مصنوعی
 
 بخش‌های معمول برنامه بدون تنظیم LLM بالا می‌آیند، اما تحلیل شغل، تولید رزومه،
@@ -290,6 +333,10 @@ FREE_DEEPSEEK_PORT=9655
 | `BOOTSTRAP_SUPERADMIN_PHONE` | خالی | شماره مجاز برای bootstrap سوپرادمین |
 | `OTP_WEBHOOK_URL` | خالی | endpoint سرویس ارسال پیامک |
 | `OTP_WEBHOOK_TOKEN` | خالی | Bearer token اختیاری سرویس پیامک |
+| `API_PUBLIC_URL` | `http://localhost:3162` | آدرس عمومی callback بک‌اند |
+| `WEB_APP_URL` | `http://localhost:3161` | آدرس Web برای redirect نتیجه پرداخت |
+| `ZARINPAL_BASE_URL` | `https://sandbox.zarinpal.com` | آدرس درگاه؛ در توسعه Sandbox |
+| `ZARINPAL_MERCHANT_ID` | UUID توسعه | شناسه پذیرنده Sandbox |
 
 ## مدیریت دیتابیس
 
@@ -425,8 +472,12 @@ API در حالت Production با secret توسعه، بدون webhook پیام�
 ### Web پیام اتصال به Node API می‌دهد
 
 - مقدار `NEXT_PUBLIC_API_BASE_URL` را در `apps/web/.env.local` بررسی کنید.
-- مطمئن شوید API روی `http://127.0.0.1:3162` اجرا شده است.
+- مطمئن شوید API روی `http://localhost:3162` اجرا شده است.
 - بعد از تغییر env، Web را restart کنید.
+
+برای حفظ نشست ورود، در مرورگر `localhost` و `127.0.0.1` را با هم ترکیب نکنید.
+Web و `NEXT_PUBLIC_API_BASE_URL` باید هر دو از hostname یکسان `localhost` استفاده
+کنند؛ در غیر این صورت مرورگر ممکن است کوکی SameSite را به API نفرستد.
 
 ### endpoint `/ready` کد 503 می‌دهد
 

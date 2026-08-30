@@ -6,11 +6,14 @@ import {
   randomUUID,
   timingSafeEqual,
 } from "node:crypto";
-import { and, count, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { normalizeDigits } from "@radicar/validators";
+import { and, count, desc, eq, gt, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
 import {
   authSessions,
   dataRecords,
   otpChallenges,
+  orders,
+  plans,
   users,
   type Database,
 } from "@radicar/database";
@@ -41,10 +44,7 @@ export type VerifyOtpResult = {
 };
 
 function normalizePhone(value: string) {
-  const digits = value
-    .trim()
-    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
-    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
+  const digits = normalizeDigits(value.trim());
   if (!/^09\d{9}$/.test(digits)) throw new AuthError(400, "شماره همراه معتبر نیست.");
   return digits;
 }
@@ -237,9 +237,20 @@ export class AuthService {
   async getStats() {
     const [userTotals, recordTotals, roleRows, collectionRows] = await Promise.all([
       this.database
-        .select({ total: count(), active: sql<number>`count(*) filter (where ${users.status} = 'active')` })
+        .select({
+          total: count(),
+          active: sql<number>`count(*) filter (where ${users.status} = 'active')`,
+          registeredToday: sql<number>`count(*) filter (where ${users.createdAt} >= (date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran'))`,
+          activeToday: sql<number>`count(*) filter (where ${users.lastLoginAt} >= (date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran'))`,
+        })
         .from(users),
-      this.database.select({ total: count() }).from(dataRecords),
+      this.database
+        .select({
+          total: count(),
+          resumes: sql<number>`count(*) filter (where ${dataRecords.collection} = 'resumes')`,
+          resumesToday: sql<number>`count(*) filter (where ${dataRecords.collection} = 'resumes' and ${dataRecords.createdAt} >= (date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran'))`,
+        })
+        .from(dataRecords),
       this.database.select({ role: users.role, total: count() }).from(users).groupBy(users.role),
       this.database
         .select({ collection: dataRecords.collection, total: count() })
@@ -247,17 +258,149 @@ export class AuthService {
         .groupBy(dataRecords.collection),
     ]);
     return {
-      users: { total: userTotals[0]?.total ?? 0, active: Number(userTotals[0]?.active ?? 0) },
-      records: { total: recordTotals[0]?.total ?? 0, byCollection: collectionRows },
+      users: {
+        total: Number(userTotals[0]?.total ?? 0),
+        active: Number(userTotals[0]?.active ?? 0),
+        registeredToday: Number(userTotals[0]?.registeredToday ?? 0),
+        activeToday: Number(userTotals[0]?.activeToday ?? 0),
+      },
+      records: {
+        total: Number(recordTotals[0]?.total ?? 0),
+        resumes: Number(recordTotals[0]?.resumes ?? 0),
+        resumesToday: Number(recordTotals[0]?.resumesToday ?? 0),
+        byCollection: collectionRows,
+      },
       usersByRole: roleRows,
     };
   }
 
-  async listUsers(search = "", page = 1, pageSize = 20) {
+  async getRecentEvents(limit = 30) {
+    const [signupRows, loginRows, purchaseRows, resumeRows] = await Promise.all([
+      this.database
+        .select({
+          userId: users.id,
+          phone: users.phone,
+          fullName: users.fullName,
+          createdAt: users.createdAt,
+        })
+        .from(users)
+        .orderBy(desc(users.createdAt))
+        .limit(limit),
+      this.database
+        .select({
+          userId: users.id,
+          phone: users.phone,
+          fullName: users.fullName,
+          createdAt: users.lastLoginAt,
+        })
+        .from(users)
+        .where(
+          and(
+            isNotNull(users.lastLoginAt),
+            sql`${users.lastLoginAt} > ${users.createdAt} + interval '1 second'`,
+          ),
+        )
+        .orderBy(desc(users.lastLoginAt))
+        .limit(limit),
+      this.database
+        .select({
+          orderId: orders.id,
+          userId: users.id,
+          phone: users.phone,
+          fullName: users.fullName,
+          planName: plans.name,
+          amountRials: orders.amountRials,
+          refId: orders.refId,
+          createdAt: orders.paidAt,
+        })
+        .from(orders)
+        .innerJoin(users, eq(orders.userId, users.id))
+        .innerJoin(plans, eq(orders.planId, plans.id))
+        .where(and(eq(orders.status, "paid"), isNotNull(orders.paidAt)))
+        .orderBy(desc(orders.paidAt))
+        .limit(limit),
+      this.database
+        .select({
+          recordId: dataRecords.id,
+          userId: users.id,
+          phone: users.phone,
+          fullName: users.fullName,
+          profileId: dataRecords.profileId,
+          createdAt: dataRecords.createdAt,
+        })
+        .from(dataRecords)
+        .innerJoin(users, eq(dataRecords.ownerUserId, users.id))
+        .where(eq(dataRecords.collection, "resumes"))
+        .orderBy(desc(dataRecords.createdAt))
+        .limit(limit),
+    ]);
+
+    const events = [
+      ...signupRows.map((row) => ({
+        id: `signup:${row.userId}:${row.createdAt.toISOString()}`,
+        type: "signup" as const,
+        createdAt: row.createdAt.toISOString(),
+        user: { id: row.userId, phone: row.phone, fullName: row.fullName },
+        details: {},
+      })),
+      ...loginRows.flatMap((row) =>
+        row.createdAt
+          ? [{
+              id: `login:${row.userId}:${row.createdAt.toISOString()}`,
+              type: "login" as const,
+              createdAt: row.createdAt.toISOString(),
+              user: { id: row.userId, phone: row.phone, fullName: row.fullName },
+              details: {},
+            }]
+          : [],
+      ),
+      ...purchaseRows.flatMap((row) =>
+        row.createdAt
+          ? [{
+              id: `purchase:${row.orderId}`,
+              type: "purchase" as const,
+              createdAt: row.createdAt.toISOString(),
+              user: { id: row.userId, phone: row.phone, fullName: row.fullName },
+              details: {
+                orderId: row.orderId,
+                planName: row.planName,
+                amountRials: row.amountRials,
+                refId: row.refId,
+              },
+            }]
+          : [],
+      ),
+      ...resumeRows.map((row) => ({
+        id: `resume:${row.recordId}:${row.createdAt.toISOString()}`,
+        type: "resume" as const,
+        createdAt: row.createdAt.toISOString(),
+        user: { id: row.userId, phone: row.phone, fullName: row.fullName },
+        details: { recordId: row.recordId, profileId: row.profileId },
+      })),
+    ];
+
+    return {
+      items: events
+        .sort((first, second) => second.createdAt.localeCompare(first.createdAt))
+        .slice(0, limit),
+    };
+  }
+
+  async listUsers(
+    search = "",
+    page = 1,
+    pageSize = 20,
+    role?: UserRole,
+    status?: UserStatus,
+  ) {
     const term = `%${search.trim()}%`;
-    const filter = search.trim()
-      ? sql`${users.phone} ILIKE ${term} OR COALESCE(${users.fullName}, '') ILIKE ${term}`
-      : undefined;
+    const filter = and(
+      search.trim()
+        ? sql`${users.phone} ILIKE ${term} OR COALESCE(${users.fullName}, '') ILIKE ${term}`
+        : undefined,
+      role ? eq(users.role, role) : undefined,
+      status ? eq(users.status, status) : undefined,
+    );
     const [rows, totals] = await Promise.all([
       this.database
         .select({
@@ -282,7 +425,18 @@ export class AuthService {
     return { items: rows, total: totals[0]?.total ?? 0, page, pageSize };
   }
 
-  async listAllRecords(page = 1, pageSize = 20) {
+  async listAllRecords(page = 1, pageSize = 20, search = "", collection?: string) {
+    const term = `%${search.trim()}%`;
+    const filter = and(
+      search.trim()
+        ? or(
+            ilike(dataRecords.id, term),
+            ilike(dataRecords.profileId, term),
+            ilike(users.phone, term),
+          )
+        : undefined,
+      collection ? eq(dataRecords.collection, collection) : undefined,
+    );
     const [rows, totals] = await Promise.all([
       this.database
         .select({
@@ -295,10 +449,15 @@ export class AuthService {
         })
         .from(dataRecords)
         .leftJoin(users, eq(dataRecords.ownerUserId, users.id))
+        .where(filter)
         .orderBy(desc(dataRecords.updatedAt))
         .limit(pageSize)
         .offset((page - 1) * pageSize),
-      this.database.select({ total: count() }).from(dataRecords),
+      this.database
+        .select({ total: count() })
+        .from(dataRecords)
+        .leftJoin(users, eq(dataRecords.ownerUserId, users.id))
+        .where(filter),
     ]);
     return { items: rows, total: totals[0]?.total ?? 0, page, pageSize };
   }

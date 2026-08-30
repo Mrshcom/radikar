@@ -2,6 +2,7 @@ import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
 import Fastify, { type FastifyServerOptions } from "fastify";
+import { normalizeDigitsDeep } from "@radicar/validators";
 import { ZodError } from "zod";
 import { registerDataRoutes } from "./modules/data/routes";
 import { registerAiRoutes } from "./modules/ai/routes";
@@ -48,6 +49,11 @@ export function buildApp({
     credentials: true,
   });
   app.register(cookie);
+  app.addHook("preValidation", async (request) => {
+    request.body = normalizeDigitsDeep(request.body);
+    request.query = normalizeDigitsDeep(request.query);
+    request.params = normalizeDigitsDeep(request.params);
+  });
   app.addHook("onRequest", async (request, reply) => {
     const origin = request.headers.origin;
     const changesState = ["POST", "PUT", "PATCH", "DELETE"].includes(request.method);

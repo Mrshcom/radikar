@@ -53,6 +53,10 @@ const otherIdentity: SessionIdentity = {
   user: { ...testUser, id: "33333333-3333-4333-8333-333333333333", phone: "09121111111", role: "user" },
   sessionId: "session-other",
 };
+const secondUserIdentity: SessionIdentity = {
+  user: { ...testUser, id: "55555555-5555-4555-8555-555555555555", phone: "09123333333", role: "user" },
+  sessionId: "session-second-user",
+};
 const adminIdentity: SessionIdentity = {
   user: { ...testUser, id: "44444444-4444-4444-8444-444444444444", phone: "09122222222", role: "admin" },
   sessionId: "session-admin",
@@ -66,11 +70,18 @@ const authService: AuthServicePort = {
       ? testIdentity
       : token === "other-token"
         ? otherIdentity
+        : token === "second-user-token"
+          ? secondUserIdentity
         : token === "admin-token"
           ? adminIdentity
           : null,
   revokeSession: async () => undefined,
-  getStats: async () => ({ users: { total: 1, active: 1 }, records: { total: 0, byCollection: [] }, usersByRole: [{ role: "superadmin", total: 1 }] }),
+  getStats: async () => ({
+    users: { total: 1, active: 1, registeredToday: 1, activeToday: 1 },
+    records: { total: 0, resumes: 0, resumesToday: 0, byCollection: [] },
+    usersByRole: [{ role: "superadmin", total: 1 }],
+  }),
+  getRecentEvents: async () => ({ items: [] }),
   listUsers: async () => ({ items: [], total: 0, page: 1, pageSize: 20 }),
   listAllRecords: async () => ({ items: [], total: 0, page: 1, pageSize: 20 }),
   getUserDetails: async () => ({ ...testUser, records: [] }),
@@ -78,18 +89,55 @@ const authService: AuthServicePort = {
   updateProfile: async () => testUser,
 };
 
-function createTestApp() {
+function createTestApp(authServiceOverride: AuthServicePort = authService) {
   return buildApp({
     repository: new MemoryRecordRepository(),
     readinessCheck: async () => undefined,
     corsOrigins: ["http://localhost:3161"],
     logger: false,
-    authService,
+    authService: authServiceOverride,
     sessionCookieName: "radicar_session",
     secureCookies: false,
     sessionTtlDays: 30,
   });
 }
+
+test("normalizes Persian and Arabic digits before route validation", async () => {
+  let receivedPhone = "";
+  let receivedCode = "";
+  const app = createTestApp({
+    ...authService,
+    requestOtp: async (phone) => {
+      receivedPhone = phone;
+      return { challengeId: "22222222-2222-4222-8222-222222222222", expiresInSeconds: 180 };
+    },
+    verifyOtp: async (_phone, _challengeId, code) => {
+      receivedCode = code;
+      return { user: testUser, sessionToken: "test-token", sessionExpiresAt: new Date("2026-09-27") };
+    },
+  });
+
+  const requested = await app.inject({
+    method: "POST",
+    url: "/api/auth/request-otp",
+    payload: { phone: "۰۹۱۲۳۴۵۶۷۸۹" },
+  });
+  assert.equal(requested.statusCode, 200);
+  assert.equal(receivedPhone, "09123456789");
+
+  const verified = await app.inject({
+    method: "POST",
+    url: "/api/auth/verify-otp",
+    payload: {
+      phone: "٠٩١٢٣٤٥٦٧٨٩",
+      challengeId: "22222222-2222-4222-8222-222222222222",
+      code: "١٢٣٤٥٦",
+    },
+  });
+  assert.equal(verified.statusCode, 200);
+  assert.equal(receivedCode, "123456");
+  await app.close();
+});
 
 test("stores, reads and removes a data record", async () => {
   const app = createTestApp();
@@ -105,18 +153,18 @@ test("stores, reads and removes a data record", async () => {
     method: "PUT",
     url: "/v1/data/jobs/job-1",
     payload: record,
-    cookies: { radicar_session: "test-token" },
+    cookies: { radicar_session: "other-token" },
   });
   assert.equal(saved.statusCode, 200);
   assert.deepEqual(saved.json(), record);
 
-  const listed = await app.inject({ method: "GET", url: "/v1/data/jobs", cookies: { radicar_session: "test-token" } });
+  const listed = await app.inject({ method: "GET", url: "/v1/data/jobs", cookies: { radicar_session: "other-token" } });
   assert.deepEqual(listed.json(), [record]);
 
   const removed = await app.inject({
     method: "DELETE",
     url: "/v1/data/jobs/job-1",
-    cookies: { radicar_session: "test-token" },
+    cookies: { radicar_session: "other-token" },
   });
   assert.equal(removed.statusCode, 204);
   await app.close();
@@ -124,7 +172,7 @@ test("stores, reads and removes a data record", async () => {
 
 test("rejects unknown collections and mismatched ids", async () => {
   const app = createTestApp();
-  const unknown = await app.inject({ method: "GET", url: "/v1/data/unknown", cookies: { radicar_session: "test-token" } });
+  const unknown = await app.inject({ method: "GET", url: "/v1/data/unknown", cookies: { radicar_session: "other-token" } });
   assert.equal(unknown.statusCode, 400);
 
   const mismatch = await app.inject({
@@ -135,7 +183,7 @@ test("rejects unknown collections and mismatched ids", async () => {
       createdAt: "2026-08-27T10:00:00.000Z",
       updatedAt: "2026-08-27T10:00:00.000Z",
     },
-    cookies: { radicar_session: "test-token" },
+    cookies: { radicar_session: "other-token" },
   });
   assert.equal(mismatch.statusCode, 400);
   await app.close();
@@ -155,12 +203,12 @@ test("requires a session and isolates records by authenticated owner", async () 
     method: "PUT",
     url: "/v1/data/jobs/private-job",
     payload: record,
-    cookies: { radicar_session: "test-token" },
+    cookies: { radicar_session: "other-token" },
   });
   const otherUsersRecords = await app.inject({
     method: "GET",
     url: "/v1/data/jobs",
-    cookies: { radicar_session: "other-token" },
+    cookies: { radicar_session: "second-user-token" },
   });
   assert.deepEqual(otherUsersRecords.json(), []);
   await app.close();
@@ -195,6 +243,25 @@ test("allows only superadmins to access system reports", async () => {
   });
   assert.equal(admin.statusCode, 403);
   assert.equal(superadmin.statusCode, 200);
+  const events = await app.inject({
+    method: "GET",
+    url: "/api/admin/events?limit=20",
+    cookies: { radicar_session: "test-token" },
+  });
+  assert.equal(events.statusCode, 200);
+  await app.close();
+});
+
+test("management roles cannot use customer-owned workspace data", async () => {
+  const app = createTestApp();
+  for (const token of ["admin-token", "test-token"]) {
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/data/resumes",
+      cookies: { radicar_session: token },
+    });
+    assert.equal(response.statusCode, 403);
+  }
   await app.close();
 });
 

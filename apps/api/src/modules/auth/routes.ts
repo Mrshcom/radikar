@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { normalizeDigits } from "@radicar/validators";
 import { z } from "zod";
 import { AuthError, AuthService } from "./service";
 import { can, type AuthUser, type Permission, type SessionIdentity } from "./types";
@@ -12,14 +13,22 @@ declare module "fastify" {
 const requestOtpSchema = z.object({ phone: z.string().min(1).max(32) });
 const verifyOtpSchema = requestOtpSchema.extend({
   challengeId: z.uuid(),
-  code: z.string().regex(/^\d{6}$/),
+  code: z.string().transform(normalizeDigits).pipe(z.string().regex(/^\d{6}$/)),
 });
 const userListSchema = z.object({
   search: z.string().max(100).default(""),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  role: z.enum(["user", "admin", "superadmin"]).optional(),
+  status: z.enum(["active", "suspended"]).optional(),
+});
+const recordListSchema = userListSchema.pick({ search: true, page: true, pageSize: true }).extend({
+  collection: z.string().max(50).optional(),
 });
 const userParamsSchema = z.object({ id: z.uuid() });
+const eventListSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+});
 const updateUserSchema = z
   .object({
     role: z.enum(["user", "admin", "superadmin"]).optional(),
@@ -44,6 +53,7 @@ export type AuthServicePort = Pick<
   | "resolveSession"
   | "revokeSession"
   | "getStats"
+  | "getRecentEvents"
   | "listUsers"
   | "listAllRecords"
   | "getUserDetails"
@@ -114,16 +124,22 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
     return authService.getStats();
   });
 
+  app.get("/api/admin/events", async (request, reply) => {
+    if (!requirePermission(request, reply, "reports:read:any")) return;
+    const query = eventListSchema.parse(request.query);
+    return authService.getRecentEvents(query.limit);
+  });
+
   app.get("/api/admin/users", async (request, reply) => {
     if (!requirePermission(request, reply, "users:read:any")) return;
     const query = userListSchema.parse(request.query);
-    return authService.listUsers(query.search, query.page, query.pageSize);
+    return authService.listUsers(query.search, query.page, query.pageSize, query.role, query.status);
   });
 
   app.get("/api/admin/records", async (request, reply) => {
     if (!requirePermission(request, reply, "reports:read:any")) return;
-    const query = userListSchema.pick({ page: true, pageSize: true }).parse(request.query);
-    return authService.listAllRecords(query.page, query.pageSize);
+    const query = recordListSchema.parse(request.query);
+    return authService.listAllRecords(query.page, query.pageSize, query.search, query.collection);
   });
 
   app.get<{ Params: { id: string } }>("/api/admin/users/:id", async (request, reply) => {

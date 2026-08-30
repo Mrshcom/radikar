@@ -31,6 +31,10 @@ export type Membership = {
   matchCreditsRemaining: number;
   interviewCreditsRemaining: number;
   plan: Plan;
+  usage: Record<
+    "resume" | "pdf" | "ai" | "match" | "interview",
+    { used: number; remaining: number | null; total: number | null }
+  >;
 };
 
 export type Order = {

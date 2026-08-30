@@ -36,10 +36,15 @@ import {
   ShieldCheck,
   LogOut,
   CreditCard,
-  Layers3,
+  Database,
   ReceiptText,
   Settings,
   UserRound,
+  UserPlus,
+  Users,
+  ShoppingBag,
+  FilePlus2,
+  Activity,
 } from "lucide-react";
 import {
   appProfileStore,
@@ -58,25 +63,44 @@ import {
   ModelTaskProvider,
   useModelTasks,
 } from "./model-task-provider";
-import { useAuth, useLogout } from "@/app/_components/auth";
+import { useAuth, useLogout, type UserRole } from "@/app/_components/auth";
+import { useAdminEvents, type AdminEvent } from "@/lib/admin-stats";
 
 type MenuItem = {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
-  adminOnly?: boolean;
+  roles: readonly UserRole[];
 };
 
 const menuItems: MenuItem[] = [
-  { href: "/dashboard", label: "نمای کلی", icon: LayoutDashboard },
-  { href: "/knowledge-base", label: "پایگاه دانش", icon: BookOpenText },
-  { href: "/resumes", label: "رزومه‌های من", icon: FileText },
-  { href: "/match", label: "تطبیق با شغل", icon: Target },
-  { href: "/jobs", label: "فرصت‌های شغلی", icon: BriefcaseBusiness },
-  { href: "/applications", label: "پیگیری اپلای‌ها", icon: BarChart3 },
-  { href: "/interview", label: "آمادگی مصاحبه", icon: MessageSquareText },
-  { href: "/admin", label: "مدیریت سامانه", icon: ShieldCheck, adminOnly: true },
+  { href: "/dashboard", label: "نمای کلی", icon: LayoutDashboard, roles: ["user"] },
+  { href: "/knowledge-base", label: "پایگاه دانش", icon: BookOpenText, roles: ["user"] },
+  { href: "/resumes", label: "رزومه‌های من", icon: FileText, roles: ["user"] },
+  { href: "/match", label: "تطبیق با شغل", icon: Target, roles: ["user"] },
+  { href: "/jobs", label: "فرصت‌های شغلی", icon: BriefcaseBusiness, roles: ["user"] },
+  { href: "/applications", label: "پیگیری اپلای‌ها", icon: BarChart3, roles: ["user"] },
+  { href: "/interview", label: "آمادگی مصاحبه", icon: MessageSquareText, roles: ["user"] },
+  { href: "/admin", label: "داشبورد مدیریتی", icon: LayoutDashboard, roles: ["admin", "superadmin"] },
+  { href: "/admin/users", label: "کاربران و دسترسی‌ها", icon: Users, roles: ["superadmin"] },
+  { href: "/admin/memberships", label: "عضویت و اعتبار", icon: ShieldCheck, roles: ["admin", "superadmin"] },
+  { href: "/admin/orders", label: "سفارش‌های سامانه", icon: ReceiptText, roles: ["admin", "superadmin"] },
+  { href: "/admin/payments", label: "تراکنش‌ها و واریزی‌ها", icon: CreditCard, roles: ["admin", "superadmin"] },
+  { href: "/admin/records", label: "داده‌های سامانه", icon: Database, roles: ["superadmin"] },
 ];
+
+const pageTitles: Record<string, string> = {
+  "/account": "حساب کاربری",
+  "/settings": "تنظیمات",
+  "/orders": "سفارش‌ها",
+  "/upgrade": "خرید و ارتقای بسته",
+  "/billing/result": "نتیجه پرداخت",
+  "/admin/memberships": "کاربران و عضویت‌ها",
+  "/admin/users": "کاربران و دسترسی‌ها",
+  "/admin/orders": "سفارش‌های سامانه",
+  "/admin/payments": "واریزی‌های سامانه",
+  "/admin/records": "داده‌های سامانه",
+};
 
 type ToastVariant = "success" | "error" | "info";
 type ToastState = { message: string; variant: ToastVariant };
@@ -98,6 +122,30 @@ function initials(name: string) {
         .map((part) => Array.from(part)[0])
         .join("\u200c")
     : "—";
+}
+
+function adminEventHref(type: AdminEvent["type"]) {
+  if (type === "purchase") return "/admin/orders";
+  if (type === "resume") return "/admin/records";
+  return "/admin/users";
+}
+
+function adminEventMessage(event: AdminEvent) {
+  const userName = event.user.fullName || event.user.phone;
+  if (event.type === "signup") return `${userName} در سامانه ثبت‌نام کرد.`;
+  if (event.type === "login") return `${userName} وارد سامانه شد.`;
+  if (event.type === "resume") return `${userName} یک رزومه جدید ساخت.`;
+  const amountTomans = Math.round((event.details.amountRials ?? 0) / 10).toLocaleString("fa-IR");
+  return `${userName} بسته ${event.details.planName || "اشتراک"} را به مبلغ ${amountTomans} تومان خرید.`;
+}
+
+function adminEventTime(value: string) {
+  const date = new Date(value);
+  const today = new Date();
+  const sameDay = date.toLocaleDateString("fa-IR") === today.toLocaleDateString("fa-IR");
+  return sameDay
+    ? `امروز، ${date.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}`
+    : date.toLocaleString("fa-IR", { dateStyle: "short", timeStyle: "short" });
 }
 
 export function PanelShell({ children }: { children: ReactNode }) {
@@ -130,12 +178,20 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const noticeRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const userRole = user?.role;
+  const isManagement = userRole === "admin" || userRole === "superadmin";
+  const isSuperadmin = userRole === "superadmin";
+  const adminEvents = useAdminEvents(isSuperadmin);
+  const [seenAdminEventIds, setSeenAdminEventIds] = useState<Set<string>>(() => new Set());
   const visibleMenuItems = useMemo(
-    () => menuItems.filter((item) => !item.adminOnly || user?.role !== "user"),
-    [user?.role],
+    () => menuItems.filter((item) => userRole && item.roles.includes(userRole)),
+    [userRole],
   );
   const title = useMemo(
-    () => visibleMenuItems.find((item) => item.href === pathname)?.label ?? "نمای کلی",
+    () =>
+      pageTitles[pathname] ??
+      visibleMenuItems.find((item) => item.href === pathname)?.label ??
+      "نمای کلی",
     [pathname, visibleMenuItems],
   );
   const notify = useCallback<ToastNotifier>(
@@ -143,8 +199,13 @@ function PanelShellContent({ children }: { children: ReactNode }) {
     [],
   );
   const latestJob = jobs[0];
+  const activeWorkspace = profiles.find((item) => item.id === activeProfileId);
+  const unreadAdminEvents = (adminEvents.data?.items ?? []).filter(
+    (event) => !seenAdminEventIds.has(event.id),
+  );
 
   useEffect(() => {
+    if (userRole !== "user") return;
     let active = true;
     Promise.all([ensureDefaultAppProfile(), getActiveProfileId()])
       .then(async ([storedProfiles, profileId]) => {
@@ -163,7 +224,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [notify]);
+  }, [notify, userRole]);
 
   useEffect(() => {
     if (!toast) return;
@@ -205,6 +266,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   }, [userMenuOpen]);
 
   useEffect(() => {
+    if (isManagement) return;
     const openSearch = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
@@ -213,7 +275,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
     };
     window.addEventListener("keydown", openSearch);
     return () => window.removeEventListener("keydown", openSearch);
-  }, []);
+  }, [isManagement]);
 
   const saveWorkspaceName = async () => {
     const workspaceName = editingWorkspaceName.trim();
@@ -308,7 +370,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
         <aside className="fixed inset-y-0 start-0 z-20 flex w-[248px] flex-col border-e border-[#e7ebe6] bg-white px-4 pb-[18px] pt-6 max-[820px]:hidden">
           <Link
             className="flex items-center gap-[11px] border-0 bg-transparent px-[9px] pb-6 text-right text-[#19312f] no-underline"
-            href="/dashboard"
+            href={isManagement ? "/admin" : "/dashboard"}
           >
             <span className="grid size-[39px] place-items-center rounded-[13px_13px_13px_5px] border border-[#cfe9df] bg-[#ecf8f3] shadow-[0_8px_18px_rgba(18,60,55,.16)]">
               <Image
@@ -327,7 +389,10 @@ function PanelShellContent({ children }: { children: ReactNode }) {
               </small>
             </div>
           </Link>
-          <nav className="flex flex-col gap-[5px]" aria-label="منوی اصلی">
+          <nav
+            className="flex min-h-0 flex-1 flex-col gap-[5px] overflow-y-auto"
+            aria-label="منوی اصلی"
+          >
             {visibleMenuItems.map((item) => {
               const Icon = item.icon;
               const active = pathname === item.href;
@@ -361,7 +426,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
             })}
           </nav>
           <div className="mt-auto grid w-full min-w-0 gap-3">
-            {modelTasks.length > 0 && (
+            {!isManagement && modelTasks.length > 0 && (
               <section
                 aria-label="فعالیت‌های مدل"
                 aria-live="polite"
@@ -411,54 +476,14 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 ))}
               </section>
             )}
-            <div className="relative -mb-1 -mx-1 min-w-0 max-w-full border-t border-[#e7ebe6] px-[5px] pt-[17px]" ref={userMenuRef}>
-              {userMenuOpen && (
-                <div className="absolute bottom-[58px] inset-x-1 z-40 overflow-hidden rounded-[14px] border border-[#e1e7e2] bg-white p-1.5 shadow-[0_18px_50px_rgba(25,57,50,.18)]">
-                  {[
-                    { href: "/account", label: "حساب کاربری", icon: UserRound },
-                    { href: "/settings", label: "تنظیمات", icon: Settings },
-                    { href: "/orders", label: "سفارش‌ها", icon: ReceiptText },
-                    { href: "/upgrade", label: "خرید و ارتقای بسته", icon: CreditCard },
-                  ].map(({ href, label, icon: Icon }) => (
-                    <Link
-                      className="flex min-h-10 items-center gap-2.5 rounded-[9px] px-3 text-[10px] font-semibold text-[#536762] no-underline hover:bg-[#edf6f1] hover:text-[#0f7b62]"
-                      href={href}
-                      key={href}
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <Icon size={16} /> {label}
-                    </Link>
-                  ))}
-                  <button
-                    className="flex min-h-10 w-full items-center gap-2.5 rounded-[9px] border-0 bg-transparent px-3 text-right text-[10px] font-semibold text-[#536762] hover:bg-[#edf6f1] hover:text-[#0f7b62]"
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      setDialog("profiles");
-                    }}
-                    type="button"
-                  >
-                    <Layers3 size={16} /> فضاهای کاری
-                  </button>
-                  <div className="my-1 border-t border-[#edf0ec]" />
-                  <button
-                    className="flex min-h-10 w-full items-center gap-2.5 rounded-[9px] border-0 bg-transparent px-3 text-right text-[10px] font-semibold text-[#a13f37] hover:bg-[#fff1ef]"
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      void logout().catch(() => notify("خروج از حساب ناموفق بود؛ دوباره تلاش کن.", "error"));
-                    }}
-                    type="button"
-                  >
-                    <LogOut size={16} /> خروج از حساب
-                  </button>
-                </div>
-              )}
+            {!isManagement && <div className="-mx-1 -mb-1 min-w-0 max-w-full border-t border-[#e7ebe6] px-[5px] pt-[17px]">
               <button
                 className="m-0 flex w-full min-w-0 items-center gap-[9px] overflow-hidden border-0 bg-transparent p-0 text-right"
-                onClick={() => setUserMenuOpen((value) => !value)}
-                aria-expanded={userMenuOpen}
+                onClick={() => setDialog("profiles")}
+                type="button"
               >
                 <span className="grid size-[35px] shrink-0 place-items-center rounded-[11px] bg-[#c98465] text-[11px] font-bold text-white">
-                  {initials(user?.fullName || user?.phone || "")}
+                  {initials(activeWorkspace?.workspaceName || user?.fullName || user?.phone || "")}
                 </span>
                 <span className="flex w-0 min-w-0 flex-1 flex-col overflow-hidden">
                   <strong
@@ -468,12 +493,12 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                     {user?.fullName || "حساب کاربری"}
                   </strong>
                   <small className="mt-0.5 block w-full truncate text-[9px] text-[#9aa4a2]">
-                    <span dir="ltr">{user?.phone}</span>
+                    <span dir="ltr">{user?.phone}</span> · مدیریت فضاهای کاری
                   </small>
                 </span>
-                <ChevronLeft className={`shrink-0 transition-transform ${userMenuOpen ? "-rotate-90" : ""}`} size={15} />
+                <ChevronLeft className="shrink-0" size={15} />
               </button>
-            </div>
+            </div>}
           </div>
         </aside>
         <main className="ms-[248px] min-w-0 w-[calc(100%-248px)] max-[820px]:ms-0 max-[820px]:w-full">
@@ -494,7 +519,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
               {title}
             </span>
             <div className="mr-auto flex items-center gap-[10px]">
-              <button
+              {!isManagement && <button
                 className="flex h-[38px] w-[210px] items-center gap-2 rounded-[11px] border border-[#e4e8e3] bg-white/85 px-[11px] text-[11px] text-[#8a9693] max-[820px]:hidden"
                 onClick={() => setDialog("search")}
               >
@@ -503,45 +528,138 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 <kbd className="mr-auto rounded-[5px] border border-[#e1e5e0] bg-[#f7f8f5] px-1.5 py-0.5 font-[inherit] text-[#a5aeac]">
                   ⌘ K
                 </kbd>
-              </button>
-              <div className="relative" ref={noticeRef}>
-                <button
-                  className="relative grid size-[38px] place-items-center rounded-[11px] border border-[#e4e8e3] bg-white text-[#60716e]"
-                  onClick={() => setNoticeOpen((value) => !value)}
-                  aria-label="اعلان‌ها"
-                  aria-expanded={noticeOpen}
-                >
-                  <Bell size={19} />
-                  {latestJob && (
-                    <i className="absolute right-[7px] top-[7px] size-1.5 rounded-full border border-white bg-[#e7835c]" />
-                  )}
-                </button>
-                {noticeOpen && (
-                  <div className="absolute left-0 top-[46px] w-[255px] rounded-[14px] border border-[#e7ebe6] bg-white p-4 shadow-[0_18px_45px_rgba(28,54,50,.15)]">
-                    <strong className="text-xs">
-                      {latestJob?.role || "اعلان تازه‌ای نیست"}
-                    </strong>
-                    <p className="my-[5px] text-[10px] leading-[1.8] text-[#758582]">
-                      {latestJob ? (
-                        <>
-                          {latestJob.company}
-                          {latestJob.match > 0
-                            ? ` · تطابق ${latestJob.match.toLocaleString("fa-IR")}٪`
-                            : ""}
-                        </>
-                      ) : (
-                        "فرصت‌های واردشده و رویدادهای واقعی اینجا نمایش داده می‌شوند."
-                      )}
-                    </p>
-                    {latestJob && (
-                      <Link
-                        className="p-0 text-[10px] font-bold text-[#0f7b62] no-underline"
-                        href="/jobs"
-                        onClick={() => setNoticeOpen(false)}
-                      >
-                        مشاهده فرصت
-                      </Link>
+              </button>}
+              {(userRole === "user" || isSuperadmin) && (
+                <div className="relative" ref={noticeRef}>
+                  <button
+                    className="relative grid size-[38px] place-items-center rounded-[11px] border border-[#e4e8e3] bg-white text-[#60716e]"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      if (!noticeOpen && isSuperadmin) {
+                        setSeenAdminEventIds(
+                          new Set((adminEvents.data?.items ?? []).map((event) => event.id)),
+                        );
+                      }
+                      setNoticeOpen((value) => !value);
+                    }}
+                    aria-label={isSuperadmin ? "اعلان‌های آماری مدیریت" : "اعلان‌ها"}
+                    aria-expanded={noticeOpen}
+                  >
+                    <Bell size={19} />
+                    {(latestJob || unreadAdminEvents.length > 0) && (
+                      <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full border border-white bg-[#e7835c] px-1 text-[7px] font-bold leading-none text-white">
+                        {isSuperadmin
+                          ? Math.min(unreadAdminEvents.length, 99).toLocaleString("fa-IR")
+                          : ""}
+                      </span>
                     )}
+                  </button>
+                  {noticeOpen && isSuperadmin && (
+                    <div className="absolute left-0 top-[46px] z-40 w-[360px] overflow-hidden rounded-[16px] border border-[#dfe6e1] bg-white shadow-[0_18px_50px_rgba(25,57,50,.18)] max-[420px]:fixed max-[420px]:inset-x-3 max-[420px]:top-[68px] max-[420px]:w-auto">
+                      <div className="border-b border-[#edf0ec] px-4 py-3.5">
+                        <strong className="block text-[12px] text-[#19312f]">رویدادهای جدید سامانه</strong>
+                        <small className="mt-1 block text-[8px] text-[#91a09c]">ثبت‌نام، ورود، خرید و ساخت رزومه · به‌روزرسانی هر ۱۵ ثانیه</small>
+                      </div>
+                      <div className="grid max-h-[420px] gap-1 overflow-y-auto p-2">
+                        {(adminEvents.data?.items ?? []).map((event) => {
+                          const Icon =
+                            event.type === "signup"
+                              ? UserPlus
+                              : event.type === "login"
+                                ? Activity
+                                : event.type === "purchase"
+                                  ? ShoppingBag
+                                  : FilePlus2;
+                          return (
+                            <Link
+                              className="flex min-h-[58px] items-start gap-3 rounded-[11px] px-2.5 py-2 text-[#536762] no-underline hover:bg-[#edf6f1]"
+                              href={adminEventHref(event.type)}
+                              key={event.id}
+                              onClick={() => setNoticeOpen(false)}
+                            >
+                              <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#eaf5f0] text-[#0f7b62]"><Icon size={17} /></span>
+                              <span className="min-w-0 flex-1">
+                                <strong className="block text-[9px] leading-6 text-[#334c48]">{adminEventMessage(event)}</strong>
+                                <small className="mt-0.5 block text-[7px] text-[#93a19e]">
+                                  <span dir="ltr">{event.user.phone}</span> · {adminEventTime(event.createdAt)}
+                                </small>
+                              </span>
+                            </Link>
+                          );
+                        })}
+                        {!adminEvents.isLoading && (adminEvents.data?.items.length ?? 0) === 0 && (
+                          <p className="m-0 px-3 py-8 text-center text-[9px] text-[#8b9996]">هنوز رویدادی ثبت نشده است.</p>
+                        )}
+                        {adminEvents.isLoading && (
+                          <p className="m-0 px-3 py-8 text-center text-[9px] text-[#8b9996]">در حال دریافت رویدادها...</p>
+                        )}
+                      </div>
+                      {adminEvents.isError && (
+                        <p className="m-0 border-t border-[#f0dfdb] bg-[#fff7f5] px-4 py-2 text-[8px] text-[#a13f37]">دریافت رویدادها ناموفق بود؛ چند لحظه دیگر دوباره بررسی می‌شود.</p>
+                      )}
+                    </div>
+                  )}
+                  {noticeOpen && userRole === "user" && (
+                    <div className="absolute left-0 top-[46px] w-[255px] rounded-[14px] border border-[#e7ebe6] bg-white p-4 shadow-[0_18px_45px_rgba(28,54,50,.15)]">
+                      <strong className="text-xs">{latestJob?.role || "اعلان تازه‌ای نیست"}</strong>
+                      <p className="my-[5px] text-[10px] leading-[1.8] text-[#758582]">
+                        {latestJob ? `${latestJob.company}${latestJob.match > 0 ? ` · تطابق ${latestJob.match.toLocaleString("fa-IR")}٪` : ""}` : "فرصت‌های واردشده و رویدادهای واقعی اینجا نمایش داده می‌شوند."}
+                      </p>
+                      {latestJob && <Link className="p-0 text-[10px] font-bold text-[#0f7b62] no-underline" href="/jobs" onClick={() => setNoticeOpen(false)}>مشاهده فرصت</Link>}
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  aria-expanded={userMenuOpen}
+                  aria-label="منوی حساب کاربری"
+                  className="flex h-[38px] min-w-0 items-center gap-2 rounded-[11px] border border-[#e4e8e3] bg-white px-1.5 pe-2.5 text-[#526762]"
+                  onClick={() => {
+                    setNoticeOpen(false);
+                    setUserMenuOpen((value) => !value);
+                  }}
+                  type="button"
+                >
+                  <span className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-[#c98465] text-[9px] font-bold text-white">
+                    {initials(user?.fullName || user?.phone || "")}
+                  </span>
+                  <span className="max-w-[110px] truncate text-[9px] font-bold max-[820px]:hidden">
+                    {user?.fullName || "حساب کاربری"}
+                  </span>
+                  <ChevronLeft className={`shrink-0 transition-transform max-[820px]:hidden ${userMenuOpen ? "-rotate-90" : ""}`} size={13} />
+                </button>
+                {userMenuOpen && (
+                  <div className="absolute left-0 top-[46px] z-40 w-[270px] overflow-hidden rounded-[16px] border border-[#dfe6e1] bg-white p-2 shadow-[0_18px_50px_rgba(25,57,50,.18)]">
+                    {(isManagement
+                      ? [{ href: "/settings", label: "تنظیمات و امنیت", icon: Settings }]
+                      : [
+                          { href: "/account", label: "حساب کاربری", icon: UserRound },
+                          { href: "/settings", label: "تنظیمات", icon: Settings },
+                          { href: "/orders", label: "سفارش‌ها", icon: ReceiptText },
+                          { href: "/upgrade", label: "خرید و ارتقای بسته", icon: CreditCard },
+                        ]
+                    ).map(({ href, label, icon: Icon }) => (
+                      <Link
+                        className="flex min-h-11 items-center gap-3 rounded-[10px] px-3 text-[11px] font-semibold text-[#536762] no-underline hover:bg-[#edf6f1] hover:text-[#0f7b62]"
+                        href={href}
+                        key={href}
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <Icon size={18} /> {label}
+                      </Link>
+                    ))}
+                    <div className="my-1 border-t border-[#edf0ec]" />
+                    <button
+                      className="flex min-h-11 w-full items-center gap-3 rounded-[10px] border-0 bg-transparent px-3 text-right text-[11px] font-semibold text-[#a13f37] hover:bg-[#fff1ef]"
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        void logout().catch(() => notify("خروج از حساب ناموفق بود؛ دوباره تلاش کن.", "error"));
+                      }}
+                      type="button"
+                    >
+                      <LogOut size={18} /> خروج از حساب
+                    </button>
                   </div>
                 )}
               </div>
@@ -552,17 +670,17 @@ function PanelShellContent({ children }: { children: ReactNode }) {
           </div>
         </main>
         <nav
-          className="fixed inset-x-0 bottom-0 z-30 hidden min-h-[66px] grid-cols-5 border-t border-[#e7ebe6] bg-white/96 px-[7px] pb-2 pt-[7px] backdrop-blur-xl max-[820px]:grid"
+          className="fixed inset-x-0 bottom-0 z-30 hidden min-h-[66px] overflow-x-auto border-t border-[#e7ebe6] bg-white/96 px-[7px] pb-2 pt-[7px] backdrop-blur-xl max-[820px]:flex"
           aria-label="منوی موبایل"
         >
-          {visibleMenuItems.slice(0, 5).map((item) => {
+          {visibleMenuItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-[3px] rounded-[9px] border-0 text-[8px] no-underline",
+                  "flex min-w-[72px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[9px] border-0 text-[8px] no-underline",
                   active
                     ? "bg-[#edf6f1] text-[#0f7b62]"
                     : "bg-transparent text-[#8a9794]",

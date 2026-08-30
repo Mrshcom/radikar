@@ -8,6 +8,18 @@ const pageSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 const adminListSchema = pageSchema.extend({ search: z.string().max(100).default("") });
+const orderListSchema = adminListSchema.extend({
+  status: z.enum(["pending", "paid", "failed", "canceled", "refunded"]).optional(),
+  planId: z.string().max(64).optional(),
+});
+const paymentListSchema = adminListSchema.extend({
+  status: z.enum(["initiated", "verified", "failed", "canceled", "refunded"]).optional(),
+});
+const membershipListSchema = adminListSchema.extend({
+  planId: z.string().max(64).optional(),
+  membershipStatus: z.enum(["active", "expired", "canceled"]).optional(),
+  userStatus: z.enum(["active", "suspended"]).optional(),
+});
 const createOrderSchema = z.object({ planId: z.string().min(1).max(64) });
 const callbackSchema = z.object({
   Authority: z.string().min(1),
@@ -23,19 +35,31 @@ const adjustCreditSchema = z.object({
 });
 const cancelSchema = z.object({ reason: z.string().trim().max(500).optional() });
 
+function requireCustomer(request: FastifyRequest, reply: FastifyReply) {
+  if (request.auth?.user.role === "user") return true;
+  reply.code(403).send({
+    error: "حساب‌های مدیریتی امکان خرید یا مصرف بسته ندارند.",
+    requestId: request.id,
+  });
+  return false;
+}
+
 export function registerBillingRoutes(app: FastifyInstance, billing: BillingService) {
   app.get("/api/billing/plans", () => billing.listPlans());
 
-  app.get("/api/billing/membership", (request) =>
-    billing.getMembership(request.auth!.user.id),
-  );
+  app.get("/api/billing/membership", (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
+    return billing.getMembership(request.auth!.user.id);
+  });
 
-  app.get("/api/billing/orders", (request) => {
+  app.get("/api/billing/orders", (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
     const query = pageSchema.parse(request.query);
     return billing.listUserOrders(request.auth!.user.id, query.page, query.pageSize);
   });
 
   app.post("/api/billing/orders", async (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
     const input = createOrderSchema.parse(request.body);
     const result = await billing.createOrder(
       request.auth!.user.id,
@@ -46,6 +70,7 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
   });
 
   app.post("/api/billing/usage/pdf", async (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
     await billing.consumeUsage(
       request.auth!.user.id,
       { pdf: 1 },
@@ -63,8 +88,8 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
 
   app.get("/api/admin/orders", (request, reply) => {
     if (!requirePermission(request, reply, "orders:read:any")) return;
-    const query = adminListSchema.parse(request.query);
-    return billing.listAdminOrders(query.search, query.page, query.pageSize);
+    const query = orderListSchema.parse(request.query);
+    return billing.listAdminOrders(query.search, query.page, query.pageSize, query.status, query.planId);
   });
 
   app.get("/api/admin/billing-stats", (request, reply) => {
@@ -74,14 +99,21 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
 
   app.get("/api/admin/payments", (request, reply) => {
     if (!requirePermission(request, reply, "payments:read:any")) return;
-    const query = pageSchema.parse(request.query);
-    return billing.listAdminPayments(query.page, query.pageSize);
+    const query = paymentListSchema.parse(request.query);
+    return billing.listAdminPayments(query.page, query.pageSize, query.search, query.status);
   });
 
   app.get("/api/admin/memberships", (request, reply) => {
     if (!requirePermission(request, reply, "memberships:manage:any")) return;
-    const query = adminListSchema.parse(request.query);
-    return billing.listMembershipUsers(query.search, query.page, query.pageSize);
+    const query = membershipListSchema.parse(request.query);
+    return billing.listMembershipUsers(
+      query.search,
+      query.page,
+      query.pageSize,
+      query.planId,
+      query.membershipStatus,
+      query.userStatus,
+    );
   });
 
   app.get<{ Params: { id: string } }>(

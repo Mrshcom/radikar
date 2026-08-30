@@ -124,11 +124,61 @@ export class BillingService {
       .where(eq(userMemberships.userId, userId))
       .limit(1);
     if (!row) throw new BillingError(404, "عضویت کاربر پیدا نشد.");
+    const usageRows = await this.database
+      .select({
+        resource: usageEvents.resource,
+        used: sql<number>`greatest(coalesce(-sum(${usageEvents.units}) filter (where ${usageEvents.operation} <> 'admin_adjust'), 0), 0)::int`,
+      })
+      .from(usageEvents)
+      .where(eq(usageEvents.membershipId, row.membership.id))
+      .groupBy(usageEvents.resource);
+    const used = {
+      resume: 0,
+      pdf: 0,
+      ai: 0,
+      match: 0,
+      interview: 0,
+    } satisfies Record<UsageResource, number>;
+    for (const item of usageRows) used[item.resource] = Number(item.used);
+    const usage = {
+      resume: {
+        used: used.resume,
+        remaining: row.membership.resumesRemaining,
+        total:
+          row.membership.resumesRemaining === null
+            ? null
+            : used.resume + row.membership.resumesRemaining,
+      },
+      pdf: {
+        used: used.pdf,
+        remaining: row.membership.pdfDownloadsRemaining,
+        total:
+          row.membership.pdfDownloadsRemaining === null
+            ? null
+            : used.pdf + row.membership.pdfDownloadsRemaining,
+      },
+      ai: {
+        used: used.ai,
+        remaining: row.membership.aiCreditsRemaining,
+        total: used.ai + row.membership.aiCreditsRemaining,
+      },
+      match: {
+        used: used.match,
+        remaining: row.membership.matchCreditsRemaining,
+        total: used.match + row.membership.matchCreditsRemaining,
+      },
+      interview: {
+        used: used.interview,
+        remaining: row.membership.interviewCreditsRemaining,
+        total: used.interview + row.membership.interviewCreditsRemaining,
+      },
+    };
     const expired = row.membership.expiresAt <= new Date();
     return {
       ...row.membership,
       status: expired && row.membership.status === "active" ? "expired" : row.membership.status,
       plan: row.plan,
+      usage,
     };
   }
 
@@ -478,13 +528,24 @@ export class BillingService {
     }
   }
 
-  async listAdminOrders(search = "", page = 1, pageSize = 20) {
-    const filter = search.trim()
-      ? or(
-          ilike(orders.orderNumber, `%${search.trim()}%`),
-          ilike(users.phone, `%${search.trim()}%`),
-        )
-      : undefined;
+  async listAdminOrders(
+    search = "",
+    page = 1,
+    pageSize = 20,
+    status?: typeof orders.$inferSelect.status,
+    planId?: string,
+  ) {
+    const filter = and(
+      search.trim()
+        ? or(
+            ilike(orders.orderNumber, `%${search.trim()}%`),
+            ilike(users.phone, `%${search.trim()}%`),
+            ilike(users.fullName, `%${search.trim()}%`),
+          )
+        : undefined,
+      status ? eq(orders.status, status) : undefined,
+      planId ? eq(orders.planId, planId) : undefined,
+    );
     const [items, totals] = await Promise.all([
       this.database
         .select({ order: orders, plan: plans, user: users })
@@ -511,6 +572,9 @@ export class BillingService {
         paidOrders: sql<number>`count(*) filter (where ${orders.status} = 'paid')`,
         pendingOrders: sql<number>`count(*) filter (where ${orders.status} = 'pending')`,
         revenueRials: sql<number>`coalesce(sum(${orders.amountRials}) filter (where ${orders.status} = 'paid'), 0)`,
+        ordersToday: sql<number>`count(*) filter (where ${orders.createdAt} >= (date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran'))`,
+        paidOrdersToday: sql<number>`count(*) filter (where ${orders.status} = 'paid' and ${orders.paidAt} >= (date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran'))`,
+        revenueTodayRials: sql<number>`coalesce(sum(${orders.amountRials}) filter (where ${orders.status} = 'paid' and ${orders.paidAt} >= (date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran')), 0)`,
       })
       .from(orders);
     return {
@@ -518,31 +582,68 @@ export class BillingService {
       paidOrders: Number(row?.paidOrders ?? 0),
       pendingOrders: Number(row?.pendingOrders ?? 0),
       revenueRials: Number(row?.revenueRials ?? 0),
+      ordersToday: Number(row?.ordersToday ?? 0),
+      paidOrdersToday: Number(row?.paidOrdersToday ?? 0),
+      revenueTodayRials: Number(row?.revenueTodayRials ?? 0),
     };
   }
 
-  async listAdminPayments(page = 1, pageSize = 20) {
+  async listAdminPayments(
+    page = 1,
+    pageSize = 20,
+    search = "",
+    status?: typeof payments.$inferSelect.status,
+  ) {
+    const filter = and(
+      search.trim()
+        ? or(
+            ilike(users.phone, `%${search.trim()}%`),
+            ilike(users.fullName, `%${search.trim()}%`),
+            ilike(payments.authority, `%${search.trim()}%`),
+            ilike(payments.refId, `%${search.trim()}%`),
+          )
+        : undefined,
+      status ? eq(payments.status, status) : undefined,
+    );
     const [items, totals] = await Promise.all([
       this.database
         .select({ payment: payments, order: orders, user: users })
         .from(payments)
         .innerJoin(orders, eq(payments.orderId, orders.id))
         .innerJoin(users, eq(orders.userId, users.id))
+        .where(filter)
         .orderBy(desc(payments.createdAt))
         .limit(pageSize)
         .offset((page - 1) * pageSize),
-      this.database.select({ total: count() }).from(payments),
+      this.database
+        .select({ total: count() })
+        .from(payments)
+        .innerJoin(orders, eq(payments.orderId, orders.id))
+        .innerJoin(users, eq(orders.userId, users.id))
+        .where(filter),
     ]);
     return { items, total: totals[0]?.total ?? 0, page, pageSize };
   }
 
-  async listMembershipUsers(search = "", page = 1, pageSize = 20) {
-    const filter = search.trim()
-      ? or(
-          ilike(users.phone, `%${search.trim()}%`),
-          ilike(users.fullName, `%${search.trim()}%`),
-        )
-      : undefined;
+  async listMembershipUsers(
+    search = "",
+    page = 1,
+    pageSize = 20,
+    planId?: string,
+    membershipStatus?: typeof userMemberships.$inferSelect.status,
+    userStatus?: typeof users.$inferSelect.status,
+  ) {
+    const filter = and(
+      search.trim()
+        ? or(
+            ilike(users.phone, `%${search.trim()}%`),
+            ilike(users.fullName, `%${search.trim()}%`),
+          )
+        : undefined,
+      planId ? eq(userMemberships.planId, planId) : undefined,
+      membershipStatus ? eq(userMemberships.status, membershipStatus) : undefined,
+      userStatus ? eq(users.status, userStatus) : undefined,
+    );
     const [items, totals] = await Promise.all([
       this.database
         .select({ user: users, membership: userMemberships, plan: plans })
@@ -553,7 +654,11 @@ export class BillingService {
         .orderBy(desc(users.createdAt))
         .limit(pageSize)
         .offset((page - 1) * pageSize),
-      this.database.select({ total: count() }).from(users).where(filter),
+      this.database
+        .select({ total: count() })
+        .from(users)
+        .leftJoin(userMemberships, eq(userMemberships.userId, users.id))
+        .where(filter),
     ]);
     return { items, total: totals[0]?.total ?? 0, page, pageSize };
   }

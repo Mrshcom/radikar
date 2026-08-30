@@ -39,7 +39,7 @@ const environmentSchema = z.object({
   BOOTSTRAP_SUPERADMIN_PHONE: z.string().regex(/^09\d{9}$/).optional(),
   ALLOW_FIRST_USER_SUPERADMIN: z.stringbool().default(false),
   EXPOSE_DEVELOPMENT_OTP: z.stringbool().default(true),
-  API_PUBLIC_URL: z.url().default("http://127.0.0.1:3162"),
+  API_PUBLIC_URL: z.url().default("http://localhost:3162"),
   WEB_APP_URL: z.url().default("http://localhost:3161"),
   ZARINPAL_BASE_URL: z.url().default("https://sandbox.zarinpal.com"),
   ZARINPAL_MERCHANT_ID: z

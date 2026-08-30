@@ -11,20 +11,23 @@ import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api-client";
 import { authQueryKey, type CurrentUser } from "@/app/_components/auth";
+import { normalizeDigits } from "@radicar/validators";
+
+const localizedNumericString = z.string().trim().transform(normalizeDigits);
 
 const phoneSchema = z.object({
-  phone: z
-    .string()
-    .trim()
-    .min(1, "شماره همراه را وارد کن.")
-    .regex(/^09\d{9}$/, "شماره همراه باید با ۰۹ شروع شود و ۱۱ رقم باشد."),
+  phone: localizedNumericString.pipe(
+    z.string().min(1, "شماره همراه را وارد کن.").regex(
+      /^09\d{9}$/,
+      "شماره همراه باید با ۰۹ شروع شود و ۱۱ رقم باشد.",
+    ),
+  ),
 });
 
 const otpSchema = z.object({
-  otp: z
-    .string()
-    .trim()
-    .regex(/^\d{6}$/, "کد یک‌بارمصرف باید ۶ رقم باشد."),
+  otp: localizedNumericString.pipe(
+    z.string().regex(/^\d{6}$/, "کد یک‌بارمصرف باید ۶ رقم باشد."),
+  ),
 });
 
 type PhoneValues = z.infer<typeof phoneSchema>;
@@ -103,7 +106,7 @@ export default function LoginPage() {
       });
       queryClient.clear();
       queryClient.setQueryData(authQueryKey, { user: result.user });
-      router.replace(result.user.role === "superadmin" ? "/admin" : "/dashboard");
+      router.replace(result.user.role === "user" ? "/dashboard" : "/admin");
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "بررسی کد ورود ناموفق بود.");
     }
@@ -124,7 +127,7 @@ export default function LoginPage() {
   };
 
   const updateOtpDigit = (index: number, value: string) => {
-    const digit = value.replace(/\D/g, "").slice(-1);
+    const digit = normalizeDigits(value).replace(/\D/g, "").slice(-1);
     const digits = [...otpDigits];
     digits[index] = digit;
     setOtpDigits(digits);
@@ -141,7 +144,9 @@ export default function LoginPage() {
   };
 
   const handleOtpPaste = (event: ClipboardEvent<HTMLDivElement>) => {
-    const pastedCode = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const pastedCode = normalizeDigits(event.clipboardData.getData("text"))
+      .replace(/\D/g, "")
+      .slice(0, 6);
     if (!pastedCode) return;
     event.preventDefault();
     setOtpDigits(Array.from({ length: 6 }, (_, index) => pastedCode[index] || ""));
@@ -219,6 +224,9 @@ export default function LoginPage() {
                     autoComplete="tel"
                     maxLength={11}
                     placeholder="09123456789"
+                    onInput={(event) => {
+                      event.currentTarget.value = normalizeDigits(event.currentTarget.value);
+                    }}
                   />
                 </span>
                 {phoneErrors.phone && <span className="text-[10px] font-medium text-[#c64c54]">{phoneErrors.phone.message}</span>}

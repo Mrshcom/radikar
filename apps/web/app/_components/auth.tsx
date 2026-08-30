@@ -32,11 +32,22 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, error } = useAuth();
+  const isManagement = user?.role === "admin" || user?.role === "superadmin";
+  const isManagementPath = pathname.startsWith("/admin") || pathname === "/settings";
   useEffect(() => {
     if (!isLoading && !user && error) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
-  }, [error, isLoading, pathname, router, user]);
+    if (!isLoading && isManagement && !isManagementPath) router.replace("/admin");
+    if (!isLoading && user?.role === "user" && pathname.startsWith("/admin")) {
+      router.replace("/dashboard");
+    }
+  }, [error, isLoading, isManagement, isManagementPath, pathname, router, user]);
 
-  if (isLoading || !user) {
+  if (
+    isLoading ||
+    !user ||
+    (isManagement && !isManagementPath) ||
+    (user.role === "user" && pathname.startsWith("/admin"))
+  ) {
     return (
       <main className="grid min-h-screen place-items-center bg-[#f6f7f2] text-[13px] text-[#687a76]">
         در حال بررسی نشست کاربری...

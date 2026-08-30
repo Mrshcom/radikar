@@ -60,6 +60,9 @@ test("login page uses a two-step validated mobile OTP flow backed by the auth AP
   assert.match(loginPage, /useForm<OtpValues>/);
   assert.match(loginPage, /zodResolver\(phoneSchema\)/);
   assert.match(loginPage, /zodResolver\(otpSchema\)/);
+  assert.match(loginPage, /transform\(normalizeDigits\)/);
+  assert.match(loginPage, /normalizeDigits\(event\.currentTarget\.value\)/);
+  assert.match(loginPage, /normalizeDigits\(event\.clipboardData\.getData\("text"\)\)/);
   assert.match(loginPage, /autoComplete="tel"/);
   assert.match(loginPage, /\^09\\d\{9\}\$/);
   assert.match(
@@ -84,7 +87,7 @@ test("login page uses a two-step validated mobile OTP flow backed by the auth AP
   assert.match(loginPage, /queryClient\.setQueryData\(authQueryKey/);
   assert.match(
     loginPage,
-    /router\.replace\(result\.user\.role === "superadmin" \? "\/admin" : "\/dashboard"\)/,
+    /router\.replace\(result\.user\.role === "user" \? "\/dashboard" : "\/admin"\)/,
   );
   assert.match(loginPage, /ورود به حساب کاربری/);
   assert.match(loginPage, /src="\/logo\.svg"/);
@@ -163,20 +166,116 @@ test("sidebar menu starts directly with navigation items", async () => {
 
   assert.match(
     panelShell,
-    /<nav className="flex flex-col gap-\[5px\]" aria-label="منوی اصلی">\s*\{visibleMenuItems\.map/,
+    /<nav\s+className="flex min-h-0 flex-1 flex-col gap-\[5px\] overflow-y-auto"\s+aria-label="منوی اصلی"\s*>\s*\{visibleMenuItems\.map/,
   );
 });
 
-test("sidebar account card contains long workspace and account text", async () => {
+test("management roles receive dedicated monitoring pages instead of customer tools", async () => {
+  const panelShell = await readFile(
+    new URL("app/(panel)/_components/panel-shell.tsx", projectRoot),
+    "utf8",
+  );
+  const adminPages = await Promise.all(
+    ["users", "memberships", "orders", "payments", "records"].map((section) =>
+      readFile(
+        new URL(`app/(panel)/admin/${section}/page.tsx`, projectRoot),
+        "utf8",
+      ),
+    ),
+  );
+
+  assert.match(
+    panelShell,
+    /href: "\/admin", label: "داشبورد مدیریتی", icon: LayoutDashboard, roles: \["admin", "superadmin"\]/,
+  );
+  assert.match(
+    panelShell,
+    /href: "\/admin\/users", label: "کاربران و دسترسی‌ها", icon: Users, roles: \["superadmin"\]/,
+  );
+  assert.match(
+    panelShell,
+    /href: "\/admin\/records", label: "داده‌های سامانه", icon: Database, roles: \["superadmin"\]/,
+  );
+  assert.match(panelShell, /href: "\/dashboard"[\s\S]*?roles: \["user"\]/);
+  assert.match(panelShell, /if \(userRole !== "user"\) return/);
+  assert.match(panelShell, /\{!isManagement && <div[\s\S]*?مدیریت فضاهای کاری/);
+  assert.match(panelShell, /isManagement[\s\S]*?تنظیمات و امنیت/);
+  assert.doesNotMatch(
+    panelShell.match(/isManagement\s*\?[\s\S]*?: \[/)?.[0] ?? "",
+    /خرید و ارتقای بسته/,
+  );
+  for (const page of adminPages) {
+    assert.doesNotMatch(page, /AdminNav/);
+  }
+});
+
+test("superadmin notifications show individual live system events", async () => {
+  const [panelShell, adminStats] = await Promise.all([
+    readFile(
+      new URL("app/(panel)/_components/panel-shell.tsx", projectRoot),
+      "utf8",
+    ),
+    readFile(new URL("lib/admin-stats.ts", projectRoot), "utf8"),
+  ]);
+
+  assert.match(panelShell, /aria-label=\{isSuperadmin \? "اعلان‌های آماری مدیریت"/);
+  assert.match(panelShell, /رویدادهای جدید سامانه/);
+  assert.match(panelShell, /adminEventMessage\(event\)/);
+  assert.match(panelShell, /یک رزومه جدید ساخت/);
+  assert.match(panelShell, /به مبلغ.*تومان خرید/);
+  assert.match(panelShell, /unreadAdminEvents\.length/);
+  assert.match(adminStats, /adminEventsQueryKey = \["admin", "events"\] as const/);
+  assert.match(adminStats, /"\/api\/admin\/events\?limit=30"/);
+  assert.match(adminStats, /refetchInterval: enabled \? 15_000 : false/);
+  assert.match(panelShell, /useAdminEvents\(isSuperadmin\)/);
+});
+
+test("all admin data tables share search, advanced filters, zero state and pagination", async () => {
+  const [controls, ...pages] = await Promise.all([
+    readFile(
+      new URL("app/(panel)/admin/_components/admin-table-controls.tsx", projectRoot),
+      "utf8",
+    ),
+    ...["users", "memberships", "orders", "payments", "records"].map((section) =>
+      readFile(new URL(`app/(panel)/admin/${section}/page.tsx`, projectRoot), "utf8"),
+    ),
+  ]);
+
+  assert.match(controls, /zodResolver\(searchSchema\)/);
+  assert.match(controls, /فیلتر پیشرفته/);
+  assert.match(controls, /هنوز اطلاعاتی ثبت نشده است/);
+  assert.match(controls, /تعداد ردیف/);
+  assert.match(controls, /\[10, 20, 50, 100\]/);
+  for (const page of pages) {
+    assert.match(page, /AdminTableToolbar/);
+    assert.match(page, /AdminTableEmptyState/);
+    assert.match(page, /AdminTablePagination/);
+  }
+});
+
+test("superadmin dashboard statistics use compact single-line cards", async () => {
+  const adminPage = await readFile(
+    new URL("app/(panel)/admin/page.tsx", projectRoot),
+    "utf8",
+  );
+
+  assert.match(adminPage, /className="flex min-w-0 items-center gap-3 rounded-\[15px\]/);
+  assert.match(adminPage, /className="min-w-0 flex-1 truncate whitespace-nowrap/);
+  assert.match(adminPage, /className="shrink-0 text-\[18px\] font-black/);
+  assert.doesNotMatch(adminPage, /mb-4 grid size-10/);
+});
+
+test("workspace card stays in the sidebar while the account menu lives in the header", async () => {
   const panelShell = await readFile(
     new URL("app/(panel)/_components/panel-shell.tsx", projectRoot),
     "utf8",
   );
 
-  assert.match(
-    panelShell,
-    /className="m-0 flex w-0 min-w-0 flex-1 items-center[^\"]*overflow-hidden/,
-  );
+  assert.match(panelShell, /مدیریت فضاهای کاری/);
+  assert.match(panelShell, /onClick=\{\(\) => setDialog\("profiles"\)\}/);
+  assert.match(panelShell, /aria-label="منوی حساب کاربری"/);
+  assert.match(panelShell, /absolute left-0 top-\[46px\]/);
+  assert.doesNotMatch(panelShell, /aria-label="خروج از حساب"/);
   assert.match(
     panelShell,
     /className="flex w-0 min-w-0 flex-1 flex-col overflow-hidden"/,
@@ -186,6 +285,25 @@ test("sidebar account card contains long workspace and account text", async () =
     panelShell,
     /className="mt-0\.5 block w-full truncate text-\[9px\] text-\[#9aa4a2\]"/,
   );
+});
+
+test("account page exposes plan lifetime and per-feature usage", async () => {
+  const [account, billing] = await Promise.all([
+    readFile(new URL("app/(panel)/account/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("lib/billing.ts", projectRoot), "utf8"),
+  ]);
+
+  assert.match(account, /useMembership\(\)/);
+  assert.match(account, /روز باقی‌مانده/);
+  assert.match(account, /مصرف‌شده/);
+  assert.match(account, /تمام شده/);
+  assert.match(account, /نامحدود/);
+  assert.match(account, /ساخت رزومه/);
+  assert.match(account, /دانلود PDF/);
+  assert.match(account, /اعتبار هوش مصنوعی/);
+  assert.match(account, /تطبیق شغلی/);
+  assert.match(account, /مصاحبه آزمایشی/);
+  assert.match(billing, /usage: Record</);
 });
 
 test("knowledge base about section uses the large textarea size", async () => {
@@ -2957,7 +3075,8 @@ test("model work stays in the panel shell and exposes completed destinations", a
   assert.match(provider, /if \(task\.status !== "running"\) dismissTask\(task\.id\)/);
   assert.match(shell, /فعالیت‌های مدل/);
   assert.ok(
-    shell.indexOf("فعالیت‌های مدل") < shell.indexOf("مدیریت فضاهای کاری"),
+    shell.indexOf('aria-label="فعالیت‌های مدل"') <
+      shell.indexOf('{ href: "/account", label: "حساب کاربری"'),
   );
 });
 
