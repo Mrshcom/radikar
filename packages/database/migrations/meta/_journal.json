@@ -29,6 +29,13 @@
       "when": 1788030362670,
       "tag": "0003_dark_the_twelve",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788094883587,
+      "tag": "0004_lumpy_slapstick",
+      "breakpoints": true
     }
   ]
 }

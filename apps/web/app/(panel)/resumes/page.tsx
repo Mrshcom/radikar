@@ -14,7 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { DeleteConfirmModal, Modal, SectionTitle } from "../_components/ui";
-import { useToast } from "../_components/panel-shell";
+import { useToast } from "@/app/_components/toast";
 import { ResumesSkeleton } from "../_components/loading-skeletons";
 import { ResumeBuilder } from "./resume-builder";
 import { ScaledResumePreview } from "./scaled-resume-preview";

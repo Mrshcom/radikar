@@ -15,15 +15,17 @@ const verifyOtpSchema = requestOtpSchema.extend({
   challengeId: z.uuid(),
   code: z.string().transform(normalizeDigits).pipe(z.string().regex(/^\d{6}$/)),
 });
+const optionalQueryValue = <T extends z.ZodType>(schema: T) =>
+  z.preprocess((value) => value === "" ? undefined : value, schema.optional());
 const userListSchema = z.object({
   search: z.string().max(100).default(""),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
-  role: z.enum(["user", "admin", "superadmin"]).optional(),
-  status: z.enum(["active", "suspended"]).optional(),
+  pageSize: z.coerce.number().int().min(1).max(200).default(20),
+  role: optionalQueryValue(z.enum(["user", "admin", "superadmin"])),
+  status: optionalQueryValue(z.enum(["active", "suspended"])),
 });
 const recordListSchema = userListSchema.pick({ search: true, page: true, pageSize: true }).extend({
-  collection: z.string().max(50).optional(),
+  collection: optionalQueryValue(z.string().max(50)),
 });
 const userParamsSchema = z.object({ id: z.uuid() });
 const eventListSchema = z.object({
@@ -37,6 +39,15 @@ const updateUserSchema = z
   .refine((value) => value.role || value.status, "حداقل یک تغییر لازم است.");
 const updateProfileSchema = z.object({
   fullName: z.string().trim().min(2).max(100),
+});
+const updatePreferencesSchema = z.object({
+  tablePageSize: z.union([
+    z.literal(10),
+    z.literal(20),
+    z.literal(50),
+    z.literal(100),
+    z.literal(200),
+  ]),
 });
 
 export type AuthRouteOptions = {
@@ -59,6 +70,7 @@ export type AuthServicePort = Pick<
   | "getUserDetails"
   | "updateUser"
   | "updateProfile"
+  | "updatePreferences"
 >;
 
 function cookieOptions(options: AuthRouteOptions) {
@@ -111,6 +123,14 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
   app.patch("/api/account", async (request) => {
     const input = updateProfileSchema.parse(request.body);
     return { user: await authService.updateProfile(request.auth!.user.id, input) };
+  });
+
+  app.patch("/api/account/preferences", async (request, reply) => {
+    if (!request.auth) {
+      return reply.code(401).send({ error: "نشست فعال نیست.", requestId: request.id });
+    }
+    const input = updatePreferencesSchema.parse(request.body);
+    return { user: await authService.updatePreferences(request.auth.user.id, input) };
   });
 
   app.post("/api/auth/logout", async (request, reply) => {

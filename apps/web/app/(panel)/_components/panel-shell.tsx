@@ -3,11 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { createPortal } from "react-dom";
 import {
-  createContext,
-  useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -64,6 +60,7 @@ import {
   useModelTasks,
 } from "./model-task-provider";
 import { useAuth, useLogout, type UserRole } from "@/app/_components/auth";
+import { useToast } from "@/app/_components/toast";
 import { useAdminEvents, type AdminEvent } from "@/lib/admin-stats";
 
 type MenuItem = {
@@ -101,13 +98,6 @@ const pageTitles: Record<string, string> = {
   "/admin/payments": "واریزی‌های سامانه",
   "/admin/records": "داده‌های سامانه",
 };
-
-type ToastVariant = "success" | "error" | "info";
-type ToastState = { message: string; variant: ToastVariant };
-type ToastNotifier = (message: string, variant?: ToastVariant) => void;
-
-const ToastContext = createContext<ToastNotifier>(() => undefined);
-export const useToast = () => useContext(ToastContext);
 
 const primaryButtonClass =
   "inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border-0 bg-[#0f7b62] px-[15px] text-[11px] font-bold text-white no-underline shadow-[0_7px_17px_rgba(15,123,98,.17)] disabled:cursor-not-allowed disabled:opacity-45";
@@ -162,9 +152,9 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const logout = useLogout();
   const { tasks: modelTasks, openTask } = useModelTasks();
+  const notify = useToast();
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [toast, setToast] = useState<ToastState | null>(null);
   const [dialog, setDialog] = useState<"search" | "profiles" | null>(null);
   const [profiles, setProfiles] = useState<AppProfileRecord[]>([]);
   const [activeProfileId, setActiveProfileIdState] = useState("");
@@ -194,10 +184,6 @@ function PanelShellContent({ children }: { children: ReactNode }) {
       "نمای کلی",
     [pathname, visibleMenuItems],
   );
-  const notify = useCallback<ToastNotifier>(
-    (message, variant = "success") => setToast({ message, variant }),
-    [],
-  );
   const latestJob = jobs[0];
   const activeWorkspace = profiles.find((item) => item.id === activeProfileId);
   const unreadAdminEvents = (adminEvents.data?.items ?? []).filter(
@@ -225,12 +211,6 @@ function PanelShellContent({ children }: { children: ReactNode }) {
       active = false;
     };
   }, [notify, userRole]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), 3600);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
 
   useEffect(() => {
     if (!noticeOpen) return;
@@ -362,8 +342,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ToastContext.Provider value={notify}>
-      <div
+    <div
         className="min-h-screen print:hidden [&_a]:cursor-pointer [&_a]:transition-opacity [&_a:hover]:opacity-80 [&_button:not(:disabled)]:cursor-pointer [&_button:not(:disabled)]:transition-[opacity,filter,background-color,border-color,color,box-shadow] [&_button:not(:disabled):hover]:opacity-80 [&_button:disabled]:cursor-not-allowed [&_input[type=checkbox]]:cursor-pointer [&_input[type=radio]]:cursor-pointer [&_input[type=range]]:cursor-pointer [&_select]:cursor-pointer [&_select]:transition-colors [&_select:hover]:border-[#9ccbbb] [&_summary]:cursor-pointer [&_summary]:transition-opacity [&_summary:hover]:opacity-80"
         dir="rtl"
       >
@@ -482,18 +461,15 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 onClick={() => setDialog("profiles")}
                 type="button"
               >
-                <span className="grid size-[35px] shrink-0 place-items-center rounded-[11px] bg-[#c98465] text-[11px] font-bold text-white">
-                  {initials(activeWorkspace?.workspaceName || user?.fullName || user?.phone || "")}
-                </span>
                 <span className="flex w-0 min-w-0 flex-1 flex-col overflow-hidden">
                   <strong
                     className="block w-full truncate text-[11px]"
-                    title={user?.fullName || user?.phone}
+                    title={activeWorkspace?.workspaceName || "فضای کاری شخصی"}
                   >
-                    {user?.fullName || "حساب کاربری"}
+                    {activeWorkspace?.workspaceName || "فضای کاری شخصی"}
                   </strong>
                   <small className="mt-0.5 block w-full truncate text-[9px] text-[#9aa4a2]">
-                    <span dir="ltr">{user?.phone}</span> · مدیریت فضاهای کاری
+                    مدیریت فضاهای کاری
                   </small>
                 </span>
                 <ChevronLeft className="shrink-0" size={15} />
@@ -693,30 +669,6 @@ function PanelShellContent({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        {toast &&
-          typeof document !== "undefined" &&
-          createPortal(
-            <div
-              className={cn(
-                "fixed bottom-6 left-6 z-100 flex min-h-12 max-w-[min(380px,calc(100vw-32px))] items-center gap-[9px] rounded-xl border px-[15px] py-3 text-[12px] font-semibold shadow-[0_15px_45px_rgba(22,63,55,.16)] print:hidden max-[820px]:bottom-20 max-[820px]:left-4",
-                toast.variant === "error"
-                  ? "border-[#efc9c5] bg-[#fff1ef] text-[#a13f37]"
-                  : toast.variant === "info"
-                    ? "border-[#cbdde9] bg-[#f1f7fb] text-[#38677f]"
-                    : "border-[#c9e5da] bg-[#eff9f4] text-[#176b57]",
-              )}
-              role={toast.variant === "error" ? "alert" : "status"}
-              aria-live={toast.variant === "error" ? "assertive" : "polite"}
-            >
-              {toast.variant === "error" ? (
-                <CircleAlert size={19} />
-              ) : (
-                <CheckCircle2 size={19} />
-              )}
-              {toast.message}
-            </div>,
-            document.body,
-          )}
         {dialog === "search" && (
           <Modal
             title="جست‌وجوی سریع"
@@ -808,9 +760,6 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                           type="button"
                           onClick={() => void switchProfile(item.id)}
                         >
-                          <span className="grid size-[35px] shrink-0 place-items-center rounded-[11px] bg-[#c98465] text-[11px] font-bold text-white">
-                            {initials(item.workspaceName)}
-                          </span>
                           <span className="min-w-0 flex-1 truncate text-[10px] font-bold text-[#19312f]">
                             {item.workspaceName}
                           </span>
@@ -909,7 +858,6 @@ function PanelShellContent({ children }: { children: ReactNode }) {
             onConfirm={() => void confirmWorkspaceDelete()}
           />
         )}
-      </div>
-    </ToastContext.Provider>
+    </div>
   );
 }

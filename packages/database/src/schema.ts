@@ -59,6 +59,7 @@ export const users = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    tablePageSize: integer("table_page_size").notNull().default(20),
   },
   (table) => [uniqueIndex("users_phone_unique").on(table.phone)],
 );

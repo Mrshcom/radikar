@@ -209,13 +209,17 @@ test("management roles receive dedicated monitoring pages instead of customer to
   }
 });
 
-test("superadmin notifications show individual live system events", async () => {
-  const [panelShell, adminStats] = await Promise.all([
+test("superadmin notifications show individual live system events for non-superadmin users", async () => {
+  const [panelShell, adminStats, authService] = await Promise.all([
     readFile(
       new URL("app/(panel)/_components/panel-shell.tsx", projectRoot),
       "utf8",
     ),
     readFile(new URL("lib/admin-stats.ts", projectRoot), "utf8"),
+    readFile(
+      new URL("apps/api/src/modules/auth/service.ts", repositoryRoot),
+      "utf8",
+    ),
   ]);
 
   assert.match(panelShell, /aria-label=\{isSuperadmin \? "اعلان‌های آماری مدیریت"/);
@@ -228,29 +232,121 @@ test("superadmin notifications show individual live system events", async () => 
   assert.match(adminStats, /"\/api\/admin\/events\?limit=30"/);
   assert.match(adminStats, /refetchInterval: enabled \? 15_000 : false/);
   assert.match(panelShell, /useAdminEvents\(isSuperadmin\)/);
+  const recentEventsSource = authService.match(
+    /async getRecentEvents[\s\S]*?async listUsers/,
+  )?.[0] ?? "";
+  assert.equal(recentEventsSource.match(/ne\(users\.role, "superadmin"\)/g)?.length, 4);
 });
 
-test("all admin data tables share search, advanced filters, zero state and pagination", async () => {
-  const [controls, ...pages] = await Promise.all([
+test("superadmins stay out of user and membership management lists", async () => {
+  const [authService, billingService, usersPage] = await Promise.all([
+    readFile(new URL("apps/api/src/modules/auth/service.ts", repositoryRoot), "utf8"),
+    readFile(new URL("apps/api/src/modules/billing/service.ts", repositoryRoot), "utf8"),
+    readFile(new URL("app/(panel)/admin/users/page.tsx", projectRoot), "utf8"),
+  ]);
+
+  assert.match(
+    authService,
+    /async listUsers[\s\S]*?const filter = and\(\s*ne\(users\.role, "superadmin"\)/,
+  );
+  assert.match(
+    billingService,
+    /async listMembershipUsers[\s\S]*?const filter = and\(\s*ne\(users\.role, "superadmin"\)/,
+  );
+  const systemStatsSource = authService.match(
+    /async getStats[\s\S]*?async getRecentEvents/,
+  )?.[0] ?? "";
+  assert.equal(systemStatsSource.match(/ne\(users\.role, "superadmin"\)/g)?.length, 4);
+  assert.match(
+    billingService,
+    /async getBillingStats[\s\S]*?\.innerJoin\(users, eq\(orders\.userId, users\.id\)\)[\s\S]*?\.where\(ne\(users\.role, "superadmin"\)\)/,
+  );
+  assert.match(usersPage, /buildQueryString\(\{ search, role, status, page, pageSize \}\)/);
+  assert.doesNotMatch(usersPage, /role=\$\{role\}&status=\$\{status\}/);
+});
+
+test("all project data tables share controls, loading skeleton, zero state and pagination", async () => {
+  const [controls, dataTable, pagination, pageSizePreference, queryBuilder, billing, upgradePage, ...pages] = await Promise.all([
     readFile(
-      new URL("app/(panel)/admin/_components/admin-table-controls.tsx", projectRoot),
+      new URL("app/(panel)/_components/table-controls.tsx", projectRoot),
       "utf8",
     ),
+    readFile(new URL("app/(panel)/_components/data-table.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/_components/table-pagination.tsx", projectRoot), "utf8"),
+    readFile(new URL("lib/table-page-size.ts", projectRoot), "utf8"),
+    readFile(new URL("lib/build-query-string.ts", projectRoot), "utf8"),
+    readFile(new URL("lib/billing.ts", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/upgrade/page.tsx", projectRoot), "utf8"),
     ...["users", "memberships", "orders", "payments", "records"].map((section) =>
       readFile(new URL(`app/(panel)/admin/${section}/page.tsx`, projectRoot), "utf8"),
     ),
+    readFile(new URL("app/(panel)/orders/page.tsx", projectRoot), "utf8"),
   ]);
 
   assert.match(controls, /zodResolver\(searchSchema\)/);
   assert.match(controls, /فیلتر پیشرفته/);
-  assert.match(controls, /هنوز اطلاعاتی ثبت نشده است/);
-  assert.match(controls, /تعداد ردیف/);
-  assert.match(controls, /\[10, 20, 50, 100\]/);
-  for (const page of pages) {
-    assert.match(page, /AdminTableToolbar/);
-    assert.match(page, /AdminTableEmptyState/);
-    assert.match(page, /AdminTablePagination/);
+  assert.match(dataTable, /export function DataTableSkeleton/);
+  assert.match(dataTable, /export function DataTableErrorState/);
+  assert.match(dataTable, /خطا در دریافت اطلاعات/);
+  assert.match(dataTable, /تلاش مجدد/);
+  assert.match(dataTable, /animate-pulse/);
+  assert.match(dataTable, /هنوز اطلاعاتی ثبت نشده است/);
+  assert.match(pagination, /تعداد ردیف/);
+  assert.match(pagination, /\? "rounded-full bg-\[#0f7b62\] text-white"/);
+  assert.doesNotMatch(pagination, /shadow-\[0_5px_14px/);
+  assert.match(pageSizePreference, /\[10, 20, 50, 100, 200\]/);
+  assert.match(pageSizePreference, /"\/api\/account\/preferences"/);
+  assert.doesNotMatch(pageSizePreference, /localStorage/);
+  assert.match(queryBuilder, /value === undefined \|\| value === null \|\| value === ""/);
+  assert.match(billing, /buildQueryString\(\{ page, pageSize, search, status \}\)/);
+  pages.forEach((page, index) => {
+    assert.match(page, /DataTable/);
+    assert.match(page, /TableToolbar|AdminTableToolbar/);
+    assert.match(page, /TablePagination|AdminTablePagination/);
+    assert.match(page, /error=\{/);
+    assert.match(page, /onRetry=\{/);
+    if (index < 5) assert.match(page, /buildQueryString/);
+  });
+  assert.match(upgradePage, /پیش‌فاکتور خرید بسته/);
+  assert.match(upgradePage, /تأیید و انتقال به درگاه/);
+  assert.match(upgradePage, /onClick=\{\(\) => setInvoicePlan\(plan\)\}/);
+});
+
+test("list endpoints tolerate empty optional filters from every client", async () => {
+  const [authRoutes, billingRoutes] = await Promise.all([
+    readFile(new URL("apps/api/src/modules/auth/routes.ts", repositoryRoot), "utf8"),
+    readFile(new URL("apps/api/src/modules/billing/routes.ts", repositoryRoot), "utf8"),
+  ]);
+
+  for (const routes of [authRoutes, billingRoutes]) {
+    assert.match(routes, /const optionalQueryValue/);
+    assert.match(routes, /value === "" \? undefined : value/);
   }
+  assert.match(authRoutes, /role: optionalQueryValue/);
+  assert.match(authRoutes, /status: optionalQueryValue/);
+  assert.match(authRoutes, /collection: optionalQueryValue/);
+  assert.match(billingRoutes, /planId: optionalQueryValue/);
+  assert.match(billingRoutes, /membershipStatus: optionalQueryValue/);
+  assert.match(billingRoutes, /userStatus: optionalQueryValue/);
+});
+
+test("administrative state changes use the shared confirmation modal", async () => {
+  const [ui, usersPage, membershipsPage] = await Promise.all([
+    readFile(new URL("app/(panel)/_components/ui.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/admin/users/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/admin/memberships/page.tsx", projectRoot), "utf8"),
+  ]);
+
+  assert.match(ui, /export function ConfirmActionModal/);
+  assert.match(ui, /tone\?: "primary" \| "danger"/);
+  assert.match(ui, /DeleteConfirmModal[\s\S]*?<ConfirmActionModal/);
+  assert.match(usersPage, /تأیید تغییر سطح دسترسی/);
+  assert.match(usersPage, /تأیید تعلیق کاربر/);
+  assert.match(usersPage, /onConfirm=\{\(\) => updateUser\.mutate/);
+  for (const title of ["تأیید اعطای پلن", "تأیید تمدید عضویت", "تأیید تغییر اعتبار", "تأیید لغو عضویت"]) {
+    assert.match(membershipsPage, new RegExp(title));
+  }
+  assert.match(membershipsPage, /onConfirm=\{\(\) => \{/);
 });
 
 test("superadmin dashboard statistics use compact single-line cards", async () => {
@@ -266,13 +362,30 @@ test("superadmin dashboard statistics use compact single-line cards", async () =
 });
 
 test("workspace card stays in the sidebar while the account menu lives in the header", async () => {
-  const panelShell = await readFile(
-    new URL("app/(panel)/_components/panel-shell.tsx", projectRoot),
-    "utf8",
-  );
+  const [panelShell, stores] = await Promise.all([
+    readFile(
+      new URL("app/(panel)/_components/panel-shell.tsx", projectRoot),
+      "utf8",
+    ),
+    readFile(new URL("lib/data/stores.ts", projectRoot), "utf8"),
+  ]);
 
   assert.match(panelShell, /مدیریت فضاهای کاری/);
   assert.match(panelShell, /onClick=\{\(\) => setDialog\("profiles"\)\}/);
+  assert.match(
+    panelShell,
+    /\{activeWorkspace\?\.workspaceName \|\| "فضای کاری شخصی"\}/,
+  );
+  assert.doesNotMatch(
+    panelShell,
+    /initials\(activeWorkspace\?\.workspaceName|initials\(item\.workspaceName/,
+  );
+  assert.doesNotMatch(
+    panelShell,
+    /activeWorkspace\?\.workspaceName \|\| user\?\.fullName/,
+  );
+  assert.match(stores, /workspaceName: "فضای کاری شخصی"/);
+  assert.match(stores, /currentName === legacyUserName/);
   assert.match(panelShell, /aria-label="منوی حساب کاربری"/);
   assert.match(panelShell, /absolute left-0 top-\[46px\]/);
   assert.doesNotMatch(panelShell, /aria-label="خروج از حساب"/);
@@ -304,6 +417,16 @@ test("account page exposes plan lifetime and per-feature usage", async () => {
   assert.match(account, /تطبیق شغلی/);
   assert.match(account, /مصاحبه آزمایشی/);
   assert.match(billing, /usage: Record</);
+});
+
+test("higher plans use the upgrade and activate action label", async () => {
+  const upgradePage = await readFile(
+    new URL("app/(panel)/upgrade/page.tsx", projectRoot),
+    "utf8",
+  );
+
+  assert.match(upgradePage, /membership\.data\.plan\.sortOrder < plan\.sortOrder/);
+  assert.match(upgradePage, /upgrading \? "ارتقا و فعال‌سازی" : "خرید و فعال‌سازی"/);
 });
 
 test("knowledge base about section uses the large textarea size", async () => {
@@ -827,7 +950,7 @@ test("PDF printing waits for the shared rendered pagination and keeps its probe 
   assert.match(paginationComponents, /data-resume-template=\{templateId\}/);
   assert.match(
     await readFile(
-      new URL("app/(panel)/_components/panel-shell.tsx", projectRoot),
+      new URL("app/_components/toast.tsx", projectRoot),
       "utf8",
     ),
     /fixed bottom-6 left-6[^\n]*print:hidden/,
@@ -1331,12 +1454,10 @@ test("resume builder header owns model, save and PDF actions", async () => {
 });
 
 test("saving a resume confirms successful persistence with a toast", async () => {
-  const [resumesPage, panelShell] = await Promise.all([
+  const [resumesPage, toast, providers] = await Promise.all([
     readFile(new URL("app/(panel)/resumes/page.tsx", projectRoot), "utf8"),
-    readFile(
-      new URL("app/(panel)/_components/panel-shell.tsx", projectRoot),
-      "utf8",
-    ),
+    readFile(new URL("app/_components/toast.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/providers.tsx", projectRoot), "utf8"),
   ]);
 
   assert.match(
@@ -1344,10 +1465,34 @@ test("saving a resume confirms successful persistence with a toast", async () =>
     /const saveDraft = async \(\) => \{\s*await persistResume\(data\);\s*notify\("رزومه با موفقیت ذخیره شد\."\)/,
   );
   assert.match(
-    panelShell,
-    /createPortal\([\s\S]*?toast\.message[\s\S]*?document\.body/,
+    toast,
+    /<ToastContext\.Provider[\s\S]*?toast\.message[\s\S]*?<\/ToastContext\.Provider>/,
   );
-  assert.match(panelShell, /z-100/);
+  assert.match(toast, /z-100/);
+  assert.match(providers, /<ToastProvider>\{children\}<\/ToastProvider>/);
+});
+
+test("data-changing forms show contextual success toasts and account fields use two columns", async () => {
+  const [account, login, memberships] = await Promise.all([
+    readFile(new URL("app/(panel)/account/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/login/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/admin/memberships/page.tsx", projectRoot), "utf8"),
+  ]);
+
+  assert.match(account, /grid items-start gap-5 md:grid-cols-2/);
+  assert.match(account, /notify\("اطلاعات فردی با موفقیت ذخیره شد\."\)/);
+  assert.doesNotMatch(account, /update\.isSuccess/);
+  assert.match(login, /notify\("کد ورود با موفقیت ارسال شد\."\)/);
+  assert.match(login, /notify\("با موفقیت وارد حساب کاربری شدی\."\)/);
+  assert.match(login, /notify\("کد ورود مجدداً ارسال شد\."\)/);
+  for (const message of [
+    "پلن کاربر با موفقیت فعال شد.",
+    "مدت عضویت کاربر با موفقیت تمدید شد.",
+    "اعتبار کاربر با موفقیت به‌روزرسانی شد.",
+    "عضویت کاربر با موفقیت لغو شد.",
+  ]) {
+    assert.match(memberships, new RegExp(message));
+  }
 });
 
 test("resume names combine the first name and template and remain editable in template settings", async () => {

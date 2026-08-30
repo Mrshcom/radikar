@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Clock3, Plus, Target } from "lucide-react";
 import { Modal, SectionTitle } from "../_components/ui";
 import { ApplicationsSkeleton } from "../_components/loading-skeletons";
-import { useToast } from "../_components/panel-shell";
+import { useToast } from "@/app/_components/toast";
 import { applicationStore, createRecordId } from "@/lib/data/stores";
 import type { ApplicationRecord, ApplicationStage } from "@/lib/data/models";
 import { formatPersianNumber } from "@/lib/fa-number";

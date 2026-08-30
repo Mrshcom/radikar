@@ -6,7 +6,7 @@ import { Search, SlidersHorizontal } from "lucide-react";
 import { JobCard } from "../_components/job-card";
 import { JobCardsSkeleton } from "../_components/loading-skeletons";
 import { SectionTitle } from "../_components/ui";
-import { useToast } from "../_components/panel-shell";
+import { useToast } from "@/app/_components/toast";
 import { jobStore } from "@/lib/data/stores";
 import type { JobRecord } from "@/lib/data/models";
 import { formatPersianNumber } from "@/lib/fa-number";

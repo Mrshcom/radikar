@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "./api-client";
+import { buildQueryString } from "./build-query-string";
 
 export type Plan = {
   id: string;
@@ -59,7 +60,8 @@ export type OrdersResponse = {
 export const billingKeys = {
   plans: ["billing", "plans"] as const,
   membership: ["billing", "membership"] as const,
-  orders: (page: number) => ["billing", "orders", page] as const,
+  orders: (page: number, pageSize: number, search: string, status: string) =>
+    ["billing", "orders", page, pageSize, search, status] as const,
 };
 
 export function usePlans() {
@@ -78,10 +80,12 @@ export function useMembership() {
   });
 }
 
-export function useOrders(page = 1) {
+export function useOrders(page = 1, pageSize = 20, search = "", status = "") {
   return useQuery({
-    queryKey: billingKeys.orders(page),
-    queryFn: () => apiRequest<OrdersResponse>(`/api/billing/orders?page=${page}&pageSize=20`),
+    queryKey: billingKeys.orders(page, pageSize, search, status),
+    queryFn: () => apiRequest<OrdersResponse>(
+      `/api/billing/orders?${buildQueryString({ page, pageSize, search, status })}`,
+    ),
     staleTime: 15_000,
     placeholderData: keepPreviousData,
   });

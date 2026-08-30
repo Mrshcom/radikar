@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { and, count, desc, eq, gt, ilike, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, ilike, ne, or, sql } from "drizzle-orm";
 import {
   membershipEvents,
   orders,
@@ -284,17 +284,28 @@ export class BillingService {
     });
   }
 
-  async listUserOrders(userId: string, page = 1, pageSize = 20) {
+  async listUserOrders(
+    userId: string,
+    page = 1,
+    pageSize = 20,
+    search = "",
+    status?: typeof orders.$inferSelect.status,
+  ) {
+    const filter = and(
+      eq(orders.userId, userId),
+      search.trim() ? ilike(orders.orderNumber, `%${search.trim()}%`) : undefined,
+      status ? eq(orders.status, status) : undefined,
+    );
     const [items, totalRows] = await Promise.all([
       this.database
         .select({ order: orders, plan: plans })
         .from(orders)
         .innerJoin(plans, eq(orders.planId, plans.id))
-        .where(eq(orders.userId, userId))
+        .where(filter)
         .orderBy(desc(orders.createdAt))
         .limit(pageSize)
         .offset((page - 1) * pageSize),
-      this.database.select({ total: count() }).from(orders).where(eq(orders.userId, userId)),
+      this.database.select({ total: count() }).from(orders).where(filter),
     ]);
     return { items, total: totalRows[0]?.total ?? 0, page, pageSize };
   }
@@ -576,7 +587,9 @@ export class BillingService {
         paidOrdersToday: sql<number>`count(*) filter (where ${orders.status} = 'paid' and ${orders.paidAt} >= (date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran'))`,
         revenueTodayRials: sql<number>`coalesce(sum(${orders.amountRials}) filter (where ${orders.status} = 'paid' and ${orders.paidAt} >= (date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran')), 0)`,
       })
-      .from(orders);
+      .from(orders)
+      .innerJoin(users, eq(orders.userId, users.id))
+      .where(ne(users.role, "superadmin"));
     return {
       totalOrders: Number(row?.totalOrders ?? 0),
       paidOrders: Number(row?.paidOrders ?? 0),
@@ -634,6 +647,7 @@ export class BillingService {
     userStatus?: typeof users.$inferSelect.status,
   ) {
     const filter = and(
+      ne(users.role, "superadmin"),
       search.trim()
         ? or(
             ilike(users.phone, `%${search.trim()}%`),

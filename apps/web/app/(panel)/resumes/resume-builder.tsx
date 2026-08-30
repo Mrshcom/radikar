@@ -45,7 +45,7 @@ import { cn } from "@/lib/cn";
 import { formatPersianNumber } from "@/lib/fa-number";
 import { sanitizeLtrField } from "@/lib/ltr-field";
 import { readProfileImage } from "@/lib/image-file";
-import { useToast } from "../_components/panel-shell";
+import { useToast } from "@/app/_components/toast";
 import { useModelTasks } from "../_components/model-task-provider";
 import { apiUrl } from "@/lib/api-url";
 import { apiRequest } from "@/lib/api-client";

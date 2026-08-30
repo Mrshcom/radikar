@@ -4,11 +4,13 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ReceiptText } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/app/_components/auth";
+import { DataTable, type DataTableColumn } from "../../_components/data-table";
 import { apiRequest } from "@/lib/api-client";
+import { buildQueryString } from "@/lib/build-query-string";
 import { formatTomans, usePlans, type Order, type Plan } from "@/lib/billing";
+import { useTablePageSize } from "@/lib/table-page-size";
 import {
   AdminFilterSelect,
-  AdminTableEmptyState,
   AdminTablePagination,
   AdminTableToolbar,
 } from "../_components/admin-table-controls";
@@ -31,24 +33,30 @@ export default function AdminOrdersPage() {
   const { user } = useAuth();
   const plans = usePlans();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const { pageSize, setPageSize, isSaving: pageSizeSaving } = useTablePageSize();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [planId, setPlanId] = useState("");
   const query = useQuery({
     queryKey: ["admin", "orders", page, pageSize, search, status, planId],
-    queryFn: () => {
-      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), search });
-      if (status) params.set("status", status);
-      if (planId) params.set("planId", planId);
-      return apiRequest<Response>(`/api/admin/orders?${params}`);
-    },
+    queryFn: () => apiRequest<Response>(
+      `/api/admin/orders?${buildQueryString({ page, pageSize, search, status, planId })}`,
+    ),
     enabled: user?.role !== "user",
     staleTime: 15_000,
     placeholderData: keepPreviousData,
   });
   if (user?.role === "user") return null;
   const filtered = Boolean(search || status || planId);
+  const columns: DataTableColumn<Response["items"][number]>[] = [
+    { key: "order", title: "سفارش", className: "font-bold", render: ({ order }) => <span dir="ltr">{order.orderNumber}</span> },
+    { key: "user", title: "کاربر", render: ({ user: owner }) => owner.fullName || owner.phone },
+    { key: "plan", title: "پلن", render: ({ plan }) => plan.name },
+    { key: "amount", title: "مبلغ", render: ({ order }) => `${formatTomans(order.amountRials)} تومان` },
+    { key: "status", title: "وضعیت", render: ({ order }) => statusOptions.find((item) => item.value === order.status)?.label ?? order.status },
+    { key: "date", title: "تاریخ", render: ({ order }) => new Date(order.createdAt).toLocaleDateString("fa-IR") },
+    { key: "tracking", title: "پیگیری", render: ({ order }) => <span dir="ltr">{order.refId || "—"}</span> },
+  ];
   return (
     <div className="grid gap-6">
       <header><span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]"><ReceiptText size={18} /> مدیریت فروش</span><h1 className="mb-0 mt-3 text-[25px] font-black">سفارش‌ها و پیگیری وضعیت</h1></header>
@@ -57,10 +65,7 @@ export default function AdminOrdersPage() {
           <AdminFilterSelect label="وضعیت سفارش" value={status} options={statusOptions} onChange={(value) => { setStatus(value); setPage(1); }} />
           <AdminFilterSelect label="پلن" value={planId} options={[{ value: "", label: "همه پلن‌ها" }, ...(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))]} onChange={(value) => { setPlanId(value); setPage(1); }} />
         </AdminTableToolbar>
-        {(query.data?.items.length ?? 0) === 0 && !query.isLoading ? <AdminTableEmptyState filtered={filtered} /> : (
-          <div className="overflow-x-auto"><table className="w-full min-w-[850px] border-collapse text-right text-[10px]"><thead className="bg-[#f7f9f6]"><tr>{["سفارش", "کاربر", "پلن", "مبلغ", "وضعیت", "تاریخ", "پیگیری"].map((item) => <th className="px-4 py-3" key={item}>{item}</th>)}</tr></thead><tbody>{(query.data?.items ?? []).map(({ order, plan, user: owner }) => <tr className="border-t border-[#edf0ec]" key={order.id}><td className="px-4 py-4" dir="ltr">{order.orderNumber}</td><td className="px-4 py-4">{owner.fullName || owner.phone}</td><td className="px-4 py-4">{plan.name}</td><td className="px-4 py-4">{formatTomans(order.amountRials)} تومان</td><td className="px-4 py-4">{statusOptions.find((item) => item.value === order.status)?.label ?? order.status}</td><td className="px-4 py-4">{new Date(order.createdAt).toLocaleDateString("fa-IR")}</td><td className="px-4 py-4" dir="ltr">{order.refId || "—"}</td></tr>)}</tbody></table></div>
-        )}
-        <AdminTablePagination page={page} pageSize={pageSize} total={query.data?.total ?? 0} onPageChange={setPage} onPageSizeChange={(value) => { setPageSize(value); setPage(1); }} />
+        <DataTable columns={columns} rows={query.data?.items ?? []} getRowKey={({ order }) => order.id} loading={query.isLoading} error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} filtered={filtered} minWidthClassName="min-w-[850px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={query.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={(value) => { setPageSize(value); setPage(1); }} />} />
       </section>
     </div>
   );

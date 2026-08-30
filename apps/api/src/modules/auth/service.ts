@@ -7,7 +7,7 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { normalizeDigits } from "@radicar/validators";
-import { and, count, desc, eq, gt, ilike, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, ilike, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import {
   authSessions,
   dataRecords,
@@ -62,6 +62,7 @@ function toAuthUser(row: typeof users.$inferSelect): AuthUser {
     status: row.status as UserStatus,
     createdAt: row.createdAt.toISOString(),
     lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
+    tablePageSize: row.tablePageSize as AuthUser["tablePageSize"],
   };
 }
 
@@ -243,18 +244,27 @@ export class AuthService {
           registeredToday: sql<number>`count(*) filter (where ${users.createdAt} >= (date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran'))`,
           activeToday: sql<number>`count(*) filter (where ${users.lastLoginAt} >= (date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran'))`,
         })
-        .from(users),
+        .from(users)
+        .where(ne(users.role, "superadmin")),
       this.database
         .select({
           total: count(),
           resumes: sql<number>`count(*) filter (where ${dataRecords.collection} = 'resumes')`,
           resumesToday: sql<number>`count(*) filter (where ${dataRecords.collection} = 'resumes' and ${dataRecords.createdAt} >= (date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran'))`,
         })
-        .from(dataRecords),
-      this.database.select({ role: users.role, total: count() }).from(users).groupBy(users.role),
+        .from(dataRecords)
+        .innerJoin(users, eq(dataRecords.ownerUserId, users.id))
+        .where(ne(users.role, "superadmin")),
+      this.database
+        .select({ role: users.role, total: count() })
+        .from(users)
+        .where(ne(users.role, "superadmin"))
+        .groupBy(users.role),
       this.database
         .select({ collection: dataRecords.collection, total: count() })
         .from(dataRecords)
+        .innerJoin(users, eq(dataRecords.ownerUserId, users.id))
+        .where(ne(users.role, "superadmin"))
         .groupBy(dataRecords.collection),
     ]);
     return {
@@ -284,6 +294,7 @@ export class AuthService {
           createdAt: users.createdAt,
         })
         .from(users)
+        .where(ne(users.role, "superadmin"))
         .orderBy(desc(users.createdAt))
         .limit(limit),
       this.database
@@ -296,6 +307,7 @@ export class AuthService {
         .from(users)
         .where(
           and(
+            ne(users.role, "superadmin"),
             isNotNull(users.lastLoginAt),
             sql`${users.lastLoginAt} > ${users.createdAt} + interval '1 second'`,
           ),
@@ -316,7 +328,13 @@ export class AuthService {
         .from(orders)
         .innerJoin(users, eq(orders.userId, users.id))
         .innerJoin(plans, eq(orders.planId, plans.id))
-        .where(and(eq(orders.status, "paid"), isNotNull(orders.paidAt)))
+        .where(
+          and(
+            ne(users.role, "superadmin"),
+            eq(orders.status, "paid"),
+            isNotNull(orders.paidAt),
+          ),
+        )
         .orderBy(desc(orders.paidAt))
         .limit(limit),
       this.database
@@ -330,7 +348,12 @@ export class AuthService {
         })
         .from(dataRecords)
         .innerJoin(users, eq(dataRecords.ownerUserId, users.id))
-        .where(eq(dataRecords.collection, "resumes"))
+        .where(
+          and(
+            ne(users.role, "superadmin"),
+            eq(dataRecords.collection, "resumes"),
+          ),
+        )
         .orderBy(desc(dataRecords.createdAt))
         .limit(limit),
     ]);
@@ -395,6 +418,7 @@ export class AuthService {
   ) {
     const term = `%${search.trim()}%`;
     const filter = and(
+      ne(users.role, "superadmin"),
       search.trim()
         ? sql`${users.phone} ILIKE ${term} OR COALESCE(${users.fullName}, '') ILIKE ${term}`
         : undefined,
@@ -493,6 +517,19 @@ export class AuthService {
     const [user] = await this.database
       .update(users)
       .set({ fullName: input.fullName, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!user) throw new AuthError(404, "کاربر پیدا نشد.");
+    return toAuthUser(user);
+  }
+
+  async updatePreferences(
+    userId: string,
+    input: { tablePageSize: AuthUser["tablePageSize"] },
+  ) {
+    const [user] = await this.database
+      .update(users)
+      .set({ tablePageSize: input.tablePageSize, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
     if (!user) throw new AuthError(404, "کاربر پیدا نشد.");

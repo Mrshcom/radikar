@@ -19,7 +19,7 @@ import {
   FeedbackSkeleton,
   InterviewSkeleton,
 } from "../_components/loading-skeletons";
-import { useToast } from "../_components/panel-shell";
+import { useToast } from "@/app/_components/toast";
 import { useModelTasks } from "../_components/model-task-provider";
 import {
   createRecordId,

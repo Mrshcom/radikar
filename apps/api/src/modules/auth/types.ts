@@ -10,6 +10,7 @@ export type AuthUser = {
   status: UserStatus;
   createdAt: string;
   lastLoginAt: string | null;
+  tablePageSize: 10 | 20 | 50 | 100 | 200;
 };
 
 export type SessionIdentity = { user: AuthUser; sessionId: string };

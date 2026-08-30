@@ -5,20 +5,22 @@ import { BillingError, BillingService } from "./service";
 
 const pageSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(200).default(20),
 });
+const optionalQueryValue = <T extends z.ZodType>(schema: T) =>
+  z.preprocess((value) => value === "" ? undefined : value, schema.optional());
 const adminListSchema = pageSchema.extend({ search: z.string().max(100).default("") });
 const orderListSchema = adminListSchema.extend({
-  status: z.enum(["pending", "paid", "failed", "canceled", "refunded"]).optional(),
-  planId: z.string().max(64).optional(),
+  status: optionalQueryValue(z.enum(["pending", "paid", "failed", "canceled", "refunded"])),
+  planId: optionalQueryValue(z.string().max(64)),
 });
 const paymentListSchema = adminListSchema.extend({
-  status: z.enum(["initiated", "verified", "failed", "canceled", "refunded"]).optional(),
+  status: optionalQueryValue(z.enum(["initiated", "verified", "failed", "canceled", "refunded"])),
 });
 const membershipListSchema = adminListSchema.extend({
-  planId: z.string().max(64).optional(),
-  membershipStatus: z.enum(["active", "expired", "canceled"]).optional(),
-  userStatus: z.enum(["active", "suspended"]).optional(),
+  planId: optionalQueryValue(z.string().max(64)),
+  membershipStatus: optionalQueryValue(z.enum(["active", "expired", "canceled"])),
+  userStatus: optionalQueryValue(z.enum(["active", "suspended"])),
 });
 const createOrderSchema = z.object({ planId: z.string().min(1).max(64) });
 const callbackSchema = z.object({
@@ -54,8 +56,14 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
 
   app.get("/api/billing/orders", (request, reply) => {
     if (!requireCustomer(request, reply)) return;
-    const query = pageSchema.parse(request.query);
-    return billing.listUserOrders(request.auth!.user.id, query.page, query.pageSize);
+    const query = orderListSchema.omit({ planId: true }).parse(request.query);
+    return billing.listUserOrders(
+      request.auth!.user.id,
+      query.page,
+      query.pageSize,
+      query.search,
+      query.status,
+    );
   });
 
   app.post("/api/billing/orders", async (request, reply) => {

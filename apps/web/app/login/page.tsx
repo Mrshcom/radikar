@@ -11,6 +11,7 @@ import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api-client";
 import { authQueryKey, type CurrentUser } from "@/app/_components/auth";
+import { useToast } from "@/app/_components/toast";
 import { normalizeDigits } from "@radicar/validators";
 
 const localizedNumericString = z.string().trim().transform(normalizeDigits);
@@ -38,6 +39,7 @@ const fieldClass =
 
 export default function LoginPage() {
   const router = useRouter();
+  const notify = useToast();
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [submittedPhone, setSubmittedPhone] = useState("");
   const [challengeId, setChallengeId] = useState("");
@@ -90,6 +92,7 @@ export default function LoginPage() {
       resetOtp({ otp: "" });
       setOtpDigits(Array(6).fill(""));
       setStep("otp");
+      notify("کد ورود با موفقیت ارسال شد.");
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "ارسال کد ورود ناموفق بود.");
     }
@@ -106,6 +109,7 @@ export default function LoginPage() {
       });
       queryClient.clear();
       queryClient.setQueryData(authQueryKey, { user: result.user });
+      notify("با موفقیت وارد حساب کاربری شدی.");
       router.replace(result.user.role === "user" ? "/dashboard" : "/admin");
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "بررسی کد ورود ناموفق بود.");
@@ -120,6 +124,7 @@ export default function LoginPage() {
       const result = await requestOtp.mutateAsync(submittedPhone);
       setChallengeId(result.challengeId);
       setDevelopmentCode(result.developmentCode ?? "");
+      notify("کد ورود مجدداً ارسال شد.");
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "ارسال مجدد کد ناموفق بود.");
     }

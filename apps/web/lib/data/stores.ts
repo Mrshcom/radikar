@@ -66,18 +66,31 @@ export async function setActiveProfileId(activeProfileId: string) {
 export async function ensureDefaultAppProfile() {
   const profiles = await appProfileStore.list();
   if (profiles.length) {
-    const normalizedProfiles = profiles.map((profile) => ({
-      ...profile,
-      workspaceName:
-        profile.workspaceName?.trim() ||
-        profile.fullName?.trim() ||
-        "فضای کاری اصلی",
-    }));
+    const normalizedProfiles = profiles.map((profile) => {
+      const currentName = profile.workspaceName?.trim();
+      const legacyUserName = profile.fullName?.trim();
+      const hasLegacyDefaultName =
+        profile.id === DEFAULT_PROFILE_ID &&
+        (!currentName ||
+          currentName === "فضای کاری اصلی" ||
+          currentName === legacyUserName);
+      const normalizedProfile = {
+        ...profile,
+        workspaceName: hasLegacyDefaultName
+          ? "فضای کاری شخصی"
+          : currentName || "فضای کاری شخصی",
+      };
+      delete normalizedProfile.fullName;
+      delete normalizedProfile.targetTitle;
+      return normalizedProfile;
+    });
     await Promise.all(
       normalizedProfiles
         .filter(
           (profile, index) =>
-            profile.workspaceName !== profiles[index].workspaceName,
+            profile.workspaceName !== profiles[index].workspaceName ||
+            profiles[index].fullName !== undefined ||
+            profiles[index].targetTitle !== undefined,
         )
         .map((profile) => appProfileStore.put(profile)),
     );
@@ -87,7 +100,7 @@ export async function ensureDefaultAppProfile() {
   const now = new Date().toISOString();
   const profile: AppProfileRecord = {
     id: DEFAULT_PROFILE_ID,
-    workspaceName: "فضای کاری اصلی",
+    workspaceName: "فضای کاری شخصی",
     createdAt: now,
     updatedAt: now,
   };

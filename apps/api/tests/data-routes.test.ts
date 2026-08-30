@@ -45,6 +45,7 @@ const testUser: AuthUser = {
   fullName: "کاربر تست",
   role: "superadmin",
   status: "active",
+  tablePageSize: 20,
   createdAt: "2026-08-27T10:00:00.000Z",
   lastLoginAt: "2026-08-27T10:00:00.000Z",
 };
@@ -87,6 +88,7 @@ const authService: AuthServicePort = {
   getUserDetails: async () => ({ ...testUser, records: [] }),
   updateUser: async () => testUser,
   updateProfile: async () => testUser,
+  updatePreferences: async (_userId, input) => ({ ...testUser, ...input }),
 };
 
 function createTestApp(authServiceOverride: AuthServicePort = authService) {
@@ -122,7 +124,7 @@ test("normalizes Persian and Arabic digits before route validation", async () =>
     url: "/api/auth/request-otp",
     payload: { phone: "۰۹۱۲۳۴۵۶۷۸۹" },
   });
-  assert.equal(requested.statusCode, 200);
+  assert.equal(requested.statusCode, 201);
   assert.equal(receivedPhone, "09123456789");
 
   const verified = await app.inject({
@@ -136,6 +138,29 @@ test("normalizes Persian and Arabic digits before route validation", async () =>
   });
   assert.equal(verified.statusCode, 200);
   assert.equal(receivedCode, "123456");
+  await app.close();
+});
+
+test("persists the authenticated user's table page-size preference", async () => {
+  let savedPageSize: AuthUser["tablePageSize"] | null = null;
+  const app = createTestApp({
+    ...authService,
+    updatePreferences: async (_userId, input) => {
+      savedPageSize = input.tablePageSize;
+      return { ...testUser, tablePageSize: input.tablePageSize };
+    },
+  });
+
+  const response = await app.inject({
+    method: "PATCH",
+    url: "/api/account/preferences",
+    payload: { tablePageSize: 100 },
+    cookies: { radicar_session: "test-token" },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(savedPageSize, 100);
+  assert.equal(response.json().user.tablePageSize, 100);
   await app.close();
 });
 

@@ -29,7 +29,7 @@ import {
   X,
 } from "lucide-react";
 import { DeleteConfirmModal, SectionTitle } from "../_components/ui";
-import { useToast } from "../_components/panel-shell";
+import { useToast } from "@/app/_components/toast";
 import { useModelTasks } from "../_components/model-task-provider";
 import {
   emptyResumeData,

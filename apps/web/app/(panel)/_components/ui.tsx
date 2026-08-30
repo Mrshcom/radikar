@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { Trash2, X } from "lucide-react";
+import { LoaderCircle, Trash2, X } from "lucide-react";
 
 export function Modal({
   title,
@@ -93,25 +93,56 @@ export function DeleteConfirmModal({
   onConfirm: () => void;
 }) {
   return (
-    <Modal
+    <ConfirmActionModal
       title="تأیید حذف"
       description={`آیا از حذف «${itemName}» مطمئنی؟`}
-      onClose={onCancel}
-    >
+      confirmLabel="بله، حذف شود"
+      confirmIcon={<Trash2 size={15} />}
+      tone="danger"
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+    />
+  );
+}
+
+export function ConfirmActionModal({
+  title,
+  description,
+  confirmLabel,
+  confirmIcon,
+  tone = "primary",
+  pending = false,
+  onCancel,
+  onConfirm,
+}: {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  confirmIcon?: ReactNode;
+  tone?: "primary" | "danger";
+  pending?: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Modal title={title} description={description} onClose={() => !pending && onCancel()} showCloseButton>
       <div className="mt-5 flex flex-wrap justify-end gap-2">
         <button
-          className="inline-flex min-h-10 items-center justify-center rounded-[10px] border border-[#dfe5df] bg-white px-4 text-[12px] font-bold text-[#526461] hover:bg-[#f7f9f7]"
+          className="inline-flex min-h-10 items-center justify-center rounded-[10px] border border-[#dfe5df] bg-white px-4 text-[12px] font-bold text-[#526461] hover:bg-[#f7f9f7] disabled:opacity-50"
+          disabled={pending}
           type="button"
           onClick={onCancel}
         >
           انصراف
         </button>
         <button
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-[#b9433a] bg-[#c94f45] px-4 text-[12px] font-bold text-white shadow-[0_8px_20px_rgba(185,67,58,.24)] transition-colors duration-200 hover:border-[#a83830] hover:bg-[#b9433a]"
+          className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border px-4 text-[12px] font-bold text-white transition-colors disabled:opacity-50 ${tone === "danger" ? "border-[#b9433a] bg-[#c94f45] hover:bg-[#b9433a]" : "border-[#0f7b62] bg-[#0f7b62] hover:bg-[#0c6b55]"}`}
+          disabled={pending}
           type="button"
           onClick={onConfirm}
         >
-          <Trash2 size={15} /> بله، حذف شود
+          {pending ? <LoaderCircle className="animate-spin" size={15} /> : confirmIcon}
+          {confirmLabel}
         </button>
       </div>
     </Modal>

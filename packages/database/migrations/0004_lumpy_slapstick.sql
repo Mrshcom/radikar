@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "table_page_size" integer DEFAULT 20 NOT NULL;

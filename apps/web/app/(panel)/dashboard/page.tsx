@@ -20,7 +20,7 @@ import { CircularProgress } from "../_components/circular-progress";
 import { JobCard } from "../_components/job-card";
 import { DashboardSkeleton } from "../_components/loading-skeletons";
 import { SectionTitle } from "../_components/ui";
-import { useToast } from "../_components/panel-shell";
+import { useToast } from "@/app/_components/toast";
 import { useModelTasks } from "../_components/model-task-provider";
 import {
   applicationStore,
