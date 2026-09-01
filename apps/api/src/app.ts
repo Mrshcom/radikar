@@ -90,7 +90,7 @@ export function buildApp({
   registerDataRoutes(app, repository, billingService);
   if (billingService) registerBillingRoutes(app, billingService);
   registerAiRoutes(app, billingService);
-  registerImportRoutes(app);
+  registerImportRoutes(app, billingService);
 
   app.setNotFoundHandler((request, reply) =>
     reply.code(404).send({

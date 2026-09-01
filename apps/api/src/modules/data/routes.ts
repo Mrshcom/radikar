@@ -1,6 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import type { DataCollection } from "@radicar/shared-types";
-import { baseRecordSchema, dataCollectionSchema } from "@radicar/validators";
+import {
+  dataCollectionSchema,
+  normalizeDataRecordForStorage,
+} from "@radicar/validators";
 import type { RecordRepository } from "./record-repository";
 import { requirePermission } from "../auth/routes";
 import type { BillingService } from "../billing/service";
@@ -42,7 +45,7 @@ export function registerDataRoutes(
     async (request, reply) => {
       if (!requirePermission(request, reply, "own:data:write")) return;
       const collection = parseCollection(request.params.collection);
-      const record = baseRecordSchema.parse(request.body);
+      const record = normalizeDataRecordForStorage(collection, request.body);
       if (record.id !== request.params.id) {
         return reply.code(400).send({
           error: "شناسه مسیر با شناسه رکورد یکسان نیست.",

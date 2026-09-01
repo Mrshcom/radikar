@@ -6,6 +6,13 @@ type ChatMessage = {
 };
 
 type ChatCompletionResponse = {
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+    input_tokens?: number;
+    output_tokens?: number;
+  };
   choices?: Array<{
     message?: {
       content?:
@@ -35,6 +42,97 @@ type ChatCompletionResponse = {
 };
 
 const MAX_EMPTY_RESPONSE_ATTEMPTS = 3;
+
+export type ModelUsageEvent = {
+  provider: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  tokenSource: "provider" | "estimated";
+  estimatedCostMicros: number;
+  statusCode: number;
+  successful: boolean;
+  durationMs: number;
+  attempt: number;
+};
+
+export type ChatJsonOptions = {
+  onUsage?: (event: ModelUsageEvent) => void | Promise<void>;
+  signal?: AbortSignal;
+  maxOutputTokens?: number;
+  emptyResponseFallbackModels?: string[];
+  emptyResponseMessage?: string;
+  maxAttempts?: number;
+  timeoutMs?: number;
+};
+
+const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
+
+function estimatedTokens(value: string) {
+  return value ? Math.max(1, Math.ceil(Array.from(value).length / 4)) : 0;
+}
+
+function usageEvent(
+  config: ProviderConfig,
+  messages: ChatMessage[],
+  rawResponse: string,
+  payload: ChatCompletionResponse | undefined,
+  details: Pick<ModelUsageEvent, "statusCode" | "successful" | "durationMs" | "attempt">,
+): ModelUsageEvent {
+  const usage = payload?.usage;
+  const hasProviderUsage = Boolean(
+    usage &&
+      [
+        usage.prompt_tokens,
+        usage.completion_tokens,
+        usage.total_tokens,
+        usage.input_tokens,
+        usage.output_tokens,
+      ].some((value) => typeof value === "number" && Number.isFinite(value)),
+  );
+  const inputTokens = hasProviderUsage
+    ? Math.max(0, Math.round(usage?.prompt_tokens ?? usage?.input_tokens ?? 0))
+    : estimatedTokens(messages.map((message) => message.content).join("\n"));
+  const outputTokens = hasProviderUsage
+    ? Math.max(
+        0,
+        Math.round(usage?.completion_tokens ?? usage?.output_tokens ?? 0),
+      )
+    : estimatedTokens(rawResponse);
+  const totalTokens = hasProviderUsage
+    ? Math.max(0, Math.round(usage?.total_tokens ?? inputTokens + outputTokens))
+    : inputTokens + outputTokens;
+
+  return {
+    provider: config.provider,
+    model: config.model,
+    inputTokens,
+    outputTokens,
+    totalTokens,
+    tokenSource: hasProviderUsage ? "provider" : "estimated",
+    estimatedCostMicros: Math.max(
+      0,
+      Math.round(
+        inputTokens * (config.inputPricePerMillionUsd ?? 0) +
+          outputTokens * (config.outputPricePerMillionUsd ?? 0),
+      ),
+    ),
+    ...details,
+  };
+}
+
+async function reportUsage(
+  callback: ChatJsonOptions["onUsage"],
+  event: ModelUsageEvent,
+) {
+  if (!callback) return;
+  try {
+    await callback(event);
+  } catch (error) {
+    console.error("[llm-client] Failed to record model usage", error);
+  }
+}
 
 function isJsonObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -212,30 +310,74 @@ export function parseLlmJsonResponse<T>(rawResponse: string): T | undefined {
 export async function chatJson<T>(
   config: ProviderConfig,
   messages: ChatMessage[],
+  options: ChatJsonOptions = {},
 ): Promise<T> {
   if (!config.model || !config.baseUrl) {
     throw new Error("LLM provider is not configured.");
   }
 
   const requestId = crypto.randomUUID();
-  for (let attempt = 1; attempt <= MAX_EMPTY_RESPONSE_ATTEMPTS; attempt += 1) {
-    const response = await fetch(
-      `${config.baseUrl.replace(/\/+$/, "")}/chat/completions`,
-      {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${config.apiKey || "localproxy"}`,
+  const maxAttempts = Math.min(
+    MAX_EMPTY_RESPONSE_ATTEMPTS,
+    Math.max(1, Math.round(options.maxAttempts ?? MAX_EMPTY_RESPONSE_ATTEMPTS)),
+  );
+  const timeoutMs = Math.max(
+    1_000,
+    Math.round(options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS),
+  );
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const fallbackModels = options.emptyResponseFallbackModels?.filter(Boolean) ?? [];
+    const model =
+      attempt === 1 || fallbackModels.length === 0
+        ? config.model
+        : fallbackModels[Math.min(attempt - 2, fallbackModels.length - 1)];
+    const attemptConfig = model === config.model ? config : { ...config, model };
+    const startedAt = Date.now();
+    let response: Response;
+    try {
+      response = await fetch(
+        `${attemptConfig.baseUrl.replace(/\/+$/, "")}/chat/completions`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${attemptConfig.apiKey || "localproxy"}`,
+          },
+          body: JSON.stringify({
+            model: attemptConfig.model,
+            messages,
+            temperature: 0.2,
+            stream: false,
+            user: `radicar-json-${requestId}-${attempt}`,
+            ...(options.maxOutputTokens
+              ? { max_tokens: Math.max(1, Math.round(options.maxOutputTokens)) }
+              : {}),
+          }),
+          signal: options.signal
+            ? AbortSignal.any([
+                options.signal,
+                AbortSignal.timeout(timeoutMs),
+              ])
+            : AbortSignal.timeout(timeoutMs),
         },
-        body: JSON.stringify({
-          model: config.model,
-          messages,
-          temperature: 0.2,
-          stream: false,
-          user: `radicar-json-${requestId}-${attempt}`,
+      );
+    } catch (error) {
+      await reportUsage(
+        options.onUsage,
+        usageEvent(attemptConfig, messages, "", undefined, {
+          statusCode: 0,
+          successful: false,
+          durationMs: Date.now() - startedAt,
+          attempt,
         }),
-      },
-    );
+      );
+      if (error instanceof Error && error.name === "TimeoutError") {
+        throw new Error(
+          "زمان پاسخ‌گویی مدل بیش از حد مجاز شد. لطفاً دوباره تلاش کن.",
+        );
+      }
+      throw error;
+    }
 
     const rawResponse = await response.text();
     const payload = (() => {
@@ -246,6 +388,15 @@ export async function chatJson<T>(
       }
     })();
     if (!response.ok) {
+      await reportUsage(
+        options.onUsage,
+        usageEvent(attemptConfig, messages, rawResponse, payload, {
+          statusCode: response.status,
+          successful: false,
+          durationMs: Date.now() - startedAt,
+          attempt,
+        }),
+      );
       throw new Error(
         payload?.error?.message ||
           `ارتباط با مدل با خطای ${response.status} روبه‌رو شد.`,
@@ -253,12 +404,22 @@ export async function chatJson<T>(
     }
 
     const parsed = parseLlmJsonResponse<T>(rawResponse);
+    await reportUsage(
+      options.onUsage,
+      usageEvent(attemptConfig, messages, rawResponse, payload, {
+        statusCode: response.status,
+        successful: Boolean(parsed),
+        durationMs: Date.now() - startedAt,
+        attempt,
+      }),
+    );
     if (parsed) return parsed;
 
     const choice = payload?.choices?.[0];
     const messageContent = choice?.message?.content;
     console.error("[llm-client] Unparseable model response", {
       attempt,
+      model: attemptConfig.model,
       contentType: response.headers.get("content-type") || "",
       rawLength: rawResponse.length,
       topLevelKeys: payload && isJsonObject(payload) ? Object.keys(payload) : [],
@@ -273,6 +434,7 @@ export async function chatJson<T>(
   }
 
   throw new Error(
-    "مدل پاسخی برای استخراج اطلاعات نداد. لطفاً دوباره تلاش کن.",
+    options.emptyResponseMessage ||
+      "مدل پاسخی برای استخراج اطلاعات نداد. لطفاً دوباره تلاش کن.",
   );
 }

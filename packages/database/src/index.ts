@@ -3,6 +3,7 @@ export {
   authSessions,
   dataRecords,
   membershipEvents,
+  modelUsageEvents,
   orders,
   otpChallenges,
   payments,

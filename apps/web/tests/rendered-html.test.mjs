@@ -36,11 +36,18 @@ async function filesWithExtension(directory, extension) {
 }
 
 test("the Web workspace uses the official Next.js CLI with Turbopack", async () => {
-  const webPackage = await readFile(new URL("package.json", projectRoot), "utf8");
+  const [webPackage, nextConfig] = await Promise.all([
+    readFile(new URL("package.json", projectRoot), "utf8"),
+    readFile(new URL("next.config.ts", projectRoot), "utf8"),
+  ]);
 
   assert.match(webPackage, /"dev": "next dev --turbopack -p 3161"/);
   assert.match(webPackage, /"build": "next build --turbopack"/);
   assert.match(webPackage, /"start": "next start -p 3161"/);
+  assert.match(
+    nextConfig,
+    /distDir: process\.env\.NODE_ENV === "development" \? "\.next-dev" : "\.next"/,
+  );
   assert.doesNotMatch(webPackage, /vinext|vite|wrangler|cloudflare/i);
 });
 
@@ -401,22 +408,77 @@ test("workspace card stays in the sidebar while the account menu lives in the he
 });
 
 test("account page exposes plan lifetime and per-feature usage", async () => {
-  const [account, billing] = await Promise.all([
+  const [account, summary, billing] = await Promise.all([
     readFile(new URL("app/(panel)/account/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/_components/membership-summary.tsx", projectRoot), "utf8"),
     readFile(new URL("lib/billing.ts", projectRoot), "utf8"),
   ]);
 
   assert.match(account, /useMembership\(\)/);
-  assert.match(account, /روز باقی‌مانده/);
-  assert.match(account, /مصرف‌شده/);
-  assert.match(account, /تمام شده/);
-  assert.match(account, /نامحدود/);
-  assert.match(account, /ساخت رزومه/);
-  assert.match(account, /دانلود PDF/);
-  assert.match(account, /اعتبار هوش مصنوعی/);
-  assert.match(account, /تطبیق شغلی/);
-  assert.match(account, /مصاحبه آزمایشی/);
+  assert.match(account, /MembershipSummary/);
+  assert.match(summary, /روز باقی‌مانده/);
+  assert.match(summary, /مصرف‌شده/);
+  assert.match(summary, /تمام شده/);
+  assert.match(summary, /نامحدود/);
+  assert.match(summary, /ساخت رزومه/);
+  assert.match(summary, /دانلود PDF/);
+  assert.match(summary, /اعتبار هوش مصنوعی/);
+  assert.match(summary, /تطبیق شغلی/);
+  assert.match(summary, /مصاحبه آزمایشی/);
   assert.match(billing, /usage: Record</);
+});
+
+test("model usage breakdowns and recent requests use the shared paginated table", async () => {
+  const [page, billingClient, billingRoutes, billingService] = await Promise.all([
+    readFile(new URL("app/(panel)/admin/model-usage/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("lib/admin-stats.ts", projectRoot), "utf8"),
+    readFile(new URL("../api/src/modules/billing/routes.ts", projectRoot), "utf8"),
+    readFile(new URL("../api/src/modules/billing/service.ts", projectRoot), "utf8"),
+  ]);
+
+  assert.match(page, /grid grid-cols-2 items-start gap-5/);
+  assert.match(page, /grid-cols-\[1\.4fr_\.8fr_1fr_\.7fr\]/);
+  assert.doesNotMatch(page, /درخواست<br \/>/);
+  assert.match(page, /\{number\(row\.totalTokens\)\} توکن/);
+  assert.match(page, /آخرین درخواست‌های مدل/);
+  assert.match(page, /حساب کاربری/);
+  assert.match(page, /تاریخ و ساعت/);
+  assert.match(page, /dateTime\(row\.createdAt\)/);
+  assert.match(page, /<DataTable/);
+  assert.match(page, /<AdminTablePagination/);
+  assert.match(page, /useTablePageSize\(\)/);
+  assert.match(billingClient, /buildQueryString\(\{ days, page, pageSize \}\)/);
+  assert.match(billingClient, /placeholderData: keepPreviousData/);
+  assert.match(billingRoutes, /getModelUsageStats\(query\.days, query\.page, query\.pageSize\)/);
+  assert.match(billingService, /recentRequests: \{[\s\S]*?items: recentRows/);
+  assert.match(billingService, /\.limit\(pageSize\)[\s\S]*?\.offset\(\(page - 1\) \* pageSize\)/);
+  assert.match(billingService, /innerJoin\(users, eq\(users\.id, modelUsageEvents\.userId\)\)/);
+  assert.match(billingService, /numericFields\.has\(key\)/);
+  assert.doesNotMatch(billingService, /key !== "date" \? Number\(value\)/);
+});
+
+test("membership management exposes shared usage cards and attributed admin logs", async () => {
+  const [page, billingClient, billingService, authService] = await Promise.all([
+    readFile(new URL("app/(panel)/admin/memberships/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("lib/billing.ts", projectRoot), "utf8"),
+    readFile(new URL("../api/src/modules/billing/service.ts", projectRoot), "utf8"),
+    readFile(new URL("../api/src/modules/auth/service.ts", projectRoot), "utf8"),
+  ]);
+
+  assert.match(page, /اطلاعات تکمیلی/);
+  assert.match(page, />ویرایش<\/button>/);
+  assert.match(page, /title=\{`ویرایش عضویت/);
+  assert.match(page, /پلن و میزان مصرف/);
+  assert.match(page, /لاگ مدیریتی/);
+  assert.match(page, /flex flex-wrap items-center gap-x-4 gap-y-1/);
+  assert.match(page, /line-clamp-2 min-w-\[14rem\] flex-1/);
+  assert.match(page, /MembershipSummary membership=/);
+  assert.match(billingClient, /useAdminMembership/);
+  assert.match(billingService, /isNotNull\(membershipEvents\.actorUserId\)/);
+  assert.match(billingService, /actorById/);
+  assert.match(authService, /account_suspended/);
+  assert.match(authService, /account_activated/);
+  assert.match(authService, /actorUserId/);
 });
 
 test("higher plans use the upgrade and activate action label", async () => {
@@ -485,7 +547,7 @@ test("knowledge base organizes every form section in an accessible responsive ta
   );
   assert.match(
     knowledgeBase,
-    /تکمیل خودکار با رزومه فعلی[\s\S]*?my-1 text-\[9px\][\s\S]*?PDF، DOCX یا TXT/,
+    /تکمیل خودکار با رزومه فعلی[\s\S]*?my-1 text-\[11px\][\s\S]*?PDF، DOCX یا TXT/,
   );
   assert.match(
     knowledgeBase,
@@ -631,11 +693,10 @@ test("resume import retries empty LLM responses with a stable JSON model", async
     /مدل پاسخی برای استخراج اطلاعات نداد\. لطفاً دوباره تلاش کن\./,
   );
   assert.match(importRoute, /model: "deepseek-chat"/);
-  assert.match(importRoute, /"skills":\[string\]/);
+  assert.match(importRoute, /"skills":\s*\[string\]/);
   assert.match(importRoute, /serializeResumeSkills\(extracted\.skills\)/);
-  assert.match(importRoute, /"languageName":string/);
-  assert.match(importRoute, /typeof language\.languageName === "string"/);
-  assert.match(importRoute, /typeof language\.name === "string"/);
+  assert.match(importRoute, /"languageName":\s*string/);
+  assert.match(importRoute, /normalizeResumeImportPayload/);
 });
 
 test("resume picker exposes seventeen selectable layouts including the supplied navy reference", async () => {
@@ -852,6 +913,7 @@ test("long resumes paginate consistently in previews and printable documents", a
   assert.match(resumeDocument, /ResumePaginationProbe/);
   assert.match(scaledPreview, /ResumePaginationProbe/);
   assert.match(paginationComponents, /data-resume-pagination-probe/);
+  assert.match(paginationLayout, /PAGE_TOP_RESERVE = 36/);
   assert.match(paginationLayout, /PAGE_BOTTOM_RESERVE = 36/);
   assert.match(paginationLayout, /A4_PAGE_HEIGHT_PX/);
   assert.match(
@@ -864,7 +926,9 @@ test("long resumes paginate consistently in previews and printable documents", a
   assert.match(renderedPagination, /pagesRef/);
   assert.match(renderedPagination, /getRenderedPageLayout/);
   assert.match(paginationLayout, /getBoundingClientRect/);
-  assert.match(paginationLayout, /getScaledBottomReserve/);
+  assert.match(paginationLayout, /getScaledReserve/);
+  assert.match(paginationLayout, /contentTop >= safeTop/);
+  assert.match(paginationLayout, /contentBottom <= safeBottom/);
   assert.match(paginationLayout, /data-resume-flow/);
   assert.match(paginationLayout, /overflowingFlows/);
   assert.match(renderedPagination, /getRenderedFlow/);
@@ -873,7 +937,7 @@ test("long resumes paginate consistently in previews and printable documents", a
   assert.match(renderedPagination, /overflow\.flow/);
   assert.match(renderedPagination, /getPageContentKey/);
   assert.match(renderedPagination, /candidate\.flow/);
-  assert.match(renderedPagination, /contentBottom <= candidateLayout\.safeBottom/);
+  assert.match(renderedPagination, /candidateFlows\.every\(\(flow\) => flow\.fits\)/);
   assert.match(resumeDocument, /data-resume-flow="main"/);
   assert.match(resumeDocument, /data-resume-flow="sidebar"/);
   assert.match(resumeDocument, /print:break-after-page/);
@@ -902,6 +966,7 @@ test("every A4 template reserves matching top and bottom safe areas", async () =
   );
   assert.match(documentClassBlock, /!py-\[4\.535%\]/);
   assert.match(documentClassBlock, /print:!py-\[9\.525mm\]/);
+  assert.match(paginationLayout, /PAGE_TOP_RESERVE = 36/);
   assert.match(paginationLayout, /PAGE_BOTTOM_RESERVE = 36/);
   assert.equal(
     [...resumeDocument.matchAll(/documentClass\(compact\)/g)].length,
@@ -958,7 +1023,7 @@ test("PDF printing waits for the shared rendered pagination and keeps its probe 
   assert.match(resumeDocument, /if \(!candidate\) onPaginationReady\?\.\(\)/);
 });
 
-test("rendered pagination moves structured and legacy education atomically", async () => {
+test("rendered pagination splits every section into page-sized content units", async () => {
   const paginationHook = await readFile(
     new URL("app/(panel)/resumes/use-rendered-resume-pagination.ts", projectRoot),
     "utf8",
@@ -966,22 +1031,30 @@ test("rendered pagination moves structured and legacy education atomically", asy
 
   assert.match(
     paginationHook,
-    /nextPage\.educations = currentPage\.educations;[\s\S]*?nextPage\.education = currentPage\.education;[\s\S]*?currentPage\.educations = \[\];[\s\S]*?currentPage\.education = "";/,
+    /function moveStringSectionForward[\s\S]*?FORWARD_TEXT_CHUNK_SIZE/,
   );
   assert.match(
     paginationHook,
-    /previousPage\.educations = nextPage\.educations;[\s\S]*?previousPage\.education = nextPage\.education;[\s\S]*?nextPage\.educations = \[\];[\s\S]*?nextPage\.education = "";/,
+    /function moveStringSectionBack[\s\S]*?nextItems\[0\]/,
   );
+  assert.match(paginationHook, /currentPage\.educations\.pop\(\)/);
+  assert.match(paginationHook, /nextPage\.educations\.shift\(\)/);
+  assert.match(paginationHook, /descriptionWords\.slice\(0, splitAt\)/);
+  assert.match(paginationHook, /BACKFILL_ITEM_WORD_COUNT/);
 });
 
 test("rendered pagination moves only the content assigned to an overflowing column", async () => {
-  const [paginationHook, paginationProfile] = await Promise.all([
+  const [paginationHook, paginationProfile, resumeDocument] = await Promise.all([
     readFile(
       new URL("app/(panel)/resumes/use-rendered-resume-pagination.ts", projectRoot),
       "utf8",
     ),
     readFile(
       new URL("app/(panel)/resumes/resume-pagination-profile.ts", projectRoot),
+      "utf8",
+    ),
+    readFile(
+      new URL("app/(panel)/resumes/resume-document.tsx", projectRoot),
       "utf8",
     ),
   ]);
@@ -993,6 +1066,16 @@ test("rendered pagination moves only the content assigned to an overflowing colu
     paginationProfile,
     /"angular-technical": \{[\s\S]*?main: \["experiences", "projects", "educations"\],[\s\S]*?sidebar: \["summary", "skills", "languages"\]/,
   );
+  assert.doesNotMatch(paginationHook, /if \(section === "summary"\) return false/);
+  assert.match(
+    paginationHook,
+    /\.reverse\(\)[\s\S]*?\.find\(\(item\) => hasSectionContent\(currentPage, item\)\)/,
+  );
+  assert.equal(
+    [...resumeDocument.matchAll(/\{data\.summary &&/g)].length,
+    18,
+  );
+  assert.doesNotMatch(resumeDocument, /!continuation && data\.summary/);
 });
 
 test("the one-column template preview keeps trailing content inside padded pages", async () => {
@@ -1453,9 +1536,13 @@ test("resume builder header owns model, save and PDF actions", async () => {
   assert.match(resumesPage, /notify\("رزومه با موفقیت ذخیره شد\."\)/);
 });
 
-test("saving a resume confirms successful persistence with a toast", async () => {
-  const [resumesPage, toast, providers] = await Promise.all([
+test("saving a resume confirms persistence and handles rejected requests", async () => {
+  const [resumesPage, builder, toast, providers] = await Promise.all([
     readFile(new URL("app/(panel)/resumes/page.tsx", projectRoot), "utf8"),
+    readFile(
+      new URL("app/(panel)/resumes/resume-builder.tsx", projectRoot),
+      "utf8",
+    ),
     readFile(new URL("app/_components/toast.tsx", projectRoot), "utf8"),
     readFile(new URL("app/providers.tsx", projectRoot), "utf8"),
   ]);
@@ -1465,11 +1552,78 @@ test("saving a resume confirms successful persistence with a toast", async () =>
     /const saveDraft = async \(\) => \{\s*await persistResume\(data\);\s*notify\("رزومه با موفقیت ذخیره شد\."\)/,
   );
   assert.match(
+    builder,
+    /const saveResume = async \(\) => \{[\s\S]*?await onSave\(\);[\s\S]*?ذخیره رزومه ناموفق بود\./,
+  );
+  assert.match(builder, /disabled=\{saving\}/);
+  assert.match(
     toast,
     /<ToastContext\.Provider[\s\S]*?toast\.message[\s\S]*?<\/ToastContext\.Provider>/,
   );
   assert.match(toast, /z-100/);
   assert.match(providers, /<ToastProvider>\{children\}<\/ToastProvider>/);
+});
+
+test("plan expiry and quota errors open one global upgrade modal", async () => {
+  const [apiClient, toast, knowledge, match, dashboard, builder, interview] =
+    await Promise.all([
+      readFile(new URL("lib/api-client.ts", projectRoot), "utf8"),
+      readFile(new URL("app/_components/toast.tsx", projectRoot), "utf8"),
+      readFile(new URL("app/(panel)/knowledge-base/page.tsx", projectRoot), "utf8"),
+      readFile(new URL("app/(panel)/match/page.tsx", projectRoot), "utf8"),
+      readFile(new URL("app/(panel)/dashboard/page.tsx", projectRoot), "utf8"),
+      readFile(new URL("app/(panel)/resumes/resume-builder.tsx", projectRoot), "utf8"),
+      readFile(new URL("app/(panel)/interview/page.tsx", projectRoot), "utf8"),
+    ]);
+
+  assert.match(apiClient, /response\.status === 402/);
+  assert.match(apiClient, /PLAN_UPGRADE_REQUIRED_EVENT/);
+  assert.match(apiClient, /pendingPlanUpgradeMessage = message/);
+  assert.match(toast, /برای ادامه پلن را ارتقا دهید/);
+  assert.match(toast, /برای ادامه، لطفاً پلن فعلی خود را ارتقا دهید/);
+  assert.match(toast, /router\.push\("\/upgrade"\)/);
+  assert.match(toast, /event\.reason\.status === 402/);
+
+  for (const source of [knowledge, match, dashboard, builder, interview]) {
+    assert.doesNotMatch(source, /fetch\(apiUrl\(/);
+  }
+  assert.match(knowledge, /apiRequest<unknown>\("\/api\/knowledge\/import"/);
+  assert.match(match, /apiRequest<ImportJobResponse>\("\/api\/job-import"/);
+  assert.match(dashboard, /"\/api\/panel\/dashboard"/);
+  assert.match(builder, /"\/api\/resume\/generate"/);
+  assert.match(interview, /"\/api\/interview\/session"/);
+  assert.match(interview, /"\/api\/interview\/feedback"/);
+});
+
+test("imported job cards render a sanitized company logo with a letter fallback", async () => {
+  const [match, jobCard, models] = await Promise.all([
+    readFile(new URL("app/(panel)/match/page.tsx", projectRoot), "utf8"),
+    readFile(
+      new URL("app/(panel)/_components/job-card.tsx", projectRoot),
+      "utf8",
+    ),
+    readFile(new URL("lib/data/models.ts", projectRoot), "utf8"),
+  ]);
+
+  assert.match(match, /logoUrl: result\.logoUrl/);
+  assert.match(match, /logoUrl: selectedLogoUrl \|\| existingJob\?\.logoUrl/);
+  assert.match(jobCard, /sanitizeRemoteImageSource\(job\.logoUrl\)/);
+  assert.match(jobCard, /onError=\{\(\) => setFailedLogoUrl\(logoUrl\)\}/);
+  assert.match(jobCard, /نشان \$\{job\.company\}/);
+  assert.match(models, /logoUrl\?: string/);
+});
+
+test("the imported job copy button keeps a visible success icon", async () => {
+  const match = await readFile(
+    new URL("app/(panel)/match/page.tsx", projectRoot),
+    "utf8",
+  );
+
+  assert.match(
+    match,
+    /copiedImportedDescription\s*\? "border-\[#0f7b62\] bg-\[#0f7b62\] text-white"\s*: "border-\[#cfe3da\] bg-white text-\[#0f7b62\]"/,
+  );
+  assert.match(match, /copiedImportedDescription \? \(\s*<Check size=\{14\} \/>/);
 });
 
 test("data-changing forms show contextual success toasts and account fields use two columns", async () => {
@@ -1510,7 +1664,7 @@ test("resume names combine the first name and template and remain editable in te
   );
   assert.match(
     resumesPage,
-    /name:\s*resumeName\?\.trim\(\) \|\|\s*getDefaultResumeName\(nextData, selectedTemplate\)/,
+    /name:\s*resumeName\?\.trim\(\) \|\|\s*getDefaultResumeName\(safeData, selectedTemplate\)/,
   );
   assert.match(resumesPage, /setResumeName\(resume\.name\)/);
   assert.match(resumesPage, /onResumeNameChange=\{setResumeName\}/);
@@ -1614,8 +1768,8 @@ test("knowledge base and resume editor expose structured projects", async () => 
   assert.match(knowledgePage, /const projects = knowledge\.projects\?\.length/);
   assert.match(models, /sampleProjectsSeeded\?: boolean/);
   assert.match(resumeBuilder, /const replaceProjects/);
-  assert.match(importRoute, /"projects":\[/);
-  assert.match(importRoute, /Array\.isArray\(extracted\.projects\)/);
+  assert.match(importRoute, /"projects":\s*\[/);
+  assert.match(importRoute, /normalizeResumeImportPayload/);
 });
 
 test("every resume layout renders the shared project section", async () => {
@@ -2459,7 +2613,7 @@ test("dark sidebar timeline template matches the supplied split timeline structu
   assert.doesNotMatch(template, /"Links" : "پیوندها"/);
 });
 
-test("dark sidebar timeline keeps education atomic in the main flow", async () => {
+test("dark sidebar timeline keeps education ordered while allowing page splits", async () => {
   const [{ getResumePaginationProfile }, paginationHook] = await Promise.all([
     import("../app/(panel)/resumes/resume-pagination-profile.ts"),
     readFile(
@@ -2476,7 +2630,7 @@ test("dark sidebar timeline keeps education atomic in the main flow", async () =
   ]);
   assert.match(
     paginationHook,
-    /if \(section === "educations"\)[\s\S]*?if \(hasSectionContent\(nextPage, section\)\) return false/,
+    /section === "educations"[\s\S]*?pages\.slice\(boundary \+ 1\)\.some\(hasWorkContent\)/,
   );
 });
 
@@ -2497,6 +2651,10 @@ test("angular technical fills its sidebar edges and emphasizes language names", 
   assert.match(
     template,
     /<aside[\s\S]*?data-resume-flow="sidebar"[\s\S]*?className="relative z-1 px-\[12%\] pb-\[7%\] pt-\[5%\]">/,
+  );
+  assert.match(
+    template,
+    /\{data\.summary && \([\s\S]*?className=\{continuation \? "mt-\[2em\]" : "mt-\[3em\]"\}/,
   );
   assert.doesNotMatch(
     template,
@@ -2610,13 +2768,17 @@ test("split profile template matches the supplied asymmetric profile structure",
 });
 
 test("shared pagination hides repeated headings for every resumed section", async () => {
-  const [paginationHook, headingVisibility] = await Promise.all([
+  const [paginationHook, headingVisibility, resumeDocument] = await Promise.all([
     readFile(
       new URL("app/(panel)/resumes/use-rendered-resume-pagination.ts", projectRoot),
       "utf8",
     ),
     readFile(
       new URL("app/(panel)/resumes/resume-section-heading-visibility.ts", projectRoot),
+      "utf8",
+    ),
+    readFile(
+      new URL("app/(panel)/resumes/resume-document.tsx", projectRoot),
       "utf8",
     ),
   ]);
@@ -2641,7 +2803,20 @@ test("shared pagination hides repeated headings for every resumed section", asyn
     assert.match(headingVisibility, new RegExp(`\\b${section}:`));
   }
   assert.match(headingVisibility, /querySelectorAll<HTMLElement>\("h2"\)/);
-  assert.match(headingVisibility, /heading\.hidden = repeated/);
+  assert.match(
+    headingVisibility,
+    /heading\.closest<HTMLElement>\("\[data-resume-section-heading\]"\) \?\? heading/,
+    "decorated two-column headings must hide their complete wrapper",
+  );
+  assert.match(
+    headingVisibility,
+    /headingBlock\.classList\.toggle\("!hidden", repeated\)/,
+    "the entire repeated heading, including sidebar icons and dividers, must be removed",
+  );
+  assert.equal(
+    [...resumeDocument.matchAll(/data-resume-section-heading/g)].length,
+    4,
+  );
 });
 
 test("corporate competencies template matches the supplied bar-and-panel structure", async () => {
@@ -3090,10 +3265,9 @@ test("rendered rebalancing cannot pull education before later work", async () =>
     "utf8",
   );
 
-  assert.match(paginationHook, /normalizeSectionFlow\(nextPages, profile\)/);
   assert.match(
     paginationHook,
-    /profile\?\.sidebar\.includes\("educations"\)[\s\S]*?enforceResumeSectionFlow\(pages\)/,
+    /section === "educations"[\s\S]*?pages\.slice\(boundary \+ 1\)\.some\(hasWorkContent\)/,
   );
   assert.match(
     paginationHook,
@@ -3107,8 +3281,13 @@ test("rendered rebalancing cannot pull education before later work", async () =>
   );
   assert.match(
     paginationHook,
-    /MAX_SYNCHRONOUS_PAGINATION_PASSES = 30[\s\S]*?pagination\.passCount >= MAX_SYNCHRONOUS_PAGINATION_PASSES/,
-    "rendered pagination must stop before React's nested update limit",
+    /MAX_PAGINATION_PASSES = 160[\s\S]*?pagination\.passCount >= MAX_PAGINATION_PASSES/,
+    "rendered pagination must stop after a bounded number of passes",
+  );
+  assert.match(
+    paginationHook,
+    /requestAnimationFrame\(update\)[\s\S]*?cancelAnimationFrame\(frameId\)/,
+    "rendered pagination updates must be split across frames to avoid nested React updates",
   );
 });
 
@@ -3128,7 +3307,11 @@ test("rendered rebalancing may fill the final work page with education", async (
   ]);
 
   assert.match(paginationHook, /moveSectionBack/);
-  assert.match(paginationHook, /normalizeSectionFlow\(nextPages, profile\)/);
+  assert.match(
+    paginationHook,
+    /blockedBoundaries\.delete\(`\$\{overflow\.pageIndex\}:\$\{overflow\.flow\}`\)/,
+    "moving overflow forward must reopen that boundary for fine-grained backfill",
+  );
   assert.match(sectionFlow, /index < lastWorkPageIndex/);
   assert.doesNotMatch(sectionFlow, /index <= lastWorkPageIndex/);
 });
@@ -3212,17 +3395,45 @@ test("model work stays in the panel shell and exposes completed destinations", a
   assert.match(provider, /status: "running"/);
   assert.match(provider, /status: "completed"/);
   assert.match(provider, /status: "error"/);
+  assert.match(provider, /status: "canceled"/);
   assert.match(provider, /getCompletedHref/);
+  assert.match(provider, /new AbortController\(\)/);
+  assert.match(provider, /input\.run\(controller\.signal\)/);
+  assert.match(provider, /cancelTask/);
   assert.match(provider, /runningCountRef\.current >= 2/);
   assert.match(provider, /دو درخواست مدل در حال انجام است/);
   assert.doesNotMatch(provider, /\.slice\(0, 5\)/);
   assert.match(provider, /setTasks\(\(current\) => \[task, \.\.\.current\]\)/);
   assert.match(provider, /if \(task\.status !== "running"\) dismissTask\(task\.id\)/);
   assert.match(shell, /فعالیت‌های مدل/);
+  assert.match(shell, /لغو/);
   assert.ok(
     shell.indexOf('aria-label="فعالیت‌های مدل"') <
       shell.indexOf('{ href: "/account", label: "حساب کاربری"'),
   );
+});
+
+test("running match analysis restores its exact inputs and can be canceled", async () => {
+  const [matchPage, normalizer, apiRoutes] = await Promise.all([
+    readFile(new URL("app/(panel)/match/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("lib/match-analysis.ts", projectRoot), "utf8"),
+    readFile(new URL("../api/src/modules/ai/routes.ts", projectRoot), "utf8"),
+  ]);
+
+  assert.match(matchPage, /kind: "match-analysis"/);
+  assert.match(matchPage, /jobDescription: selectedDescription/);
+  assert.match(matchPage, /resumeId: selectedResume\.id/);
+  assert.match(matchPage, /signal,/);
+  assert.match(matchPage, /ورودی‌های در حال تحلیل/);
+  assert.match(matchPage, /لغو تحلیل/);
+  assert.match(matchPage, /cancelTask\(runningAnalysisTask\.id\)/);
+  assert.match(matchPage, /normalizeMatchAnalysisInput\(rawResult\)/);
+  assert.match(matchPage, /normalizeMatchAnalysisInput\(previousAnalysis\.analysis\)/);
+  assert.match(normalizer, /Array\.isArray\(record\.breakdown\)/);
+  assert.match(normalizer, /normalizeImportedTextArray\(record\.strengths\)/);
+  assert.match(apiRoutes, /getMatchAnalyzeConfig\(\)/);
+  assert.match(apiRoutes, /model: "deepseek-chat"/);
+  assert.match(apiRoutes, /maxOutputTokens: 2_048/);
 });
 
 test("every model-backed panel operation uses the shared background task manager", async () => {
@@ -3273,7 +3484,7 @@ test("a completed match analysis restores the saved report when its task is open
   assert.match(models, /jobId\?: string/);
   assert.match(matchPage, /jobId: jobRecord\.id/);
   assert.match(matchPage, /item\.jobId === selectedJob\.id/);
-  assert.match(matchPage, /setAnalysis\(previousAnalysis\?\.analysis \|\| null\)/);
+  assert.match(matchPage, /normalizeMatchAnalysisInput\(previousAnalysis\.analysis\)/);
   assert.match(matchPage, /setAnalyzed\(Boolean\(previousAnalysis\)\)/);
 });
 

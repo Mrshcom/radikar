@@ -187,7 +187,7 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
         });
       }
     }
-    return authService.updateUser(userId, input);
+    return authService.updateUser(userId, input, request.auth!.user.id);
   });
 }
 

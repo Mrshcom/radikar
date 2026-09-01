@@ -56,9 +56,20 @@ import { cn } from "@/lib/cn";
 import { formatPersianNumber } from "@/lib/fa-number";
 import { sanitizeLtrField } from "@/lib/ltr-field";
 import { readProfileImage } from "@/lib/image-file";
-import { calculateKnowledgeCompletion } from "@/lib/knowledge-completion";
+import {
+  calculateKnowledgeCompletion,
+  isSeededKnowledgeSampleProject,
+} from "@/lib/knowledge-completion";
 import { parseResumeSkills } from "@/lib/resume-skills";
-import { apiUrl } from "@/lib/api-url";
+import { apiRequest } from "@/lib/api-client";
+import {
+  normalizeImportedBoolean,
+  normalizeImportedText,
+  normalizeResumeImportPayload,
+  normalizeStoredResumeData,
+  sanitizeImportedUrl,
+  type ResumeImportPayload,
+} from "@radicar/validators";
 
 const primaryButton =
   "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] bg-[#0f7b62] px-[15px] text-[11px] font-bold whitespace-nowrap text-white shadow-[0_7px_17px_rgba(15,123,98,.17)] disabled:cursor-not-allowed disabled:opacity-45";
@@ -116,23 +127,7 @@ type KnowledgeForm = Omit<
   KnowledgeProfileRecord,
   "id" | "createdAt" | "updatedAt"
 >;
-type ImportResult = {
-  resumeData?: Partial<ResumeData>;
-  experiences?: Array<Omit<KnowledgeExperience, "id">>;
-  qualifications?: Array<Omit<KnowledgeQualification, "id">>;
-  projects?: Array<Omit<ResumeProject, "id">>;
-  skills?: string;
-  languages?: string;
-  languageItems?: Array<Omit<KnowledgeLanguage, "id">>;
-  careerGoals?: string;
-  preferredRoles?: string;
-  preferredIndustries?: string;
-  workPreferences?: string;
-  interviewContext?: string;
-  interviewChallenges?: string;
-  fileName?: string;
-  error?: string;
-};
+type ImportResult = ResumeImportPayload;
 
 const emptyKnowledge: KnowledgeForm = {
   resumeData: emptyResumeData,
@@ -260,8 +255,8 @@ function proficiencyLabel(value: string) {
   );
 }
 
-function normalizeProficiency(value: string | undefined) {
-  const normalized = (value ?? "").trim().toLocaleLowerCase();
+function normalizeProficiency(value: unknown) {
+  const normalized = normalizeImportedText(value).trim().toLocaleLowerCase();
   if (/(native|bilingual|مادری|دوزبانه|دو زبانه)/.test(normalized))
     return "native-bilingual";
   if (/(full professional|fluent|تسلط کامل)/.test(normalized))
@@ -300,8 +295,8 @@ function normalizeLanguage(
   item: Partial<KnowledgeLanguage>,
 ): KnowledgeLanguage {
   return {
-    id: item.id || createRecordId("language"),
-    name: item.name ?? "",
+    id: normalizeImportedText(item.id) || createRecordId("language"),
+    name: normalizeImportedText(item.name),
     proficiency: normalizeProficiency(item.proficiency),
   };
 }
@@ -317,8 +312,11 @@ function languagesSummary(items: KnowledgeLanguage[]) {
     .join(" | ");
 }
 
-function splitExperienceDate(value: string) {
-  const [startDate = "", endDate = ""] = value.split(/\s+(?:تا|–|—|-)\s+/, 2);
+function splitExperienceDate(value: unknown) {
+  const [startDate = "", endDate = ""] = normalizeImportedText(value).split(
+    /\s+(?:تا|–|—|-)\s+/,
+    2,
+  );
   const isCurrent = /(?:امروز|اکنون|حال حاضر|present|current)/i.test(endDate);
   return {
     startDate: startDate.trim(),
@@ -349,19 +347,21 @@ function normalizeExperience(
   const dates =
     item.startDate || item.endDate || item.isCurrent
       ? {
-          startDate: item.startDate ?? "",
-          endDate: item.endDate ?? "",
-          isCurrent: Boolean(item.isCurrent),
+          startDate: normalizeImportedText(item.startDate),
+          endDate: normalizeImportedText(item.endDate),
+          isCurrent: normalizeImportedBoolean(item.isCurrent),
         }
       : splitExperienceDate(item.date ?? "");
   return {
-    id: item.id || createRecordId("experience"),
-    jobTitle: item.jobTitle ?? "",
-    company: item.company ?? "",
-    location: item.location ?? "",
+    id: normalizeImportedText(item.id) || createRecordId("experience"),
+    jobTitle: normalizeImportedText(item.jobTitle),
+    company: normalizeImportedText(item.company),
+    location: normalizeImportedText(item.location),
     ...dates,
-    description: item.description ?? "",
-    technologies: item.technologies || item.achievements || "",
+    description: normalizeImportedText(item.description),
+    technologies: normalizeImportedText(
+      item.technologies || item.achievements,
+    ),
   };
 }
 
@@ -379,15 +379,15 @@ function isExperienceEmpty(experience: KnowledgeExperience) {
 
 function normalizeProject(item: Partial<ResumeProject>): ResumeProject {
   return {
-    id: item.id || createRecordId("project"),
-    name: item.name ?? "",
-    role: item.role ?? "",
-    url: item.url ?? "",
-    startDate: item.startDate ?? "",
-    endDate: item.endDate ?? "",
-    isCurrent: Boolean(item.isCurrent),
-    description: item.description ?? "",
-    technologies: item.technologies ?? "",
+    id: normalizeImportedText(item.id) || createRecordId("project"),
+    name: normalizeImportedText(item.name),
+    role: normalizeImportedText(item.role),
+    url: sanitizeImportedUrl(item.url),
+    startDate: normalizeImportedText(item.startDate),
+    endDate: normalizeImportedText(item.endDate),
+    isCurrent: normalizeImportedBoolean(item.isCurrent),
+    description: normalizeImportedText(item.description),
+    technologies: normalizeImportedText(item.technologies),
   };
 }
 
@@ -419,15 +419,45 @@ function normalizeQualification(
   item: Partial<KnowledgeQualification>,
 ): KnowledgeQualification {
   const legacyCredential = [item.education, item.certifications]
+    .map(normalizeImportedText)
     .filter(Boolean)
     .join(" — ");
   return {
-    id: item.id || createRecordId("qualification"),
-    institution: item.institution ?? "",
-    credential: item.credential || legacyCredential,
-    startDate: item.startDate ?? "",
-    endDate: item.endDate ?? "",
-    isCurrent: Boolean(item.isCurrent),
+    id: normalizeImportedText(item.id) || createRecordId("qualification"),
+    institution: normalizeImportedText(item.institution),
+    credential: normalizeImportedText(item.credential || legacyCredential),
+    startDate: normalizeImportedText(item.startDate),
+    endDate: normalizeImportedText(item.endDate),
+    isCurrent: normalizeImportedBoolean(item.isCurrent),
+  };
+}
+
+function normalizeResumeData(value: unknown): ResumeData {
+  const normalized = normalizeStoredResumeData(value);
+  return {
+    ...normalized,
+    experiences: normalized.experiences.map(normalizeExperience),
+    educations: normalized.educations.map(normalizeQualification),
+    projects: normalized.projects.map(normalizeProject),
+  };
+}
+
+function normalizeKnowledgeForm(value: KnowledgeForm): KnowledgeForm {
+  return {
+    ...value,
+    resumeData: normalizeResumeData(value.resumeData),
+    experiences: value.experiences.map(normalizeExperience),
+    qualifications: value.qualifications.map(normalizeQualification),
+    projects: value.projects.map(normalizeProject),
+    skills: normalizeImportedText(value.skills),
+    languages: normalizeImportedText(value.languages),
+    languageItems: value.languageItems.map(normalizeLanguage),
+    careerGoals: normalizeImportedText(value.careerGoals),
+    preferredRoles: normalizeImportedText(value.preferredRoles),
+    preferredIndustries: normalizeImportedText(value.preferredIndustries),
+    workPreferences: normalizeWorkMode(value.workPreferences),
+    interviewContext: normalizeImportedText(value.interviewContext),
+    interviewChallenges: normalizeImportedText(value.interviewChallenges),
   };
 }
 
@@ -445,9 +475,9 @@ function qualificationSummary(qualification: KnowledgeQualification) {
 }
 
 function normalizeWorkMode(
-  value: string | undefined,
+  value: unknown,
 ): UserProfileRecord["workMode"] {
-  const normalized = (value ?? "").trim().toLocaleLowerCase();
+  const normalized = normalizeImportedText(value).trim().toLocaleLowerCase();
   if (/(remote|دورکار)/.test(normalized)) return "remote";
   if (/(hybrid|هیبرید|ترکیبی)/.test(normalized)) return "hybrid";
   if (/(onsite|on-site|حضوری)/.test(normalized)) return "onsite";
@@ -458,11 +488,14 @@ function mergeImportedKnowledge(
   current: KnowledgeForm,
   result: ImportResult,
 ): KnowledgeForm {
+  const importedResume = normalizeResumeData({
+    ...current.resumeData,
+    ...result.resumeData,
+  });
   return {
     ...current,
     resumeData: {
-      ...current.resumeData,
-      ...result.resumeData,
+      ...importedResume,
       photoUrl: result.resumeData?.photoUrl || current.resumeData.photoUrl,
     },
     experiences: result.experiences?.length
@@ -540,7 +573,10 @@ function resumeDataFromKnowledge(form: KnowledgeForm): ResumeData {
       .join("\n"),
     educations: form.qualifications.map((item) => ({ ...item })),
     projects: form.projects
-      .filter((item) => !isProjectEmpty(item))
+      .filter(
+        (item) =>
+          !isProjectEmpty(item) && !isSeededKnowledgeSampleProject(item),
+      )
       .map((item) => ({ ...item })),
     skills: form.skills,
     languages: languagesSummary(form.languageItems) || form.languages,
@@ -624,7 +660,7 @@ export default function KnowledgeBasePage() {
       .then(async ([knowledge, latestResume, profile]) => {
         if (!active) return;
         if (knowledge) {
-          const storedResume = { ...emptyResumeData, ...knowledge.resumeData };
+          const storedResume = normalizeResumeData(knowledge.resumeData);
           const experiences = knowledge.experiences?.length
             ? knowledge.experiences.map(normalizeExperience)
             : [experienceFromResume(storedResume, knowledge)];
@@ -655,18 +691,16 @@ export default function KnowledgeBasePage() {
             ...knowledge,
             resumeData: storedResume,
             skills:
-              knowledge.skills ||
-              knowledge.qualifications
-                ?.map((item) => item.skills)
-                .filter(Boolean)
-                .join("، ") ||
+              normalizeImportedText(knowledge.skills) ||
+              normalizeImportedText(
+                knowledge.qualifications?.map((item) => item.skills),
+              ) ||
               storedResume.skills,
             languages:
-              knowledge.languages ||
-              knowledge.qualifications
-                ?.map((item) => item.languages)
-                .filter(Boolean)
-                .join("، ") ||
+              normalizeImportedText(knowledge.languages) ||
+              normalizeImportedText(
+                knowledge.qualifications?.map((item) => item.languages),
+              ) ||
               storedResume.languages,
             languageItems: knowledge.languageItems?.length
               ? knowledge.languageItems.map(normalizeLanguage)
@@ -680,6 +714,17 @@ export default function KnowledgeBasePage() {
             workPreferences: normalizeWorkMode(
               knowledge.workPreferences || profile?.workMode,
             ),
+            careerGoals: normalizeImportedText(knowledge.careerGoals),
+            preferredRoles: normalizeImportedText(knowledge.preferredRoles),
+            preferredIndustries: normalizeImportedText(
+              knowledge.preferredIndustries,
+            ),
+            interviewContext: normalizeImportedText(
+              knowledge.interviewContext,
+            ),
+            interviewChallenges: normalizeImportedText(
+              knowledge.interviewChallenges,
+            ),
             experiences,
             qualifications: knowledge.qualifications?.length
               ? knowledge.qualifications.map(normalizeQualification)
@@ -692,12 +737,9 @@ export default function KnowledgeBasePage() {
             setOpenExperienceId(experiences[0].id);
           setCreatedAt(knowledge.createdAt);
         } else {
-          const storedResume = {
-            ...emptyResumeData,
-            ...latestResume?.data,
-            fullName: latestResume?.data.fullName || profile?.fullName || "",
-            jobTitle: latestResume?.data.jobTitle || profile?.targetTitle || "",
-          };
+          const storedResume = normalizeResumeData(latestResume?.data);
+          storedResume.fullName ||= profile?.fullName || "";
+          storedResume.jobTitle ||= profile?.targetTitle || "";
           const experiences = [experienceFromResume(storedResume)];
           setForm({
             ...emptyKnowledge,
@@ -836,38 +878,40 @@ export default function KnowledgeBasePage() {
         },
       );
     });
-    form.projects.forEach((project, index) => {
-      const number = formatPersianNumber(index + 1);
-      items.push(
-        {
-          label: `نام پروژه ${number} را وارد کن`,
-          complete: Boolean(project.name.trim()),
-        },
-        {
-          label: `نقش یا نوع پروژه ${number} را وارد کن`,
-          complete: Boolean(project.role.trim()),
-        },
-        {
-          label: `لینک پروژه ${number} را وارد کن`,
-          complete: Boolean(project.url.trim()),
-        },
-        {
-          label: `بازه زمانی پروژه ${number} را کامل کن`,
-          complete: Boolean(
-            project.startDate.trim() &&
-              (project.isCurrent || project.endDate.trim()),
-          ),
-        },
-        {
-          label: `توضیحات پروژه ${number} را بنویس`,
-          complete: Boolean(project.description.trim()),
-        },
-        {
-          label: `فناوری‌های پروژه ${number} را اضافه کن`,
-          complete: Boolean(project.technologies.trim()),
-        },
-      );
-    });
+    form.projects
+      .filter((project) => !isSeededKnowledgeSampleProject(project))
+      .forEach((project, index) => {
+        const number = formatPersianNumber(index + 1);
+        items.push(
+          {
+            label: `نام پروژه ${number} را وارد کن`,
+            complete: Boolean(project.name.trim()),
+          },
+          {
+            label: `نقش یا نوع پروژه ${number} را وارد کن`,
+            complete: Boolean(project.role.trim()),
+          },
+          {
+            label: `لینک پروژه ${number} را وارد کن`,
+            complete: Boolean(project.url.trim()),
+          },
+          {
+            label: `بازه زمانی پروژه ${number} را کامل کن`,
+            complete: Boolean(
+              project.startDate.trim() &&
+                (project.isCurrent || project.endDate.trim()),
+            ),
+          },
+          {
+            label: `توضیحات پروژه ${number} را بنویس`,
+            complete: Boolean(project.description.trim()),
+          },
+          {
+            label: `فناوری‌های پروژه ${number} را اضافه کن`,
+            complete: Boolean(project.technologies.trim()),
+          },
+        );
+      });
     form.qualifications.forEach((qualification, index) => {
       const number = formatPersianNumber(index + 1);
       items.push(
@@ -978,7 +1022,15 @@ export default function KnowledgeBasePage() {
       setForm((current) => ({
         ...current,
         projects: current.projects.map((item) =>
-          item.id === id ? { ...item, [field]: value } : item,
+          item.id === id
+            ? {
+                ...item,
+                id: isSeededKnowledgeSampleProject(item)
+                  ? createRecordId("project")
+                  : item.id,
+                [field]: value,
+              }
+            : item,
         ),
       }));
     };
@@ -1031,16 +1083,11 @@ export default function KnowledgeBasePage() {
         run: async () => {
           const payload = new FormData();
           payload.append("resume", file);
-          const response = await fetch(apiUrl("/api/knowledge/import"), {
+          const rawResult = await apiRequest<unknown>("/api/knowledge/import", {
             method: "POST",
-            credentials: "include",
             body: payload,
           });
-          const result = (await response.json()) as ImportResult;
-          if (!response.ok)
-            throw new Error(
-              result.error || "استخراج اطلاعات رزومه ناموفق بود.",
-            );
+          const result = normalizeResumeImportPayload(rawResult);
           const merged = mergeImportedKnowledge(form, result);
           const profileId = await getActiveProfileId();
           const existing = await knowledgeProfileStore.get(profileId);
@@ -1095,20 +1142,22 @@ export default function KnowledgeBasePage() {
     setSaving(true);
     const now = new Date().toISOString();
     try {
+      const safeForm = normalizeKnowledgeForm(form);
+      const safeResume = resumeDataFromKnowledge(safeForm);
       const profileId = await getActiveProfileId();
       await knowledgeProfileStore.put({
         id: profileId,
-        ...form,
-        languages: resume.languages,
-        resumeData: resume,
+        ...safeForm,
+        languages: safeResume.languages,
+        resumeData: safeResume,
         createdAt: createdAt || now,
         updatedAt: now,
       });
       const previousProfile = await userProfileStore.get(profileId);
       const profile: UserProfileRecord = {
         id: profileId,
-        fullName: resume.fullName.trim(),
-        targetTitle: resume.jobTitle.trim(),
+        fullName: safeResume.fullName.trim(),
+        targetTitle: safeResume.jobTitle.trim(),
         workMode:
           normalizeWorkMode(form.workPreferences) ||
           previousProfile?.workMode ||
@@ -1117,6 +1166,7 @@ export default function KnowledgeBasePage() {
         updatedAt: now,
       };
       await userProfileStore.put(profile);
+      setForm(safeForm);
       setCreatedAt(createdAt || now);
       notify("پایگاه دانش ذخیره شد و برای ابزارهای رادیکار آماده است.");
     } catch {
@@ -1253,7 +1303,7 @@ export default function KnowledgeBasePage() {
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="m-0 text-[11px]">تکمیل خودکار با رزومه فعلی</h2>
-          <p className="my-1 text-[9px] leading-[1.8] text-[#758582]">
+          <p className="my-1 text-[11px] leading-[1.8] text-[#758582]">
             فایل PDF، DOCX یا TXT را بارگذاری کن تا اطلاعات تماس، تجربه‌ها،
             تحصیلات و مهارت‌ها استخراج و در فرم‌ها درج شوند.
           </p>
@@ -1771,6 +1821,9 @@ export default function KnowledgeBasePage() {
                             item.id === project.id
                               ? {
                                   ...item,
+                                  id: isSeededKnowledgeSampleProject(item)
+                                    ? createRecordId("project")
+                                    : item.id,
                                   isCurrent: event.target.checked,
                                   endDate: event.target.checked
                                     ? ""

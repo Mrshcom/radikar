@@ -1,3 +1,5 @@
+import { normalizeImportedText } from "@radicar/validators";
+
 type ValidationResult = { valid: true } | { valid: false; error: string };
 
 export type JsonObject = Record<string, unknown>;
@@ -75,9 +77,7 @@ function isStandaloneTechnicalToken(value: string) {
 export function serializeResumeSkills(value: unknown) {
   const rawItems = Array.isArray(value) ? value : [value];
   return rawItems
-    .flatMap((item) =>
-      typeof item === "string" ? item.split(/[,،;؛|\n]/) : [],
-    )
+    .flatMap((item) => normalizeImportedText(item).split(/[,،;؛|\n]/))
     .flatMap((item) => {
       const trimmed = item.trim();
       if (!trimmed || !/\s/.test(trimmed)) return trimmed ? [trimmed] : [];

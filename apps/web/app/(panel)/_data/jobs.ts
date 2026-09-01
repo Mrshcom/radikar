@@ -8,5 +8,6 @@ export type Job = {
   age: string;
   tone: JobTone;
   letter: string;
+  logoUrl?: string;
   reason?: string;
 };

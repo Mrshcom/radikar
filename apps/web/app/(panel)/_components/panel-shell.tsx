@@ -38,9 +38,11 @@ import {
   UserRound,
   UserPlus,
   Users,
+  X,
   ShoppingBag,
   FilePlus2,
   Activity,
+  Bot,
 } from "lucide-react";
 import {
   appProfileStore,
@@ -84,6 +86,7 @@ const menuItems: MenuItem[] = [
   { href: "/admin/orders", label: "سفارش‌های سامانه", icon: ReceiptText, roles: ["admin", "superadmin"] },
   { href: "/admin/payments", label: "تراکنش‌ها و واریزی‌ها", icon: CreditCard, roles: ["admin", "superadmin"] },
   { href: "/admin/records", label: "داده‌های سامانه", icon: Database, roles: ["superadmin"] },
+  { href: "/admin/model-usage", label: "مصرف و هزینه مدل‌ها", icon: Bot, roles: ["superadmin"] },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -97,6 +100,7 @@ const pageTitles: Record<string, string> = {
   "/admin/orders": "سفارش‌های سامانه",
   "/admin/payments": "واریزی‌های سامانه",
   "/admin/records": "داده‌های سامانه",
+  "/admin/model-usage": "مصرف و هزینه مدل‌ها",
 };
 
 const primaryButtonClass =
@@ -151,7 +155,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
   const logout = useLogout();
-  const { tasks: modelTasks, openTask } = useModelTasks();
+  const { tasks: modelTasks, openTask, cancelTask } = useModelTasks();
   const notify = useToast();
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -416,18 +420,26 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   <strong className="text-[9px]">فعالیت‌های مدل</strong>
                 </div>
                 {modelTasks.map((task) => (
-                  <button
+                  <div
                     className={cn(
-                      "flex min-w-0 items-center gap-2 rounded-[10px] border p-2 text-right",
+                      "flex min-w-0 cursor-pointer items-center gap-2 rounded-[10px] border p-2 text-right",
                       task.status === "running"
                         ? "border-[#c9e3d9] bg-white text-[#176b57]"
                         : task.status === "completed"
                           ? "border-[#cce4d9] bg-[#e9f6f0] text-[#12664f]"
-                          : "border-[#efd9b2] bg-[#fff7e8] text-[#966925]",
+                          : task.status === "canceled"
+                            ? "border-[#e3e6e4] bg-[#f5f6f5] text-[#74827e]"
+                            : "border-[#efd9b2] bg-[#fff7e8] text-[#966925]",
                     )}
                     key={task.id}
                     onClick={() => openTask(task)}
-                    type="button"
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter" && event.key !== " ") return;
+                      event.preventDefault();
+                      openTask(task);
+                    }}
+                    role="button"
+                    tabIndex={0}
                   >
                     <span className="grid size-7 shrink-0 place-items-center rounded-full bg-current/10">
                       {task.status === "running" ? (
@@ -447,11 +459,27 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                           ? task.pendingLabel
                           : task.status === "completed"
                             ? `${task.completedLabel}؛ برای مشاهده کلیک کن.`
-                            : task.error || "عملیات مدل ناموفق بود."}
+                            : task.status === "canceled"
+                              ? "عملیات توسط شما لغو شد."
+                              : task.error || "عملیات مدل ناموفق بود."}
                       </small>
                     </span>
-                    <ChevronLeft className="shrink-0 opacity-55" size={13} />
-                  </button>
+                    {task.status === "running" ? (
+                      <button
+                        type="button"
+                        className="grid size-6 shrink-0 place-items-center rounded-md text-[#a5483e] hover:bg-[#fff1ef]"
+                        aria-label={`لغو ${task.title}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          cancelTask(task.id);
+                        }}
+                      >
+                        <X size={13} />
+                      </button>
+                    ) : (
+                      <ChevronLeft className="shrink-0 opacity-55" size={13} />
+                    )}
+                  </div>
                 ))}
               </section>
             )}

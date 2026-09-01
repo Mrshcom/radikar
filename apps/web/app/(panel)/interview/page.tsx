@@ -33,7 +33,7 @@ import type {
   InterviewSessionRecord,
 } from "@/lib/data/models";
 import { formatPersianNumber, toPersianDigits } from "@/lib/fa-number";
-import { apiUrl } from "@/lib/api-url";
+import { apiRequest } from "@/lib/api-client";
 
 type PracticeCard = { title: string; text: string; tone: string };
 type SessionData = {
@@ -118,21 +118,17 @@ export default function InterviewPage() {
             throw new Error(
               "برای ساخت جلسه مصاحبه ابتدا پایگاه دانش یا رزومه را تکمیل کن.",
             );
-          const response = await fetch(apiUrl("/api/interview/session"), {
-            method: "POST",
-            credentials: "include",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-              resume: resumeData,
-              knowledge,
-              mode: selectedMode,
-            }),
-          });
-          const result = (await response.json()) as SessionData & {
-            error?: string;
-          };
-          if (!response.ok)
-            throw new Error(result.error || "ساخت جلسه مصاحبه ناموفق بود.");
+          const result = await apiRequest<SessionData & { error?: string }>(
+            "/api/interview/session",
+            {
+              method: "POST",
+              body: JSON.stringify({
+                resume: resumeData,
+                knowledge,
+                mode: selectedMode,
+              }),
+            },
+          );
           const now = new Date().toISOString();
           const record: InterviewSessionRecord = {
             id: createRecordId("interview"),
@@ -185,17 +181,13 @@ export default function InterviewPage() {
         completedLabel: "بازخورد پاسخ آماده شد",
         href: "/interview",
         run: async () => {
-          const response = await fetch(apiUrl("/api/interview/feedback"), {
-            method: "POST",
-            credentials: "include",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ question: currentQuestion, answer }),
-          });
-          const result = (await response.json()) as Feedback & {
-            error?: string;
-          };
-          if (!response.ok)
-            throw new Error(result.error || "دریافت بازخورد ناموفق بود.");
+          const result = await apiRequest<Feedback & { error?: string }>(
+            "/api/interview/feedback",
+            {
+              method: "POST",
+              body: JSON.stringify({ question: currentQuestion, answer }),
+            },
+          );
           const feedbackRecord: InterviewFeedbackRecord = {
             question: currentQuestion,
             answer: answer.trim(),
@@ -316,7 +308,7 @@ export default function InterviewPage() {
         <section className="mt-4 rounded-[17px] border border-[#e7ebe6] bg-white p-[22px] shadow-[0_12px_36px_rgba(27,55,50,.055)] max-[820px]:p-4">
           <div className="flex items-start justify-between">
             <div>
-              <span className="rounded-md bg-[#e6f4ee] px-2 py-1 text-[8px] font-bold text-[#0f7b62]">
+              <span className="rounded-md bg-[#e6f4ee] px-2 py-1 text-[11px] font-bold text-[#0f7b62]">
                 جلسه فعال
               </span>
               <h3 className="mb-0 mt-[9px] text-[13px]">{mode}</h3>
@@ -337,7 +329,7 @@ export default function InterviewPage() {
               {currentQuestion}
             </h2>
           </div>
-          <label className="grid gap-2 text-[9px] text-[#60716e]">
+          <label className="grid gap-2 text-[11px] text-[#60716e]">
             پاسخ تو
             <textarea
               className="min-h-[125px] w-full resize-y rounded-[11px] border border-[#dfe5df] bg-[#fbfcfa] p-[13px] text-[12px] leading-8 outline-0 focus:border-[#72b7a2] focus:shadow-[0_0_0_3px_#e7f3ef]"
@@ -354,8 +346,8 @@ export default function InterviewPage() {
             <div className="mt-3 flex items-start gap-[9px] rounded-[10px] bg-[#edf8f3] p-3 text-[#176b57]">
               <CheckCircle2 size={19} />
               <div>
-                <strong className="text-[10px]">{feedback.title}</strong>
-                <p className="mb-0 mt-[3px] text-[8px] leading-[1.8] text-[#66847b]">
+                <strong className="text-[13px]">{feedback.title}</strong>
+                <p className="mb-0 mt-[3px] text-[12px] leading-[1.8] text-[#66847b]">
                   {feedback.text}
                 </p>
               </div>

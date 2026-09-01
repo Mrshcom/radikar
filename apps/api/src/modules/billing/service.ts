@@ -1,7 +1,9 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { and, count, desc, eq, gt, ilike, ne, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, gte, ilike, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
+import type { ModelUsageEvent } from "@radicar/ai";
 import {
   membershipEvents,
+  modelUsageEvents,
   orders,
   payments,
   plans,
@@ -43,6 +45,14 @@ export type BillingServiceOptions = {
 
 export type UsageResource = "resume" | "pdf" | "ai" | "match" | "interview";
 export type UsageCosts = Partial<Record<UsageResource, number>>;
+
+const usageResourceLabels: Record<UsageResource, string> = {
+  resume: "ساخت رزومه",
+  pdf: "دریافت PDF",
+  ai: "استفاده از هوش مصنوعی",
+  match: "تطبیق شغلی",
+  interview: "مصاحبه",
+};
 
 export class BillingService {
   private readonly gateway: ZarinpalClient;
@@ -202,7 +212,10 @@ export class BillingService {
         .where(eq(userMemberships.userId, userId))
         .limit(1);
       if (!membership || membership.status !== "active" || membership.expiresAt <= new Date()) {
-        throw new BillingError(402, "اعتبار پلن شما منقضی شده است؛ برای ادامه بسته را تمدید کن.");
+        throw new BillingError(
+          402,
+          "اعتبار پلن فعلی شما به پایان رسیده است.",
+        );
       }
       const fields = {
         resume: "resumesRemaining",
@@ -216,7 +229,10 @@ export class BillingService {
         const field = fields[resource];
         const current = membership[field];
         if (current !== null && current < units) {
-          throw new BillingError(402, `اعتبار ${resource} این پلن کافی نیست.`);
+          throw new BillingError(
+            402,
+            `سهمیه ${usageResourceLabels[resource]} این پلن تمام شده است؛ برای ادامه پلن را ارتقا دهید.`,
+          );
         }
         if (current !== null) changes[field] = current - units;
       }
@@ -601,6 +617,159 @@ export class BillingService {
     };
   }
 
+  async recordModelUsage(
+    userId: string,
+    requestId: string,
+    operation: string,
+    event: ModelUsageEvent,
+  ) {
+    await this.database
+      .insert(modelUsageEvents)
+      .values({
+        id: randomUUID(),
+        userId,
+        requestId,
+        operation,
+        provider: event.provider,
+        model: event.model,
+        inputTokens: event.inputTokens,
+        outputTokens: event.outputTokens,
+        totalTokens: event.totalTokens,
+        tokenSource: event.tokenSource,
+        estimatedCostMicros: event.estimatedCostMicros,
+        statusCode: event.statusCode,
+        successful: event.successful,
+        durationMs: event.durationMs,
+        attempt: event.attempt,
+        createdAt: new Date(),
+      })
+      .onConflictDoNothing({ target: modelUsageEvents.requestId });
+  }
+
+  async getModelUsageStats(days = 30, page = 1, pageSize = 20) {
+    const since = new Date(Date.now() - days * 86_400_000);
+    const filter = gte(modelUsageEvents.createdAt, since);
+    const aggregate = {
+      requests: count(),
+      successfulRequests: sql<number>`count(*) filter (where ${modelUsageEvents.successful})`,
+      failedRequests: sql<number>`count(*) filter (where not ${modelUsageEvents.successful})`,
+      inputTokens: sql<number>`coalesce(sum(${modelUsageEvents.inputTokens}), 0)`,
+      outputTokens: sql<number>`coalesce(sum(${modelUsageEvents.outputTokens}), 0)`,
+      totalTokens: sql<number>`coalesce(sum(${modelUsageEvents.totalTokens}), 0)`,
+      estimatedCostMicros: sql<number>`coalesce(sum(${modelUsageEvents.estimatedCostMicros}), 0)`,
+    };
+    const [totalsRows, todayRows, byModelRows, byOperationRows, dailyRows, recentRows] =
+      await Promise.all([
+        this.database
+          .select({
+            ...aggregate,
+            providerReportedRequests: sql<number>`count(*) filter (where ${modelUsageEvents.tokenSource} = 'provider')`,
+            estimatedRequests: sql<number>`count(*) filter (where ${modelUsageEvents.tokenSource} = 'estimated')`,
+            averageDurationMs: sql<number>`coalesce(round(avg(${modelUsageEvents.durationMs})), 0)`,
+          })
+          .from(modelUsageEvents)
+          .where(filter),
+        this.database
+          .select(aggregate)
+          .from(modelUsageEvents)
+          .where(
+            gte(
+              modelUsageEvents.createdAt,
+              sql`date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran'`,
+            ),
+          ),
+        this.database
+          .select({
+            provider: modelUsageEvents.provider,
+            model: modelUsageEvents.model,
+            ...aggregate,
+          })
+          .from(modelUsageEvents)
+          .where(filter)
+          .groupBy(modelUsageEvents.provider, modelUsageEvents.model)
+          .orderBy(desc(sql`count(*)`)),
+        this.database
+          .select({ operation: modelUsageEvents.operation, ...aggregate })
+          .from(modelUsageEvents)
+          .where(filter)
+          .groupBy(modelUsageEvents.operation)
+          .orderBy(desc(sql`count(*)`)),
+        this.database
+          .select({
+            date: sql<string>`to_char(date_trunc('day', ${modelUsageEvents.createdAt} at time zone 'Asia/Tehran'), 'YYYY-MM-DD')`,
+            ...aggregate,
+          })
+          .from(modelUsageEvents)
+          .where(filter)
+          .groupBy(
+            sql`date_trunc('day', ${modelUsageEvents.createdAt} at time zone 'Asia/Tehran')`,
+          )
+          .orderBy(
+            sql`date_trunc('day', ${modelUsageEvents.createdAt} at time zone 'Asia/Tehran')`,
+          ),
+        this.database
+          .select({
+            id: modelUsageEvents.id,
+            operation: modelUsageEvents.operation,
+            provider: modelUsageEvents.provider,
+            model: modelUsageEvents.model,
+            inputTokens: modelUsageEvents.inputTokens,
+            outputTokens: modelUsageEvents.outputTokens,
+            totalTokens: modelUsageEvents.totalTokens,
+            estimatedCostMicros: modelUsageEvents.estimatedCostMicros,
+            successful: modelUsageEvents.successful,
+            createdAt: modelUsageEvents.createdAt,
+            user: {
+              phone: users.phone,
+              fullName: users.fullName,
+            },
+          })
+          .from(modelUsageEvents)
+          .innerJoin(users, eq(users.id, modelUsageEvents.userId))
+          .where(filter)
+          .orderBy(desc(modelUsageEvents.createdAt))
+          .limit(pageSize)
+          .offset((page - 1) * pageSize),
+      ]);
+
+    const numericFields = new Set([
+      "requests",
+      "successfulRequests",
+      "failedRequests",
+      "inputTokens",
+      "outputTokens",
+      "totalTokens",
+      "estimatedCostMicros",
+      "providerReportedRequests",
+      "estimatedRequests",
+      "averageDurationMs",
+    ]);
+    const numeric = <T extends Record<string, unknown>>(row: T) =>
+      Object.fromEntries(
+        Object.entries(row).map(([key, value]) => [
+          key,
+          typeof value === "string" && numericFields.has(key)
+            ? Number(value)
+            : value,
+        ]),
+      );
+
+    return {
+      periodDays: days,
+      totals: numeric(totalsRows[0] ?? {}),
+      today: numeric(todayRows[0] ?? {}),
+      byModel: byModelRows.map(numeric),
+      byOperation: byOperationRows.map(numeric),
+      daily: dailyRows.map(numeric),
+      recentRequests: {
+        items: recentRows,
+        total: Number(totalsRows[0]?.requests ?? 0),
+        page,
+        pageSize,
+      },
+    };
+  }
+
   async listAdminPayments(
     page = 1,
     pageSize = 20,
@@ -679,13 +848,62 @@ export class BillingService {
 
   async getAdminMembership(userId: string) {
     const membership = await this.getMembership(userId);
-    const history = await this.database
+    const [user] = await this.database
+      .select({
+        id: users.id,
+        phone: users.phone,
+        fullName: users.fullName,
+        status: users.status,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!user) throw new BillingError(404, "کاربر پیدا نشد.");
+
+    const events = await this.database
       .select()
       .from(membershipEvents)
-      .where(eq(membershipEvents.userId, userId))
+      .where(
+        and(
+          eq(membershipEvents.userId, userId),
+          isNotNull(membershipEvents.actorUserId),
+        ),
+      )
       .orderBy(desc(membershipEvents.createdAt))
       .limit(100);
-    return { membership, history };
+    const actorIds = [
+      ...new Set(events.flatMap((event) => event.actorUserId ? [event.actorUserId] : [])),
+    ];
+    const planIds = [
+      ...new Set(events.flatMap((event) => event.planId ? [event.planId] : [])),
+    ];
+    const [actors, eventPlans] = await Promise.all([
+      actorIds.length
+        ? this.database
+            .select({
+              id: users.id,
+              phone: users.phone,
+              fullName: users.fullName,
+              role: users.role,
+            })
+            .from(users)
+            .where(inArray(users.id, actorIds))
+        : [],
+      planIds.length
+        ? this.database
+            .select({ id: plans.id, name: plans.name })
+            .from(plans)
+            .where(inArray(plans.id, planIds))
+        : [],
+    ]);
+    const actorById = new Map(actors.map((actor) => [actor.id, actor]));
+    const planById = new Map(eventPlans.map((plan) => [plan.id, plan]));
+    const history = events.map((event) => ({
+      ...event,
+      actor: event.actorUserId ? actorById.get(event.actorUserId) ?? null : null,
+      plan: event.planId ? planById.get(event.planId) ?? null : null,
+    }));
+    return { user, membership, history };
   }
 
   async adminGrantPlan(userId: string, planId: string, actorUserId: string) {

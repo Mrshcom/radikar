@@ -11,9 +11,11 @@ import { and, count, desc, eq, gt, ilike, isNotNull, isNull, ne, or, sql } from 
 import {
   authSessions,
   dataRecords,
+  membershipEvents,
   otpChallenges,
   orders,
   plans,
+  userMemberships,
   users,
   type Database,
 } from "@radicar/database";
@@ -497,20 +499,54 @@ export class AuthService {
     return { ...toAuthUser(user), records };
   }
 
-  async updateUser(userId: string, input: { role?: UserRole; status?: UserStatus }) {
-    const [user] = await this.database
-      .update(users)
-      .set({ ...input, updatedAt: new Date() })
+  async updateUser(
+    userId: string,
+    input: { role?: UserRole; status?: UserStatus },
+    actorUserId?: string,
+  ) {
+    const [current] = await this.database
+      .select()
+      .from(users)
       .where(eq(users.id, userId))
-      .returning();
-    if (!user) throw new AuthError(404, "کاربر پیدا نشد.");
-    if (input.status === "suspended") {
-      await this.database
-        .update(authSessions)
-        .set({ revokedAt: new Date() })
-        .where(and(eq(authSessions.userId, userId), isNull(authSessions.revokedAt)));
-    }
-    return toAuthUser(user);
+      .limit(1);
+    if (!current) throw new AuthError(404, "کاربر پیدا نشد.");
+
+    return this.database.transaction(async (tx) => {
+      const now = new Date();
+      const [user] = await tx
+        .update(users)
+        .set({ ...input, updatedAt: now })
+        .where(eq(users.id, userId))
+        .returning();
+      if (!user) throw new AuthError(404, "کاربر پیدا نشد.");
+
+      if (input.status === "suspended") {
+        await tx
+          .update(authSessions)
+          .set({ revokedAt: now })
+          .where(and(eq(authSessions.userId, userId), isNull(authSessions.revokedAt)));
+      }
+
+      if (actorUserId && input.status && input.status !== current.status) {
+        const [membership] = await tx
+          .select({ id: userMemberships.id, planId: userMemberships.planId })
+          .from(userMemberships)
+          .where(eq(userMemberships.userId, userId))
+          .limit(1);
+        await tx.insert(membershipEvents).values({
+          id: randomUUID(),
+          userId,
+          membershipId: membership?.id,
+          planId: membership?.planId,
+          actorUserId,
+          type: input.status === "suspended" ? "account_suspended" : "account_activated",
+          details: { previousStatus: current.status, nextStatus: input.status },
+          createdAt: now,
+        });
+      }
+
+      return toAuthUser(user);
+    });
   }
 
   async updateProfile(userId: string, input: { fullName: string }) {

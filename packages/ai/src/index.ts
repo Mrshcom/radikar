@@ -1,4 +1,9 @@
-export { chatJson, parseLlmJsonResponse } from "./client";
+export {
+  chatJson,
+  parseLlmJsonResponse,
+  type ChatJsonOptions,
+  type ModelUsageEvent,
+} from "./client";
 export {
   getAnalyzeConfig,
   getWriteConfig,

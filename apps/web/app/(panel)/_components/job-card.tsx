@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import {
   Bookmark,
@@ -17,6 +18,7 @@ import type { Job } from "../_data/jobs";
 import { Modal } from "./ui";
 import { cn } from "@/lib/cn";
 import { formatPersianNumber } from "@/lib/fa-number";
+import { sanitizeRemoteImageSource } from "@radicar/validators";
 
 const toneStyles: Record<
   Job["tone"],
@@ -56,7 +58,10 @@ export function JobCard({
   onSave?: () => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [failedLogoUrl, setFailedLogoUrl] = useState("");
   const logoLetter = job.letter || Array.from(job.company.trim())[0] || "م";
+  const logoUrl = sanitizeRemoteImageSource(job.logoUrl);
+  const showLogo = Boolean(logoUrl && failedLogoUrl !== logoUrl);
   const insight = job.reason?.trim() || job.description?.trim();
   const tone = toneStyles[job.tone];
 
@@ -74,12 +79,26 @@ export function JobCard({
           <div className="flex min-w-0 items-center gap-3">
             <div
               className={cn(
-                "grid size-12 shrink-0 place-items-center rounded-[15px] text-[17px] font-extrabold ring-1 shadow-[0_8px_18px_rgba(25,55,48,.08)]",
+                "grid size-12 shrink-0 place-items-center overflow-hidden rounded-[15px] text-[17px] font-extrabold ring-1 shadow-[0_8px_18px_rgba(25,55,48,.08)]",
                 tone.logo,
               )}
-              aria-hidden="true"
+              aria-hidden={!showLogo}
             >
-              {logoLetter}
+              {showLogo ? (
+                <Image
+                  className="size-full bg-white object-contain p-1.5"
+                  src={logoUrl}
+                  alt={`نشان ${job.company}`}
+                  width={48}
+                  height={48}
+                  unoptimized
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  onError={() => setFailedLogoUrl(logoUrl)}
+                />
+              ) : (
+                logoLetter
+              )}
             </div>
             <div className="min-w-0">
               <strong

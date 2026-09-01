@@ -13,7 +13,7 @@ import {
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, type ReactNode, type SVGProps } from "react";
+import { useEffect, useMemo, type ReactNode, type SVGProps } from "react";
 import {
   getDefaultResumeColor,
   getResumeEducations,
@@ -31,6 +31,8 @@ import {
   ResumePaginationProbe,
   ResumePrintPage,
 } from "./resume-pagination-components";
+import { normalizeResumeDataInput } from "@/lib/resume-input";
+import { sanitizeImportedUrl } from "@radicar/validators";
 
 type ResumeDocumentProps = {
   templateId: string;
@@ -641,20 +643,23 @@ function ProfilePhoto({
   return (
     <div
       className={cn(
-        "grid shrink-0 place-items-center overflow-hidden rounded-full font-extrabold [&_img]:size-full [&_img]:object-cover",
+        "relative grid shrink-0 place-items-center overflow-hidden rounded-full font-extrabold [&_img]:size-full [&_img]:object-cover",
         className,
       )}
     >
-      {data.photoUrl ? (
+      <span>{getInitials(data.fullName)}</span>
+      {data.photoUrl && (
         <Image
+          className="absolute inset-0"
           src={data.photoUrl}
           alt={`تصویر ${data.fullName}`}
           width={240}
           height={240}
           unoptimized
+          onError={(event) => {
+            event.currentTarget.style.display = "none";
+          }}
         />
-      ) : (
-        getInitials(data.fullName)
       )}
     </div>
   );
@@ -668,7 +673,7 @@ function getPhoneHref(phone: string) {
 }
 
 function getExternalHref(value: string) {
-  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+  return sanitizeImportedUrl(value) || undefined;
 }
 
 function getLinkedInProfileLabel(direction: "rtl" | "ltr") {
@@ -1199,7 +1204,7 @@ function StandardResume({
           </section>}
         </aside>
         <main data-resume-flow="main" className="grid content-start gap-[3.2em] p-[6%]">
-          {!continuation && data.summary && <section>
+          {data.summary && <section>
             <SectionHeading theme={theme}>
               {presentation.labels.about}
             </SectionHeading>
@@ -1377,7 +1382,7 @@ function TwoColumnResume({
             continuation ? "pt-[1%]" : "pt-[2.2%]",
           )}
         >
-          {!continuation && data.summary && <section>
+          {data.summary && <section>
             <SectionHeading theme={theme}>
               {presentation.labels.about}
             </SectionHeading>
@@ -1483,7 +1488,7 @@ function OneColumnResume({
           continuation ? "py-[5%]" : "py-[1%]",
         )}
       >
-        {!continuation && data.summary && (
+        {data.summary && (
           <section>
             <SectionHeading theme={theme}>
               {presentation.labels.about}
@@ -1568,6 +1573,7 @@ function NavyReferenceHeading({
 }) {
   return (
     <div
+      data-resume-section-heading
       className={cn(
         "flex items-center gap-[.65em] border-b-[.15em] pb-[.35em]",
         accent.border,
@@ -1653,7 +1659,7 @@ function NavyReferenceResume({
           continuation ? "top-0 pt-[6.5%]" : "top-[19.2%] pt-[3.4%]",
         )}
       >
-        {!continuation && data.summary && (
+        {data.summary && (
           <section>
             <NavyReferenceHeading accent={accent} icon={<CircleUserRound className="size-full" />}>
               {presentation.dir === "ltr" ? "Summary" : presentation.labels.about}
@@ -1891,7 +1897,7 @@ function TimelineClassicResume({
           )}
         </aside>
         <main data-resume-flow="main" className="grid content-start gap-[2.4em]">
-          {!continuation && data.summary && <section>
+          {data.summary && <section>
             <h2
               className={cn(
                 "m-0 flex items-center gap-[.7em] text-[1.05em] tracking-[.1em]",
@@ -2023,7 +2029,10 @@ function OrangeLineHeading({
   palette: (typeof colorPalettes)[ResumeColorId];
 }) {
   return (
-    <div className={cn("flex items-center gap-[2em]", palette.text)}>
+    <div
+      data-resume-section-heading
+      className={cn("flex items-center gap-[2em]", palette.text)}
+    >
       <h2 className="m-0 shrink-0 text-[1.45em] font-bold">{children}</h2>
       <i className={cn("h-[.3em] flex-1", palette.background)} aria-hidden="true" />
     </div>
@@ -2098,7 +2107,7 @@ function OrangePillResume({
           continuation ? "h-full pt-[7%]" : "pt-[4%]",
         )}
       >
-        {!continuation && data.summary && (
+        {data.summary && (
           <p className="m-0 text-justify text-[.907em] font-normal leading-[1.45]">
             {data.summary}
           </p>
@@ -2289,7 +2298,7 @@ function RedAdministrativeResume({
             presentation.dir === "rtl" ? "pl-[6%]" : "pr-[6%]",
           )}
         >
-          {!continuation && data.summary && (
+          {data.summary && (
             <section>
               <h2 className="m-0 text-[1.3em] font-extrabold italic">
                 {sectionLabels.profile}
@@ -2457,20 +2466,22 @@ function BannerModernResume({
     >
       {!continuation && (
         <header className="grid h-[20%] grid-cols-[26%_1fr] overflow-hidden">
-          <div className="overflow-hidden bg-[#e9eeeb]">
-            {data.photoUrl ? (
+          <div className="relative grid overflow-hidden bg-[#e9eeeb]">
+            <span className="grid size-full place-items-center text-[2em] font-extrabold text-[#63706c]">
+              {getInitials(data.fullName)}
+            </span>
+            {data.photoUrl && (
               <Image
-                className="size-full object-cover"
+                className="absolute inset-0 size-full object-cover"
                 src={data.photoUrl}
                 alt={`تصویر ${data.fullName}`}
                 width={300}
                 height={300}
                 unoptimized
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
               />
-            ) : (
-              <span className="grid size-full place-items-center text-[2em] font-extrabold text-[#63706c]">
-                {getInitials(data.fullName)}
-              </span>
             )}
           </div>
           <div
@@ -2541,7 +2552,7 @@ function BannerModernResume({
           )}
         </aside>
         <main data-resume-flow="main" className="grid content-start gap-[.7em]">
-          {!continuation && data.summary && (
+          {data.summary && (
             <section>
             <h2 className={cn("m-0 text-[1.35em]", palette.text)}>
               {presentation.labels.about}
@@ -2639,7 +2650,7 @@ function EditorialSidebarResume({
             </div>
           </header>
         )}
-        {!continuation && data.summary && (
+        {data.summary && (
           <section>
             <h2 className={cn("m-0 text-[1.25em]", palette.text)}>
               {presentation.labels.about}
@@ -2936,15 +2947,22 @@ function DesignerSidebarResume({
                 <i className={cn("h-[2.2em] flex-1", palette.background)} />
               </div>
             </header>
-            {data.summary && (
-              <section className="mt-[2.8em] border-b border-[#aeb5b1] pb-[1.5em]">
-                <DesignerSidebarHeading palette={palette}>
-                  {presentation.dir === "ltr" ? "About Me" : "درباره من"}
-                </DesignerSidebarHeading>
-                <p className="mb-0 mt-[.9em] text-[.75em] leading-[1.55]">{data.summary}</p>
-              </section>
-            )}
           </>
+        )}
+        {data.summary && (
+          <section
+            className={cn(
+              "border-b border-[#aeb5b1] pb-[1.5em]",
+              continuation ? "" : "mt-[2.8em]",
+            )}
+          >
+            <DesignerSidebarHeading palette={palette}>
+              {presentation.dir === "ltr" ? "About Me" : "درباره من"}
+            </DesignerSidebarHeading>
+            <p className="mb-0 mt-[.9em] text-[.75em] leading-[1.55]">
+              {data.summary}
+            </p>
+          </section>
         )}
         {experiences.length > 0 && (
           <section className={continuation ? "" : "mt-[2em]"}>
@@ -3047,16 +3065,6 @@ function DarkSidebarTimelineResume({
                 palette.border,
               )}
             />
-            {data.summary && (
-              <section className="mt-[3em] border-b border-white/70 pb-[2em]">
-                <h2 className="m-0 text-[1em] font-bold uppercase">
-                  {presentation.dir === "ltr" ? "About Me" : "درباره من"}
-                </h2>
-                <p className="mb-0 mt-[.9em] text-[.72em] leading-[1.65] text-white/90">
-                  {data.summary}
-                </p>
-              </section>
-            )}
             {(data.website || data.email || data.location) && (
               <section className="mt-[2em] border-b border-white/70 pb-[2em] text-[.72em] leading-[1.7]">
                 <h2 className="mb-[.8em] mt-0 text-[1.35em] font-bold uppercase">
@@ -3076,6 +3084,21 @@ function DarkSidebarTimelineResume({
               </section>
             )}
           </>
+        )}
+        {data.summary && (
+          <section
+            className={cn(
+              "border-b border-white/70 pb-[2em]",
+              continuation ? "mt-[2em]" : "mt-[3em]",
+            )}
+          >
+            <h2 className="m-0 text-[1em] font-bold uppercase">
+              {presentation.dir === "ltr" ? "About Me" : "درباره من"}
+            </h2>
+            <p className="mb-0 mt-[.9em] text-[.72em] leading-[1.65] text-white/90">
+              {data.summary}
+            </p>
+          </section>
         )}
         {data.languages && (
               <section className="mt-[2em] border-b border-white/70 pb-[2em]">
@@ -3357,7 +3380,7 @@ function MatrixDarkResume({
           continuation ? "pt-[4%]" : "pt-[3%]",
         )}
       >
-        {!continuation && data.summary && (
+        {data.summary && (
           <section>
             <MatrixHeading accent={accent}>
               {presentation.dir === "ltr" ? "Professional Profile" : "پروفایل حرفه‌ای"}
@@ -3567,7 +3590,7 @@ function CenterlineHeading({
   markerSide?: "start" | "end";
 }) {
   return (
-    <div className="relative">
+    <div data-resume-section-heading className="relative">
       <h2
         className={cn(
           "m-0 text-[1.05em] font-bold uppercase tracking-[.18em]",
@@ -3640,23 +3663,23 @@ function CenterlineMarketingResume({
       >
         <aside data-resume-flow="sidebar" className="grid content-start gap-[2.8em] text-end">
           {!continuation && (
-            <>
-              <ProfilePhoto
-                data={data}
-                className={cn(
-                  "mx-auto size-[8em] rounded-full border-[.35em] bg-white shadow-md",
-                  palette.border,
-                )}
-              />
-              {data.summary && (
-                <section>
-                  <CenterlineHeading palette={palette}>
-                    {presentation.dir === "ltr" ? "Summary" : "خلاصه"}
-                  </CenterlineHeading>
-                  <p className="mb-0 mt-[1.1em] text-[.72em] leading-[1.55]">{data.summary}</p>
-                </section>
+            <ProfilePhoto
+              data={data}
+              className={cn(
+                "mx-auto size-[8em] rounded-full border-[.35em] bg-white shadow-md",
+                palette.border,
               )}
-            </>
+            />
+          )}
+          {data.summary && (
+            <section>
+              <CenterlineHeading palette={palette}>
+                {presentation.dir === "ltr" ? "Summary" : "خلاصه"}
+              </CenterlineHeading>
+              <p className="mb-0 mt-[1.1em] text-[.72em] leading-[1.55]">
+                {data.summary}
+              </p>
+            </section>
           )}
           {educations.length > 0 && (
                 <section>
@@ -3910,7 +3933,7 @@ function PastelGraduateResume({
               palette.background,
             )}
           />
-          {!continuation && data.summary && (
+          {data.summary && (
             <PastelTimelineBlock className="mb-[3em]" palette={palette}>
               <section>
                 <PastelBandHeading palette={palette}>
@@ -4156,20 +4179,20 @@ function SplitProfileResume({
         dir={presentation.dir}
       >
         {!continuation && (
-          <>
-            <ProfilePhoto
-              data={data}
-              className="mx-auto size-[8.2em] rounded-full border-[.32em] border-white bg-transparent shadow-none [&_img]:rounded-full print:bg-transparent print:shadow-none"
-            />
-            {data.summary && (
-              <section className="mt-[2.35em]">
-                <SplitProfileHeading>
-                  {presentation.dir === "ltr" ? "Professional Profile" : "پروفایل حرفه‌ای"}
-                </SplitProfileHeading>
-                <p className="mb-0 mt-[1.1em] text-[.76em] leading-[1.6]">{data.summary}</p>
-              </section>
-            )}
-          </>
+          <ProfilePhoto
+            data={data}
+            className="mx-auto size-[8.2em] rounded-full border-[.32em] border-white bg-transparent shadow-none [&_img]:rounded-full print:bg-transparent print:shadow-none"
+          />
+        )}
+        {data.summary && (
+          <section className={continuation ? "mt-[2em]" : "mt-[2.35em]"}>
+            <SplitProfileHeading>
+              {presentation.dir === "ltr" ? "Professional Profile" : "پروفایل حرفه‌ای"}
+            </SplitProfileHeading>
+            <p className="mb-0 mt-[1.1em] text-[.76em] leading-[1.6]">
+              {data.summary}
+            </p>
+          </section>
         )}
         {educations.length > 0 && (
               <section className="mt-[3.4em]">
@@ -4314,15 +4337,19 @@ function CorporateCompetenciesResume({
               )}
             </div>
           </header>
-          {data.summary && (
-            <section className="mt-[1.35em]">
-              <CorporateBarHeading palette={palette}>
-                {presentation.dir === "ltr" ? "Professional Summary" : "خلاصه حرفه‌ای"}
-              </CorporateBarHeading>
-              <p className="mb-0 mt-[1.05em] min-h-[5em] text-[.9em] font-normal leading-[1.55]">{data.summary}</p>
-            </section>
-          )}
         </>
+      )}
+      {data.summary && (
+        <section className={continuation ? "mt-[1em]" : "mt-[1.35em]"}>
+          <CorporateBarHeading palette={palette}>
+            {presentation.dir === "ltr"
+              ? "Professional Summary"
+              : "خلاصه حرفه‌ای"}
+          </CorporateBarHeading>
+          <p className="mb-0 mt-[1.05em] min-h-[5em] text-[.9em] font-normal leading-[1.55]">
+            {data.summary}
+          </p>
+        </section>
       )}
 
       <div className={continuation ? "pt-[5%]" : "mt-[2.35em]"}>
@@ -4537,7 +4564,7 @@ function ProfileBandResume({
           continuation ? "pt-[8%]" : "pt-[2.5em]",
         )}
       >
-        {!continuation && data.summary && (
+        {data.summary && (
           <p className="m-0 text-[.78em] font-normal leading-[1.55]">
             {data.summary}
           </p>
@@ -4678,7 +4705,13 @@ function AngularTechnicalHeading({
   palette: (typeof colorPalettes)[ResumeColorId];
 }) {
   return (
-    <div className={cn("flex items-center gap-[.8em] border-b pb-[.5em]", palette.border)}>
+    <div
+      data-resume-section-heading
+      className={cn(
+        "flex items-center gap-[.8em] border-b pb-[.5em]",
+        palette.border,
+      )}
+    >
       <span className="grid size-[1.7em] shrink-0 place-items-center text-[#626565]">
         {icon}
       </span>
@@ -4836,19 +4869,21 @@ function AngularTechnicalResume({
                 )}
               </div>
             </section>
-
-            {data.summary && (
-              <section className="mt-[3em]">
-                <AngularTechnicalHeading
-                  icon={<UserRound className="size-[1.15em]" />}
-                  palette={palette}
-                >
-                  {presentation.labels.about}
-                </AngularTechnicalHeading>
-                <p className="mb-0 mt-[1.15em] text-[.74em] leading-[1.75]">{data.summary}</p>
-              </section>
-            )}
           </>
+        )}
+
+        {data.summary && (
+          <section className={continuation ? "mt-[2em]" : "mt-[3em]"}>
+            <AngularTechnicalHeading
+              icon={<UserRound className="size-[1.15em]" />}
+              palette={palette}
+            >
+              {presentation.labels.about}
+            </AngularTechnicalHeading>
+            <p className="mb-0 mt-[1.15em] text-[.74em] leading-[1.75]">
+              {data.summary}
+            </p>
+          </section>
         )}
 
         {skills.length > 0 && (
@@ -4944,7 +4979,11 @@ function AngularTechnicalResume({
   );
 }
 
-export function ResumeDocumentPage(props: ResumeDocumentProps) {
+export function ResumeDocumentPage(inputProps: ResumeDocumentProps) {
+  const props = {
+    ...inputProps,
+    data: normalizeResumeDataInput(inputProps.data),
+  };
   if (props.templateId === "matrix-dark")
     return <MatrixDarkResume {...props} />;
   if (props.templateId === "timeline-classic")
@@ -4984,10 +5023,15 @@ export function ResumeDocumentPage(props: ResumeDocumentProps) {
   );
 }
 
-export function ResumeDocument({
-  onPaginationReady,
-  ...props
-}: ResumeDocumentProps & { onPaginationReady?: () => void }) {
+export function ResumeDocument(
+  inputProps: ResumeDocumentProps & { onPaginationReady?: () => void },
+) {
+  const safeData = useMemo(
+    () => normalizeResumeDataInput(inputProps.data),
+    [inputProps.data],
+  );
+  const props = { ...inputProps, data: safeData };
+  const { onPaginationReady } = inputProps;
   const { candidate, pages, pagesRef, probeRef } = useRenderedResumePagination(
     props.data,
     props.templateId,

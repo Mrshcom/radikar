@@ -1,4 +1,4 @@
 
 > @radicar/web@0.1.0 lint
-> eslint . --ignore-pattern .next
+> eslint . --ignore-pattern .next --ignore-pattern .next-dev
 

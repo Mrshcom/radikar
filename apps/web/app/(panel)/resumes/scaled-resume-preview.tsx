@@ -1,10 +1,11 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { type ResumeColorId, type ResumeData } from "./resume-data";
 import { ResumeDocumentPage } from "./resume-document";
 import { useRenderedResumePagination } from "./use-rendered-resume-pagination";
 import { ResumePaginationProbe } from "./resume-pagination-components";
+import { normalizeResumeDataInput } from "@/lib/resume-input";
 
 const DOCUMENT_WIDTH = 793.700787;
 const DOCUMENT_HEIGHT = DOCUMENT_WIDTH * (297 / 210);
@@ -22,8 +23,9 @@ export function ScaledResumePreview({
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
+  const safeData = useMemo(() => normalizeResumeDataInput(data), [data]);
   const { candidate, pages, pagesRef, probeRef } = useRenderedResumePagination(
-    data,
+    safeData,
     templateId,
   );
   const visiblePages = showAllPages ? pages : pages.slice(0, 1);

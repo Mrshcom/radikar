@@ -36,6 +36,9 @@ const adjustCreditSchema = z.object({
   reason: z.string().trim().max(500).optional(),
 });
 const cancelSchema = z.object({ reason: z.string().trim().max(500).optional() });
+const modelUsageStatsSchema = pageSchema.extend({
+  days: z.coerce.number().int().min(1).max(365).default(30),
+});
 
 function requireCustomer(request: FastifyRequest, reply: FastifyReply) {
   if (request.auth?.user.role === "user") return true;
@@ -103,6 +106,12 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
   app.get("/api/admin/billing-stats", (request, reply) => {
     if (!requirePermission(request, reply, "reports:read:any")) return;
     return billing.getBillingStats();
+  });
+
+  app.get("/api/admin/model-usage", (request, reply) => {
+    if (!requirePermission(request, reply, "reports:read:any")) return;
+    const query = modelUsageStatsSchema.parse(request.query);
+    return billing.getModelUsageStats(query.days, query.page, query.pageSize);
   });
 
   app.get("/api/admin/payments", (request, reply) => {

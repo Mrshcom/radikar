@@ -21,9 +21,11 @@ import {
   MatchAnalysisSkeleton,
 } from "../_components/loading-skeletons";
 import { useToast } from "@/app/_components/toast";
-import { useModelTasks } from "../_components/model-task-provider";
 import {
-  emptyResumeData,
+  isModelTaskCanceledError,
+  useModelTasks,
+} from "../_components/model-task-provider";
+import {
   getDefaultResumeColor,
   resumeColorOptions,
   resumeTemplates,
@@ -47,9 +49,19 @@ import type {
 import { cn } from "@/lib/cn";
 import { formatPersianNumber } from "@/lib/fa-number";
 import { sanitizeLtrField } from "@/lib/ltr-field";
-import { apiUrl } from "@/lib/api-url";
+import { apiRequest } from "@/lib/api-client";
+import { normalizeResumeDataInput } from "@/lib/resume-input";
+import {
+  normalizeMatchAnalysisInput,
+  type MatchAnalysis,
+} from "@/lib/match-analysis";
 
-type ImportJobResponse = { text?: string; sourceUrl?: string; error?: string };
+type ImportJobResponse = {
+  text?: string;
+  sourceUrl?: string;
+  logoUrl?: string;
+  error?: string;
+};
 type JobSourceMode = "text" | "url";
 type ResumeOption = {
   id: string;
@@ -59,14 +71,31 @@ type ResumeOption = {
   templateId: string;
   colorId?: ResumeColorId;
 };
-type MatchAnalysis = {
-  score: number;
-  jobTitle: string;
-  company: string;
-  breakdown: Array<{ label: string; value: number }>;
-  strengths: string[];
-  gaps: string[];
+type MatchAnalysisTaskContext = {
+  kind: "match-analysis";
+  sourceMode: JobSourceMode;
+  jobDescription: string;
+  sourceUrl: string;
+  resumeId: string;
+  resumeLabel: string;
+  resumeMeta: string;
 };
+
+function isMatchAnalysisTaskContext(
+  value: unknown,
+): value is MatchAnalysisTaskContext {
+  if (!value || typeof value !== "object") return false;
+  const context = value as Partial<MatchAnalysisTaskContext>;
+  return (
+    context.kind === "match-analysis" &&
+    (context.sourceMode === "text" || context.sourceMode === "url") &&
+    typeof context.jobDescription === "string" &&
+    typeof context.sourceUrl === "string" &&
+    typeof context.resumeId === "string" &&
+    typeof context.resumeLabel === "string" &&
+    typeof context.resumeMeta === "string"
+  );
+}
 
 const PERSIAN_SCRIPT_PATTERN = /\p{Script=Arabic}/u;
 const panel =
@@ -92,14 +121,38 @@ export function getJobTextDirection(text: string): "rtl" | "ltr" {
 
 export default function MatchPage() {
   const notify = useToast();
-  const { isRunning, runModelTask } = useModelTasks();
-  const [sourceMode, setSourceMode] = useState<JobSourceMode>("text");
-  const [description, setDescription] = useState("");
-  const [jobUrl, setJobUrl] = useState("");
-  const [importedDescription, setImportedDescription] = useState("");
+  const { tasks, isRunning, runModelTask, cancelTask } = useModelTasks();
+  const runningAnalysisTask = tasks.find(
+    (task) => task.key === "match-analysis" && task.status === "running",
+  );
+  const runningAnalysisContext = isMatchAnalysisTaskContext(
+    runningAnalysisTask?.context,
+  )
+    ? runningAnalysisTask.context
+    : null;
+  const [sourceMode, setSourceMode] = useState<JobSourceMode>(
+    () => runningAnalysisContext?.sourceMode || "text",
+  );
+  const [description, setDescription] = useState(
+    () =>
+      (runningAnalysisContext?.sourceMode === "text" &&
+        runningAnalysisContext.jobDescription) ||
+      "",
+  );
+  const [jobUrl, setJobUrl] = useState(
+    () => runningAnalysisContext?.sourceUrl || "",
+  );
+  const [importedDescription, setImportedDescription] = useState(
+    () =>
+      (runningAnalysisContext?.sourceMode === "url" &&
+        runningAnalysisContext.jobDescription) ||
+      "",
+  );
   const [copiedImportedDescription, setCopiedImportedDescription] =
     useState(false);
-  const [analysisDescription, setAnalysisDescription] = useState("");
+  const [analysisDescription, setAnalysisDescription] = useState(
+    () => runningAnalysisContext?.jobDescription || "",
+  );
   const [importingUrl, setImportingUrl] = useState(false);
   const [importError, setImportError] = useState("");
   const [analyzed, setAnalyzed] = useState(false);
@@ -110,8 +163,11 @@ export default function MatchPage() {
   const [resumePicker, setResumePicker] = useState(false);
   const [resumePickerOpensUp, setResumePickerOpensUp] = useState(false);
   const [resumeOptions, setResumeOptions] = useState<ResumeOption[]>([]);
-  const [baseResumeId, setBaseResumeId] = useState("");
+  const [baseResumeId, setBaseResumeId] = useState(
+    () => runningAnalysisContext?.resumeId || "",
+  );
   const [prefilledSourceUrl, setPrefilledSourceUrl] = useState("");
+  const [prefilledLogoUrl, setPrefilledLogoUrl] = useState("");
   const [sourceJobId, setSourceJobId] = useState("");
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [tailoringTemplateId, setTailoringTemplateId] = useState("");
@@ -134,7 +190,7 @@ export default function MatchPage() {
       .then(([resumes, selectedJob, matchAnalyses]) => {
         if (!active) return;
         const options = resumes.map((resume) => {
-          const data = { ...emptyResumeData, ...resume.data };
+          const data = normalizeResumeDataInput(resume.data);
           const templateName =
             resumeTemplates.find(
               (template) => template.id === resume.templateId,
@@ -152,12 +208,34 @@ export default function MatchPage() {
         });
         setResumeOptions(options);
 
+        if (runningAnalysisContext) {
+          setSourceMode(runningAnalysisContext.sourceMode);
+          setDescription(
+            runningAnalysisContext.sourceMode === "text"
+              ? runningAnalysisContext.jobDescription
+              : "",
+          );
+          setJobUrl(runningAnalysisContext.sourceUrl);
+          setImportedDescription(
+            runningAnalysisContext.sourceMode === "url"
+              ? runningAnalysisContext.jobDescription
+              : "",
+          );
+          setAnalysisDescription(runningAnalysisContext.jobDescription);
+          setBaseResumeId(runningAnalysisContext.resumeId);
+          setAnalysis(null);
+          setAnalyzed(false);
+          if (selectedJob) setSourceJobId(selectedJob.id);
+          return;
+        }
+
         if (selectedJob) {
           setSourceJobId(selectedJob.id);
           setSourceMode("text");
           setDescription(selectedJob.description);
           setJobUrl(selectedJob.sourceUrl || "");
           setPrefilledSourceUrl(selectedJob.sourceUrl || "");
+          setPrefilledLogoUrl(selectedJob.logoUrl || "");
           setImportedDescription("");
           setTailored(false);
           const previousAnalysis = matchAnalyses.find(
@@ -171,7 +249,11 @@ export default function MatchPage() {
                   item.sourceUrl === selectedJob.sourceUrl,
               ),
           );
-          setAnalysis(previousAnalysis?.analysis || null);
+          setAnalysis(
+            previousAnalysis
+              ? normalizeMatchAnalysisInput(previousAnalysis.analysis)
+              : null,
+          );
           setAnalysisDescription(
             previousAnalysis?.jobDescription || selectedJob.description,
           );
@@ -190,7 +272,7 @@ export default function MatchPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [runningAnalysisContext]);
 
   useEffect(() => {
     if (!resumePicker) return;
@@ -235,21 +317,19 @@ export default function MatchPage() {
   };
 
   const importJobDescription = async () => {
-    const response = await fetch(apiUrl("/api/job-import"), {
+    const result = await apiRequest<ImportJobResponse>("/api/job-import", {
       method: "POST",
-      credentials: "include",
-      headers: { "content-type": "application/json" },
       body: JSON.stringify({ url: jobUrl.trim() }),
     });
-    const result = (await response.json()) as ImportJobResponse;
 
-    if (!response.ok || !result.text) {
+    if (!result.text) {
       throw new Error(result.error || "متن آگهی از این لینک قابل دریافت نبود.");
     }
 
     return {
       text: result.text.trim(),
       sourceUrl: result.sourceUrl || jobUrl.trim(),
+      logoUrl: result.logoUrl || "",
     };
   };
 
@@ -265,12 +345,14 @@ export default function MatchPage() {
 
     let selectedDescription = description.trim();
     let selectedSourceUrl = sourceMode === "text" ? prefilledSourceUrl : "";
+    let selectedLogoUrl = sourceMode === "text" ? prefilledLogoUrl : "";
     if (sourceMode === "url") {
       setImportingUrl(true);
       try {
         const imported = await importJobDescription();
         selectedDescription = imported.text;
         selectedSourceUrl = imported.sourceUrl;
+        selectedLogoUrl = imported.logoUrl;
         setImportedDescription(selectedDescription);
         setCopiedImportedDescription(false);
       } catch (error) {
@@ -294,21 +376,25 @@ export default function MatchPage() {
         pendingLabel: "مدل در حال تطبیق رزومه با آگهی شغلی است",
         completedLabel: "تحلیل تطبیق آگهی آماده شد",
         href: sourceJobId ? `/match?job=${sourceJobId}` : "/match",
-        run: async () => {
-          const response = await fetch(apiUrl("/api/match/analyze"), {
+        context: {
+          kind: "match-analysis",
+          sourceMode,
+          jobDescription: selectedDescription,
+          sourceUrl: selectedSourceUrl || jobUrl.trim(),
+          resumeId: selectedResume.id,
+          resumeLabel: selectedResume.label,
+          resumeMeta: selectedResume.meta,
+        } satisfies MatchAnalysisTaskContext,
+        run: async (signal) => {
+          const rawResult = await apiRequest<unknown>("/api/match/analyze", {
             method: "POST",
-            credentials: "include",
-            headers: { "content-type": "application/json" },
+            signal,
             body: JSON.stringify({
               jobDescription: selectedDescription,
               resume: selectedResume.data,
             }),
           });
-          const result = (await response.json()) as MatchAnalysis & {
-            error?: string;
-          };
-          if (!response.ok)
-            throw new Error(result.error || "تحلیل تطابق ناموفق بود.");
+          const result = normalizeMatchAnalysisInput(rawResult);
           const now = new Date().toISOString();
           const existingJob = (await jobStore.list()).find(
             (job) =>
@@ -330,6 +416,7 @@ export default function MatchPage() {
             reason: result.strengths.join("، "),
             description: selectedDescription,
             sourceUrl: selectedSourceUrl || undefined,
+            logoUrl: selectedLogoUrl || existingJob?.logoUrl || undefined,
             saved: existingJob?.saved || false,
             createdAt: existingJob?.createdAt || now,
             updatedAt: now,
@@ -360,6 +447,7 @@ export default function MatchPage() {
           : "متن آگهی با مدل تحلیل شد",
       );
     } catch (error) {
+      if (isModelTaskCanceledError(error)) return;
       const message =
         error instanceof Error ? error.message : "تحلیل تطابق ناموفق بود.";
       setAnalysisError(message);
@@ -386,25 +474,22 @@ export default function MatchPage() {
         completedLabel: "رزومه اختصاصی آماده شد",
         href: sourceJobId ? `/match?job=${sourceJobId}` : "/match",
         run: async () => {
-          const response = await fetch(apiUrl("/api/match/tailor"), {
+          const result = await apiRequest<{
+            resume?: unknown;
+            error?: string;
+          }>("/api/match/tailor", {
             method: "POST",
-            credentials: "include",
-            headers: { "content-type": "application/json" },
             body: JSON.stringify({
               jobDescription: analysisDescription,
               resume: selectedResume.data,
               language,
             }),
           });
-          const result = (await response.json()) as {
-            resume?: ResumeData;
-            error?: string;
-          };
-
-          if (!response.ok || !result.resume)
+          if (!result.resume)
             throw new Error(
               result.error || "ساخت رزومه اختصاصی ناموفق بود.",
             );
+          const safeResume = normalizeResumeDataInput(result.resume);
           const linkedJob = sourceJobId
             ? await jobStore.get(sourceJobId)
             : (await jobStore.list()).find(
@@ -428,10 +513,10 @@ export default function MatchPage() {
           const now = new Date().toISOString();
           const tailoredResume: ResumeRecord = {
             id: createRecordId("resume"),
-            name: `${result.resume.fullName || result.resume.jobTitle || "رزومه"} — ${targetJobTitle || "نسخه اختصاصی"}`,
+            name: `${safeResume.fullName || safeResume.jobTitle || "رزومه"} — ${targetJobTitle || "نسخه اختصاصی"}`,
             templateId,
             colorId,
-            data: result.resume,
+            data: safeResume,
             source: "tailored",
             targetJobId: linkedJob?.id || sourceJobId || undefined,
             targetJobTitle,
@@ -619,7 +704,7 @@ export default function MatchPage() {
                   placeholder="https://www.linkedin.com/jobs/view/..."
                 />
               </div>
-              <p className="mx-0.5 mt-[9px] text-[8px] leading-[1.8] text-[#8c9996]">
+              <p className="mx-0.5 mt-[9px] text-[10px] leading-[1.8] text-[#8c9996]">
                 هنگام تحلیل، متن آگهی از همین لینک دریافت و سپس برای مدل ارسال
                 می‌شود.
               </p>
@@ -628,7 +713,7 @@ export default function MatchPage() {
               )}
               {importedDescription && (
                 <div className="relative mt-2.5">
-                  <details className="rounded-[10px] border border-[#dbe8e2] bg-[#f4f9f6] [&_p]:m-0 [&_p]:max-h-[125px] [&_p]:overflow-auto [&_p]:whitespace-pre-wrap [&_p]:px-3 [&_p]:pb-3 [&_p]:text-[8px] [&_p]:leading-[1.9] [&_p]:text-[#657572] [&_summary]:min-h-10 [&_summary]:cursor-pointer [&_summary]:py-3 [&_summary]:pr-3 [&_summary]:pl-11 [&_summary]:text-[8px] [&_summary]:font-bold [&_summary]:text-[#0f7b62]">
+                  <details className="rounded-[10px] border border-[#dbe8e2] bg-[#f4f9f6] [&_p]:m-0 [&_p]:max-h-[125px] [&_p]:overflow-auto [&_p]:whitespace-pre-wrap [&_p]:px-3 [&_p]:pb-3 [&_p]:text-[10px] [&_p]:leading-[1.9] [&_p]:text-[#657572] [&_summary]:min-h-10 [&_summary]:cursor-pointer [&_summary]:py-3 [&_summary]:pr-3 [&_summary]:pl-11 [&_summary]:text-[10px] [&_summary]:font-bold [&_summary]:text-[#0f7b62]">
                     <summary>مشاهده متن استخراج‌شده از لینک</summary>
                     <p
                       dir={getJobTextDirection(importedDescription)}
@@ -644,9 +729,10 @@ export default function MatchPage() {
                   <button
                     type="button"
                     className={cn(
-                      "absolute top-[7px] left-[7px] grid size-7 place-items-center rounded-lg border border-[#cfe3da] bg-white text-[#0f7b62]",
-                      copiedImportedDescription &&
-                        "border-[#0f7b62] bg-[#0f7b62] text-white",
+                      "absolute top-[7px] left-[7px] grid size-7 place-items-center rounded-lg border transition-colors",
+                      copiedImportedDescription
+                        ? "border-[#0f7b62] bg-[#0f7b62] text-white"
+                        : "border-[#cfe3da] bg-white text-[#0f7b62]",
                     )}
                     onClick={copyImportedDescription}
                     aria-label={
@@ -840,12 +926,12 @@ export default function MatchPage() {
                 <h3 className="mb-2 text-[11px]">آنچه به‌خوبی پوشش داده‌ای</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {analysis.strengths.map((item) => (
-                    <span
-                      className="inline-flex items-center gap-1 rounded-lg bg-[#edf7f2] px-2 py-1.5 text-[8px] text-[#0f7b62]"
+                    <p
+                      className="m-0 flex items-start gap-2 rounded-lg bg-[#edf7f2] py-1.5 text-[10px] text-[#0f7b62]"
                       key={item}
                     >
                       <Check size={14} /> {item}
-                    </span>
+                    </p>
                   ))}
                 </div>
               </div>
@@ -854,7 +940,7 @@ export default function MatchPage() {
                 <div className="grid gap-1.5">
                   {analysis.gaps.map((item) => (
                     <p
-                      className="m-0 flex items-start gap-2 rounded-lg bg-[#fff7e8] p-2.5 text-[8px] leading-[1.8] text-[#8a6428]"
+                      className="m-0 flex items-start gap-2 rounded-lg bg-[#fff7e8] p-2.5 text-[10px] leading-[1.8] text-[#8a6428]"
                       key={item}
                     >
                       <Sparkles className="shrink-0" size={16} /> {item}
@@ -891,13 +977,64 @@ export default function MatchPage() {
               </button>
             </>
           ) : analysisBusy ? (
-            <MatchAnalysisSkeleton
-              label={
-                importingUrl
-                  ? "در حال خواندن متن آگهی از لینک"
-                  : "در حال مقایسه رزومه با نیازمندی‌های آگهی"
-              }
-            />
+            <div className="grid gap-4">
+              {runningAnalysisTask && runningAnalysisContext && (
+                <div className="rounded-[13px] border border-[#cfe4dc] bg-[#f3f9f6] p-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <strong className="block text-[10px] text-[#175f50]">
+                        ورودی‌های در حال تحلیل
+                      </strong>
+                      <span className="mt-1 block truncate text-[9px] text-[#607a73]">
+                        رزومه: {runningAnalysisContext.resumeLabel}
+                      </span>
+                      <small className="mt-0.5 block truncate text-[8px] text-[#879994]">
+                        {runningAnalysisContext.resumeMeta}
+                      </small>
+                    </div>
+                    <button
+                      type="button"
+                      className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[#e6b9b2] bg-white px-2.5 text-[8px] font-bold text-[#a5483e] hover:bg-[#fff3f1]"
+                      onClick={() => {
+                        cancelTask(runningAnalysisTask.id);
+                        setAnalyzing(false);
+                        notify("تحلیل لغو شد.");
+                      }}
+                    >
+                      <X size={14} /> لغو تحلیل
+                    </button>
+                  </div>
+                  {runningAnalysisContext.sourceUrl && (
+                    <p
+                      className="mb-0 mt-2 truncate text-left text-[8px] text-[#6f8580]"
+                      dir="ltr"
+                    >
+                      {runningAnalysisContext.sourceUrl}
+                    </p>
+                  )}
+                  <details className="mt-2 rounded-lg border border-[#deebe6] bg-white px-2.5 py-2 text-[8px] text-[#60736f]">
+                    <summary className="cursor-pointer font-bold text-[#337060]">
+                      مشاهده متن آگهی در حال تحلیل
+                    </summary>
+                    <p
+                      className="mb-0 mt-2 max-h-36 overflow-auto whitespace-pre-wrap leading-6"
+                      dir={getJobTextDirection(
+                        runningAnalysisContext.jobDescription,
+                      )}
+                    >
+                      {runningAnalysisContext.jobDescription}
+                    </p>
+                  </details>
+                </div>
+              )}
+              <MatchAnalysisSkeleton
+                label={
+                  importingUrl
+                    ? "در حال خواندن متن آگهی از لینک"
+                    : "در حال مقایسه رزومه با نیازمندی‌های آگهی"
+                }
+              />
+            </div>
           ) : (
             <div className="flex min-h-[420px] flex-col items-center justify-center text-center text-[#8b9996]">
               <Target size={44} />

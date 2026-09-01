@@ -256,6 +256,8 @@ export const membershipEvents = pgTable(
         "admin_grant",
         "admin_extend",
         "admin_adjust",
+        "account_suspended",
+        "account_activated",
         "cancel",
         "expire",
       ],
@@ -300,6 +302,51 @@ export const usageEvents = pgTable(
     index("usage_events_user_created_idx").on(table.userId, table.createdAt),
     index("usage_events_resource_created_idx").on(
       table.resource,
+      table.createdAt,
+    ),
+  ],
+);
+
+export const modelUsageEvents = pgTable(
+  "model_usage_events",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    requestId: text("request_id").notNull(),
+    operation: text("operation").notNull(),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    totalTokens: integer("total_tokens").notNull().default(0),
+    tokenSource: text("token_source", {
+      enum: ["provider", "estimated"],
+    }).notNull(),
+    estimatedCostMicros: integer("estimated_cost_micros")
+      .notNull()
+      .default(0),
+    statusCode: integer("status_code").notNull(),
+    successful: boolean("successful").notNull(),
+    durationMs: integer("duration_ms").notNull(),
+    attempt: integer("attempt").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("model_usage_events_request_unique").on(table.requestId),
+    index("model_usage_events_created_idx").on(table.createdAt),
+    index("model_usage_events_user_created_idx").on(
+      table.userId,
+      table.createdAt,
+    ),
+    index("model_usage_events_model_created_idx").on(
+      table.provider,
+      table.model,
+      table.createdAt,
+    ),
+    index("model_usage_events_operation_created_idx").on(
+      table.operation,
       table.createdAt,
     ),
   ],

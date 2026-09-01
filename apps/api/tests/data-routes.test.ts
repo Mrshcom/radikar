@@ -5,6 +5,16 @@ import { buildApp } from "../src/app";
 import type { RecordRepository } from "../src/modules/data/record-repository";
 import type { AuthServicePort } from "../src/modules/auth/routes";
 import type { AuthUser, SessionIdentity } from "../src/modules/auth/types";
+import {
+  applyEmbeddedLinkFallbacks,
+  applyTextFallbacks,
+  buildResumeImportPrompt,
+  extractContactFallbacks,
+  extractExperienceHeadingFallbacks,
+  extractSummaryFallback,
+  normalizeEmbeddedLinks,
+} from "../src/modules/imports/knowledge-import";
+import { extractCompanyLogoUrl } from "../src/modules/imports/job-import";
 
 class MemoryRecordRepository implements RecordRepository {
   private readonly records = new Map<string, DataRecord>();
@@ -195,6 +205,100 @@ test("stores, reads and removes a data record", async () => {
   await app.close();
 });
 
+test("canonicalizes imported knowledge before it reaches storage", async () => {
+  const app = createTestApp();
+  const record = {
+    id: "profile-mixed-input",
+    profileId: "profile-mixed-input",
+    resumeData: {
+      fullName: ["سارا", "احمدی"],
+      website: "",
+      summary: { text: "توسعه‌دهنده محصول" },
+    },
+    experiences: {
+      position: "مهندس نرم‌افزار",
+      employer: "شرکت نمونه",
+      stack: ["React", "TypeScript"],
+    },
+    qualifications: "کارشناسی نرم‌افزار",
+    projects: JSON.stringify({
+      items: { title: "سامانه نمونه", technologies: ["Next.js", "Zod"] },
+    }),
+    skills: { value: "React" },
+    languageItems: "فارسی",
+    createdAt: "2026-08-27T10:00:00.000Z",
+    updatedAt: "2026-08-27T10:00:00.000Z",
+  };
+
+  const saved = await app.inject({
+    method: "PUT",
+    url: "/v1/data/knowledgeProfiles/profile-mixed-input",
+    payload: record,
+    cookies: { radicar_session: "other-token" },
+  });
+  assert.equal(saved.statusCode, 200);
+  const payload = saved.json();
+  assert.equal(payload.resumeData.fullName, "سارا، احمدی");
+  assert.equal(payload.resumeData.website, "");
+  assert.equal(payload.experiences[0].jobTitle, "مهندس نرم‌افزار");
+  assert.equal(payload.experiences[0].technologies, "React، TypeScript");
+  assert.equal(payload.qualifications[0].credential, "کارشناسی نرم‌افزار");
+  assert.equal(payload.projects[0].name, "سامانه نمونه");
+  assert.equal(payload.projects[0].technologies, "Next.js، Zod");
+  assert.equal(payload.languageItems[0].name, "فارسی");
+
+  const listed = await app.inject({
+    method: "GET",
+    url: "/v1/data/knowledgeProfiles",
+    cookies: { radicar_session: "other-token" },
+  });
+  assert.deepEqual(listed.json(), [payload]);
+  await app.close();
+});
+
+test("canonicalizes malformed resume records before storage", async () => {
+  const app = createTestApp();
+  const saved = await app.inject({
+    method: "PUT",
+    url: "/v1/data/resumes/resume-mixed-input",
+    payload: {
+      id: "resume-mixed-input",
+      profileId: "profile-default",
+      name: { text: "رزومه تست" },
+      templateId: ["simple-one-column"],
+      source: 42,
+      data: JSON.stringify({
+        name: "سارا احمدی",
+        title: "مهندس نرم‌افزار",
+        website: "javascript:alert(1)",
+        workExperience: {
+          role: "توسعه‌دهنده",
+          dateRange: "2020 تا اکنون",
+          technologies: ["React", "Node.js"],
+        },
+        project: { title: "محصول نمونه", stack: "Next.js" },
+      }),
+      createdAt: "2026-08-27T10:00:00.000Z",
+      updatedAt: "2026-08-27T10:00:00.000Z",
+    },
+    cookies: { radicar_session: "other-token" },
+  });
+
+  assert.equal(saved.statusCode, 200);
+  const payload = saved.json();
+  assert.equal(payload.name, "رزومه تست");
+  assert.equal(payload.templateId, "simple-one-column");
+  assert.equal(payload.source, "user");
+  assert.equal(payload.data.fullName, "سارا احمدی");
+  assert.equal(payload.data.jobTitle, "مهندس نرم‌افزار");
+  assert.equal(payload.data.website, "");
+  assert.equal(payload.data.experiences[0].jobTitle, "توسعه‌دهنده");
+  assert.equal(payload.data.experiences[0].startDate, "2020");
+  assert.equal(payload.data.experiences[0].isCurrent, true);
+  assert.equal(payload.data.projects[0].technologies, "Next.js");
+  await app.close();
+});
+
 test("rejects unknown collections and mismatched ids", async () => {
   const app = createTestApp();
   const unknown = await app.inject({ method: "GET", url: "/v1/data/unknown", cookies: { radicar_session: "other-token" } });
@@ -347,6 +451,31 @@ test("job import rejects local targets before performing a fetch", async () => {
   await app.close();
 });
 
+test("extracts a safe company logo from structured and LinkedIn job markup", () => {
+  const pageUrl = new URL("https://www.linkedin.com/jobs/view/123456/");
+  assert.equal(
+    extractCompanyLogoUrl(
+      `<script type="application/ld+json">{"@type":"JobPosting","hiringOrganization":{"@type":"Organization","logo":{"url":"https://cdn.example.com/company.png"}}}</script>`,
+      pageUrl,
+    ),
+    "https://cdn.example.com/company.png",
+  );
+  assert.equal(
+    extractCompanyLogoUrl(
+      `<img class="artdeco-entity-image" data-delayed-url="https://media.licdn.com/dms/image/logo.png?x=1&amp;y=2">`,
+      pageUrl,
+    ),
+    "https://media.licdn.com/dms/image/logo.png?x=1&y=2",
+  );
+  assert.equal(
+    extractCompanyLogoUrl(
+      `<meta property="og:image" content="http://127.0.0.1/private.png">`,
+      pageUrl,
+    ),
+    "",
+  );
+});
+
 test("knowledge import requires a multipart resume file", async () => {
   const app = createTestApp();
   const response = await app.inject({
@@ -356,4 +485,130 @@ test("knowledge import requires a multipart resume file", async () => {
   });
   assert.equal(response.statusCode, 400);
   await app.close();
+});
+
+test("sanitizes heterogeneous PDF annotation links", () => {
+  assert.deepEqual(
+    normalizeEmbeddedLinks([
+      "https://www.linkedin.com/in/m…",
+      "https://www.linkedin.com/in/m%E2%80%A6",
+      " https://www.linkedin.com/in/example-user ",
+      "https://www.linkedin.com/in/example-user",
+      "javascript:alert(1)",
+      "data:text/html,unsafe",
+      { url: "https://linkedin.com/in/not-a-string" },
+      null,
+      42,
+    ]),
+    ["https://www.linkedin.com/in/example-user"],
+  );
+  assert.deepEqual(normalizeEmbeddedLinks("https://linkedin.com/in/example"), []);
+});
+
+test("uses an embedded LinkedIn URL when the imported website is empty", () => {
+  const payload = {
+    resumeData: {},
+    experiences: [],
+    qualifications: [],
+    projects: [],
+    languageItems: [],
+  };
+  const withLinkedIn = applyEmbeddedLinkFallbacks(payload, [
+    "https://www.linkedin.com/in/m%E2%80%A6",
+    "https://example.com",
+    "https://www.linkedin.com/in/mampel88/",
+  ]);
+  assert.equal(
+    withLinkedIn.resumeData.website,
+    "https://www.linkedin.com/in/mampel88/",
+  );
+
+  const replacesGeneratedPlaceholder = applyEmbeddedLinkFallbacks(
+    { ...payload, resumeData: { website: "https://linkedinprofile/" } },
+    ["https://www.linkedin.com/in/example-user"],
+  );
+  assert.equal(
+    replacesGeneratedPlaceholder.resumeData.website,
+    "https://www.linkedin.com/in/example-user",
+  );
+
+  const existingWebsite = applyEmbeddedLinkFallbacks(
+    { ...payload, resumeData: { website: "https://portfolio.example/" } },
+    ["https://linkedin.com/in/example-user"],
+  );
+  assert.equal(existingWebsite.resumeData.website, "https://portfolio.example/");
+});
+
+test("recovers deterministic contact, summary and experience headings from PDF text", () => {
+  const text = `Professional Experience
+Frontend Chapter Lead
+Dotin · Iran
+12/2023 – Present
+Contact
+Information
++98 9158135580
+mrshcom@gmail.com
+Mashhad, Razavi Khorasan, Iran
+LinkedIn Profile
+About Me
+Complete professional summary from the source resume.
+MR
+MOHAMMAD REZA SHARIATZADEH`;
+  assert.deepEqual(extractContactFallbacks(text), {
+    email: "mrshcom@gmail.com",
+    phone: "+98 9158135580",
+    location: "Mashhad, Razavi Khorasan, Iran",
+  });
+  assert.equal(
+    extractSummaryFallback(text),
+    "Complete professional summary from the source resume.",
+  );
+  assert.deepEqual(extractExperienceHeadingFallbacks(text), [
+    {
+      jobTitle: "Frontend Chapter Lead",
+      company: "Dotin",
+      location: "Iran",
+      startDate: "12/2023",
+      endDate: "",
+      isCurrent: true,
+    },
+  ]);
+
+  const normalized = applyTextFallbacks(
+    {
+      resumeData: {},
+      experiences: [{ jobTitle: "Frontend Chapter Lead" }],
+      qualifications: [],
+      projects: [],
+      languageItems: [],
+    },
+    text,
+  );
+  assert.equal(normalized.resumeData.email, "mrshcom@gmail.com");
+  assert.equal(normalized.resumeData.phone, "+98 9158135580");
+  assert.equal(normalized.resumeData.location, "Mashhad, Razavi Khorasan, Iran");
+  assert.equal(
+    normalized.resumeData.summary,
+    "Complete professional summary from the source resume.",
+  );
+  assert.equal(normalized.experiences[0].company, "Dotin");
+  assert.equal(normalized.experiences[0].location, "Iran");
+});
+
+test("knowledge import prompt requires complete source-language fields", () => {
+  const prompt = buildResumeImportPrompt("SOURCE RESUME");
+  for (const field of [
+    '"email"',
+    '"phone"',
+    '"location"',
+    '"summary"',
+    '"company"',
+    '"technologies"',
+    '"languageItems"',
+    '"projectTitle"',
+  ])
+    assert.match(prompt, new RegExp(field));
+  assert.doesNotMatch(prompt, /"name"\s*:/);
+  assert.match(prompt, /بدون ترجمه/);
+  assert.match(prompt, /SOURCE RESUME/);
 });

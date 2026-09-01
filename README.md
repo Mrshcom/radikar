@@ -291,6 +291,8 @@ LLM_PROVIDER=openai-compatible
 LLM_MODEL=your-model-name
 LLM_API_KEY=your-api-key
 LLM_BASE_URL=https://your-provider.example/v1
+LLM_INPUT_PRICE_PER_MILLION_USD=0
+LLM_OUTPUT_PRICE_PER_MILLION_USD=0
 ```
 
 برای عملیات نوشتاری می‌توانید provider جدا تعریف کنید. اگر تعریف نشود، تنظیمات
@@ -301,6 +303,8 @@ LLM_WRITE_PROVIDER=openai-compatible
 LLM_WRITE_MODEL=your-writing-model
 LLM_WRITE_API_KEY=your-api-key
 LLM_WRITE_BASE_URL=https://your-provider.example/v1
+LLM_WRITE_INPUT_PRICE_PER_MILLION_USD=0
+LLM_WRITE_OUTPUT_PRICE_PER_MILLION_USD=0
 ```
 
 ### Proxy محلی DeepSeek

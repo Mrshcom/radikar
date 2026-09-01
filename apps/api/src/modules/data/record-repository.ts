@@ -1,6 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import type { DataCollection, DataRecord } from "@radicar/shared-types";
 import { dataRecords, type Database } from "@radicar/database";
+import { normalizeDataRecordForStorage } from "@radicar/validators";
 
 export interface RecordRepository {
   list(ownerUserId: string, collection: DataCollection): Promise<DataRecord[]>;
@@ -19,7 +20,9 @@ export class PostgresRecordRepository implements RecordRepository {
       .from(dataRecords)
       .where(and(eq(dataRecords.ownerUserId, ownerUserId), eq(dataRecords.collection, collection)))
       .orderBy(desc(dataRecords.updatedAt));
-    return rows.map(({ payload }) => payload);
+    return rows.map(({ payload }) =>
+      normalizeDataRecordForStorage(collection, payload),
+    );
   }
 
   async get(ownerUserId: string, collection: DataCollection, id: string) {
@@ -34,18 +37,21 @@ export class PostgresRecordRepository implements RecordRepository {
         ),
       )
       .limit(1);
-    return row?.payload ?? null;
+    return row?.payload
+      ? normalizeDataRecordForStorage(collection, row.payload)
+      : null;
   }
 
   async put(ownerUserId: string, collection: DataCollection, record: DataRecord) {
+    const safeRecord = normalizeDataRecordForStorage(collection, record);
     const values = {
       collection,
-      id: record.id,
+      id: safeRecord.id,
       ownerUserId,
-      profileId: record.profileId ?? null,
-      payload: record,
-      createdAt: new Date(record.createdAt),
-      updatedAt: new Date(record.updatedAt),
+      profileId: safeRecord.profileId ?? null,
+      payload: safeRecord,
+      createdAt: new Date(safeRecord.createdAt),
+      updatedAt: new Date(safeRecord.updatedAt),
     };
 
     const savedRows = await this.database
@@ -62,7 +68,7 @@ export class PostgresRecordRepository implements RecordRepository {
       })
       .returning({ id: dataRecords.id });
     if (savedRows.length === 0) throw new Error("Record could not be saved.");
-    return record;
+    return safeRecord;
   }
 
   async remove(ownerUserId: string, collection: DataCollection, id: string) {

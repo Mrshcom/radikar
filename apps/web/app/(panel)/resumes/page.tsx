@@ -41,9 +41,14 @@ import type {
   KnowledgeProfileRecord,
   ResumeRecord,
 } from "@/lib/data/models";
+import { normalizeResumeImportPayload } from "@radicar/validators";
 import { cn } from "@/lib/cn";
 import { formatPersianNumber } from "@/lib/fa-number";
-import { calculateKnowledgeCompletion } from "@/lib/knowledge-completion";
+import { normalizeResumeDataInput } from "@/lib/resume-input";
+import {
+  calculateKnowledgeCompletion,
+  isSeededKnowledgeSampleProject,
+} from "@/lib/knowledge-completion";
 
 const templateCategories = [
   "همه",
@@ -99,52 +104,22 @@ function getDefaultResumeName(data: ResumeData, templateId: string) {
 }
 
 function resumeFromKnowledge(knowledge: KnowledgeProfileRecord): ResumeData {
-  const stored = { ...emptyResumeData, ...knowledge.resumeData };
-  const experiences = (knowledge.experiences || [])
-    .filter(
-      (item) =>
-        (item.jobTitle || "").trim() ||
-        (item.company || "").trim() ||
-        (item.description || "").trim() ||
-        (item.startDate || "").trim() ||
-        (item.endDate || "").trim(),
-    )
-    .map((item) => ({
-      id: item.id,
-      jobTitle: item.jobTitle || "",
-      company: item.company || "",
-      location: item.location || "",
-      startDate: item.startDate || "",
-      endDate: item.endDate || "",
-      isCurrent: item.isCurrent,
-      description: item.description || "",
-      technologies: item.technologies || item.achievements || "",
-    }));
-  const educations = (knowledge.qualifications || [])
-    .filter(
-      (item) =>
-        (item.institution || "").trim() ||
-        (item.credential || item.education || "").trim() ||
-        (item.startDate || "").trim() ||
-        (item.endDate || "").trim(),
-    )
-    .map((item) => ({
-      id: item.id,
-      institution: item.institution || "",
-      credential: item.credential || item.education || "",
-      startDate: item.startDate || "",
-      endDate: item.endDate || "",
-      isCurrent: item.isCurrent,
-    }));
-  const projects = (knowledge.projects || []).map((project) => ({
-    ...project,
-  }));
-  return {
-    ...stored,
-    experiences: experiences.length ? experiences : stored.experiences,
-    educations: educations.length ? educations : stored.educations,
-    projects: projects.length ? projects : stored.projects,
-  };
+  const safe = normalizeResumeImportPayload(knowledge);
+  return normalizeResumeDataInput({
+    ...safe.resumeData,
+    experiences: safe.experiences.length
+      ? safe.experiences
+      : safe.resumeData.experiences,
+    educations: safe.qualifications.length
+      ? safe.qualifications
+      : safe.resumeData.educations,
+    projects: (safe.projects.length
+      ? safe.projects
+      : safe.resumeData.projects ?? []
+    ).filter((project) => !isSeededKnowledgeSampleProject(project)),
+    skills: safe.skills || safe.resumeData.skills,
+    languages: safe.languages || safe.resumeData.languages,
+  });
 }
 
 async function restoreTailoredJobDetails(
@@ -263,7 +238,7 @@ export default function ResumesPage() {
           setKnowledgeCompletion(calculateKnowledgeCompletion(knowledge));
         }
         if (resume) {
-          setData({ ...emptyResumeData, ...resume.data });
+          setData(normalizeResumeDataInput(resume.data));
           setSelectedTemplate(resume.templateId);
           setSelectedColor(
             resume.colorId || getDefaultResumeColor(resume.templateId),
@@ -276,7 +251,7 @@ export default function ResumesPage() {
           }
           return;
         }
-        if (knowledge) setData(resumeFromKnowledge(knowledge));
+        if (knowledge) setData(normalizeResumeDataInput(resumeFromKnowledge(knowledge)));
       })
       .catch(() => {
         if (active)
@@ -296,6 +271,7 @@ export default function ResumesPage() {
     nextData: ResumeData,
     source: ResumeRecord["source"] = "user",
   ) => {
+    const safeData = normalizeResumeDataInput(nextData);
     const now = new Date().toISOString();
     const id = activeResumeId || createRecordId("resume");
     const previous = activeResumeId
@@ -305,11 +281,11 @@ export default function ResumesPage() {
       id,
       name:
         resumeName?.trim() ||
-        getDefaultResumeName(nextData, selectedTemplate),
+        getDefaultResumeName(safeData, selectedTemplate),
       templateId: selectedTemplate,
       colorId: selectedColor,
       pinnedAt: previous?.pinnedAt,
-      data: nextData,
+      data: safeData,
       source: previous?.source ?? source,
       targetJobId: previous?.targetJobId,
       targetJobTitle: previous?.targetJobTitle,
@@ -328,8 +304,9 @@ export default function ResumesPage() {
     setResumeName(record.name);
   };
   const mergeData = async (nextData: ResumeData) => {
-    setData(nextData);
-    await persistResume(nextData);
+    const safeData = normalizeResumeDataInput(nextData);
+    setData(safeData);
+    await persistResume(safeData);
   };
   const openBuilder = (templateId: string) => {
     if (knowledgeCompletion < 10) {
@@ -340,13 +317,13 @@ export default function ResumesPage() {
     setSelectedColor(
       templateColors[templateId] || getDefaultResumeColor(templateId),
     );
-    if (knowledgeData) setData({ ...emptyResumeData, ...knowledgeData });
+    if (knowledgeData) setData(normalizeResumeDataInput(knowledgeData));
     setActiveResumeId("");
     setResumeName(null);
     setBuilderOpen(true);
   };
   const openSavedResume = (resume: ResumeRecord) => {
-    setData({ ...emptyResumeData, ...resume.data });
+    setData(normalizeResumeDataInput(resume.data));
     setSelectedTemplate(resume.templateId);
     setSelectedColor(
       resume.colorId || getDefaultResumeColor(resume.templateId),

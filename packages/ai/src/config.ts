@@ -5,10 +5,20 @@ export type ProviderConfig = {
   model: string;
   apiKey: string;
   baseUrl: string;
+  inputPricePerMillionUsd: number;
+  outputPricePerMillionUsd: number;
 };
 
 function getEnv(prefix: "LLM" | "LLM_WRITE", key: string) {
   return process.env[`${prefix}_${key}`] ?? process.env[`LLM_${key}`] ?? "";
+}
+
+function getNonNegativeNumber(
+  prefix: "LLM" | "LLM_WRITE",
+  key: string,
+) {
+  const value = Number(getEnv(prefix, key));
+  return Number.isFinite(value) && value >= 0 ? value : 0;
 }
 
 function buildFreeDeepseekAPIConfig(
@@ -21,6 +31,8 @@ function buildFreeDeepseekAPIConfig(
     model: getEnv(prefix, "MODEL") || "deepseek-chat",
     apiKey: "localproxy",
     baseUrl: `http://localhost:${port}/v1`,
+    inputPricePerMillionUsd: 0,
+    outputPricePerMillionUsd: 0,
   };
 }
 
@@ -33,6 +45,14 @@ function buildOpenAICompatibleConfig(
     model: getEnv(prefix, "MODEL"),
     apiKey: getEnv(prefix, "API_KEY"),
     baseUrl: getEnv(prefix, "BASE_URL"),
+    inputPricePerMillionUsd: getNonNegativeNumber(
+      prefix,
+      "INPUT_PRICE_PER_MILLION_USD",
+    ),
+    outputPricePerMillionUsd: getNonNegativeNumber(
+      prefix,
+      "OUTPUT_PRICE_PER_MILLION_USD",
+    ),
   };
 }
 

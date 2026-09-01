@@ -38,7 +38,7 @@ import type {
 } from "@/lib/data/models";
 import { hasResumeContent } from "../resumes/resume-data";
 import { formatPersianNumber } from "@/lib/fa-number";
-import { apiUrl } from "@/lib/api-url";
+import { apiRequest } from "@/lib/api-client";
 
 type DashboardState = {
   snapshot: DashboardSnapshotRecord;
@@ -244,10 +244,13 @@ export default function DashboardPage() {
             completedLabel: "تحلیل داشبورد به‌روز شد",
             href: "/dashboard",
             run: async () => {
-              const response = await fetch(apiUrl("/api/panel/dashboard"), {
+              const result = await apiRequest<
+                Omit<
+                  DashboardSnapshotRecord,
+                  "id" | "resumeId" | "createdAt" | "updatedAt"
+                > & { error?: string }
+              >("/api/panel/dashboard", {
                 method: "POST",
-                credentials: "include",
-                headers: { "content-type": "application/json" },
                 body: JSON.stringify({
                   resume: analysisResume,
                   knowledge: knowledge
@@ -266,14 +269,6 @@ export default function DashboardPage() {
                     : undefined,
                 }),
               });
-              const result = (await response.json()) as Omit<
-                DashboardSnapshotRecord,
-                "id" | "resumeId" | "createdAt" | "updatedAt"
-              > & { error?: string };
-              if (!response.ok)
-                throw new Error(
-                  result.error || "تحلیل داشبورد ناموفق بود.",
-                );
               const now = new Date().toISOString();
               const snapshot: DashboardSnapshotRecord = {
                 ...result,

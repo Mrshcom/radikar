@@ -113,6 +113,7 @@ export type JobRecord = BaseRecord & {
   reason?: string;
   description: string;
   sourceUrl?: string;
+  logoUrl?: string;
   saved: boolean;
 };
 

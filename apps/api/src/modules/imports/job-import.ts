@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { sanitizeRemoteImageSource } from "@radicar/validators";
 
 const maxTextLength = 7000;
 const allowedHostSuffixes = [
@@ -70,11 +71,86 @@ function decodeEntities(text: string) {
 }
 
 function extractMetaContent(html: string, property: string) {
-  const pattern = new RegExp(
-    `<meta[^>]+(?:property|name)=["']${property}["'][^>]+content=["']([^"']+)["'][^>]*>`,
-    "i",
+  const metaTags = html.match(/<meta\b[^>]*>/gi) ?? [];
+  for (const tag of metaTags) {
+    const key = extractAttribute(tag, "property") || extractAttribute(tag, "name");
+    if (key.toLowerCase() === property.toLowerCase())
+      return extractAttribute(tag, "content");
+  }
+  return "";
+}
+
+function extractAttribute(tag: string, attribute: string) {
+  return tag.match(
+    new RegExp(`\\s${attribute}=["']([^"']+)["']`, "i"),
+  )?.[1] ?? "";
+}
+
+function normalizeLogoUrl(value: unknown, pageUrl: URL) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const logoUrl = new URL(decodeEntities(value.trim()), pageUrl);
+    return sanitizeRemoteImageSource(logoUrl.toString()).slice(0, 2_048);
+  } catch {
+    return "";
+  }
+}
+
+function organizationLogo(posting: Record<string, unknown> | undefined) {
+  if (!posting?.hiringOrganization) return "";
+  const organization = posting.hiringOrganization;
+  if (typeof organization !== "object" || Array.isArray(organization))
+    return "";
+  const logo = (organization as Record<string, unknown>).logo;
+  if (typeof logo === "string") return logo;
+  if (!logo || typeof logo !== "object" || Array.isArray(logo)) return "";
+  const logoRecord = logo as Record<string, unknown>;
+  return typeof logoRecord.url === "string"
+    ? logoRecord.url
+    : typeof logoRecord.contentUrl === "string"
+      ? logoRecord.contentUrl
+      : "";
+}
+
+export function extractCompanyLogoUrl(html: string, pageUrl: URL) {
+  const candidates: string[] = [];
+  const jsonLdMatches = [
+    ...html.matchAll(
+      /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+    ),
+  ];
+  for (const match of jsonLdMatches) {
+    try {
+      const logo = organizationLogo(pickJobPosting(JSON.parse(match[1])));
+      if (logo) candidates.push(logo);
+    } catch {
+      continue;
+    }
+  }
+
+  const imageTags = html.match(/<img\b[^>]*>/gi) ?? [];
+  for (const tag of imageTags) {
+    if (
+      !/(?:company|employer|organization)[-_\s]?logo|artdeco-entity-image/i.test(
+        tag,
+      )
+    )
+      continue;
+    for (const attribute of ["data-delayed-url", "data-src", "src"]) {
+      const value = extractAttribute(tag, attribute);
+      if (value) candidates.push(value);
+    }
+  }
+
+  candidates.push(
+    extractMetaContent(html, "og:image"),
+    extractMetaContent(html, "twitter:image"),
   );
-  return html.match(pattern)?.[1] ?? "";
+  for (const candidate of candidates) {
+    const normalized = normalizeLogoUrl(candidate, pageUrl);
+    if (normalized) return normalized;
+  }
+  return "";
 }
 
 function pickJobPosting(payload: unknown): Record<string, unknown> | undefined {
@@ -187,12 +263,17 @@ export function registerJobImportRoute(app: FastifyInstance) {
         return reply
           .code(415)
           .send({ error: "این لینک صفحه HTML قابل خواندن برنگرداند." });
-      const text = extractJobText(await response.text());
+      const html = await response.text();
+      const text = extractJobText(html);
       if (text.length < 80)
         return reply
           .code(422)
           .send({ error: "متن کافی برای پردازش از این آگهی پیدا نشد." });
-      return { text, sourceUrl: sourceUrl.toString() };
+      return {
+        text,
+        sourceUrl: sourceUrl.toString(),
+        logoUrl: extractCompanyLogoUrl(html, fetchUrl) || undefined,
+      };
     } catch {
       return reply
         .code(502)

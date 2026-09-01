@@ -452,8 +452,19 @@ export const emptyResumeData: ResumeData = {
 };
 
 export function getResumeExperiences(data: ResumeData): ResumeExperience[] {
-  if (Array.isArray(data.experiences) && data.experiences.length)
-    return data.experiences;
+  const structuredExperiences = Array.isArray(data.experiences)
+    ? data.experiences.filter(
+        (experience) =>
+          experience.jobTitle.trim() ||
+          experience.company.trim() ||
+          experience.location.trim() ||
+          experience.startDate.trim() ||
+          experience.endDate.trim() ||
+          experience.description.trim() ||
+          experience.technologies.trim(),
+      )
+    : [];
+  if (structuredExperiences.length) return structuredExperiences;
   if (
     !data.experienceTitle.trim() &&
     !data.company.trim() &&
@@ -482,8 +493,16 @@ export function getResumeExperiences(data: ResumeData): ResumeExperience[] {
 }
 
 export function getResumeEducations(data: ResumeData): ResumeEducation[] {
-  if (Array.isArray(data.educations) && data.educations.length)
-    return data.educations;
+  const structuredEducations = Array.isArray(data.educations)
+    ? data.educations.filter(
+        (education) =>
+          education.institution.trim() ||
+          education.credential.trim() ||
+          education.startDate.trim() ||
+          education.endDate.trim(),
+      )
+    : [];
+  if (structuredEducations.length) return structuredEducations;
   if (!data.education.trim()) return [];
   return data.education
     .split("\n")

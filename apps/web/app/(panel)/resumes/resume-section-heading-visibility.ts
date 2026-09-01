@@ -100,9 +100,12 @@ export function syncResumeSectionHeadingVisibility(
     const repeated = section
       ? continuedSections.has(section)
       : previousHeadingTexts.has(normalizeHeading(text));
+    const headingBlock =
+      heading.closest<HTMLElement>("[data-resume-section-heading]") ?? heading;
 
-    heading.hidden = repeated;
-    heading.toggleAttribute("data-resume-continuation-heading", repeated);
+    headingBlock.hidden = repeated;
+    headingBlock.classList.toggle("!hidden", repeated);
+    headingBlock.toggleAttribute("data-resume-continuation-heading", repeated);
   });
 }
 

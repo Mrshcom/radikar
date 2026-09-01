@@ -38,6 +38,40 @@ export type Membership = {
   >;
 };
 
+export type AdminMembershipEvent = {
+  id: string;
+  type:
+    | "admin_grant"
+    | "admin_extend"
+    | "admin_adjust"
+    | "account_suspended"
+    | "account_activated"
+    | "cancel"
+    | string;
+  planId: string | null;
+  plan: { id: string; name: string } | null;
+  durationDays: number | null;
+  details: Record<string, unknown> | null;
+  createdAt: string;
+  actor: {
+    id: string;
+    phone: string;
+    fullName: string | null;
+    role: "user" | "admin" | "superadmin";
+  } | null;
+};
+
+export type AdminMembershipDetails = {
+  user: {
+    id: string;
+    phone: string;
+    fullName: string | null;
+    status: "active" | "suspended";
+  };
+  membership: Membership;
+  history: AdminMembershipEvent[];
+};
+
 export type Order = {
   id: string;
   orderNumber: string;
@@ -60,6 +94,7 @@ export type OrdersResponse = {
 export const billingKeys = {
   plans: ["billing", "plans"] as const,
   membership: ["billing", "membership"] as const,
+  adminMembership: (userId: string) => ["admin", "membership-details", userId] as const,
   orders: (page: number, pageSize: number, search: string, status: string) =>
     ["billing", "orders", page, pageSize, search, status] as const,
 };
@@ -77,6 +112,15 @@ export function useMembership() {
     queryKey: billingKeys.membership,
     queryFn: () => apiRequest<Membership>("/api/billing/membership"),
     staleTime: 30_000,
+  });
+}
+
+export function useAdminMembership(userId?: string) {
+  return useQuery({
+    queryKey: billingKeys.adminMembership(userId ?? ""),
+    queryFn: () => apiRequest<AdminMembershipDetails>(`/api/admin/users/${userId}/membership`),
+    enabled: Boolean(userId),
+    staleTime: 15_000,
   });
 }
 

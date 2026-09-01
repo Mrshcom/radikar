@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { createPortal } from "react-dom";
 import {
   ArrowLeft,
@@ -47,8 +47,8 @@ import { sanitizeLtrField } from "@/lib/ltr-field";
 import { readProfileImage } from "@/lib/image-file";
 import { useToast } from "@/app/_components/toast";
 import { useModelTasks } from "../_components/model-task-provider";
-import { apiUrl } from "@/lib/api-url";
 import { apiRequest } from "@/lib/api-client";
+import { normalizeResumeDataInput } from "@/lib/resume-input";
 
 const primaryButton =
   "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] bg-[#0f7b62] px-[15px] text-[11px] font-bold whitespace-nowrap text-white shadow-[0_7px_17px_rgba(15,123,98,.17)] disabled:cursor-not-allowed disabled:opacity-45";
@@ -270,7 +270,7 @@ function ResumeLanguageEditor({
 }
 
 export function ResumeBuilder({
-  data,
+  data: inputData,
   resumeName,
   selectedTemplate,
   selectedColor,
@@ -283,9 +283,12 @@ export function ResumeBuilder({
   onColorChange,
   onSave,
 }: Props) {
+  const data = useMemo(() => normalizeResumeDataInput(inputData), [inputData]);
   const notify = useToast();
   const { isRunning, runModelTask } = useModelTasks();
   const [step, setStep] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [generating, setGenerating] = useState(false);
   const generationBusy = generating || isRunning("resume-generate");
   const [modelError, setModelError] = useState("");
@@ -362,9 +365,27 @@ export function ResumeBuilder({
         ltrOnly ? sanitizeLtrField(event.target.value) : event.target.value,
       );
     };
-  const finish = async () => {
+  const saveResume = async () => {
+    if (savingRef.current) return false;
+    savingRef.current = true;
+    setSaving(true);
     try {
       await onSave();
+      return true;
+    } catch (error) {
+      notify(
+        error instanceof Error ? error.message : "ذخیره رزومه ناموفق بود.",
+        "error",
+      );
+      return false;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  };
+  const finish = async () => {
+    if (!(await saveResume())) return;
+    try {
       await apiRequest<void>("/api/billing/usage/pdf", { method: "POST" });
       setPrintReady(false);
       setPrintView(true);
@@ -445,20 +466,18 @@ export function ResumeBuilder({
           const knowledge = await knowledgeProfileStore.get(
             await getActiveProfileId(),
           );
-          const response = await fetch(apiUrl("/api/resume/generate"), {
+          const result = await apiRequest<{
+            resume?: unknown;
+            error?: string;
+          }>("/api/resume/generate", {
             method: "POST",
-            credentials: "include",
-            headers: { "content-type": "application/json" },
             body: JSON.stringify({ resume: data, knowledge, language }),
           });
-          const result = (await response.json()) as {
-            resume?: ResumeData;
-            error?: string;
-          };
-          if (!response.ok || !result.resume)
+          if (!result.resume)
             throw new Error(result.error || "مدل رزومه‌ساز پاسخ نداد.");
-          await onDataMerge(result.resume);
-          return result.resume;
+          const safeResume = normalizeResumeDataInput(result.resume);
+          await onDataMerge(safeResume);
+          return safeResume;
         },
       });
       scheduleFieldDirectionRefresh();
@@ -492,14 +511,16 @@ export function ResumeBuilder({
           <button
             className={secondaryButton}
             type="button"
-            onClick={() => void onSave()}
+            disabled={saving}
+            onClick={() => void saveResume()}
           >
-            <Save size={16} /> ذخیره رزومه
+            <Save size={16} /> {saving ? "در حال ذخیره..." : "ذخیره رزومه"}
           </button>
           {hasBeenSaved && (
             <button
               className={primaryButton}
               type="button"
+              disabled={saving}
               onClick={() => void finish()}
             >
               <Download size={16} /> دانلود PDF
@@ -609,18 +630,20 @@ export function ResumeBuilder({
                   رزومه‌های دیگر ایجاد نمی‌کند.
                 </p>
                 <div className="flex items-center gap-3 rounded-xl border border-[#dfe8e2] bg-[#f8faf8] p-3">
-                  <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl border border-[#d5e3dc] bg-[#e8f2ed] text-[#6d8980]">
-                    {data.photoUrl ? (
+                  <div className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl border border-[#d5e3dc] bg-[#e8f2ed] text-[#6d8980]">
+                    <UserRound size={25} />
+                    {data.photoUrl && (
                       <Image
-                        className="size-full object-cover"
+                        className="absolute inset-0 size-full object-cover"
                         src={data.photoUrl}
                         width={128}
                         height={128}
                         unoptimized
                         alt="تصویر این رزومه"
+                        onError={(event) => {
+                          event.currentTarget.style.display = "none";
+                        }}
                       />
-                    ) : (
-                      <UserRound size={25} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -1365,12 +1388,16 @@ export function ResumeBuilder({
                 ادامه <ArrowLeft size={16} />
               </button>
             ) : hasBeenSaved ? (
-              <button className={primaryButton} onClick={finish}>
+              <button className={primaryButton} disabled={saving} onClick={finish}>
                 <Download size={16} /> دریافت PDF
               </button>
             ) : (
-              <button className={primaryButton} onClick={() => void onSave()}>
-                <Save size={16} /> ذخیره رزومه
+              <button
+                className={primaryButton}
+                disabled={saving}
+                onClick={() => void saveResume()}
+              >
+                <Save size={16} /> {saving ? "در حال ذخیره..." : "ذخیره رزومه"}
               </button>
             )}
           </div>
