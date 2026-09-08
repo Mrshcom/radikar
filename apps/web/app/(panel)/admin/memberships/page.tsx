@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClipboardList, Info, ShieldCheck, UserCog } from "lucide-react";
+import { useQueryStates } from "nuqs";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { normalizeDigits } from "@radicar/validators";
@@ -22,7 +23,13 @@ import {
   type Membership,
   type Plan,
 } from "@/lib/billing";
-import { useTablePageSize } from "@/lib/table-page-size";
+import { useUrlTablePagination } from "@/lib/table-page-size";
+import {
+  createTableFilterParser,
+  tableOptionalFilterParser,
+  tableQueryStateOptions,
+  tableSearchParser,
+} from "@/lib/table-search-params";
 import {
   AdminFilterSelect,
   AdminTablePagination,
@@ -73,6 +80,13 @@ const resourceLabels: Record<string, string> = {
   interview: "مصاحبه آزمایشی",
 };
 
+const membershipFilterParsers = {
+  search: tableSearchParser,
+  planId: tableOptionalFilterParser,
+  membershipStatus: createTableFilterParser(["active", "expired", "canceled"]),
+  userStatus: createTableFilterParser(["active", "suspended"]),
+};
+
 function detailString(event: AdminMembershipEvent, key: string) {
   const value = event.details?.[key];
   return typeof value === "string" ? value : "";
@@ -117,12 +131,18 @@ export default function MembershipsAdminPage() {
   const notify = useToast();
   const queryClient = useQueryClient();
   const plans = usePlans();
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const { pageSize, setPageSize, isSaving: pageSizeSaving } = useTablePageSize();
-  const [planId, setPlanId] = useState("");
-  const [membershipStatus, setMembershipStatus] = useState("");
-  const [userStatus, setUserStatus] = useState("");
+  const [{ search, planId, membershipStatus, userStatus }, setFilters] =
+    useQueryStates(membershipFilterParsers, {
+      ...tableQueryStateOptions,
+      urlKeys: {
+        search: "q",
+        planId: "plan",
+        membershipStatus: "membership",
+        userStatus: "account",
+      },
+    });
+  const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } =
+    useUrlTablePagination();
   const [selected, setSelected] = useState<MembershipUser | null>(null);
   const [detailsUser, setDetailsUser] = useState<MembershipUser | null>(null);
   const [detailsTab, setDetailsTab] = useState<"usage" | "logs">("usage");
@@ -193,15 +213,15 @@ export default function MembershipsAdminPage() {
             search={search}
             searchPlaceholder="نام یا شماره همراه"
             activeFilterCount={Number(Boolean(planId)) + Number(Boolean(membershipStatus)) + Number(Boolean(userStatus))}
-            onSearch={(value) => { setSearch(value); setPage(1); }}
-            onResetFilters={() => { setPlanId(""); setMembershipStatus(""); setUserStatus(""); setPage(1); }}
+            onSearch={(value) => { void setFilters({ search: value }); setPage(1); }}
+            onResetFilters={() => { void setFilters({ planId: "", membershipStatus: "", userStatus: "" }); setPage(1); }}
           >
-            <AdminFilterSelect label="پلن" value={planId} onChange={(value) => { setPlanId(value); setPage(1); }} options={[{ value: "", label: "همه پلن‌ها" }, ...(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))]} />
-            <AdminFilterSelect label="وضعیت عضویت" value={membershipStatus} onChange={(value) => { setMembershipStatus(value); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "expired", label: "منقضی" }, { value: "canceled", label: "لغوشده" }]} />
-            <AdminFilterSelect label="وضعیت حساب" value={userStatus} onChange={(value) => { setUserStatus(value); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "suspended", label: "تعلیق‌شده" }]} />
+            <AdminFilterSelect label="پلن" value={planId} onChange={(value) => { void setFilters({ planId: value }); setPage(1); }} options={[{ value: "", label: "همه پلن‌ها" }, ...(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))]} />
+            <AdminFilterSelect label="وضعیت عضویت" value={membershipStatus} onChange={(value) => { void setFilters({ membershipStatus: value as typeof membershipStatus }); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "expired", label: "منقضی" }, { value: "canceled", label: "لغوشده" }]} />
+            <AdminFilterSelect label="وضعیت حساب" value={userStatus} onChange={(value) => { void setFilters({ userStatus: value as typeof userStatus }); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "suspended", label: "تعلیق‌شده" }]} />
           </AdminTableToolbar>
         </div>
-        <DataTable columns={columns} rows={users.data?.items ?? []} getRowKey={(item) => item.user.id} loading={users.isLoading} error={users.error} retrying={users.isFetching} onRetry={() => void users.refetch()} filtered={Boolean(search || planId || membershipStatus || userStatus)} minWidthClassName="min-w-[850px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={users.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={(value) => { setPageSize(value); setPage(1); }} />} />
+        <DataTable columns={columns} rows={users.data?.items ?? []} getRowKey={(item) => item.user.id} loading={users.isLoading} error={users.error} retrying={users.isFetching} onRetry={() => void users.refetch()} filtered={Boolean(search || planId || membershipStatus || userStatus)} minWidthClassName="min-w-[850px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={users.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
       </section>
       {selected && (
         <Modal

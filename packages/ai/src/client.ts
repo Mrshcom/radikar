@@ -336,7 +336,7 @@ export async function chatJson<T>(
     let response: Response;
     try {
       response = await fetch(
-        `${attemptConfig.baseUrl.replace(/\/+$/, "")}/chat/completions`,
+        `${attemptConfig.baseUrl.replace(/\/+$/, "")}/${attemptConfig.apiStyle === "responses" ? "responses" : "chat/completions"}`,
         {
           method: "POST",
           headers: {
@@ -345,13 +345,22 @@ export async function chatJson<T>(
           },
           body: JSON.stringify({
             model: attemptConfig.model,
-            messages,
-            temperature: 0.2,
-            stream: false,
-            user: `radicar-json-${requestId}-${attempt}`,
-            ...(options.maxOutputTokens
-              ? { max_tokens: Math.max(1, Math.round(options.maxOutputTokens)) }
-              : {}),
+            ...(attemptConfig.apiStyle === "responses"
+              ? {
+                  input: messages,
+                  max_output_tokens: options.maxOutputTokens
+                    ? Math.max(1, Math.round(options.maxOutputTokens))
+                    : undefined,
+                }
+              : {
+                  messages,
+                  temperature: 0.2,
+                  stream: false,
+                  user: `radicar-json-${requestId}-${attempt}`,
+                  ...(options.maxOutputTokens
+                    ? { max_tokens: Math.max(1, Math.round(options.maxOutputTokens)) }
+                    : {}),
+                }),
           }),
           signal: options.signal
             ? AbortSignal.any([

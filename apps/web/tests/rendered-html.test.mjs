@@ -273,7 +273,7 @@ test("superadmins stay out of user and membership management lists", async () =>
 });
 
 test("all project data tables share controls, loading skeleton, zero state and pagination", async () => {
-  const [controls, dataTable, pagination, pageSizePreference, queryBuilder, billing, upgradePage, ...pages] = await Promise.all([
+  const [controls, dataTable, pagination, pageSizePreference, paginationSearchParams, queryBuilder, billing, upgradePage, ...pages] = await Promise.all([
     readFile(
       new URL("app/(panel)/_components/table-controls.tsx", projectRoot),
       "utf8",
@@ -281,6 +281,7 @@ test("all project data tables share controls, loading skeleton, zero state and p
     readFile(new URL("app/(panel)/_components/data-table.tsx", projectRoot), "utf8"),
     readFile(new URL("app/(panel)/_components/table-pagination.tsx", projectRoot), "utf8"),
     readFile(new URL("lib/table-page-size.ts", projectRoot), "utf8"),
+    readFile(new URL("lib/table-pagination-search-params.ts", projectRoot), "utf8"),
     readFile(new URL("lib/build-query-string.ts", projectRoot), "utf8"),
     readFile(new URL("lib/billing.ts", projectRoot), "utf8"),
     readFile(new URL("app/(panel)/upgrade/page.tsx", projectRoot), "utf8"),
@@ -301,7 +302,8 @@ test("all project data tables share controls, loading skeleton, zero state and p
   assert.match(pagination, /تعداد ردیف/);
   assert.match(pagination, /\? "rounded-full bg-\[#0f7b62\] text-white"/);
   assert.doesNotMatch(pagination, /shadow-\[0_5px_14px/);
-  assert.match(pageSizePreference, /\[10, 20, 50, 100, 200\]/);
+  assert.match(paginationSearchParams, /\[10, 20, 50, 100, 200\]/);
+  assert.match(pageSizePreference, /useQueryStates\(tablePaginationParsers/);
   assert.match(pageSizePreference, /"\/api\/account\/preferences"/);
   assert.doesNotMatch(pageSizePreference, /localStorage/);
   assert.match(queryBuilder, /value === undefined \|\| value === null \|\| value === ""/);
@@ -310,6 +312,8 @@ test("all project data tables share controls, loading skeleton, zero state and p
     assert.match(page, /DataTable/);
     assert.match(page, /TableToolbar|AdminTableToolbar/);
     assert.match(page, /TablePagination|AdminTablePagination/);
+    assert.match(page, /useUrlTablePagination\(\)/);
+    assert.match(page, /useQueryStates\(/);
     assert.match(page, /error=\{/);
     assert.match(page, /onRetry=\{/);
     if (index < 5) assert.match(page, /buildQueryString/);
@@ -446,10 +450,11 @@ test("model usage breakdowns and recent requests use the shared paginated table"
   assert.match(page, /dateTime\(row\.createdAt\)/);
   assert.match(page, /<DataTable/);
   assert.match(page, /<AdminTablePagination/);
-  assert.match(page, /useTablePageSize\(\)/);
-  assert.match(billingClient, /buildQueryString\(\{ days, page, pageSize \}\)/);
+  assert.match(page, /useUrlTablePagination\(\)/);
+  assert.match(page, /useQueryStates\(/);
+  assert.match(billingClient, /buildQueryString\(\{ days, page, pageSize, provider \}\)/);
   assert.match(billingClient, /placeholderData: keepPreviousData/);
-  assert.match(billingRoutes, /getModelUsageStats\(query\.days, query\.page, query\.pageSize\)/);
+  assert.match(billingRoutes, /getModelUsageStats\(query\.days, query\.page, query\.pageSize, query\.provider\)/);
   assert.match(billingService, /recentRequests: \{[\s\S]*?items: recentRows/);
   assert.match(billingService, /\.limit\(pageSize\)[\s\S]*?\.offset\(\(page - 1\) \* pageSize\)/);
   assert.match(billingService, /innerJoin\(users, eq\(users\.id, modelUsageEvents\.userId\)\)/);
@@ -1595,21 +1600,31 @@ test("plan expiry and quota errors open one global upgrade modal", async () => {
   assert.match(interview, /"\/api\/interview\/feedback"/);
 });
 
-test("imported job cards render a sanitized company logo with a letter fallback", async () => {
-  const [match, jobCard, models] = await Promise.all([
+test("job cards keep imported logos safe and localize saved state and dates", async () => {
+  const [match, jobCard, applications, models] = await Promise.all([
     readFile(new URL("app/(panel)/match/page.tsx", projectRoot), "utf8"),
     readFile(
       new URL("app/(panel)/_components/job-card.tsx", projectRoot),
       "utf8",
     ),
+    readFile(new URL("app/(panel)/applications/page.tsx", projectRoot), "utf8"),
     readFile(new URL("lib/data/models.ts", projectRoot), "utf8"),
   ]);
 
   assert.match(match, /logoUrl: result\.logoUrl/);
   assert.match(match, /logoUrl: selectedLogoUrl \|\| existingJob\?\.logoUrl/);
-  assert.match(jobCard, /sanitizeRemoteImageSource\(job\.logoUrl\)/);
+  assert.match(jobCard, /sanitizeRemoteImageSource\(rawLogoUrl\)/);
   assert.match(jobCard, /onError=\{\(\) => setFailedLogoUrl\(logoUrl\)\}/);
-  assert.match(jobCard, /نشان \$\{job\.company\}/);
+  assert.match(jobCard, /نشان \$\{company\}/);
+  assert.match(jobCard, /logoUrl=\{job\.logoUrl\}/);
+  assert.match(applications, /jobsById\.get\(application\.jobId\)\?\.logoUrl/);
+  assert.match(applications, /variant="board"/);
+  assert.match(jobCard, /className=\{saved \? "fill-current" : undefined\}/);
+  assert.match(jobCard, /job\.age \? toPersianDigits\(job\.age\)/);
+  assert.match(jobCard, /<Clock3 size=\{13\} \/> \{toPersianDigits\(job\.age\)\}/);
+  assert.match(jobCard, /headerActions=\{/);
+  assert.match(jobCard, /headerClassName="!items-start border-b/);
+  assert.match(jobCard, /<div className="grid gap-4 pt-4">/);
   assert.match(models, /logoUrl\?: string/);
 });
 

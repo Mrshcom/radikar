@@ -646,9 +646,12 @@ export class BillingService {
       .onConflictDoNothing({ target: modelUsageEvents.requestId });
   }
 
-  async getModelUsageStats(days = 30, page = 1, pageSize = 20) {
+  async getModelUsageStats(days = 30, page = 1, pageSize = 20, provider?: string) {
     const since = new Date(Date.now() - days * 86_400_000);
-    const filter = gte(modelUsageEvents.createdAt, since);
+    const filter = and(
+      gte(modelUsageEvents.createdAt, since),
+      provider ? eq(modelUsageEvents.provider, provider) : undefined,
+    );
     const aggregate = {
       requests: count(),
       successfulRequests: sql<number>`count(*) filter (where ${modelUsageEvents.successful})`,

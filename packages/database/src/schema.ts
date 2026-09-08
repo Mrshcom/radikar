@@ -11,6 +11,14 @@ import {
 } from "drizzle-orm/pg-core";
 import type { DataRecord } from "@radicar/shared-types";
 
+export const aiSettings = pgTable("ai_settings", {
+  id: text("id").primaryKey(),
+  provider: text("provider").notNull(),
+  model: text("model").notNull(),
+  dollarRateRials: integer("dollar_rate_rials").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+});
+
 export const dataRecords = pgTable(
   "data_records",
   {

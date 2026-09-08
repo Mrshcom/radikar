@@ -43,6 +43,27 @@
       "when": 1788117738477,
       "tag": "0005_conscious_shockwave",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788710000000,
+      "tag": "0006_backfill_gapgpt_costs",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788711000000,
+      "tag": "0007_persist_ai_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788712000000,
+      "tag": "0008_add_dollar_rate",
+      "breakpoints": true
     }
   ]
 }

@@ -2,12 +2,17 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Database } from "lucide-react";
-import { useState } from "react";
+import { useQueryStates } from "nuqs";
 import { useAuth } from "@/app/_components/auth";
 import { DataTable, type DataTableColumn } from "../../_components/data-table";
 import { apiRequest } from "@/lib/api-client";
 import { buildQueryString } from "@/lib/build-query-string";
-import { useTablePageSize } from "@/lib/table-page-size";
+import { useUrlTablePagination } from "@/lib/table-page-size";
+import {
+  createTableFilterParser,
+  tableQueryStateOptions,
+  tableSearchParser,
+} from "@/lib/table-search-params";
 import { AdminFilterSelect, AdminTablePagination, AdminTableToolbar } from "../_components/admin-table-controls";
 
 type RecordsResponse = { items: { id: string; collection: string; profileId: string | null; ownerUserId: string | null; ownerPhone: string | null; updatedAt: string }[]; total: number };
@@ -19,13 +24,21 @@ const collectionOptions = [
   { value: "applications", label: "اپلای‌ها" }, { value: "interviews", label: "مصاحبه‌ها" },
   { value: "dashboard", label: "داده‌های داشبورد" },
 ];
+const recordFilterParsers = {
+  search: tableSearchParser,
+  collection: createTableFilterParser(
+    collectionOptions.slice(1).map((item) => item.value),
+  ),
+};
 
 export default function AdminRecordsPage() {
   const { user } = useAuth();
-  const [page, setPage] = useState(1);
-  const { pageSize, setPageSize, isSaving: pageSizeSaving } = useTablePageSize();
-  const [search, setSearch] = useState("");
-  const [collection, setCollection] = useState("");
+  const [{ search, collection }, setFilters] = useQueryStates(
+    recordFilterParsers,
+    { ...tableQueryStateOptions, urlKeys: { search: "q" } },
+  );
+  const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } =
+    useUrlTablePagination();
   const records = useQuery({
     queryKey: ["admin", "records", page, pageSize, search, collection],
     queryFn: () => apiRequest<RecordsResponse>(`/api/admin/records?${buildQueryString({ page, pageSize, search, collection })}`),
@@ -41,7 +54,7 @@ export default function AdminRecordsPage() {
     { key: "updated", title: "آخرین تغییر", className: "text-[#71817e]", render: (item) => new Date(item.updatedAt).toLocaleDateString("fa-IR") },
   ];
   return <div className="grid gap-6"><header><span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]"><Database size={18} /> پایش داده‌ها</span><h1 className="mb-0 mt-3 text-[25px] font-black">همه اطلاعات ثبت‌شده در سامانه</h1></header><section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
-    <AdminTableToolbar search={search} searchPlaceholder="شناسه، شماره مالک یا فضای کاری" activeFilterCount={collection ? 1 : 0} onSearch={(value) => { setSearch(value); setPage(1); }} onResetFilters={() => { setCollection(""); setPage(1); }}><AdminFilterSelect label="نوع اطلاعات" value={collection} options={collectionOptions} onChange={(value) => { setCollection(value); setPage(1); }} /></AdminTableToolbar>
-    <DataTable columns={columns} rows={records.data?.items ?? []} getRowKey={(item) => `${item.collection}:${item.id}`} loading={records.isLoading} error={records.error} retrying={records.isFetching} onRetry={() => void records.refetch()} filtered={filtered} minWidthClassName="min-w-[680px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={records.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={(value) => { setPageSize(value); setPage(1); }} />} />
+    <AdminTableToolbar search={search} searchPlaceholder="شناسه، شماره مالک یا فضای کاری" activeFilterCount={collection ? 1 : 0} onSearch={(value) => { void setFilters({ search: value }); setPage(1); }} onResetFilters={() => { void setFilters({ collection: "" }); setPage(1); }}><AdminFilterSelect label="نوع اطلاعات" value={collection} options={collectionOptions} onChange={(value) => { void setFilters({ collection: value }); setPage(1); }} /></AdminTableToolbar>
+    <DataTable columns={columns} rows={records.data?.items ?? []} getRowKey={(item) => `${item.collection}:${item.id}`} loading={records.isLoading} error={records.error} retrying={records.isFetching} onRetry={() => void records.refetch()} filtered={filtered} minWidthClassName="min-w-[680px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={records.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
   </section></div>;
 }

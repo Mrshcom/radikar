@@ -5,6 +5,9 @@ import { loadLocalEnvironment, readConfig } from "@radicar/config/server";
 import { PostgresRecordRepository } from "./modules/data/record-repository";
 import { AuthService } from "./modules/auth/service";
 import { BillingService } from "./modules/billing/service";
+import { setAnalyzeProvider } from "@radicar/ai";
+import { aiSettings } from "@radicar/database";
+import { eq } from "drizzle-orm";
 
 loadLocalEnvironment();
 const config = readConfig();
@@ -12,6 +15,8 @@ const database = createDatabase(
   config.DATABASE_URL,
   config.DATABASE_MAX_CONNECTIONS,
 );
+const [savedAiSettings] = await database.db.select().from(aiSettings).where(eq(aiSettings.id, "analysis-provider")).limit(1);
+if (savedAiSettings) setAnalyzeProvider(savedAiSettings.provider as Parameters<typeof setAnalyzeProvider>[0], savedAiSettings.model);
 const billingService = new BillingService(database.db, {
   apiPublicUrl: config.API_PUBLIC_URL,
   webAppUrl: config.WEB_APP_URL,
@@ -37,6 +42,7 @@ const app = buildApp({
     grantSignupMembership: (userId) => billingService.ensureSignupMembership(userId),
   }),
   billingService,
+  database: database.db,
   sessionCookieName: config.NODE_ENV === "production" ? "__Host-radicar_session" : "radicar_session",
   secureCookies: config.NODE_ENV === "production",
   sessionTtlDays: config.SESSION_TTL_DAYS,

@@ -1,5 +1,12 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { chatJson, getAnalyzeConfig, getWriteConfig } from "@radicar/ai";
+import { z } from "zod";
+import {
+  chatJson,
+  getAnalyzeConfig,
+  getAnalyzeProviderSettings,
+  getWriteConfig,
+  setAnalyzeProvider,
+} from "@radicar/ai";
 import {
   normalizeImportedBoolean,
   normalizeImportedText,
@@ -13,6 +20,41 @@ import {
   validateJobDescription,
 } from "./helpers";
 import type { BillingService, UsageCosts } from "../billing/service";
+import { requirePermission } from "../auth/routes";
+import type { ProviderName } from "@radicar/ai";
+import { eq } from "drizzle-orm";
+import { aiSettings, type Database } from "@radicar/database";
+
+const aiSettingsId = "analysis-provider";
+
+const aiSettingsSchema = z.object({
+  provider: z.enum(["freeDeepseekAPI", "gapgpt"]),
+  model: z.string().trim().max(120).optional(),
+  dollarRateRials: z.number().int().min(0).max(1_000_000_000).optional(),
+});
+
+const gapGptModels = [
+  ["gapgpt-qwen-3.6", 0.25, 2],
+  ["gapgpt-qwen-3.6-thinking", 0.25, 2],
+  ["gapgpt-qwen-3.8", 0.25, 2],
+  ["gpt-5.6-sol", 2.5, 15],
+  ["gpt-5.6-luna", 0.2, 1.2],
+  ["gpt-5.6-terra", 2, 12],
+  ["gpt-5.5", 5, 30],
+  ["gpt-5.4", 2.5, 15],
+  ["gpt-5.2-pro", 21, 126],
+  ["gpt-5.3-codex-spark", 1.75, 14],
+  ["claude-fable-5", 10, 50],
+  ["claude-sonnet-5", 2, 10],
+  ["claude-opus-5", 5, 25],
+  ["gemini-3.1-pro-preview", 2, 12],
+  ["gemini-3.5-flash", 1.5, 9],
+  ["gemini-3.1-flash-lite", 0.25, 1.5],
+  ["gemini-3.1-flash-lite-preview", 0.25, 1.5],
+  ["gemini-3-flash-preview", 0.5, 3],
+  ["grok-4.3", 1.25, 2.5],
+  ["grok-4", 3, 15],
+] as const;
 
 type Analysis = {
   score: number;
@@ -242,7 +284,55 @@ function modelRequestAbort(
   };
 }
 
-export function registerAiRoutes(app: FastifyInstance, billing?: BillingService) {
+export function registerAiRoutes(app: FastifyInstance, billing?: BillingService, database?: Database) {
+  app.get("/api/admin/ai-settings", async (request, reply) => {
+    if (!requirePermission(request, reply, "ai-settings:manage:any")) return;
+    let current: ReturnType<typeof getAnalyzeProviderSettings> & { dollarRateRials: number };
+    try {
+      current = { ...getAnalyzeProviderSettings(), dollarRateRials: 0 };
+    } catch {
+      current = { provider: "freeDeepseekAPI", model: "deepseek-chat", configured: false, dollarRateRials: 0 };
+    }
+    if (database) {
+      const [saved] = await database.select().from(aiSettings).where(eq(aiSettings.id, aiSettingsId)).limit(1);
+      if (saved) setAnalyzeProvider(saved.provider as ProviderName, saved.model);
+    }
+    return {
+      current: { ...current, dollarRateRials: Number((await database?.select({ dollarRateRials: aiSettings.dollarRateRials }).from(aiSettings).where(eq(aiSettings.id, aiSettingsId)).limit(1))?.[0]?.dollarRateRials ?? 0) },
+      providers: [
+        { id: "freeDeepseekAPI", label: "DeepSeek Local", defaultModel: "deepseek-chat" },
+        {
+          id: "gapgpt",
+          label: "GapGPT",
+          defaultModel: "gapgpt-qwen-3.6",
+          models: gapGptModels.map(([id, inputPrice, outputPrice]) => ({ id, inputPrice, outputPrice })),
+        },
+      ],
+    };
+  });
+
+  app.patch("/api/admin/ai-settings", async (request, reply) => {
+    if (!requirePermission(request, reply, "ai-settings:manage:any")) return;
+    const input = aiSettingsSchema.parse(request.body);
+    const provider = input.provider as ProviderName;
+    setAnalyzeProvider(provider, input.model || undefined);
+    if (database) {
+      const saved = await database.select({ dollarRateRials: aiSettings.dollarRateRials }).from(aiSettings).where(eq(aiSettings.id, aiSettingsId)).limit(1);
+      const dollarRateRials = input.dollarRateRials ?? Number(saved[0]?.dollarRateRials ?? 0);
+      await database.insert(aiSettings).values({
+        id: aiSettingsId,
+        provider,
+        model: input.model?.trim() || (provider === "gapgpt" ? "gapgpt-qwen-3.6" : "deepseek-chat"),
+        updatedAt: new Date(),
+        dollarRateRials,
+      }).onConflictDoUpdate({
+        target: aiSettings.id,
+        set: { provider, model: input.model?.trim() || (provider === "gapgpt" ? "gapgpt-qwen-3.6" : "deepseek-chat"), dollarRateRials, updatedAt: new Date() },
+      });
+    }
+    return getAnalyzeProviderSettings();
+  });
+
   app.post("/api/match/analyze", async (request, reply) => {
     const body = bodyOf(request.body);
     const jobDescription = textOf(body.jobDescription).trim();
@@ -277,6 +367,7 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService)
       });
       return normalizeAnalysis(result);
     } catch (error) {
+      request.log.error({ err: error }, "match analysis failed");
       await refund(billing, request, usage, "match_analyze");
       if (requestAbort.signal.aborted) return reply;
       const message =
@@ -427,7 +518,11 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService)
           role: "user",
           content: `رزومه:\n${JSON.stringify(resume, null, 2)}\nپایگاه دانش:\n${JSON.stringify(asObject(body.knowledge), null, 2)}\nحالت: ${textOf(body.mode) || "ترکیبی"}\nشرح شغل: ${textOf(body.jobDescription) || "ندارد"}\nJSON: {"title":string,"subtitle":string,"duration":string,"questions":string[],"cards":[{"title":string,"text":string,"tone":"lavender|mint|peach"}]}`,
         },
-      ], modelUsage(billing, request, "interview_session"));
+      ], {
+        ...modelUsage(billing, request, "interview_session"),
+        maxAttempts: 2,
+        maxOutputTokens: 2_048,
+      });
       const questions = stringArray(result.questions);
       if (
         !textOf(result.title).trim() ||

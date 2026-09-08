@@ -16,7 +16,7 @@ export function Modal({
   showCloseButton = false,
 }: {
   title: string;
-  description?: string;
+  description?: ReactNode;
   headerActions?: ReactNode;
   headerClassName?: string;
   titleClassName?: string;
@@ -85,20 +85,25 @@ export function Modal({
 
 export function DeleteConfirmModal({
   itemName,
+  description,
+  showCloseButton = true,
   onCancel,
   onConfirm,
 }: {
   itemName: string;
+  description?: ReactNode;
+  showCloseButton?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
   return (
     <ConfirmActionModal
       title="تأیید حذف"
-      description={`آیا از حذف «${itemName}» مطمئنی؟`}
+      description={description ?? `آیا از حذف «${itemName}» مطمئنی؟`}
       confirmLabel="بله، حذف شود"
       confirmIcon={<Trash2 size={15} />}
       tone="danger"
+      showCloseButton={showCloseButton}
       onCancel={onCancel}
       onConfirm={onConfirm}
     />
@@ -111,21 +116,28 @@ export function ConfirmActionModal({
   confirmLabel,
   confirmIcon,
   tone = "primary",
+  showCloseButton = true,
   pending = false,
   onCancel,
   onConfirm,
 }: {
   title: string;
-  description: string;
+  description: ReactNode;
   confirmLabel: string;
   confirmIcon?: ReactNode;
   tone?: "primary" | "danger";
+  showCloseButton?: boolean;
   pending?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
   return (
-    <Modal title={title} description={description} onClose={() => !pending && onCancel()} showCloseButton>
+    <Modal
+      title={title}
+      description={description}
+      onClose={() => !pending && onCancel()}
+      showCloseButton={showCloseButton}
+    >
       <div className="mt-5 flex flex-wrap justify-end gap-2">
         <button
           className="inline-flex min-h-10 items-center justify-center rounded-[10px] border border-[#dfe5df] bg-white px-4 text-[12px] font-bold text-[#526461] hover:bg-[#f7f9f7] disabled:opacity-50"
@@ -141,7 +153,11 @@ export function ConfirmActionModal({
           type="button"
           onClick={onConfirm}
         >
-          {pending ? <LoaderCircle className="animate-spin" size={15} /> : confirmIcon}
+          {pending ? (
+            <LoaderCircle className="animate-spin" size={15} />
+          ) : (
+            confirmIcon
+          )}
           {confirmLabel}
         </button>
       </div>

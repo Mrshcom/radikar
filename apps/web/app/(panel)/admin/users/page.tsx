@@ -2,13 +2,19 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Users } from "lucide-react";
+import { useQueryStates } from "nuqs";
 import { useState } from "react";
 import { useAuth, type UserRole } from "@/app/_components/auth";
 import { DataTable, type DataTableColumn } from "../../_components/data-table";
 import { ConfirmActionModal } from "../../_components/ui";
 import { apiRequest } from "@/lib/api-client";
 import { buildQueryString } from "@/lib/build-query-string";
-import { useTablePageSize } from "@/lib/table-page-size";
+import { useUrlTablePagination } from "@/lib/table-page-size";
+import {
+  createTableFilterParser,
+  tableQueryStateOptions,
+  tableSearchParser,
+} from "@/lib/table-search-params";
 import {
   AdminFilterSelect,
   AdminTablePagination,
@@ -35,15 +41,21 @@ type PendingUserAction = {
   tone?: "primary" | "danger";
 };
 const roleLabels: Record<UserRole, string> = { user: "کاربر", admin: "ادمین", superadmin: "سوپرادمین" };
+const userFilterParsers = {
+  search: tableSearchParser,
+  role: createTableFilterParser(["user", "admin", "superadmin"]),
+  status: createTableFilterParser(["active", "suspended"]),
+};
 
 export default function AdminUsersPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const { pageSize, setPageSize, isSaving: pageSizeSaving } = useTablePageSize();
-  const [role, setRole] = useState("");
-  const [status, setStatus] = useState("");
+  const [{ search, role, status }, setFilters] = useQueryStates(
+    userFilterParsers,
+    { ...tableQueryStateOptions, urlKeys: { search: "q" } },
+  );
+  const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } =
+    useUrlTablePagination();
   const [pendingAction, setPendingAction] = useState<PendingUserAction | null>(null);
   const users = useQuery({
     queryKey: ["admin", "users", search, role, status, page, pageSize],
@@ -92,14 +104,14 @@ export default function AdminUsersPage() {
             search={search}
             searchPlaceholder="نام یا شماره همراه"
             activeFilterCount={Number(Boolean(role)) + Number(Boolean(status))}
-            onSearch={(value) => { setSearch(value); setPage(1); }}
-            onResetFilters={() => { setRole(""); setStatus(""); setPage(1); }}
+            onSearch={(value) => { void setFilters({ search: value }); setPage(1); }}
+            onResetFilters={() => { void setFilters({ role: "", status: "" }); setPage(1); }}
           >
-            <AdminFilterSelect label="نقش" value={role} onChange={(value) => { setRole(value); setPage(1); }} options={[{ value: "", label: "همه نقش‌ها" }, { value: "user", label: "کاربر" }, { value: "admin", label: "ادمین" }, { value: "superadmin", label: "سوپرادمین" }]} />
-            <AdminFilterSelect label="وضعیت حساب" value={status} onChange={(value) => { setStatus(value); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "suspended", label: "تعلیق‌شده" }]} />
+            <AdminFilterSelect label="نقش" value={role} onChange={(value) => { void setFilters({ role: value as typeof role }); setPage(1); }} options={[{ value: "", label: "همه نقش‌ها" }, { value: "user", label: "کاربر" }, { value: "admin", label: "ادمین" }, { value: "superadmin", label: "سوپرادمین" }]} />
+            <AdminFilterSelect label="وضعیت حساب" value={status} onChange={(value) => { void setFilters({ status: value as typeof status }); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "suspended", label: "تعلیق‌شده" }]} />
           </AdminTableToolbar>
         </div>
-        <DataTable columns={columns} rows={users.data?.items ?? []} getRowKey={(item) => item.id} loading={users.isLoading} error={users.error} retrying={users.isFetching} onRetry={() => void users.refetch()} filtered={Boolean(search || role || status)} minWidthClassName="min-w-[800px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={users.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={(value) => { setPageSize(value); setPage(1); }} />} />
+        <DataTable columns={columns} rows={users.data?.items ?? []} getRowKey={(item) => item.id} loading={users.isLoading} error={users.error} retrying={users.isFetching} onRetry={() => void users.refetch()} filtered={Boolean(search || role || status)} minWidthClassName="min-w-[800px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={users.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
       </section>
       {pendingAction && (
         <ConfirmActionModal

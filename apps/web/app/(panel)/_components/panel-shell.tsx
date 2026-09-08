@@ -87,6 +87,7 @@ const menuItems: MenuItem[] = [
   { href: "/admin/payments", label: "تراکنش‌ها و واریزی‌ها", icon: CreditCard, roles: ["admin", "superadmin"] },
   { href: "/admin/records", label: "داده‌های سامانه", icon: Database, roles: ["superadmin"] },
   { href: "/admin/model-usage", label: "مصرف و هزینه مدل‌ها", icon: Bot, roles: ["superadmin"] },
+  { href: "/admin/settings", label: "تنظیمات", icon: Settings, roles: ["superadmin"] },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -101,6 +102,7 @@ const pageTitles: Record<string, string> = {
   "/admin/payments": "واریزی‌های سامانه",
   "/admin/records": "داده‌های سامانه",
   "/admin/model-usage": "مصرف و هزینه مدل‌ها",
+  "/admin/settings": "تنظیمات",
 };
 
 const primaryButtonClass =

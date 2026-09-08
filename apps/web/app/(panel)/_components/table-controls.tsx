@@ -31,6 +31,7 @@ export function TableToolbar({
   const { register, handleSubmit, reset } = useForm<SearchValues>({
     resolver: zodResolver(searchSchema),
     defaultValues: { search },
+    values: { search },
   });
 
   const clearAll = () => {

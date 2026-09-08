@@ -1,6 +1,7 @@
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
+import { randomUUID } from "node:crypto";
 import Fastify, { type FastifyServerOptions } from "fastify";
 import { normalizeDigitsDeep } from "@radicar/validators";
 import { ZodError } from "zod";
@@ -12,6 +13,7 @@ import { registerImportRoutes } from "./modules/imports/routes";
 import { handleAuthError, registerAuthRoutes, type AuthServicePort } from "./modules/auth/routes";
 import { handleBillingError, registerBillingRoutes } from "./modules/billing/routes";
 import type { BillingService } from "./modules/billing/service";
+import type { Database } from "@radicar/database";
 
 type BuildAppOptions = {
   repository: RecordRepository;
@@ -23,6 +25,7 @@ type BuildAppOptions = {
   secureCookies: boolean;
   sessionTtlDays: number;
   billingService?: BillingService;
+  database?: Database;
 };
 
 export function buildApp({
@@ -35,12 +38,14 @@ export function buildApp({
   secureCookies,
   sessionTtlDays,
   billingService,
+  database,
 }: BuildAppOptions) {
   const app = Fastify({
     logger,
     trustProxy: true,
     bodyLimit: 5 * 1024 * 1024,
     requestIdHeader: "x-request-id",
+    genReqId: () => randomUUID(),
   });
 
   app.register(cors, {
@@ -89,7 +94,7 @@ export function buildApp({
   });
   registerDataRoutes(app, repository, billingService);
   if (billingService) registerBillingRoutes(app, billingService);
-  registerAiRoutes(app, billingService);
+  registerAiRoutes(app, billingService, database);
   registerImportRoutes(app, billingService);
 
   app.setNotFoundHandler((request, reply) =>

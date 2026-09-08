@@ -115,11 +115,13 @@ export type JobRecord = BaseRecord & {
   sourceUrl?: string;
   logoUrl?: string;
   saved: boolean;
+  applicationBoardDismissedAt?: string;
 };
 
 export type ApplicationStage = "saved" | "applied" | "review" | "interview";
 
 export type ApplicationRecord = BaseRecord & {
+  jobId?: string;
   role: string;
   company: string;
   stage: ApplicationStage;

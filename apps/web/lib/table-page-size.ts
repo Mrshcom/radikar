@@ -1,15 +1,22 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryStates } from "nuqs";
 import {
   authQueryKey,
   useAuth,
   type CurrentUser,
 } from "@/app/_components/auth";
 import { apiRequest } from "@/lib/api-client";
+import {
+  tablePaginationParsers,
+  type TablePageSize,
+} from "@/lib/table-pagination-search-params";
 
-export const tablePageSizes = [10, 20, 50, 100, 200] as const;
-export type TablePageSize = (typeof tablePageSizes)[number];
+export {
+  tablePageSizes,
+  type TablePageSize,
+} from "@/lib/table-pagination-search-params";
 
 type AuthResponse = { user: CurrentUser };
 
@@ -42,5 +49,26 @@ export function useTablePageSize() {
     pageSize: user?.tablePageSize ?? 20,
     setPageSize: mutation.mutate,
     isSaving: mutation.isPending,
+  };
+}
+
+export function useUrlTablePagination() {
+  const stored = useTablePageSize();
+  const [urlState, setUrlState] = useQueryStates(tablePaginationParsers, {
+    history: "replace",
+    shallow: true,
+    scroll: false,
+  });
+  const pageSize = urlState.pageSize ?? stored.pageSize;
+
+  return {
+    page: urlState.page,
+    pageSize,
+    setPage: (page: number) => void setUrlState({ page }),
+    setPageSize: (nextPageSize: TablePageSize) => {
+      void setUrlState({ page: 1, pageSize: nextPageSize });
+      stored.setPageSize(nextPageSize);
+    },
+    isSaving: stored.isSaving,
   };
 }

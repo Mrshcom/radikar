@@ -2,24 +2,35 @@
 
 import Link from "next/link";
 import { ReceiptText } from "lucide-react";
-import { useState } from "react";
+import { useQueryStates } from "nuqs";
 import { DataTable, type DataTableColumn } from "../_components/data-table";
 import { TableFilterSelect, TableToolbar } from "../_components/table-controls";
 import { TablePagination } from "../_components/table-pagination";
 import { formatTomans, useOrders, type Order, type Plan } from "@/lib/billing";
-import { useTablePageSize } from "@/lib/table-page-size";
+import { useUrlTablePagination } from "@/lib/table-page-size";
+import {
+  createTableFilterParser,
+  tableQueryStateOptions,
+  tableSearchParser,
+} from "@/lib/table-search-params";
 
 const statusLabel = { pending: "در انتظار پرداخت", paid: "پرداخت‌شده", failed: "ناموفق", canceled: "لغوشده", refunded: "بازگشت وجه" } as const;
 const statusOptions = [
   { value: "", label: "همه وضعیت‌ها" },
   ...Object.entries(statusLabel).map(([value, label]) => ({ value, label })),
 ];
+const orderFilterParsers = {
+  search: tableSearchParser,
+  status: createTableFilterParser(Object.keys(statusLabel)),
+};
 
 export default function OrdersPage() {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
-  const { pageSize, setPageSize, isSaving: pageSizeSaving } = useTablePageSize();
+  const [{ search, status }, setFilters] = useQueryStates(orderFilterParsers, {
+    ...tableQueryStateOptions,
+    urlKeys: { search: "q" },
+  });
+  const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } =
+    useUrlTablePagination();
   const orders = useOrders(page, pageSize, search, status);
   type OrderRow = { order: Order; plan: Plan };
   const columns: DataTableColumn<OrderRow>[] = [
@@ -44,17 +55,17 @@ export default function OrdersPage() {
           search={search}
           searchPlaceholder="شماره سفارش"
           activeFilterCount={status ? 1 : 0}
-          onSearch={(value) => { setSearch(value); setPage(1); }}
-          onResetFilters={() => { setStatus(""); setPage(1); }}
+          onSearch={(value) => { void setFilters({ search: value }); setPage(1); }}
+          onResetFilters={() => { void setFilters({ status: "" }); setPage(1); }}
         >
           <TableFilterSelect
             label="وضعیت سفارش"
             value={status}
             options={statusOptions}
-            onChange={(value) => { setStatus(value); setPage(1); }}
+            onChange={(value) => { void setFilters({ status: value as typeof status }); setPage(1); }}
           />
         </TableToolbar>
-        <DataTable columns={columns} rows={orders.data?.items ?? []} getRowKey={({ order }) => order.id} loading={orders.isLoading} error={orders.error} retrying={orders.isFetching} onRetry={() => void orders.refetch()} filtered={Boolean(search || status)} minWidthClassName="min-w-[720px]" footer={<TablePagination page={page} pageSize={pageSize} total={orders.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={(value) => { setPageSize(value); setPage(1); }} />} />
+        <DataTable columns={columns} rows={orders.data?.items ?? []} getRowKey={({ order }) => order.id} loading={orders.isLoading} error={orders.error} retrying={orders.isFetching} onRetry={() => void orders.refetch()} filtered={Boolean(search || status)} minWidthClassName="min-w-[720px]" footer={<TablePagination page={page} pageSize={pageSize} total={orders.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
       </section>
     </div>
   );

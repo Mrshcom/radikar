@@ -10,17 +10,27 @@ import {
   RefreshCw,
   Send,
 } from "lucide-react";
-import { useState } from "react";
+import { useQueryStates } from "nuqs";
 import { useAuth } from "@/app/_components/auth";
 import { DataTable, type DataTableColumn } from "../../_components/data-table";
 import { AdminTablePagination } from "../_components/admin-table-controls";
 import {
+  useAdminAiSettings,
   useAdminModelUsage,
   type AdminModelUsageStats,
 } from "@/lib/admin-stats";
-import { useTablePageSize } from "@/lib/table-page-size";
+import { useUrlTablePagination } from "@/lib/table-page-size";
+import {
+  createTableFilterParser,
+  modelUsageDaysParser,
+  tableQueryStateOptions,
+} from "@/lib/table-search-params";
 
 type RecentModelRequest = AdminModelUsageStats["recentRequests"]["items"][number];
+const modelUsageFilterParsers = {
+  days: modelUsageDaysParser,
+  provider: createTableFilterParser(["freeDeepseekAPI", "gapgpt"] as const),
+};
 
 const operationLabels: Record<string, string> = {
   match_analyze: "تحلیل تطبیق شغلی",
@@ -83,10 +93,14 @@ function downloadCsv(data: AdminModelUsageStats) {
 
 export default function AdminModelUsagePage() {
   const { user } = useAuth();
-  const [days, setDays] = useState(30);
-  const [page, setPage] = useState(1);
-  const { pageSize, setPageSize, isSaving: pageSizeSaving } = useTablePageSize();
-  const query = useAdminModelUsage(user?.role === "superadmin", days, page, pageSize);
+  const [{ days, provider }, setFilters] = useQueryStates(
+    modelUsageFilterParsers,
+    tableQueryStateOptions,
+  );
+  const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } =
+    useUrlTablePagination();
+  const query = useAdminModelUsage(user?.role === "superadmin", days, page, pageSize, provider);
+  const aiSettings = useAdminAiSettings(user?.role === "superadmin");
 
   if (user?.role !== "superadmin") return null;
 
@@ -100,7 +114,7 @@ export default function AdminModelUsagePage() {
     { label: "توکن ورودی", value: number(totals?.inputTokens), icon: Download },
     { label: "توکن خروجی", value: number(totals?.outputTokens), icon: Bot },
     { label: "مجموع توکن", value: number(totals?.totalTokens), icon: Gauge },
-    { label: "هزینه برآوردی", value: usd(totals?.estimatedCostMicros), icon: CircleDollarSign, ltr: true },
+    { label: "هزینه برآوردی", value: usd(totals?.estimatedCostMicros), icon: CircleDollarSign, ltr: true, tooltip: aiSettings.data?.current.dollarRateRials ? `${((totals?.estimatedCostMicros ?? 0) / 1_000_000 * aiSettings.data.current.dollarRateRials).toLocaleString("fa-IR", { maximumFractionDigits: 3 })} تومان` : "نرخ دلار تنظیم نشده است" },
     { label: "نرخ موفقیت", value: percent(successRate), icon: Activity },
     { label: "میانگین زمان پاسخ", value: `${number(totals?.averageDurationMs)} ms`, icon: Clock3, ltr: true },
   ];
@@ -117,7 +131,7 @@ export default function AdminModelUsagePage() {
       ),
     },
     { key: "operation", title: "عملیات", render: (row) => operationLabels[row.operation] ?? row.operation },
-    { key: "model", title: "مدل", render: (row) => <span dir="ltr" title={`${row.provider} / ${row.model}`}>{row.model}</span> },
+    { key: "model", title: "مدل / Provider", render: (row) => <span className="inline-flex flex-col gap-0.5" dir="ltr" title={`${row.provider} / ${row.model}`}><strong>{row.model}</strong><small className="text-[8px] font-normal text-[#8b9895]">{row.provider}</small></span> },
     { key: "tokens", title: "توکن", className: "whitespace-nowrap", render: (row) => `${number(row.totalTokens)} توکن` },
     { key: "cost", title: "هزینه", className: "font-bold text-[#0f7b62]", render: (row) => <span dir="ltr">{usd(row.estimatedCostMicros)}</span> },
     {
@@ -144,24 +158,31 @@ export default function AdminModelUsagePage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {[7, 30, 90].map((value) => (
+          <label className="grid gap-1 text-[9px] font-bold text-[#7c8b88]">
+            بازه گزارش
+            <select aria-label="بازه گزارش" className="h-10 min-w-28 rounded-[10px] border border-[#dfe7e2] bg-white px-3 text-[10px] font-bold text-[#536762] outline-none focus:border-[#0f7b62]" value={days} onChange={(event) => { void setFilters({ days: Number(event.target.value) as typeof days }); setPage(1); }}>
+              {[7, 30, 90].map((value) => <option key={value} value={value}>{number(value)} روز</option>)}
+            </select>
+          </label>
+          <label className="grid gap-1 text-[9px] font-bold text-[#7c8b88]">
+            Provider
+            <select aria-label="Provider" className="h-10 min-w-40 rounded-[10px] border border-[#dfe7e2] bg-white px-3 text-[10px] font-bold text-[#536762] outline-none focus:border-[#0f7b62]" value={provider} onChange={(event) => { void setFilters({ provider: event.target.value as typeof provider }); setPage(1); }}>
+              <option value="">همه Providerها</option>
+              <option value="freeDeepseekAPI">DeepSeek Local</option>
+              <option value="gapgpt">GapGPT</option>
+            </select>
+          </label>
+          <label className="grid gap-1 text-[9px] font-bold text-[#7c8b88]">
+            خروجی
             <button
-              className={`h-9 rounded-[9px] border px-3 text-[10px] font-bold ${days === value ? "border-[#0f7b62] bg-[#0f7b62] text-white" : "border-[#dfe7e2] bg-white text-[#536762]"}`}
-              key={value}
-              onClick={() => { setDays(value); setPage(1); }}
+              className="flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#dfe7e2] bg-white px-4 text-[10px] font-bold text-[#536762] disabled:opacity-50"
+              disabled={!query.data}
+              onClick={() => query.data && downloadCsv(query.data)}
               type="button"
             >
-              {number(value)} روز
+              <Download size={14} /> فایل CSV
             </button>
-          ))}
-          <button
-            className="flex h-9 items-center gap-2 rounded-[9px] border border-[#dfe7e2] bg-white px-3 text-[10px] font-bold text-[#536762] disabled:opacity-50"
-            disabled={!query.data}
-            onClick={() => query.data && downloadCsv(query.data)}
-            type="button"
-          >
-            <Download size={14} /> خروجی CSV
-          </button>
+          </label>
         </div>
       </header>
 
@@ -175,13 +196,17 @@ export default function AdminModelUsagePage() {
       ) : (
         <>
           <section className="grid grid-cols-4 gap-4 max-[1180px]:grid-cols-3 max-[900px]:grid-cols-2 max-[520px]:grid-cols-1">
-            {cards.map(({ label, value, icon: Icon, ltr }) => (
-              <article className="flex items-center gap-3 rounded-[15px] border border-[#e3e9e3] bg-white p-4 shadow-[0_8px_24px_rgba(30,61,53,.05)]" key={label}>
+            {cards.map(({ label, value, icon: Icon, ltr, tooltip }) => (
+              <article className="group relative flex items-center gap-3 rounded-[15px] border border-[#e3e9e3] bg-white p-4 shadow-[0_8px_24px_rgba(30,61,53,.05)]" key={label}>
                 <span className="grid size-10 shrink-0 place-items-center rounded-[11px] bg-[#eaf5f0] text-[#0f7b62]"><Icon size={18} /></span>
                 <div className="min-w-0">
                   <small className="block text-[9px] font-semibold text-[#81908d]">{label}</small>
                   <strong className="mt-1 block truncate text-[18px] font-black text-[#19312f]" dir={ltr ? "ltr" : undefined}>{query.isLoading ? "…" : value}</strong>
                 </div>
+                {tooltip ? <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 w-max max-w-none -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-xl border border-[#28594d] bg-[#19312f] px-3 py-2 text-center text-[10px] leading-5 text-white opacity-0 shadow-[0_10px_30px_rgba(25,49,47,.2)] transition-opacity group-hover:opacity-100">
+                  <span className="font-bold text-[#b9ead6]">معادل تومان:</span>{" "}
+                  {tooltip}
+                </div> : null}
               </article>
             ))}
           </section>
@@ -229,7 +254,7 @@ export default function AdminModelUsagePage() {
                   total={query.data?.recentRequests.total ?? 0}
                   pageSizeSaving={pageSizeSaving}
                   onPageChange={setPage}
-                  onPageSizeChange={(value) => { setPageSize(value); setPage(1); }}
+                  onPageSizeChange={setPageSize}
                 />
               )}
             />

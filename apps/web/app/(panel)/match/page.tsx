@@ -36,11 +36,13 @@ import {
   supportsResumeColors,
 } from "../resumes/resume-data";
 import {
+  applicationStore,
   createRecordId,
   jobStore,
   matchAnalysisStore,
   resumeStore,
 } from "@/lib/data/stores";
+import { createSavedApplicationForJob } from "@/lib/application-board";
 import type {
   JobRecord,
   MatchAnalysisRecord,
@@ -131,7 +133,7 @@ export default function MatchPage() {
     ? runningAnalysisTask.context
     : null;
   const [sourceMode, setSourceMode] = useState<JobSourceMode>(
-    () => runningAnalysisContext?.sourceMode || "text",
+    () => runningAnalysisContext?.sourceMode || "url",
   );
   const [description, setDescription] = useState(
     () =>
@@ -418,10 +420,20 @@ export default function MatchPage() {
             sourceUrl: selectedSourceUrl || undefined,
             logoUrl: selectedLogoUrl || existingJob?.logoUrl || undefined,
             saved: existingJob?.saved || false,
+            applicationBoardDismissedAt:
+              existingJob?.applicationBoardDismissedAt,
             createdAt: existingJob?.createdAt || now,
             updatedAt: now,
           };
           await jobStore.put(jobRecord);
+          const existingApplication = (await applicationStore.list()).find(
+            (application) => application.jobId === jobRecord.id,
+          );
+          if (!existingApplication && !jobRecord.applicationBoardDismissedAt) {
+            await applicationStore.put(
+              createSavedApplicationForJob(jobRecord),
+            );
+          }
           const analysisRecord: MatchAnalysisRecord = {
             id: createRecordId("match"),
             resumeId: selectedResume.id,
@@ -606,16 +618,16 @@ export default function MatchPage() {
           >
             {[
               {
-                mode: "text" as const,
-                icon: FileText,
-                title: "وارد کردن متن آگهی",
-                hint: "متن شرح شغل را کپی کن",
-              },
-              {
                 mode: "url" as const,
                 icon: Link2,
                 title: "افزودن لینک آگهی",
                 hint: "متن مستقیماً از لینک خوانده می‌شود",
+              },
+              {
+                mode: "text" as const,
+                icon: FileText,
+                title: "وارد کردن متن آگهی",
+                hint: "متن شرح شغل را کپی کن",
               },
             ].map((source) => {
               const Icon = source.icon;
@@ -922,32 +934,40 @@ export default function MatchPage() {
                   </div>
                 ))}
               </div>
-              <div className="border-t border-[#edf0ec] pt-4">
-                <h3 className="mb-2 text-[11px]">آنچه به‌خوبی پوشش داده‌ای</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {analysis.strengths.map((item) => (
-                    <p
-                      className="m-0 flex items-start gap-2 rounded-lg bg-[#edf7f2] py-1.5 text-[10px] text-[#0f7b62]"
-                      key={item}
-                    >
-                      <Check size={14} /> {item}
-                    </p>
-                  ))}
+              {analysis.strengths.some((item) => item.trim()) && (
+                <div className="border-t border-[#edf0ec] pt-4">
+                  <h3 className="mb-2 text-[11px]">آنچه به‌خوبی پوشش داده‌ای</h3>
+                  <div className="grid gap-1.5">
+                    {analysis.strengths
+                      .filter((item) => item.trim())
+                      .map((item) => (
+                        <p
+                          className="m-0 flex items-start gap-2 rounded-lg bg-[#edf7f2] p-2.5 text-[10px] text-[#0f7b62]"
+                          key={item}
+                        >
+                          <Check className="shrink-0" size={14} /> {item}
+                        </p>
+                      ))}
+                  </div>
                 </div>
-              </div>
-              <div className="mt-4 border-t border-[#edf0ec] pt-4">
-                <h3 className="mb-2 text-[11px]">فرصت‌های بهبود</h3>
-                <div className="grid gap-1.5">
-                  {analysis.gaps.map((item) => (
-                    <p
-                      className="m-0 flex items-start gap-2 rounded-lg bg-[#fff7e8] p-2.5 text-[10px] leading-[1.8] text-[#8a6428]"
-                      key={item}
-                    >
-                      <Sparkles className="shrink-0" size={16} /> {item}
-                    </p>
-                  ))}
+              )}
+              {analysis.gaps.some((item) => item.trim()) && (
+                <div className="mt-4 border-t border-[#edf0ec] pt-4">
+                  <h3 className="mb-2 text-[11px]">فرصت‌های بهبود</h3>
+                  <div className="grid gap-1.5">
+                    {analysis.gaps
+                      .filter((item) => item.trim())
+                      .map((item) => (
+                        <p
+                          className="m-0 flex items-start gap-2 rounded-lg bg-[#fff7e8] p-2.5 text-[10px] text-[#8a6428]"
+                          key={item}
+                        >
+                          <Sparkles className="shrink-0" size={14} /> {item}
+                        </p>
+                      ))}
+                  </div>
                 </div>
-              </div>
+              )}
               {tailoring && (
                 <div className="mt-4">
                   <GenerationShimmer label="در حال بازنویسی رزومه براساس همین آگهی" />
@@ -978,53 +998,20 @@ export default function MatchPage() {
             </>
           ) : analysisBusy ? (
             <div className="grid gap-4">
-              {runningAnalysisTask && runningAnalysisContext && (
-                <div className="rounded-[13px] border border-[#cfe4dc] bg-[#f3f9f6] p-3.5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <strong className="block text-[10px] text-[#175f50]">
-                        ورودی‌های در حال تحلیل
-                      </strong>
-                      <span className="mt-1 block truncate text-[9px] text-[#607a73]">
-                        رزومه: {runningAnalysisContext.resumeLabel}
-                      </span>
-                      <small className="mt-0.5 block truncate text-[8px] text-[#879994]">
-                        {runningAnalysisContext.resumeMeta}
-                      </small>
-                    </div>
-                    <button
-                      type="button"
-                      className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[#e6b9b2] bg-white px-2.5 text-[8px] font-bold text-[#a5483e] hover:bg-[#fff3f1]"
-                      onClick={() => {
-                        cancelTask(runningAnalysisTask.id);
-                        setAnalyzing(false);
-                        notify("تحلیل لغو شد.");
-                      }}
-                    >
-                      <X size={14} /> لغو تحلیل
-                    </button>
-                  </div>
-                  {runningAnalysisContext.sourceUrl && (
-                    <p
-                      className="mb-0 mt-2 truncate text-left text-[8px] text-[#6f8580]"
-                      dir="ltr"
-                    >
-                      {runningAnalysisContext.sourceUrl}
-                    </p>
-                  )}
-                  <details className="mt-2 rounded-lg border border-[#deebe6] bg-white px-2.5 py-2 text-[8px] text-[#60736f]">
-                    <summary className="cursor-pointer font-bold text-[#337060]">
-                      مشاهده متن آگهی در حال تحلیل
-                    </summary>
-                    <p
-                      className="mb-0 mt-2 max-h-36 overflow-auto whitespace-pre-wrap leading-6"
-                      dir={getJobTextDirection(
-                        runningAnalysisContext.jobDescription,
-                      )}
-                    >
-                      {runningAnalysisContext.jobDescription}
-                    </p>
-                  </details>
+              {runningAnalysisTask && (
+                <div className="flex items-center justify-between gap-3 rounded-[13px] border border-[#cfe4dc] bg-[#f3f9f6] px-3.5 py-3">
+                  <strong className="text-[10px] text-[#175f50]">در حال تحلیل</strong>
+                  <button
+                    type="button"
+                    className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[#e6b9b2] bg-white px-2.5 text-[8px] font-bold text-[#a5483e] hover:bg-[#fff3f1]"
+                    onClick={() => {
+                      cancelTask(runningAnalysisTask.id);
+                      setAnalyzing(false);
+                      notify("تحلیل لغو شد.");
+                    }}
+                  >
+                    <X size={14} /> لغو تحلیل
+                  </button>
                 </div>
               )}
               <MatchAnalysisSkeleton

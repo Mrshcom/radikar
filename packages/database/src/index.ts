@@ -1,5 +1,6 @@
 export { createDatabase, type Database } from "./client";
 export {
+  aiSettings,
   authSessions,
   dataRecords,
   membershipEvents,

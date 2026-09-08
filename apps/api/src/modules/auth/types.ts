@@ -22,7 +22,8 @@ export type Permission =
   | "reports:read:any"
   | "orders:read:any"
   | "payments:read:any"
-  | "memberships:manage:any";
+  | "memberships:manage:any"
+  | "ai-settings:manage:any";
 
 const rolePermissions: Record<UserRole, ReadonlySet<Permission>> = {
   user: new Set(["own:data:read", "own:data:write"]),
@@ -37,6 +38,7 @@ const rolePermissions: Record<UserRole, ReadonlySet<Permission>> = {
     "orders:read:any",
     "payments:read:any",
     "memberships:manage:any",
+    "ai-settings:manage:any",
   ]),
 };
 

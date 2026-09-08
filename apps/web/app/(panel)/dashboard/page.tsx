@@ -39,6 +39,7 @@ import type {
 import { hasResumeContent } from "../resumes/resume-data";
 import { formatPersianNumber } from "@/lib/fa-number";
 import { apiRequest } from "@/lib/api-client";
+import { prioritizeSavedJobs } from "@/lib/job-order";
 
 type DashboardState = {
   snapshot: DashboardSnapshotRecord;
@@ -626,9 +627,11 @@ export default function DashboardPage() {
         </div>
         {data.jobs.length ? (
           <div className="mt-4 grid grid-cols-1 gap-[11px] min-[700px]:grid-cols-2 min-[1121px]:grid-cols-3 mt-3">
-            {data.jobs.slice(0, 4).map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
+            {prioritizeSavedJobs(data.jobs)
+              .slice(0, 4)
+              .map((job) => (
+                <JobCard key={job.id} job={job} />
+              ))}
           </div>
         ) : (
           <div className="grid min-h-[118px] place-items-center rounded-xl border border-dashed border-[#d9e2dd] bg-[#fbfcfa] p-6 text-center text-[9px] text-[#86938f] mt-3">
