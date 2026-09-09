@@ -24,6 +24,7 @@ type BuildAppOptions = {
   sessionCookieName: string;
   secureCookies: boolean;
   sessionTtlDays: number;
+  maxUploadSizeBytes?: number;
   billingService?: BillingService;
   database?: Database;
 };
@@ -37,13 +38,14 @@ export function buildApp({
   sessionCookieName,
   secureCookies,
   sessionTtlDays,
+  maxUploadSizeBytes = 8 * 1024 * 1024,
   billingService,
   database,
 }: BuildAppOptions) {
   const app = Fastify({
     logger,
     trustProxy: true,
-    bodyLimit: 5 * 1024 * 1024,
+    bodyLimit: maxUploadSizeBytes + 512 * 1024,
     requestIdHeader: "x-request-id",
     genReqId: () => randomUUID(),
   });
@@ -70,7 +72,7 @@ export function buildApp({
     }
   });
   app.register(multipart, {
-    limits: { files: 1, fileSize: 4 * 1024 * 1024 },
+    limits: { files: 1, fileSize: maxUploadSizeBytes },
   });
 
   registerHealthRoutes(app, readinessCheck);
@@ -95,7 +97,7 @@ export function buildApp({
   registerDataRoutes(app, repository, billingService);
   if (billingService) registerBillingRoutes(app, billingService);
   registerAiRoutes(app, billingService, database);
-  registerImportRoutes(app, billingService);
+  registerImportRoutes(app, billingService, maxUploadSizeBytes);
 
   app.setNotFoundHandler((request, reply) =>
     reply.code(404).send({

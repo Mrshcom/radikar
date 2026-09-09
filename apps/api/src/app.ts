@@ -46,6 +46,7 @@ const app = buildApp({
   sessionCookieName: config.NODE_ENV === "production" ? "__Host-radicar_session" : "radicar_session",
   secureCookies: config.NODE_ENV === "production",
   sessionTtlDays: config.SESSION_TTL_DAYS,
+  maxUploadSizeBytes: config.MAX_UPLOAD_SIZE_MB * 1024 * 1024,
 });
 
 async function shutdown(signal: string) {
