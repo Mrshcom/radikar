@@ -27,7 +27,7 @@
   "25": "web/package.json",
   "26": "table-page-size.ts",
   "27": "react-dom",
-  "28": "@hookform/resolvers",
+  "28": "KnowledgeBasePage",
   "29": "compilerOptions",
   "30": "رادیکار — Resume Maker",
   "31": "database/package.json",
@@ -72,11 +72,14 @@
   "70": "postcss.config.mjs",
   "71": "config/src/index.ts",
   "72": "drizzle.config.ts",
-  "73": "src/app.ts",
+  "73": "vercel.json",
   "74": "model-task-provider.tsx",
   "75": "استقرار Production رادیکار",
   "76": "parseResumeSkills",
   "77": "backup-postgres.sh",
   "78": "(marketing)/layout.tsx",
-  "79": "resume-import.test.mjs"
+  "79": "resume-import.test.mjs",
+  "80": "normalizeImportedText",
+  "81": "match-analysis.ts",
+  "82": "@fontsource/poppins"
 }

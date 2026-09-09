@@ -5,12 +5,12 @@
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1462 nodes · 3220 edges · 80 communities (69 shown, 11 thin omitted)
+- 1462 nodes · 3220 edges · 83 communities (72 shown, 11 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 32 edges (avg confidence: 0.57)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6babbe54`
+- Built from commit: `dffc431f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -42,7 +42,7 @@
 - web/package.json
 - table-page-size.ts
 - react-dom
-- @hookform/resolvers
+- KnowledgeBasePage
 - compilerOptions
 - رادیکار — Resume Maker
 - database/package.json
@@ -83,12 +83,15 @@
 - field-direction.ts
 - postcss.config.mjs
 - config/src/index.ts
-- src/app.ts
+- vercel.json
 - model-task-provider.tsx
 - استقرار Production رادیکار
 - parseResumeSkills
 - backup-postgres.sh
 - resume-import.test.mjs
+- normalizeImportedText
+- match-analysis.ts
+- @fontsource/poppins
 
 ## God Nodes (most connected - your core abstractions)
 1. `cn()` - 81 edges
@@ -117,7 +120,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (80 total, 11 thin omitted)
+## Communities (83 total, 11 thin omitted)
 
 ### Community 0 - "resume-document.tsx"
 Cohesion: 0.09
@@ -141,19 +144,19 @@ Nodes (36): devDependencies, turbo, engines, node, packages/*, turbo, name, pack
 
 ### Community 5 - "dependencies"
 Cohesion: 0.12
-Nodes (17): dependencies, @fontsource/poppins, lucide-react, next, nuqs, @radicar/validators, react-hook-form, @tanstack/react-query (+9 more)
+Nodes (17): dependencies, @hookform/resolvers, lucide-react, next, nuqs, @radicar/validators, react-hook-form, @tanstack/react-query (+9 more)
 
 ### Community 6 - "match/page.tsx"
 Cohesion: 0.11
 Nodes (33): getJobTextDirection(), ImportJobResponse, isMatchAnalysisTaskContext(), JobSourceMode, MatchAnalysisTaskContext, MatchPage(), ResumeOption, scoreWidth() (+25 more)
 
 ### Community 7 - "knowledge-base/page.tsx"
-Cohesion: 0.10
-Nodes (41): blankExperience(), blankLanguage(), blankProject(), blankQualification(), emptyKnowledge, experienceFromResume(), Field(), FieldProps (+33 more)
+Cohesion: 0.09
+Nodes (23): emptyKnowledge, Field(), FieldProps, ImportResult, isExperienceEmpty(), isProjectEmpty(), KnowledgeCardsSkeleton(), KnowledgeForm (+15 more)
 
 ### Community 8 - "BillingService"
-Cohesion: 0.14
-Nodes (5): addDays(), addLimit(), BillingService, orderNumber(), ModelUsageEvent
+Cohesion: 0.17
+Nodes (4): addDays(), addLimit(), BillingService, orderNumber()
 
 ### Community 9 - "app.ts"
 Cohesion: 0.20
@@ -184,7 +187,7 @@ Cohesion: 0.48
 Nodes (5): ClassifiableJob, inferJobCategories(), JobCategory, matchesJobCategory(), normalized()
 
 ### Community 16 - "AuthService"
-Cohesion: 0.15
+Cohesion: 0.16
 Nodes (7): AuthService, normalizePhone(), toAuthUser(), tokenHash(), AuthUser, UserRole, UserStatus
 
 ### Community 17 - "admin/orders/page.tsx"
@@ -223,6 +226,10 @@ Nodes (4): name, private, type, version
 Cohesion: 0.24
 Nodes (9): PaginationItem, paginationItems(), TablePagination(), AuthResponse, positivePageParser, TablePageSize, tablePageSizes, tablePaginationParsers (+1 more)
 
+### Community 28 - "KnowledgeBasePage"
+Cohesion: 0.26
+Nodes (20): blankExperience(), blankLanguage(), blankProject(), blankQualification(), experienceFromResume(), KnowledgeBasePage(), mergeImportedKnowledge(), normalizeExperience() (+12 more)
+
 ### Community 29 - "compilerOptions"
 Cohesion: 0.17
 Nodes (11): compilerOptions, module, moduleResolution, noEmit, types, extends, include, node (+3 more)
@@ -256,7 +263,7 @@ Cohesion: 0.11
 Nodes (17): dependencies, @radicar/shared-types, zod, devDependencies, typescript, exports, @radicar/shared-types, typescript (+9 more)
 
 ### Community 37 - "billing/service.ts"
-Cohesion: 0.13
+Cohesion: 0.12
 Nodes (25): AuthServiceOptions, RequestOtpResult, VerifyOtpResult, BillingServiceOptions, UsageResource, usageResourceLabels, createDatabase(), Database (+17 more)
 
 ### Community 38 - "ZarinpalClient"
@@ -312,16 +319,16 @@ Cohesion: 0.17
 Nodes (11): compilerOptions, module, moduleResolution, noEmit, types, extends, include, node (+3 more)
 
 ### Community 52 - "ai/routes.ts"
-Cohesion: 0.08
-Nodes (57): asObject(), hasResumeContent(), JsonObject, validateJobDescription(), ValidationResult, aiSettingsSchema, Analysis, bodyOf() (+49 more)
+Cohesion: 0.07
+Nodes (58): asObject(), hasResumeContent(), JsonObject, validateJobDescription(), ValidationResult, aiSettingsSchema, Analysis, bodyOf() (+50 more)
 
 ### Community 54 - "memberships/page.tsx"
 Cohesion: 0.12
 Nodes (19): cancelSchema, creditSchema, detailNumber(), detailString(), eventContent(), extendSchema, grantSchema, membershipFilterParsers (+11 more)
 
 ### Community 55 - "validators/src/index.ts"
-Cohesion: 0.10
-Nodes (45): JobLogo(), boundedScore(), defaultBreakdownLabels, MatchAnalysis, normalizeMatchAnalysisInput(), objectOf(), aliasedObjectInput(), baseRecordSchema (+37 more)
+Cohesion: 0.13
+Nodes (23): aliasedObjectInput(), baseRecordSchema, boundedImportedArray(), collectionInput(), collectionWrapperKeys, firstDefined(), importedBooleanSchema, importedExperienceSchema (+15 more)
 
 ### Community 56 - "job-url.ts"
 Cohesion: 0.83
@@ -351,9 +358,9 @@ Nodes (12): ApplicationsSkeleton(), DashboardSkeleton(), FeedbackSkeleton(), Gen
 Cohesion: 0.32
 Nodes (11): ALWAYS_LTR_INPUT_TYPES, applyFieldDirection(), applyWithin(), DirectionalField, getFieldDirection(), IGNORED_INPUT_TYPES, isDirectionalField(), refreshFieldDirections() (+3 more)
 
-### Community 73 - "src/app.ts"
+### Community 73 - "vercel.json"
 Cohesion: 0.25
-Nodes (7): functions, src/app.ts, ../../packages/**, $schema, includeFiles, regions, fra1
+Nodes (7): functions, src/app.ts, ../../packages/**, regions, $schema, includeFiles, fra1
 
 ### Community 74 - "model-task-provider.tsx"
 Cohesion: 0.20
@@ -364,12 +371,20 @@ Cohesion: 0.25
 Nodes (7): DeepSeek محلی, آماده‌سازی, اجرا, استقرار Production رادیکار, انتشار نسخه جدید, پشتیبان‌گیری PostgreSQL, پیش‌نیاز
 
 ### Community 76 - "parseResumeSkills"
-Cohesion: 0.48
-Nodes (5): MultiSkillAutocomplete(), parseSkills(), isStandaloneTechnicalToken(), parseResumeSkills(), serializeResumeSkills()
+Cohesion: 0.80
+Nodes (3): isStandaloneTechnicalToken(), parseResumeSkills(), serializeResumeSkills()
 
 ### Community 79 - "resume-import.test.mjs"
 Cohesion: 0.48
 Nodes (5): calculateKnowledgeCompletion(), isSeededKnowledgeSampleProject(), KnowledgeCompletionData, normalizeImportedResumeData(), normalizeResumeImportPayload()
+
+### Community 80 - "normalizeImportedText"
+Cohesion: 0.32
+Nodes (16): JobLogo(), canonicalDates(), canonicalExperience(), canonicalId(), canonicalLanguage(), canonicalProject(), canonicalQualification(), normalizeDataRecordForStorage() (+8 more)
+
+### Community 81 - "match-analysis.ts"
+Cohesion: 0.43
+Nodes (6): boundedScore(), defaultBreakdownLabels, MatchAnalysis, normalizeMatchAnalysisInput(), objectOf(), normalizeImportedTextArray()
 
 ## Knowledge Gaps
 - **503 isolated node(s):** `name`, `version`, `private`, `type`, `dev` (+498 more)
@@ -379,7 +394,7 @@ Nodes (5): calculateKnowledgeCompletion(), isSeededKnowledgeSampleProject(), Kno
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `resume-document.tsx` to `resume-builder.tsx`, `applications/page.tsx`, `loading-skeletons.tsx`, `panel-shell.tsx`, `match/page.tsx`, `knowledge-base/page.tsx`, `stores.ts`, `parseResumeSkills`, `jalali-date-picker.tsx`, `toast.tsx`, `admin/orders/page.tsx`, `validators/src/index.ts`, `table-page-size.ts`?**
+- **Why does `cn()` connect `resume-document.tsx` to `resume-builder.tsx`, `applications/page.tsx`, `loading-skeletons.tsx`, `panel-shell.tsx`, `match/page.tsx`, `knowledge-base/page.tsx`, `stores.ts`, `jalali-date-picker.tsx`, `toast.tsx`, `normalizeImportedText`, `admin/orders/page.tsx`, `table-page-size.ts`, `KnowledgeBasePage`?**
   _High betweenness centrality (0.036) - this node is a cross-community bridge._
 - **Why does `BillingService` connect `BillingService` to `data-routes.test.ts`, `billing/service.ts`, `ZarinpalClient`, `DataCollection`, `app.ts`, `ai/routes.ts`, `build-app.ts`?**
   _High betweenness centrality (0.034) - this node is a cross-community bridge._

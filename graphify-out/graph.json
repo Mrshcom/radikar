@@ -1538,6 +1538,19 @@
       "norm_label": "chatmessage"
     },
     {
+      "label": "ModelUsageEvent",
+      "file_type": "code",
+      "source_file": "packages/ai/src/client.ts",
+      "source_location": "L46",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "packages_ai_src_client_modelusageevent",
+      "community": 52,
+      "community_name": "ai/routes.ts",
+      "norm_label": "modelusageevent"
+    },
+    {
       "label": "AnalyzeProviderSettings",
       "file_type": "code",
       "source_file": "packages/ai/src/config.ts",
@@ -1640,19 +1653,6 @@
       "community": 54,
       "community_name": "memberships/page.tsx",
       "norm_label": "membership"
-    },
-    {
-      "label": "MatchAnalysis",
-      "file_type": "code",
-      "source_file": "apps/web/lib/match-analysis.ts",
-      "source_location": "L6",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_match_analysis_matchanalysis",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "matchanalysis"
     },
     {
       "label": "ImportJobResponse",
@@ -2097,17 +2097,17 @@
       "norm_label": "billingservice"
     },
     {
-      "label": "ModelUsageEvent",
+      "label": "MatchAnalysis",
       "file_type": "code",
-      "source_file": "packages/ai/src/client.ts",
-      "source_location": "L46",
+      "source_file": "apps/web/lib/match-analysis.ts",
+      "source_location": "L6",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "id": "packages_ai_src_client_modelusageevent",
-      "community": 8,
-      "community_name": "BillingService",
-      "norm_label": "modelusageevent"
+      "id": "apps_web_lib_match_analysis_matchanalysis",
+      "community": 81,
+      "community_name": "match-analysis.ts",
+      "norm_label": "matchanalysis"
     },
     {
       "label": "ApiConfig",
@@ -3707,18 +3707,6 @@
       "norm_label": "normalized()"
     },
     {
-      "label": ".constructor()",
-      "file_type": "code",
-      "source_file": "apps/api/src/modules/auth/service.ts",
-      "source_location": "L81",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_api_src_modules_auth_service_authservice_constructor",
-      "community": 16,
-      "community_name": "AuthService",
-      "norm_label": ".constructor()"
-    },
-    {
       "label": ".getRecentEvents()",
       "file_type": "code",
       "source_file": "apps/api/src/modules/auth/service.ts",
@@ -4595,6 +4583,246 @@
       "norm_label": "tablepagination()"
     },
     {
+      "label": "blankExperience()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L149",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_blankexperience",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "blankexperience()"
+    },
+    {
+      "label": "blankLanguage()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L237",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_blanklanguage",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "blanklanguage()"
+    },
+    {
+      "label": "blankProject()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L170",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_blankproject",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "blankproject()"
+    },
+    {
+      "label": "blankQualification()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L161",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_blankqualification",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "blankqualification()"
+    },
+    {
+      "label": "experienceFromResume()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L328",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_experiencefromresume",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "experiencefromresume()"
+    },
+    {
+      "label": "KnowledgeBasePage()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L586",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_knowledgebasepage",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "knowledgebasepage()"
+    },
+    {
+      "label": "mergeImportedKnowledge()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L487",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_mergeimportedknowledge",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "mergeimportedknowledge()"
+    },
+    {
+      "label": "normalizeExperience()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L344",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizeexperience",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "normalizeexperience()"
+    },
+    {
+      "label": "normalizeKnowledgeForm()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L445",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizeknowledgeform",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "normalizeknowledgeform()"
+    },
+    {
+      "label": "normalizeLanguage()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L294",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizelanguage",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "normalizelanguage()"
+    },
+    {
+      "label": "normalizeProficiency()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L258",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizeproficiency",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "normalizeproficiency()"
+    },
+    {
+      "label": "normalizeProject()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L380",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizeproject",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "normalizeproject()"
+    },
+    {
+      "label": "normalizeQualification()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L418",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizequalification",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "normalizequalification()"
+    },
+    {
+      "label": "normalizeResumeData()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L435",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizeresumedata",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "normalizeresumedata()"
+    },
+    {
+      "label": "normalizeWorkMode()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L477",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizeworkmode",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "normalizeworkmode()"
+    },
+    {
+      "label": "parseLanguageItems()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L275",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_parselanguageitems",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "parselanguageitems()"
+    },
+    {
+      "label": "qualificationFromResume()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L406",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_qualificationfromresume",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "qualificationfromresume()"
+    },
+    {
+      "label": "sampleKnowledgeProjects()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L182",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_sampleknowledgeprojects",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "sampleknowledgeprojects()"
+    },
+    {
+      "label": "splitExperienceDate()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L315",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_splitexperiencedate",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "splitexperiencedate()"
+    },
+    {
+      "label": "createRecordId()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/data/stores.ts",
+      "source_location": "L196",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_data_stores_createrecordid",
+      "community": 28,
+      "community_name": "KnowledgeBasePage",
+      "norm_label": "createrecordid()"
+    },
+    {
       "label": "ApplicationsPage()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/applications/page.tsx",
@@ -4749,6 +4977,30 @@
       "community": 3,
       "community_name": "applications/page.tsx",
       "norm_label": "job()"
+    },
+    {
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "apps/api/src/modules/auth/service.ts",
+      "source_location": "L81",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_api_src_modules_auth_service_authservice_constructor",
+      "community": 37,
+      "community_name": "billing/service.ts",
+      "norm_label": ".constructor()"
+    },
+    {
+      "label": ".constructor()",
+      "file_type": "code",
+      "source_file": "apps/api/src/modules/billing/service.ts",
+      "source_location": "L60",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_api_src_modules_billing_service_billingservice_constructor",
+      "community": 37,
+      "community_name": "billing/service.ts",
+      "norm_label": ".constructor()"
     },
     {
       "label": ".listMembershipUsers()",
@@ -6191,6 +6443,18 @@
       "norm_label": "textof()"
     },
     {
+      "label": ".recordModelUsage()",
+      "file_type": "code",
+      "source_file": "apps/api/src/modules/billing/service.ts",
+      "source_location": "L620",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_api_src_modules_billing_service_billingservice_recordmodelusage",
+      "community": 52,
+      "community_name": "ai/routes.ts",
+      "norm_label": ".recordmodelusage()"
+    },
+    {
       "label": "chatJson()",
       "file_type": "code",
       "source_file": "packages/ai/src/client.ts",
@@ -6527,54 +6791,6 @@
       "norm_label": "usagecard()"
     },
     {
-      "label": "JobLogo()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
-      "source_location": "L54",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_job_card_joblogo",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "joblogo()"
-    },
-    {
-      "label": "boundedScore()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/match-analysis.ts",
-      "source_location": "L28",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_match_analysis_boundedscore",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "boundedscore()"
-    },
-    {
-      "label": "normalizeMatchAnalysisInput()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/match-analysis.ts",
-      "source_location": "L35",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_match_analysis_normalizematchanalysisinput",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "normalizematchanalysisinput()"
-    },
-    {
-      "label": "objectOf()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/match-analysis.ts",
-      "source_location": "L22",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_match_analysis_objectof",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "objectof()"
-    },
-    {
       "label": "aliasedObjectInput()",
       "file_type": "code",
       "source_file": "packages/validators/src/index.ts",
@@ -6599,78 +6815,6 @@
       "norm_label": "boundedimportedarray()"
     },
     {
-      "label": "canonicalDates()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L551",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_canonicaldates",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "canonicaldates()"
-    },
-    {
-      "label": "canonicalExperience()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L568",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_canonicalexperience",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "canonicalexperience()"
-    },
-    {
-      "label": "canonicalId()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L547",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_canonicalid",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "canonicalid()"
-    },
-    {
-      "label": "canonicalLanguage()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L609",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_canonicallanguage",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "canonicallanguage()"
-    },
-    {
-      "label": "canonicalProject()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L596",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_canonicalproject",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "canonicalproject()"
-    },
-    {
-      "label": "canonicalQualification()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L581",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_canonicalqualification",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "canonicalqualification()"
-    },
-    {
       "label": "collectionInput()",
       "file_type": "code",
       "source_file": "packages/validators/src/index.ts",
@@ -6693,66 +6837,6 @@
       "community": 55,
       "community_name": "validators/src/index.ts",
       "norm_label": "firstdefined()"
-    },
-    {
-      "label": "normalizeDataRecordForStorage()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L647",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_normalizedatarecordforstorage",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "normalizedatarecordforstorage()"
-    },
-    {
-      "label": "normalizeImportedBoolean()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L149",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_normalizeimportedboolean",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "normalizeimportedboolean()"
-    },
-    {
-      "label": "normalizeImportedText()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L56",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_normalizeimportedtext",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "normalizeimportedtext()"
-    },
-    {
-      "label": "normalizeImportedTextArray()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L223",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_normalizeimportedtextarray",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "normalizeimportedtextarray()"
-    },
-    {
-      "label": "normalizeStoredResumeData()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L617",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_normalizestoredresumedata",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "normalizestoredresumedata()"
     },
     {
       "label": "objectInput()",
@@ -6815,18 +6899,6 @@
       "norm_label": "sanitizeimportedemail()"
     },
     {
-      "label": "sanitizeImportedImageSource()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L104",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_sanitizeimportedimagesource",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "sanitizeimportedimagesource()"
-    },
-    {
       "label": "sanitizeImportedPhone()",
       "file_type": "code",
       "source_file": "packages/validators/src/index.ts",
@@ -6837,42 +6909,6 @@
       "community": 55,
       "community_name": "validators/src/index.ts",
       "norm_label": "sanitizeimportedphone()"
-    },
-    {
-      "label": "sanitizeImportedScalar()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L47",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_sanitizeimportedscalar",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "sanitizeimportedscalar()"
-    },
-    {
-      "label": "sanitizeImportedUrl()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L78",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_sanitizeimportedurl",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "sanitizeimportedurl()"
-    },
-    {
-      "label": "sanitizeRemoteImageSource()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L118",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_sanitizeremoteimagesource",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "sanitizeremoteimagesource()"
     },
     {
       "label": "getLinkedInJobId()",
@@ -7871,66 +7907,6 @@
       "norm_label": "usefielddirectionmanager()"
     },
     {
-      "label": "blankExperience()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L149",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_blankexperience",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "blankexperience()"
-    },
-    {
-      "label": "blankLanguage()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L237",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_blanklanguage",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "blanklanguage()"
-    },
-    {
-      "label": "blankProject()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L170",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_blankproject",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "blankproject()"
-    },
-    {
-      "label": "blankQualification()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L161",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_blankqualification",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "blankqualification()"
-    },
-    {
-      "label": "experienceFromResume()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L328",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_experiencefromresume",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "experiencefromresume()"
-    },
-    {
       "label": "Field()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
@@ -7965,18 +7941,6 @@
       "community": 7,
       "community_name": "knowledge-base/page.tsx",
       "norm_label": "isprojectempty()"
-    },
-    {
-      "label": "KnowledgeBasePage()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L586",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_knowledgebasepage",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "knowledgebasepage()"
     },
     {
       "label": "KnowledgeCardsSkeleton()",
@@ -8039,124 +8003,28 @@
       "norm_label": "languagessummary()"
     },
     {
-      "label": "mergeImportedKnowledge()",
+      "label": "MultiSkillAutocomplete()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L487",
+      "source_location": "L2386",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_mergeimportedknowledge",
+      "id": "apps_web_app_panel_knowledge_base_page_multiskillautocomplete",
       "community": 7,
       "community_name": "knowledge-base/page.tsx",
-      "norm_label": "mergeimportedknowledge()"
+      "norm_label": "multiskillautocomplete()"
     },
     {
-      "label": "normalizeExperience()",
+      "label": "parseSkills()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L344",
+      "source_location": "L2382",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizeexperience",
+      "id": "apps_web_app_panel_knowledge_base_page_parseskills",
       "community": 7,
       "community_name": "knowledge-base/page.tsx",
-      "norm_label": "normalizeexperience()"
-    },
-    {
-      "label": "normalizeKnowledgeForm()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L445",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizeknowledgeform",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "normalizeknowledgeform()"
-    },
-    {
-      "label": "normalizeLanguage()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L294",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizelanguage",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "normalizelanguage()"
-    },
-    {
-      "label": "normalizeProficiency()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L258",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizeproficiency",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "normalizeproficiency()"
-    },
-    {
-      "label": "normalizeProject()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L380",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizeproject",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "normalizeproject()"
-    },
-    {
-      "label": "normalizeQualification()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L418",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizequalification",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "normalizequalification()"
-    },
-    {
-      "label": "normalizeResumeData()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L435",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizeresumedata",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "normalizeresumedata()"
-    },
-    {
-      "label": "normalizeWorkMode()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L477",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizeworkmode",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "normalizeworkmode()"
-    },
-    {
-      "label": "parseLanguageItems()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L275",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_parselanguageitems",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "parselanguageitems()"
+      "norm_label": "parseskills()"
     },
     {
       "label": "proficiencyLabel()",
@@ -8169,18 +8037,6 @@
       "community": 7,
       "community_name": "knowledge-base/page.tsx",
       "norm_label": "proficiencylabel()"
-    },
-    {
-      "label": "qualificationFromResume()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L406",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_qualificationfromresume",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "qualificationfromresume()"
     },
     {
       "label": "qualificationSummary()",
@@ -8207,18 +8063,6 @@
       "norm_label": "resumedatafromknowledge()"
     },
     {
-      "label": "sampleKnowledgeProjects()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L182",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_sampleknowledgeprojects",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "sampleknowledgeprojects()"
-    },
-    {
       "label": "SelectField()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
@@ -8229,30 +8073,6 @@
       "community": 7,
       "community_name": "knowledge-base/page.tsx",
       "norm_label": "selectfield()"
-    },
-    {
-      "label": "splitExperienceDate()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L315",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_splitexperiencedate",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "splitexperiencedate()"
-    },
-    {
-      "label": "createRecordId()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/data/stores.ts",
-      "source_location": "L196",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_data_stores_createrecordid",
-      "community": 7,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "createrecordid()"
     },
     {
       "label": "createTaskId()",
@@ -8313,30 +8133,6 @@
       "community": 74,
       "community_name": "model-task-provider.tsx",
       "norm_label": "modeltaskstateprovider()"
-    },
-    {
-      "label": "MultiSkillAutocomplete()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L2386",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_multiskillautocomplete",
-      "community": 76,
-      "community_name": "parseResumeSkills",
-      "norm_label": "multiskillautocomplete()"
-    },
-    {
-      "label": "parseSkills()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L2382",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_parseskills",
-      "community": 76,
-      "community_name": "parseResumeSkills",
-      "norm_label": "parseskills()"
     },
     {
       "label": "isStandaloneTechnicalToken()",
@@ -8507,18 +8303,6 @@
       "norm_label": ".admingrantplan()"
     },
     {
-      "label": ".constructor()",
-      "file_type": "code",
-      "source_file": "apps/api/src/modules/billing/service.ts",
-      "source_location": "L60",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_api_src_modules_billing_service_billingservice_constructor",
-      "community": 8,
-      "community_name": "BillingService",
-      "norm_label": ".constructor()"
-    },
-    {
       "label": ".consumeUsage()",
       "file_type": "code",
       "source_file": "apps/api/src/modules/billing/service.ts",
@@ -8663,18 +8447,6 @@
       "norm_label": ".listuserorders()"
     },
     {
-      "label": ".recordModelUsage()",
-      "file_type": "code",
-      "source_file": "apps/api/src/modules/billing/service.ts",
-      "source_location": "L620",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_api_src_modules_billing_service_billingservice_recordmodelusage",
-      "community": 8,
-      "community_name": "BillingService",
-      "norm_label": ".recordmodelusage()"
-    },
-    {
       "label": ".refundUsage()",
       "file_type": "code",
       "source_file": "apps/api/src/modules/billing/service.ts",
@@ -8697,6 +8469,234 @@
       "community": 8,
       "community_name": "BillingService",
       "norm_label": "ordernumber()"
+    },
+    {
+      "label": "JobLogo()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
+      "source_location": "L54",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_job_card_joblogo",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "joblogo()"
+    },
+    {
+      "label": "canonicalDates()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L551",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_canonicaldates",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "canonicaldates()"
+    },
+    {
+      "label": "canonicalExperience()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L568",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_canonicalexperience",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "canonicalexperience()"
+    },
+    {
+      "label": "canonicalId()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L547",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_canonicalid",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "canonicalid()"
+    },
+    {
+      "label": "canonicalLanguage()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L609",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_canonicallanguage",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "canonicallanguage()"
+    },
+    {
+      "label": "canonicalProject()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L596",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_canonicalproject",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "canonicalproject()"
+    },
+    {
+      "label": "canonicalQualification()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L581",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_canonicalqualification",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "canonicalqualification()"
+    },
+    {
+      "label": "normalizeDataRecordForStorage()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L647",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_normalizedatarecordforstorage",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "normalizedatarecordforstorage()"
+    },
+    {
+      "label": "normalizeImportedBoolean()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L149",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_normalizeimportedboolean",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "normalizeimportedboolean()"
+    },
+    {
+      "label": "normalizeImportedText()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L56",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_normalizeimportedtext",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "normalizeimportedtext()"
+    },
+    {
+      "label": "normalizeStoredResumeData()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L617",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_normalizestoredresumedata",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "normalizestoredresumedata()"
+    },
+    {
+      "label": "sanitizeImportedImageSource()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L104",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_sanitizeimportedimagesource",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "sanitizeimportedimagesource()"
+    },
+    {
+      "label": "sanitizeImportedScalar()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L47",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_sanitizeimportedscalar",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "sanitizeimportedscalar()"
+    },
+    {
+      "label": "sanitizeImportedUrl()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L78",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_sanitizeimportedurl",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "sanitizeimportedurl()"
+    },
+    {
+      "label": "sanitizeRemoteImageSource()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L118",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_sanitizeremoteimagesource",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "sanitizeremoteimagesource()"
+    },
+    {
+      "label": "boundedScore()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/match-analysis.ts",
+      "source_location": "L28",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_match_analysis_boundedscore",
+      "community": 81,
+      "community_name": "match-analysis.ts",
+      "norm_label": "boundedscore()"
+    },
+    {
+      "label": "normalizeMatchAnalysisInput()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/match-analysis.ts",
+      "source_location": "L35",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_match_analysis_normalizematchanalysisinput",
+      "community": 81,
+      "community_name": "match-analysis.ts",
+      "norm_label": "normalizematchanalysisinput()"
+    },
+    {
+      "label": "objectOf()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/match-analysis.ts",
+      "source_location": "L22",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_match_analysis_objectof",
+      "community": 81,
+      "community_name": "match-analysis.ts",
+      "norm_label": "objectof()"
+    },
+    {
+      "label": "normalizeImportedTextArray()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L223",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_normalizeimportedtextarray",
+      "community": 81,
+      "community_name": "match-analysis.ts",
+      "norm_label": "normalizeimportedtextarray()"
     },
     {
       "label": "shutdown()",
@@ -11604,28 +11604,6 @@
       "community": 27,
       "community_name": "react-dom",
       "norm_label": "react-dom"
-    },
-    {
-      "label": "@hookform/resolvers",
-      "file_type": "code",
-      "source_file": "apps/web/package.json",
-      "source_location": "L17",
-      "_origin": "ast",
-      "id": "apps_web_package_dependencies_hookform_resolvers",
-      "community": 28,
-      "community_name": "@hookform/resolvers",
-      "norm_label": "@hookform/resolvers"
-    },
-    {
-      "label": "@hookform/resolvers",
-      "file_type": "concept",
-      "source_file": "apps/web/package.json",
-      "source_location": "L17",
-      "_origin": "ast",
-      "id": "hookform_resolvers",
-      "community": 28,
-      "community_name": "@hookform/resolvers",
-      "norm_label": "@hookform/resolvers"
     },
     {
       "label": "database/tsconfig.json",
@@ -14976,15 +14954,15 @@
       "norm_label": "dependencies"
     },
     {
-      "label": "@fontsource/poppins",
+      "label": "@hookform/resolvers",
       "file_type": "code",
       "source_file": "apps/web/package.json",
-      "source_location": "L16",
+      "source_location": "L17",
       "_origin": "ast",
-      "id": "apps_web_package_dependencies_fontsource_poppins",
+      "id": "apps_web_package_dependencies_hookform_resolvers",
       "community": 5,
       "community_name": "dependencies",
-      "norm_label": "@fontsource/poppins"
+      "norm_label": "@hookform/resolvers"
     },
     {
       "label": "lucide-react",
@@ -15086,15 +15064,15 @@
       "norm_label": "zod"
     },
     {
-      "label": "@fontsource/poppins",
+      "label": "@hookform/resolvers",
       "file_type": "concept",
       "source_file": "apps/web/package.json",
-      "source_location": "L16",
+      "source_location": "L17",
       "_origin": "ast",
-      "id": "fontsource_poppins",
+      "id": "hookform_resolvers",
       "community": 5,
       "community_name": "dependencies",
-      "norm_label": "@fontsource/poppins"
+      "norm_label": "@hookform/resolvers"
     },
     {
       "label": "lucide-react",
@@ -15757,28 +15735,6 @@
       "norm_label": "usageitems"
     },
     {
-      "label": "match-analysis.ts",
-      "file_type": "code",
-      "source_file": "apps/web/lib/match-analysis.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_lib_match_analysis",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "match-analysis.ts"
-    },
-    {
-      "label": "defaultBreakdownLabels",
-      "file_type": "code",
-      "source_file": "apps/web/lib/match-analysis.ts",
-      "source_location": "L15",
-      "_origin": "ast",
-      "id": "apps_web_lib_match_analysis_defaultbreakdownlabels",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "defaultbreakdownlabels"
-    },
-    {
       "label": "validators/src/index.ts",
       "file_type": "code",
       "source_file": "packages/validators/src/index.ts",
@@ -15898,17 +15854,6 @@
       "community": 55,
       "community_name": "validators/src/index.ts",
       "norm_label": "optionalimportedemailschema"
-    },
-    {
-      "label": "optionalImportedImageSchema",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L249",
-      "_origin": "ast",
-      "id": "packages_validators_src_index_optionalimportedimageschema",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "optionalimportedimageschema"
     },
     {
       "label": "optionalImportedPhoneSchema",
@@ -16647,30 +16592,41 @@
       "_origin": "ast",
       "id": "apps_api_vercel",
       "community": 73,
-      "community_name": "src/app.ts",
+      "community_name": "vercel.json",
       "norm_label": "vercel.json"
     },
     {
       "label": "functions",
       "file_type": "code",
       "source_file": "apps/api/vercel.json",
-      "source_location": "L3",
+      "source_location": "L4",
       "_origin": "ast",
       "id": "apps_api_vercel_functions",
       "community": 73,
-      "community_name": "src/app.ts",
+      "community_name": "vercel.json",
       "norm_label": "functions"
     },
     {
       "label": "src/app.ts",
       "file_type": "code",
       "source_file": "apps/api/vercel.json",
-      "source_location": "L4",
+      "source_location": "L5",
       "_origin": "ast",
       "id": "apps_api_vercel_functions_src_app_ts",
       "community": 73,
-      "community_name": "src/app.ts",
+      "community_name": "vercel.json",
       "norm_label": "src/app.ts"
+    },
+    {
+      "label": "regions",
+      "file_type": "code",
+      "source_file": "apps/api/vercel.json",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "apps_api_vercel_regions",
+      "community": 73,
+      "community_name": "vercel.json",
+      "norm_label": "regions"
     },
     {
       "label": "$schema",
@@ -16680,51 +16636,40 @@
       "_origin": "ast",
       "id": "apps_api_vercel_schema",
       "community": 73,
-      "community_name": "src/app.ts",
+      "community_name": "vercel.json",
       "norm_label": "$schema"
     },
     {
       "label": "includeFiles",
       "file_type": "code",
       "source_file": "apps/api/vercel.json",
-      "source_location": "L5",
+      "source_location": "L6",
       "_origin": "ast",
       "id": "apps_api_vercel_src_app_ts_includefiles",
       "community": 73,
-      "community_name": "src/app.ts",
+      "community_name": "vercel.json",
       "norm_label": "includefiles"
-    },
-    {
-      "label": "regions",
-      "file_type": "code",
-      "source_file": "apps/api/vercel.json",
-      "source_location": "L6",
-      "_origin": "ast",
-      "id": "apps_api_vercel_src_app_ts_regions",
-      "community": 73,
-      "community_name": "src/app.ts",
-      "norm_label": "regions"
     },
     {
       "label": "../../packages/**",
       "file_type": "concept",
       "source_file": "apps/api/vercel.json",
-      "source_location": "L5",
+      "source_location": "L6",
       "_origin": "ast",
       "id": "apps_api_vercel_json_ref_packages",
       "community": 73,
-      "community_name": "src/app.ts",
+      "community_name": "vercel.json",
       "norm_label": "../../packages/**"
     },
     {
       "label": "fra1",
       "file_type": "concept",
       "source_file": "apps/api/vercel.json",
-      "source_location": "L6",
+      "source_location": "L3",
       "_origin": "ast",
       "id": "ref_fra1",
       "community": 73,
-      "community_name": "src/app.ts",
+      "community_name": "vercel.json",
       "norm_label": "fra1"
     },
     {
@@ -16929,6 +16874,61 @@
       "community": 79,
       "community_name": "resume-import.test.mjs",
       "norm_label": "resume-import.test.mjs"
+    },
+    {
+      "label": "optionalImportedImageSchema",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L249",
+      "_origin": "ast",
+      "id": "packages_validators_src_index_optionalimportedimageschema",
+      "community": 80,
+      "community_name": "normalizeImportedText",
+      "norm_label": "optionalimportedimageschema"
+    },
+    {
+      "label": "match-analysis.ts",
+      "file_type": "code",
+      "source_file": "apps/web/lib/match-analysis.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_lib_match_analysis",
+      "community": 81,
+      "community_name": "match-analysis.ts",
+      "norm_label": "match-analysis.ts"
+    },
+    {
+      "label": "defaultBreakdownLabels",
+      "file_type": "code",
+      "source_file": "apps/web/lib/match-analysis.ts",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "apps_web_lib_match_analysis_defaultbreakdownlabels",
+      "community": 81,
+      "community_name": "match-analysis.ts",
+      "norm_label": "defaultbreakdownlabels"
+    },
+    {
+      "label": "@fontsource/poppins",
+      "file_type": "code",
+      "source_file": "apps/web/package.json",
+      "source_location": "L16",
+      "_origin": "ast",
+      "id": "apps_web_package_dependencies_fontsource_poppins",
+      "community": 82,
+      "community_name": "@fontsource/poppins",
+      "norm_label": "@fontsource/poppins"
+    },
+    {
+      "label": "@fontsource/poppins",
+      "file_type": "concept",
+      "source_file": "apps/web/package.json",
+      "source_location": "L16",
+      "_origin": "ast",
+      "id": "fontsource_poppins",
+      "community": 82,
+      "community_name": "@fontsource/poppins",
+      "norm_label": "@fontsource/poppins"
     },
     {
       "label": "app.ts",
@@ -27140,12 +27140,12 @@
       "relation": "extends",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/vercel.json",
-      "source_location": "L5",
+      "source_location": "L3",
       "weight": 1.0,
       "context": "import",
       "_origin": "ast",
-      "source": "apps_api_vercel_src_app_ts_includefiles",
-      "target": "apps_api_vercel_json_ref_packages",
+      "source": "apps_api_vercel_regions",
+      "target": "ref_fra1",
       "confidence_score": 1.0
     },
     {
@@ -27156,8 +27156,8 @@
       "weight": 1.0,
       "context": "import",
       "_origin": "ast",
-      "source": "apps_api_vercel_src_app_ts_regions",
-      "target": "ref_fra1",
+      "source": "apps_api_vercel_src_app_ts_includefiles",
+      "target": "apps_api_vercel_json_ref_packages",
       "confidence_score": 1.0
     },
     {
@@ -42749,7 +42749,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_vercel",
-      "target": "apps_api_vercel_functions",
+      "target": "apps_api_vercel_regions",
       "confidence_score": 1.0
     },
     {
@@ -42757,6 +42757,17 @@
       "confidence": "EXTRACTED",
       "source_file": "apps/api/vercel.json",
       "source_location": "L4",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "apps_api_vercel",
+      "target": "apps_api_vercel_functions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "apps/api/vercel.json",
+      "source_location": "L5",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_vercel_functions",
@@ -42767,22 +42778,11 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/vercel.json",
-      "source_location": "L5",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "apps_api_vercel_functions_src_app_ts",
-      "target": "apps_api_vercel_src_app_ts_includefiles",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "apps/api/vercel.json",
       "source_location": "L6",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_vercel_functions_src_app_ts",
-      "target": "apps_api_vercel_src_app_ts_regions",
+      "target": "apps_api_vercel_src_app_ts_includefiles",
       "confidence_score": 1.0
     },
     {
@@ -54438,5 +54438,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "6babbe54db3085128b3163be02533a1547912542"
+  "built_at_commit": "dffc431f5ecd834210d87da981e1f565faadc542"
 }
