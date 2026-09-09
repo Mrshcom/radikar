@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import Fastify from "fastify";
 import { createDatabase } from "@radicar/database";
 import { buildApp } from "./build-app";
 import { loadLocalEnvironment, readConfig } from "@radicar/config/server";
@@ -24,6 +25,7 @@ const billingService = new BillingService(database.db, {
   zarinpalMerchantId: config.ZARINPAL_MERCHANT_ID,
 });
 const app = buildApp({
+  fastifyFactory: Fastify,
   repository: new PostgresRecordRepository(database.db),
   readinessCheck: async () => {
     await database.db.execute(sql`select 1`);

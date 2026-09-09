@@ -16,6 +16,7 @@ import type { BillingService } from "./modules/billing/service";
 import type { Database } from "@radicar/database";
 
 type BuildAppOptions = {
+  fastifyFactory?: typeof Fastify;
   repository: RecordRepository;
   readinessCheck: () => Promise<void>;
   corsOrigins: string[];
@@ -30,6 +31,7 @@ type BuildAppOptions = {
 };
 
 export function buildApp({
+  fastifyFactory = Fastify,
   repository,
   readinessCheck,
   corsOrigins,
@@ -42,7 +44,7 @@ export function buildApp({
   billingService,
   database,
 }: BuildAppOptions) {
-  const app = Fastify({
+  const app = fastifyFactory({
     logger,
     trustProxy: true,
     bodyLimit: maxUploadSizeBytes + 512 * 1024,
