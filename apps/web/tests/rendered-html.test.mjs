@@ -119,15 +119,15 @@ test("API requests do not label an empty logout request as JSON", async () => {
   assert.match(panelShell, /void logout\(\)\.catch\(\(\) =>/);
 });
 
-test("the web app requires the independent Node API without same-origin fallbacks", async () => {
+test("the web app supports a configured API origin and same-origin proxy fallback", async () => {
   const [apiUrlSource, repository] = await Promise.all([
     readFile(new URL("lib/api-url.ts", projectRoot), "utf8"),
     readFile(new URL("lib/data/repository.ts", projectRoot), "utf8"),
   ]);
 
   assert.match(apiUrlSource, /NEXT_PUBLIC_API_BASE_URL/);
-  assert.match(apiUrlSource, /throw new Error/);
-  assert.doesNotMatch(apiUrlSource, /return path/);
+  assert.match(apiUrlSource, /baseUrl \?\? ""/);
+  assert.match(apiUrlSource, /normalizedPath/);
   assert.match(repository, /apiRequest/);
   assert.doesNotMatch(repository, /fetch\(/);
 });

@@ -308,7 +308,7 @@ export function registerKnowledgeImportRoute(
   app.post("/api/knowledge/import", async (request, reply) => {
     if (!request.isMultipart())
       return reply.code(400).send({ error: "فایل رزومه ارسال نشده است." });
-    const file = await request.file({ limits: { fileSize: 8 * 1024 * 1024 } });
+    const file = await request.file({ limits: { fileSize: 4 * 1024 * 1024 } });
     if (!file)
       return reply.code(400).send({ error: "فایل رزومه ارسال نشده است." });
     if (!["pdf", "docx", "txt"].includes(extensionOf(file.filename)))

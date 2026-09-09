@@ -1,126 +1,67 @@
-import cors from "@fastify/cors";
-import cookie from "@fastify/cookie";
-import multipart from "@fastify/multipart";
-import { randomUUID } from "node:crypto";
-import Fastify, { type FastifyServerOptions } from "fastify";
-import { normalizeDigitsDeep } from "@radicar/validators";
-import { ZodError } from "zod";
-import { registerDataRoutes } from "./modules/data/routes";
-import { registerAiRoutes } from "./modules/ai/routes";
-import type { RecordRepository } from "./modules/data/record-repository";
-import { registerHealthRoutes } from "./modules/health/routes";
-import { registerImportRoutes } from "./modules/imports/routes";
-import { handleAuthError, registerAuthRoutes, type AuthServicePort } from "./modules/auth/routes";
-import { handleBillingError, registerBillingRoutes } from "./modules/billing/routes";
-import type { BillingService } from "./modules/billing/service";
-import type { Database } from "@radicar/database";
+import { sql } from "drizzle-orm";
+import { createDatabase } from "@radicar/database";
+import { buildApp } from "./build-app";
+import { loadLocalEnvironment, readConfig } from "@radicar/config/server";
+import { PostgresRecordRepository } from "./modules/data/record-repository";
+import { AuthService } from "./modules/auth/service";
+import { BillingService } from "./modules/billing/service";
+import { setAnalyzeProvider } from "@radicar/ai";
+import { aiSettings } from "@radicar/database";
+import { eq } from "drizzle-orm";
 
-type BuildAppOptions = {
-  repository: RecordRepository;
-  readinessCheck: () => Promise<void>;
-  corsOrigins: string[];
-  logger?: FastifyServerOptions["logger"];
-  authService: AuthServicePort;
-  sessionCookieName: string;
-  secureCookies: boolean;
-  sessionTtlDays: number;
-  billingService?: BillingService;
-  database?: Database;
-};
-
-export function buildApp({
-  repository,
-  readinessCheck,
-  corsOrigins,
-  logger = true,
-  authService,
-  sessionCookieName,
-  secureCookies,
-  sessionTtlDays,
+loadLocalEnvironment();
+const config = readConfig();
+const database = createDatabase(
+  config.DATABASE_URL,
+  config.DATABASE_MAX_CONNECTIONS,
+);
+const [savedAiSettings] = await database.db.select().from(aiSettings).where(eq(aiSettings.id, "analysis-provider")).limit(1);
+if (savedAiSettings) setAnalyzeProvider(savedAiSettings.provider as Parameters<typeof setAnalyzeProvider>[0], savedAiSettings.model);
+const billingService = new BillingService(database.db, {
+  apiPublicUrl: config.API_PUBLIC_URL,
+  webAppUrl: config.WEB_APP_URL,
+  zarinpalBaseUrl: config.ZARINPAL_BASE_URL,
+  zarinpalMerchantId: config.ZARINPAL_MERCHANT_ID,
+});
+const app = buildApp({
+  repository: new PostgresRecordRepository(database.db),
+  readinessCheck: async () => {
+    await database.db.execute(sql`select 1`);
+  },
+  corsOrigins: config.corsOrigins,
+  logger: { level: config.LOG_LEVEL },
+  authService: new AuthService(database.db, {
+    secret: config.AUTH_SECRET,
+    otpTtlSeconds: config.OTP_TTL_SECONDS,
+    sessionTtlDays: config.SESSION_TTL_DAYS,
+    bootstrapSuperadminPhone: config.BOOTSTRAP_SUPERADMIN_PHONE,
+    allowFirstUserSuperadmin: config.ALLOW_FIRST_USER_SUPERADMIN,
+    exposeDevelopmentOtp: config.NODE_ENV !== "production" && config.EXPOSE_DEVELOPMENT_OTP,
+    otpWebhookUrl: config.OTP_WEBHOOK_URL,
+    otpWebhookToken: config.OTP_WEBHOOK_TOKEN,
+    grantSignupMembership: (userId) => billingService.ensureSignupMembership(userId),
+  }),
   billingService,
-  database,
-}: BuildAppOptions) {
-  const app = Fastify({
-    logger,
-    trustProxy: true,
-    bodyLimit: 5 * 1024 * 1024,
-    requestIdHeader: "x-request-id",
-    genReqId: () => randomUUID(),
-  });
+  database: database.db,
+  sessionCookieName: config.NODE_ENV === "production" ? "__Host-radicar_session" : "radicar_session",
+  secureCookies: config.NODE_ENV === "production",
+  sessionTtlDays: config.SESSION_TTL_DAYS,
+});
 
-  app.register(cors, {
-    origin: corsOrigins,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    credentials: true,
-  });
-  app.register(cookie);
-  app.addHook("preValidation", async (request) => {
-    request.body = normalizeDigitsDeep(request.body);
-    request.query = normalizeDigitsDeep(request.query);
-    request.params = normalizeDigitsDeep(request.params);
-  });
-  app.addHook("onRequest", async (request, reply) => {
-    const origin = request.headers.origin;
-    const changesState = ["POST", "PUT", "PATCH", "DELETE"].includes(request.method);
-    if (changesState && origin && !corsOrigins.includes(origin)) {
-      return reply.code(403).send({
-        error: "مبدأ درخواست مجاز نیست.",
-        requestId: request.id,
-      });
-    }
-  });
-  app.register(multipart, {
-    limits: { files: 1, fileSize: 8 * 1024 * 1024 },
-  });
+async function shutdown(signal: string) {
+  app.log.info({ signal }, "Shutting down API");
+  await app.close();
+  await database.close();
+  process.exit(0);
+}
 
-  registerHealthRoutes(app, readinessCheck);
-  registerAuthRoutes(app, { authService, sessionCookieName, secureCookies, sessionTtlDays });
-  app.addHook("preHandler", async (request, reply) => {
-    const publicPaths = new Set([
-      "/health",
-      "/ready",
-      "/api/auth/request-otp",
-      "/api/auth/verify-otp",
-      "/api/auth/logout",
-      "/api/billing/callback",
-    ]);
-    if (request.method === "OPTIONS" || publicPaths.has(request.url.split("?")[0])) return;
-    if (!request.auth) {
-      return reply.code(401).send({
-        error: "برای ادامه وارد حساب کاربری شو.",
-        requestId: request.id,
-      });
-    }
-  });
-  registerDataRoutes(app, repository, billingService);
-  if (billingService) registerBillingRoutes(app, billingService);
-  registerAiRoutes(app, billingService, database);
-  registerImportRoutes(app, billingService);
+process.once("SIGINT", () => void shutdown("SIGINT"));
+process.once("SIGTERM", () => void shutdown("SIGTERM"));
 
-  app.setNotFoundHandler((request, reply) =>
-    reply.code(404).send({
-      error: "مسیر درخواستی پیدا نشد.",
-      requestId: request.id,
-    }),
-  );
-
-  app.setErrorHandler((error, request, reply) => {
-    if (handleAuthError(error, request, reply)) return;
-    if (handleBillingError(error, request, reply)) return;
-    if (error instanceof ZodError) {
-      return reply.code(400).send({
-        error: "داده ورودی معتبر نیست.",
-        issues: error.issues,
-        requestId: request.id,
-      });
-    }
-
-    request.log.error(error);
-    return reply.code(500).send({
-      error: "خطای داخلی سرویس رخ داد.",
-      requestId: request.id,
-    });
-  });
-
-  return app;
+try {
+  await app.listen({ host: config.API_HOST, port: config.API_PORT });
+} catch (error) {
+  app.log.error(error);
+  await database.close();
+  process.exit(1);
 }

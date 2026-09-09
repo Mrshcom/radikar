@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { DataCollection, DataRecord } from "@radicar/shared-types";
-import { buildApp } from "../src/app";
+import { buildApp } from "../src/build-app";
 import type { RecordRepository } from "../src/modules/data/record-repository";
 import type { AuthServicePort } from "../src/modules/auth/routes";
 import type { AuthUser, SessionIdentity } from "../src/modules/auth/types";
