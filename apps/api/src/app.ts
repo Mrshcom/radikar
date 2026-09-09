@@ -63,10 +63,8 @@ async function shutdown(signal: string) {
 process.once("SIGINT", () => void shutdown("SIGINT"));
 process.once("SIGTERM", () => void shutdown("SIGTERM"));
 
-try {
-  await app.listen({ host: config.API_HOST, port: config.API_PORT });
-} catch (error) {
+void app.listen({ host: config.API_HOST, port: config.API_PORT }).catch(async (error) => {
   app.log.error(error);
   await database.close();
   process.exit(1);
-}
+});
