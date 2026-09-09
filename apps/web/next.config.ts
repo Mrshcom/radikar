@@ -7,8 +7,12 @@ const apiProxyOrigin = process.env.API_PROXY_ORIGIN?.replace(/\/+$/, "");
 const nextConfig: NextConfig = {
   // Keep development chunks isolated from concurrent production builds.
   distDir: process.env.NODE_ENV === "development" ? ".next-dev" : ".next",
-  output: "standalone",
-  outputFileTracingRoot: monorepoRoot,
+  ...(process.env.VERCEL
+    ? {}
+    : {
+        output: "standalone" as const,
+        outputFileTracingRoot: monorepoRoot,
+      }),
   async rewrites() {
     if (!apiProxyOrigin) return [];
 
