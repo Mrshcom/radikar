@@ -68,7 +68,9 @@ function buildFreeDeepseekAPIConfig(
     provider: "freeDeepseekAPI",
     model: getEnv(prefix, "MODEL") || "deepseek-chat",
     apiKey: "localproxy",
-    baseUrl: `http://localhost:${port}/v1`,
+    baseUrl:
+      process.env.FREE_DEEPSEEK_BASE_URL ??
+      `http://localhost:${port}/v1`,
     inputPricePerMillionUsd: 0,
     outputPricePerMillionUsd: 0,
   };

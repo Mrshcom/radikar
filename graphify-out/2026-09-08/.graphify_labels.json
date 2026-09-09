@@ -63,7 +63,7 @@
   "61": "not-found.tsx",
   "62": "job-description-validation.ts",
   "63": "table-page-size.ts",
-  "64": "@fontsource/poppins",
+  "64": "@hookform/resolvers",
   "65": "eslint.config.mjs",
   "66": "job-application-filter.ts",
   "67": "panel-shell.tsx",

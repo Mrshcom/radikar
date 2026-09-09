@@ -1,7 +1,7 @@
 # Graph Report - resumeMaker  (2026-09-08)
 
 ## Corpus Check
-- 169 files · ~228,961 words
+- 169 files · ~228,963 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -75,7 +75,7 @@
 - AGENTS.md
 - job-description-validation.ts
 - table-page-size.ts
-- @fontsource/poppins
+- @hookform/resolvers
 - eslint.config.mjs
 - job-application-filter.ts
 - panel-shell.tsx
@@ -138,7 +138,7 @@ Nodes (36): devDependencies, turbo, engines, node, turbo, name, packageManager, 
 
 ### Community 5 - "dependencies"
 Cohesion: 0.12
-Nodes (17): dependencies, @hookform/resolvers, lucide-react, next, nuqs, @radicar/validators, react-hook-form, @tanstack/react-query (+9 more)
+Nodes (17): dependencies, @fontsource/poppins, lucide-react, next, nuqs, @radicar/validators, react-hook-form, @tanstack/react-query (+9 more)
 
 ### Community 6 - "resumes/page.tsx"
 Cohesion: 0.15

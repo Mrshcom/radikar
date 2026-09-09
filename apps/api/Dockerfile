@@ -29,4 +29,6 @@ COPY packages/validators packages/validators
 ENV NODE_ENV=production
 EXPOSE 3162
 
+USER node
+
 CMD ["npm", "run", "start:api"]

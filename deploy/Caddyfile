@@ -1,0 +1,23 @@
+{$APP_DOMAIN} {
+  encode zstd gzip
+
+  @api path /api/* /health /ready
+  handle @api {
+    reverse_proxy api:3162
+  }
+
+  handle {
+    reverse_proxy web:3161
+  }
+
+  header {
+    X-Content-Type-Options nosniff
+    Referrer-Policy strict-origin-when-cross-origin
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    -Server
+  }
+}
+
+www.{$APP_DOMAIN} {
+  redir https://{$APP_DOMAIN}{uri} permanent
+}
