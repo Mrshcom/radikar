@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "src/app.ts": {
+      "includeFiles": ["../../packages/**"],
+      "regions": ["fra1"]
+    }
+  }
+}
