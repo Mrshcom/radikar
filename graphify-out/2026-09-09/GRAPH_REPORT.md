@@ -1,7 +1,7 @@
 # Graph Report - resumeMaker  (2026-09-09)
 
 ## Corpus Check
-- 172 files · ~229,582 words
+- 172 files · ~229,604 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `cb152c5d`
+- Built from commit: `004fa459`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -71,6 +71,7 @@
 - knowledge-base/page.tsx
 - job-url.ts
 - marketing-sections.tsx
+- @fontsource/poppins
 - AGENTS.md
 - job-description-validation.ts
 - @fontsource-variable/vazirmatn
@@ -79,7 +80,6 @@
 - field-direction.ts
 - postcss.config.mjs
 - config/src/index.ts
-- @radicar/shared-types
 - model-task-provider.tsx
 - استقرار Production رادیکار
 - backup-postgres.sh
@@ -135,7 +135,7 @@ Nodes (36): devDependencies, turbo, engines, node, turbo, name, packageManager, 
 
 ### Community 5 - "dependencies"
 Cohesion: 0.12
-Nodes (17): dependencies, @fontsource/poppins, lucide-react, next, nuqs, @radicar/validators, react-hook-form, @tanstack/react-query (+9 more)
+Nodes (17): dependencies, lucide-react, next, nuqs, @radicar/shared-types, @radicar/validators, react-hook-form, @tanstack/react-query (+9 more)
 
 ### Community 6 - "resumes/page.tsx"
 Cohesion: 0.09

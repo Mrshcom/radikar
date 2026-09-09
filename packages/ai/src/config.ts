@@ -96,8 +96,8 @@ function buildOpenAICompatibleConfig(
   };
 }
 
-function buildGapGptConfig(): ProviderConfig {
-  const model = process.env.GAPGPT_MODEL || "gapgpt-qwen-3.6";
+function buildGapGptConfig(modelOverride?: string): ProviderConfig {
+  const model = modelOverride || process.env.GAPGPT_MODEL || "gapgpt-qwen-3.6";
   return {
     provider: "gapgpt",
     model,
@@ -133,9 +133,9 @@ export function getAnalyzeConfig(): ProviderConfig {
     case "local":
       return buildOpenAICompatibleConfig("LLM");
     case "gapgpt": {
-      const config = buildGapGptConfig();
+      const config = buildGapGptConfig(analyzeProviderOverride?.model);
       if (!analyzeProviderOverride?.model) return config;
-      return { ...config, model: analyzeProviderOverride.model, ...gapGptPrices(analyzeProviderOverride.model) };
+      return config;
     }
     default:
       throw new Error(`Unknown LLM provider: ${provider || "not configured"}`);
@@ -152,6 +152,8 @@ export function getWriteConfig(): ProviderConfig {
     case "openai-compatible":
     case "local":
       return buildOpenAICompatibleConfig("LLM_WRITE");
+    case "gapgpt":
+      return buildGapGptConfig(process.env.LLM_WRITE_MODEL);
     default:
       throw new Error(
         `Unknown LLM write provider: ${provider || "not configured"}`,
