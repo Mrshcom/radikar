@@ -67,7 +67,7 @@
   "65": "eslint.config.mjs",
   "66": "route.ts",
   "67": "panel-shell.tsx",
-  "68": "@fontsource/poppins",
+  "68": "@hookform/resolvers",
   "69": "field-direction.ts",
   "70": "postcss.config.mjs",
   "71": "config/src/index.ts",
