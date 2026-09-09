@@ -7,7 +7,7 @@
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
     "build": "tsc --noEmit",
-    "vercel-build": "npm run db:migrate --workspace @radicar/database && npm run build && ../../node_modules/.bin/esbuild src/app.ts --bundle --platform=node --format=esm --target=node22 --external:fastify --external:'@fastify/*' --external:mammoth --external:unpdf --banner:js=\"import Fastify from 'fastify'; void Fastify;\" --outfile=src/app.mjs && mv src/app.ts src/_app.ts",
+    "vercel-build": "npm run db:migrate --workspace @radicar/database && npm run build && ../../node_modules/.bin/esbuild src/app.ts --bundle --platform=node --format=esm --target=node22 --external:fastify --external:'@fastify/*' --external:mammoth --external:unpdf --outfile=src/app.mjs && mv src/app.ts src/_app.ts",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/**/*.test.ts"
