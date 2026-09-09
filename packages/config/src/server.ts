@@ -40,6 +40,7 @@ const environmentSchema = z.object({
   BOOTSTRAP_SUPERADMIN_PHONE: z.string().regex(/^09\d{9}$/).optional(),
   ALLOW_FIRST_USER_SUPERADMIN: z.stringbool().default(false),
   EXPOSE_DEVELOPMENT_OTP: z.stringbool().default(true),
+  ALLOW_INSECURE_DEMO_OTP: z.stringbool().default(false),
   API_PUBLIC_URL: z.url().default("http://localhost:3162"),
   WEB_APP_URL: z.url().default("http://localhost:3161"),
   ZARINPAL_BASE_URL: z.url().default("https://sandbox.zarinpal.com"),
@@ -51,10 +52,10 @@ const environmentSchema = z.object({
   if (config.AUTH_SECRET === "development-only-secret-change-before-production") {
     context.addIssue({ code: "custom", path: ["AUTH_SECRET"], message: "AUTH_SECRET must be changed in production" });
   }
-  if (!config.OTP_WEBHOOK_URL) {
+  if (!config.OTP_WEBHOOK_URL && !config.ALLOW_INSECURE_DEMO_OTP) {
     context.addIssue({ code: "custom", path: ["OTP_WEBHOOK_URL"], message: "OTP_WEBHOOK_URL is required in production" });
   }
-  if (config.EXPOSE_DEVELOPMENT_OTP) {
+  if (config.EXPOSE_DEVELOPMENT_OTP && !config.ALLOW_INSECURE_DEMO_OTP) {
     context.addIssue({ code: "custom", path: ["EXPOSE_DEVELOPMENT_OTP"], message: "Development OTP exposure must be disabled in production" });
   }
 });

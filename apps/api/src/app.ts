@@ -38,7 +38,9 @@ const app = buildApp({
     sessionTtlDays: config.SESSION_TTL_DAYS,
     bootstrapSuperadminPhone: config.BOOTSTRAP_SUPERADMIN_PHONE,
     allowFirstUserSuperadmin: config.ALLOW_FIRST_USER_SUPERADMIN,
-    exposeDevelopmentOtp: config.NODE_ENV !== "production" && config.EXPOSE_DEVELOPMENT_OTP,
+    exposeDevelopmentOtp:
+      config.EXPOSE_DEVELOPMENT_OTP &&
+      (config.NODE_ENV !== "production" || config.ALLOW_INSECURE_DEMO_OTP),
     otpWebhookUrl: config.OTP_WEBHOOK_URL,
     otpWebhookToken: config.OTP_WEBHOOK_TOKEN,
     grantSignupMembership: (userId) => billingService.ensureSignupMembership(userId),
