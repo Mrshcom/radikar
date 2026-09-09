@@ -40,6 +40,7 @@ yarn-error.log*
 next-env.d.ts
 **/dist/
 **/*.tsbuildinfo
+**/src/app.mjs
 /outputs/
 /work/
 /graphify-out/cache/
