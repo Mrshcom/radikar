@@ -384,6 +384,7 @@ export function registerKnowledgeImportRoute(
       );
       return applyEmbeddedLinkFallbacks(normalized, extractedFile.links);
     } catch (error) {
+      request.log.error({ err: error }, "Knowledge resume import failed");
       return reply.code(502).send({
         error:
           error instanceof Error ? error.message : "پردازش رزومه ناموفق بود.",
