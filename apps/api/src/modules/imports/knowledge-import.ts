@@ -17,7 +17,7 @@ import type { BillingService } from "../billing/service";
 const maxTextLength = 24_000;
 const maxPdfPages = 30;
 const maxEmbeddedLinks = 50;
-const maxImportOutputTokens = 8_192;
+const maxImportOutputTokens = 4_096;
 
 const resumeImportShape = `{
   "resumeData": {
@@ -358,6 +358,8 @@ export function registerKnowledgeImportRoute(
         ],
         {
           maxOutputTokens: maxImportOutputTokens,
+          maxAttempts: 1,
+          timeoutMs: 20_000,
           ...(importConfig.provider === "freeDeepseekAPI"
             ? { emptyResponseFallbackModels: ["deepseek-reasoner"] }
             : {}),

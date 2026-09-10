@@ -1,7 +1,7 @@
 # Graph Report - resumeMaker  (2026-09-10)
 
 ## Corpus Check
-- 175 files · ~230,048 words
+- 175 files · ~230,060 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `bba12430`
+- Built from commit: `4e70d376`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -40,7 +40,7 @@
 - compilerOptions
 - scripts
 - web/package.json
-- table-page-size.ts
+- account/page.tsx
 - react-dom
 - stores.ts
 - compilerOptions
@@ -61,8 +61,8 @@
 - validators/tsconfig.json
 - compilerOptions
 - job-import.ts
-- auth.tsx
-- admin-stats.ts
+- useAuth
+- model-usage/page.tsx
 - match/page.tsx
 - compilerOptions
 - ai/routes.ts
@@ -93,7 +93,7 @@
 - resumes/page.tsx
 - job-application-filter.ts
 - resume-import.test.mjs
-- model-usage/page.tsx
+- admin/page.tsx
 - match-analysis.ts
 - data/routes.ts
 - resume-section-heading-visibility.ts
@@ -182,8 +182,8 @@ Cohesion: 0.11
 Nodes (19): AuthRouteOptions, cookieOptions(), eventListSchema, fastify, FastifyRequest, recordListSchema, requestOtpSchema, updatePreferencesSchema (+11 more)
 
 ### Community 13 - "apiRequest"
-Cohesion: 0.22
-Nodes (23): useAuth(), AccountPage(), MembershipsAdminPage(), AdminOrdersPage(), AdminPaymentsPage(), AdminRecordsPage(), AdminUsersPage(), OrdersPage() (+15 more)
+Cohesion: 0.21
+Nodes (20): AdminOrdersPage(), AdminPaymentsPage(), AdminRecordsPage(), AdminUsersPage(), OrdersPage(), UpgradePage(), apiRequest(), AdminMembershipDetails (+12 more)
 
 ### Community 14 - "toast.tsx"
 Cohesion: 0.16
@@ -198,8 +198,8 @@ Cohesion: 0.18
 Nodes (6): AuthService, normalizePhone(), toAuthUser(), tokenHash(), UserRole, UserStatus
 
 ### Community 17 - "admin/orders/page.tsx"
-Cohesion: 0.09
-Nodes (38): orderFilterParsers, Response, statusOptions, Payment, paymentFilterParsers, Response, statusOptions, collectionOptions (+30 more)
+Cohesion: 0.08
+Nodes (39): UserRole, orderFilterParsers, Response, statusOptions, Payment, paymentFilterParsers, Response, statusOptions (+31 more)
 
 ### Community 18 - "devDependencies"
 Cohesion: 0.12
@@ -229,9 +229,9 @@ Nodes (7): scripts, build, dev, lint, start, test, typecheck
 Cohesion: 0.40
 Nodes (4): name, private, type, version
 
-### Community 26 - "table-page-size.ts"
-Cohesion: 0.43
-Nodes (5): AuthResponse, positivePageParser, TablePageSize, tablePageSizes, tablePaginationParsers
+### Community 26 - "account/page.tsx"
+Cohesion: 0.21
+Nodes (10): AccountPage(), schema, Values, formatDate(), MembershipSummary(), MembershipSummarySkeleton(), remainingDays(), usageItems (+2 more)
 
 ### Community 28 - "stores.ts"
 Cohesion: 0.10
@@ -309,13 +309,13 @@ Nodes (7): compilerOptions, esModuleInterop, forceConsistentCasingInFileNames, r
 Cohesion: 0.25
 Nodes (16): allowedHostSuffixes, decodeEntities(), extractAttribute(), extractCompanyLogoUrl(), extractJobText(), extractMetaContent(), getLinkedInJobId(), isAllowedHost() (+8 more)
 
-### Community 48 - "auth.tsx"
-Cohesion: 0.13
-Nodes (17): AuthGate(), authQueryKey, CurrentUser, useLogout(), UserRole, localizedNumericString, LoginPage(), otpSchema (+9 more)
+### Community 48 - "useAuth"
+Cohesion: 0.15
+Nodes (17): AuthGate(), authQueryKey, CurrentUser, useAuth(), useLogout(), localizedNumericString, otpSchema, OtpValues (+9 more)
 
-### Community 49 - "admin-stats.ts"
-Cohesion: 0.11
-Nodes (21): AdminPage(), collectionLabels, formatNumber(), AdminSettingsPage(), FormValues, schema, AdminAiSettings, adminAiSettingsQueryKey (+13 more)
+### Community 49 - "model-usage/page.tsx"
+Cohesion: 0.10
+Nodes (27): AdminModelUsagePage(), dateTime(), downloadCsv(), modelUsageFilterParsers, number(), operationLabels, percent(), RecentModelRequest (+19 more)
 
 ### Community 50 - "match/page.tsx"
 Cohesion: 0.11
@@ -330,8 +330,8 @@ Cohesion: 0.08
 Nodes (56): asObject(), hasResumeContent(), JsonObject, validateJobDescription(), ValidationResult, aiSettingsSchema, Analysis, bodyOf() (+48 more)
 
 ### Community 54 - "memberships/page.tsx"
-Cohesion: 0.11
-Nodes (20): cancelSchema, creditSchema, detailNumber(), detailString(), eventContent(), extendSchema, grantSchema, membershipFilterParsers (+12 more)
+Cohesion: 0.14
+Nodes (17): LoginPage(), cancelSchema, creditSchema, detailNumber(), detailString(), eventContent(), extendSchema, grantSchema (+9 more)
 
 ### Community 55 - "validators/src/index.ts"
 Cohesion: 0.13
@@ -397,9 +397,9 @@ Nodes (9): DatedApplication, hasJobActivityInDateRange(), isTimeInRange(), JobId
 Cohesion: 0.39
 Nodes (6): KnowledgeProfileRecord, calculateKnowledgeCompletion(), isSeededKnowledgeSampleProject(), KnowledgeCompletionData, normalizeImportedResumeData(), normalizeResumeImportPayload()
 
-### Community 84 - "model-usage/page.tsx"
-Cohesion: 0.29
-Nodes (11): AdminModelUsagePage(), dateTime(), downloadCsv(), modelUsageFilterParsers, number(), operationLabels, percent(), RecentModelRequest (+3 more)
+### Community 84 - "admin/page.tsx"
+Cohesion: 0.53
+Nodes (5): AdminPage(), collectionLabels, formatNumber(), useAdminBillingStats(), useAdminStats()
 
 ### Community 85 - "match-analysis.ts"
 Cohesion: 0.43
