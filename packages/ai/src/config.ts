@@ -104,7 +104,7 @@ function buildGapGptConfig(modelOverride?: string): ProviderConfig {
     apiKey: process.env.GAPGPT_API_KEY || "",
     baseUrl: process.env.GAPGPT_BASE_URL || "https://api.gapgpt.app/v1",
     ...gapGptPrices(model),
-    apiStyle: "responses",
+    apiStyle: "chat",
   };
 }
 
