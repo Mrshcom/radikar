@@ -1642,19 +1642,6 @@
       "norm_label": "membership"
     },
     {
-      "label": "MatchAnalysis",
-      "file_type": "code",
-      "source_file": "apps/web/lib/match-analysis.ts",
-      "source_location": "L6",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_match_analysis_matchanalysis",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "matchanalysis"
-    },
-    {
       "label": "ResumeImportPayload",
       "file_type": "code",
       "source_file": "packages/validators/src/index.ts",
@@ -2108,6 +2095,19 @@
       "community": 83,
       "community_name": "resume-import.test.mjs",
       "norm_label": "knowledgecompletiondata"
+    },
+    {
+      "label": "MatchAnalysis",
+      "file_type": "code",
+      "source_file": "apps/web/lib/match-analysis.ts",
+      "source_location": "L6",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_match_analysis_matchanalysis",
+      "community": 85,
+      "community_name": "match-analysis.ts",
+      "norm_label": "matchanalysis"
     },
     {
       "label": "ApiConfig",
@@ -6611,42 +6611,6 @@
       "norm_label": "normalizedigits()"
     },
     {
-      "label": "boundedScore()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/match-analysis.ts",
-      "source_location": "L28",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_match_analysis_boundedscore",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "boundedscore()"
-    },
-    {
-      "label": "normalizeMatchAnalysisInput()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/match-analysis.ts",
-      "source_location": "L35",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_match_analysis_normalizematchanalysisinput",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "normalizematchanalysisinput()"
-    },
-    {
-      "label": "objectOf()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/match-analysis.ts",
-      "source_location": "L22",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_match_analysis_objectof",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "objectof()"
-    },
-    {
       "label": "aliasedObjectInput()",
       "file_type": "code",
       "source_file": "packages/validators/src/index.ts",
@@ -6693,18 +6657,6 @@
       "community": 55,
       "community_name": "validators/src/index.ts",
       "norm_label": "firstdefined()"
-    },
-    {
-      "label": "normalizeImportedTextArray()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L223",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_normalizeimportedtextarray",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "normalizeimportedtextarray()"
     },
     {
       "label": "objectInput()",
@@ -8721,6 +8673,54 @@
       "community": 84,
       "community_name": "parseResumeSkills",
       "norm_label": "serializeresumeskills()"
+    },
+    {
+      "label": "boundedScore()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/match-analysis.ts",
+      "source_location": "L28",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_match_analysis_boundedscore",
+      "community": 85,
+      "community_name": "match-analysis.ts",
+      "norm_label": "boundedscore()"
+    },
+    {
+      "label": "normalizeMatchAnalysisInput()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/match-analysis.ts",
+      "source_location": "L35",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_match_analysis_normalizematchanalysisinput",
+      "community": 85,
+      "community_name": "match-analysis.ts",
+      "norm_label": "normalizematchanalysisinput()"
+    },
+    {
+      "label": "objectOf()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/match-analysis.ts",
+      "source_location": "L22",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_match_analysis_objectof",
+      "community": 85,
+      "community_name": "match-analysis.ts",
+      "norm_label": "objectof()"
+    },
+    {
+      "label": "normalizeImportedTextArray()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L223",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_normalizeimportedtextarray",
+      "community": 85,
+      "community_name": "match-analysis.ts",
+      "norm_label": "normalizeimportedtextarray()"
     },
     {
       "label": "shutdown()",
@@ -15561,28 +15561,6 @@
       "norm_label": "usageitems"
     },
     {
-      "label": "match-analysis.ts",
-      "file_type": "code",
-      "source_file": "apps/web/lib/match-analysis.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_lib_match_analysis",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "match-analysis.ts"
-    },
-    {
-      "label": "defaultBreakdownLabels",
-      "file_type": "code",
-      "source_file": "apps/web/lib/match-analysis.ts",
-      "source_location": "L15",
-      "_origin": "ast",
-      "id": "apps_web_lib_match_analysis_defaultbreakdownlabels",
-      "community": 55,
-      "community_name": "validators/src/index.ts",
-      "norm_label": "defaultbreakdownlabels"
-    },
-    {
       "label": "validators/src/index.ts",
       "file_type": "code",
       "source_file": "packages/validators/src/index.ts",
@@ -16953,6 +16931,28 @@
       "community": 84,
       "community_name": "parseResumeSkills",
       "norm_label": "resume-skills.test.mjs"
+    },
+    {
+      "label": "match-analysis.ts",
+      "file_type": "code",
+      "source_file": "apps/web/lib/match-analysis.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_lib_match_analysis",
+      "community": 85,
+      "community_name": "match-analysis.ts",
+      "norm_label": "match-analysis.ts"
+    },
+    {
+      "label": "defaultBreakdownLabels",
+      "file_type": "code",
+      "source_file": "apps/web/lib/match-analysis.ts",
+      "source_location": "L15",
+      "_origin": "ast",
+      "id": "apps_web_lib_match_analysis_defaultbreakdownlabels",
+      "community": 85,
+      "community_name": "match-analysis.ts",
+      "norm_label": "defaultbreakdownlabels"
     },
     {
       "label": "app.ts",
@@ -18609,7 +18609,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/imports/knowledge-import.ts",
-      "source_location": "L350",
+      "source_location": "L356",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_imports_knowledge_import_registerknowledgeimportroute",
@@ -18621,7 +18621,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/imports/knowledge-import.ts",
-      "source_location": "L371",
+      "source_location": "L377",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_imports_knowledge_import_registerknowledgeimportroute",
@@ -18634,7 +18634,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/modules/imports/knowledge-import.ts",
-      "source_location": "L372",
+      "source_location": "L378",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_imports_knowledge_import_registerknowledgeimportroute",
@@ -18646,7 +18646,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/modules/imports/knowledge-import.ts",
-      "source_location": "L374",
+      "source_location": "L380",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_imports_knowledge_import_registerknowledgeimportroute",
@@ -18657,7 +18657,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/imports/knowledge-import.ts",
-      "source_location": "L379",
+      "source_location": "L385",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_imports_knowledge_import_registerknowledgeimportroute",
@@ -54482,5 +54482,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "21022cac09c6feaf2557a9377472fda05a5c2848"
+  "built_at_commit": "c6e595fe90b710d1a4b5b000d99d650d2c6cb69a"
 }

@@ -1,16 +1,16 @@
 # Graph Report - resumeMaker  (2026-09-10)
 
 ## Corpus Check
-- 173 files · ~229,926 words
+- 173 files · ~229,952 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1464 nodes · 3222 edges · 85 communities (74 shown, 11 thin omitted)
+- 1464 nodes · 3222 edges · 86 communities (75 shown, 11 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 32 edges (avg confidence: 0.57)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `21022cac`
+- Built from commit: `c6e595fe`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -94,6 +94,7 @@
 - job-application-filter.ts
 - resume-import.test.mjs
 - parseResumeSkills
+- match-analysis.ts
 
 ## God Nodes (most connected - your core abstractions)
 1. `cn()` - 81 edges
@@ -122,7 +123,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (85 total, 11 thin omitted)
+## Communities (86 total, 11 thin omitted)
 
 ### Community 0 - "resume-document.tsx"
 Cohesion: 0.08
@@ -329,8 +330,8 @@ Cohesion: 0.11
 Nodes (22): LoginPage(), cancelSchema, creditSchema, detailNumber(), detailString(), eventContent(), extendSchema, grantSchema (+14 more)
 
 ### Community 55 - "validators/src/index.ts"
-Cohesion: 0.10
-Nodes (30): boundedScore(), defaultBreakdownLabels, MatchAnalysis, normalizeMatchAnalysisInput(), objectOf(), aliasedObjectInput(), baseRecordSchema, boundedImportedArray() (+22 more)
+Cohesion: 0.12
+Nodes (24): aliasedObjectInput(), baseRecordSchema, boundedImportedArray(), collectionInput(), collectionWrapperKeys, firstDefined(), importedBooleanSchema, importedExperienceSchema (+16 more)
 
 ### Community 56 - "job-url.ts"
 Cohesion: 0.83
@@ -395,6 +396,10 @@ Nodes (5): calculateKnowledgeCompletion(), isSeededKnowledgeSampleProject(), Kno
 ### Community 84 - "parseResumeSkills"
 Cohesion: 0.80
 Nodes (3): isStandaloneTechnicalToken(), parseResumeSkills(), serializeResumeSkills()
+
+### Community 85 - "match-analysis.ts"
+Cohesion: 0.43
+Nodes (6): boundedScore(), defaultBreakdownLabels, MatchAnalysis, normalizeMatchAnalysisInput(), objectOf(), normalizeImportedTextArray()
 
 ## Knowledge Gaps
 - **507 isolated node(s):** `name`, `version`, `private`, `type`, `dev` (+502 more)
