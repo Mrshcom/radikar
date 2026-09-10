@@ -333,6 +333,12 @@ export function registerKnowledgeImportRoute(
         });
 
       const analyzeConfig = getAnalyzeConfig();
+      if (!analyzeConfig.apiKey) {
+        return reply.code(503).send({
+          error:
+            "Provider تحلیل در محیط production پیکربندی نشده است. ابتدا کلید API مدل را در تنظیمات Vercel ثبت کنید.",
+        });
+      }
       const importConfig =
         analyzeConfig.provider === "freeDeepseekAPI"
           ? { ...analyzeConfig, model: "deepseek-chat" }
