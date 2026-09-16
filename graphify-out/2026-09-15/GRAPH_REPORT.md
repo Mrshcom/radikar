@@ -1,11 +1,11 @@
-# Graph Report - resumeMaker  (2026-09-16)
+# Graph Report - resumeMaker  (2026-09-15)
 
 ## Corpus Check
-- 183 files · ~542,131 words
+- 179 files · ~348,337 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1517 nodes · 3290 edges · 94 communities (81 shown, 13 thin omitted)
+- 1490 nodes · 3266 edges · 84 communities (72 shown, 12 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 32 edges (avg confidence: 0.57)
 - Token cost: 0 input · 0 output
 
@@ -28,8 +28,8 @@
 - dependencies
 - normalizeImportedText
 - auth/routes.ts
-- useAuth
-- Database
+- apiRequest
+- toast.tsx
 - dashboard/page.tsx
 - AuthService
 - admin/orders/page.tsx
@@ -40,7 +40,7 @@
 - compilerOptions
 - scripts
 - web/package.json
-- table-page-size.ts
+- TablePagination
 - react-dom
 - stores.ts
 - compilerOptions
@@ -61,9 +61,7 @@
 - validators/tsconfig.json
 - compilerOptions
 - job-import.ts
-- apiRequest
 - model-usage/page.tsx
-- jobs/page.tsx
 - compilerOptions
 - ai/routes.ts
 - react
@@ -71,36 +69,29 @@
 - validators/src/index.ts
 - job-url.ts
 - marketing-sections.tsx
-- toast.tsx
+- @fontsource-variable/vazirmatn
 - AGENTS.md
 - job-description-validation.ts
 - @radicar/shared-types
-- interview/page.tsx
+- panel-shell.tsx
 - eslint.config.mjs
 - api/[...path]/route.ts
-- Radikar — Project Knowledge Base
+- build-app.ts
 - @hookform/resolvers
 - field-direction.ts
 - postcss.config.mjs
 - config/src/index.ts
 - jalali-date-picker.tsx
-- scheduleFieldDirectionRefresh
+- parseResumeSkills
 - استقرار Production رادیکار
-- @fontsource-variable/vazirmatn
+- Database
 - backup-postgres.sh
 - vercel.json
 - web/AGENTS.md
 - job-application-filter.ts
-- resume-section-flow.ts
-- account/page.tsx
+- resume-import.test.mjs
+- api-client.ts
 - match/page.tsx
-- build-app.ts
-- رفع خطاهای رایج
-- check-knowledge-base.mjs
-- راه‌اندازی سریع پیشنهادی
-- لایه داده Web
-- تنظیم مدل هوش مصنوعی
-- commit-msg
 
 ## God Nodes (most connected - your core abstractions)
 1. `cn()` - 89 edges
@@ -115,8 +106,6 @@
 10. `registerAiRoutes()` - 26 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `buildApp()` --calls--> `normalizeDigitsDeep()`  [EXTRACTED]
-  apps/api/src/build-app.ts → packages/validators/src/index.ts
 - `serializeResumeSkills()` --calls--> `normalizeImportedText()`  [EXTRACTED]
   apps/api/src/modules/ai/helpers.ts → packages/validators/src/index.ts
 - `textOf()` --calls--> `normalizeImportedText()`  [EXTRACTED]
@@ -125,39 +114,41 @@
   apps/api/src/modules/ai/routes.ts → packages/validators/src/index.ts
 - `normalizeAnalysis()` --calls--> `normalizeImportedBoolean()`  [EXTRACTED]
   apps/api/src/modules/ai/routes.ts → packages/validators/src/index.ts
+- `preserveResumeArrays()` --calls--> `normalizeStoredResumeData()`  [EXTRACTED]
+  apps/api/src/modules/ai/routes.ts → packages/validators/src/index.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (94 total, 13 thin omitted)
+## Communities (84 total, 12 thin omitted)
 
 ### Community 0 - "cn"
 Cohesion: 0.09
-Nodes (73): DataTableSkeleton(), experienceWeight(), getDefaultResumeColor(), getResumeEducations(), getResumeExperiences(), getResumeProjects(), paginateOneColumnResume(), paginateResumeData() (+65 more)
+Nodes (72): DataTableSkeleton(), Field(), KnowledgeCardsSkeleton(), KnowledgeSectionTabs(), getDefaultResumeColor(), getResumeEducations(), getResumeExperiences(), getResumeProjects() (+64 more)
 
 ### Community 1 - "use-rendered-resume-pagination.ts"
-Cohesion: 0.08
-Nodes (48): getFlowContentBounds(), getPageFlows(), getRenderedPageLayout(), getScaledReserve(), PAGE_BOTTOM_RESERVE, PAGE_TOP_RESERVE, DEFAULT_SECTION_ORDER, getResumeFlowSections() (+40 more)
+Cohesion: 0.06
+Nodes (58): experienceWeight(), paginateOneColumnResume(), paginateResumeData(), projectWeight(), getFlowContentBounds(), getPageFlows(), getRenderedPageLayout(), getScaledReserve() (+50 more)
 
 ### Community 2 - "data-routes.test.ts"
 Cohesion: 0.14
 Nodes (24): isStandaloneTechnicalToken(), serializeResumeSkills(), AuthServicePort, applyEmbeddedLinkFallbacks(), applyTextFallbacks(), buildResumeImportPrompt(), extensionOf(), extractContactFallbacks() (+16 more)
 
 ### Community 3 - "applications/page.tsx"
-Cohesion: 0.29
-Nodes (10): ApplicationsPage(), formatUpdateTime(), readApplicationBoard(), applicationPipelineStages, createSavedApplicationForJob(), moveApplicationToStage(), synchronizeJobsWithApplicationBoard(), ApplicationRecord (+2 more)
+Cohesion: 0.15
+Nodes (21): ApplicationsPage(), formatUpdateTime(), readApplicationBoard(), JobCard(), JobCardData, JobDetailsData, JobDetailsModal(), JobLogo() (+13 more)
 
 ### Community 4 - "scripts"
 Cohesion: 0.05
-Nodes (38): devDependencies, turbo, engines, node, turbo, name, packageManager, private (+30 more)
+Nodes (36): devDependencies, turbo, engines, node, turbo, name, packageManager, private (+28 more)
 
 ### Community 5 - "dependencies"
 Cohesion: 0.12
 Nodes (17): dependencies, @fontsource/poppins, lucide-react, next, nuqs, @radicar/validators, react-hook-form, @tanstack/react-query (+9 more)
 
 ### Community 6 - "resumes/page.tsx"
-Cohesion: 0.09
-Nodes (42): DeleteConfirmModal(), categoryByTag, getDefaultResumeName(), getTemplateCategory(), prioritizePinnedResumes(), restoreTailoredJobDetails(), resumeFromKnowledge(), ResumePageTab (+34 more)
+Cohesion: 0.10
+Nodes (40): useToast(), categoryByTag, getDefaultResumeName(), getTemplateCategory(), prioritizePinnedResumes(), restoreTailoredJobDetails(), resumeFromKnowledge(), ResumePageTab (+32 more)
 
 ### Community 7 - "loading-skeletons.tsx"
 Cohesion: 0.12
@@ -176,24 +167,24 @@ Cohesion: 0.04
 Nodes (48): dependencies, drizzle-orm, fastify, @fastify/cookie, @fastify/cors, @fastify/multipart, mammoth, @radicar/ai (+40 more)
 
 ### Community 11 - "normalizeImportedText"
-Cohesion: 0.55
-Nodes (11): canonicalDates(), canonicalExperience(), canonicalId(), canonicalLanguage(), canonicalProject(), canonicalQualification(), normalizeDataRecordForStorage(), normalizeImportedBoolean() (+3 more)
+Cohesion: 0.35
+Nodes (15): canonicalDates(), canonicalExperience(), canonicalId(), canonicalLanguage(), canonicalProject(), canonicalQualification(), normalizeDataRecordForStorage(), normalizeImportedBoolean() (+7 more)
 
 ### Community 12 - "auth/routes.ts"
 Cohesion: 0.10
-Nodes (20): AuthRouteOptions, cookieOptions(), eventListSchema, fastify, FastifyRequest, recordListSchema, registerAuthRoutes(), requestOtpSchema (+12 more)
+Nodes (19): AuthRouteOptions, cookieOptions(), eventListSchema, fastify, FastifyRequest, recordListSchema, requestOtpSchema, updatePreferencesSchema (+11 more)
 
-### Community 13 - "useAuth"
-Cohesion: 0.32
-Nodes (9): AuthGate(), useAuth(), useLogout(), AdminPage(), collectionLabels, formatNumber(), SettingsPage(), useAdminBillingStats() (+1 more)
+### Community 13 - "apiRequest"
+Cohesion: 0.23
+Nodes (19): useAuth(), AccountPage(), MembershipsAdminPage(), AdminOrdersPage(), AdminPage(), collectionLabels, formatNumber(), AdminPaymentsPage() (+11 more)
 
-### Community 14 - "Database"
-Cohesion: 0.20
-Nodes (7): createDatabase(), Database, database, migrationsFolder, database, now, timestamp
+### Community 14 - "toast.tsx"
+Cohesion: 0.22
+Nodes (9): ToastContext, ToastNotifier, ToastProvider(), ToastState, ToastVariant, clearPendingPlanUpgradeMessage(), getPendingPlanUpgradeMessage(), PLAN_UPGRADE_REQUIRED_EVENT (+1 more)
 
 ### Community 15 - "dashboard/page.tsx"
-Cohesion: 0.15
-Nodes (14): CircularProgress(), CircularProgressProps, barHeightClass(), DashboardPage(), DashboardState, dashboardTitle(), formatDate(), stageLabels (+6 more)
+Cohesion: 0.11
+Nodes (21): useModelTasks(), barHeightClass(), DashboardPage(), DashboardState, dashboardTitle(), formatDate(), stageLabels, statIcons (+13 more)
 
 ### Community 16 - "AuthService"
 Cohesion: 0.16
@@ -201,7 +192,7 @@ Nodes (7): AuthService, normalizePhone(), toAuthUser(), tokenHash(), AuthUser, U
 
 ### Community 17 - "admin/orders/page.tsx"
 Cohesion: 0.09
-Nodes (33): UserRole, orderFilterParsers, Response, statusOptions, Payment, paymentFilterParsers, Response, statusOptions (+25 more)
+Nodes (35): UserRole, orderFilterParsers, Response, statusOptions, Payment, paymentFilterParsers, Response, statusOptions (+27 more)
 
 ### Community 18 - "devDependencies"
 Cohesion: 0.12
@@ -217,7 +208,7 @@ Nodes (21): apiProxyOrigin, monorepoRoot, nextConfig, ^build, .next/**, dependsO
 
 ### Community 22 - "billing/routes.ts"
 Cohesion: 0.11
-Nodes (16): adjustCreditSchema, adminListSchema, callbackSchema, cancelSchema, createOrderSchema, extendSchema, grantPlanSchema, membershipListSchema (+8 more)
+Nodes (15): adjustCreditSchema, adminListSchema, callbackSchema, cancelSchema, createOrderSchema, extendSchema, grantPlanSchema, membershipListSchema (+7 more)
 
 ### Community 23 - "compilerOptions"
 Cohesion: 0.06
@@ -231,21 +222,21 @@ Nodes (7): scripts, build, dev, lint, start, test, typecheck
 Cohesion: 0.40
 Nodes (4): name, private, type, version
 
-### Community 26 - "table-page-size.ts"
-Cohesion: 0.36
-Nodes (6): AuthResponse, useTablePageSize(), positivePageParser, TablePageSize, tablePageSizes, tablePaginationParsers
+### Community 26 - "TablePagination"
+Cohesion: 0.24
+Nodes (8): PaginationItem, paginationItems(), TablePagination(), positivePageParser, TablePageSize, tablePageSizes, tablePaginationParsers, modelUsageDaysParser
 
 ### Community 28 - "stores.ts"
-Cohesion: 0.07
-Nodes (38): adminEventHref(), adminEventMessage(), adminEventTime(), initials(), MenuItem, menuItems, pageTitles, PanelShell() (+30 more)
+Cohesion: 0.08
+Nodes (34): SectionTitle(), Job, JobTone, Feedback, icons, PracticeCard, SessionData, AppProfileRecord (+26 more)
 
 ### Community 29 - "compilerOptions"
 Cohesion: 0.17
 Nodes (11): compilerOptions, module, moduleResolution, noEmit, types, extends, include, node (+3 more)
 
 ### Community 30 - "رادیکار — Resume Maker"
-Cohesion: 0.14
-Nodes (14): اجرای PostgreSQL و API داخل Docker, اجرای Web و API در terminalهای جدا, اجرای خروجی Build روی سیستم محلی, الزامات Production, تست و کنترل کیفیت, رادیکار — Resume Maker, ساختار Monorepo, فرمان‌های مهم Monorepo (+6 more)
+Cohesion: 0.05
+Nodes (35): تنظیم Web, قرارداد HTTP, لایه داده Web, API سازگار با OpenAI, dependencyها نامعتبر یا ناقص‌اند, endpoint `/ready` کد 503 می‌دهد, Proxy محلی DeepSeek, Web پیام اتصال به Node API می‌دهد (+27 more)
 
 ### Community 31 - "database/package.json"
 Cohesion: 0.07
@@ -273,7 +264,7 @@ Nodes (17): dependencies, @radicar/shared-types, zod, devDependencies, typescrip
 
 ### Community 37 - "billing/service.ts"
 Cohesion: 0.17
-Nodes (18): AuthServiceOptions, RequestOtpResult, VerifyOtpResult, BillingServiceOptions, UsageResource, usageResourceLabels, aiSettings, authSessions (+10 more)
+Nodes (19): AuthServiceOptions, RequestOtpResult, VerifyOtpResult, BillingServiceOptions, UsageCosts, UsageResource, usageResourceLabels, aiSettings (+11 more)
 
 ### Community 38 - "ZarinpalClient"
 Cohesion: 0.24
@@ -284,12 +275,12 @@ Cohesion: 0.39
 Nodes (8): chatGPTSignInPath(), chatGPTSignOutPath(), ChatGPTUser, getChatGPTUser(), isReservedAuthPath(), requireChatGPTUser(), safeDecodeURIComponent(), safeRelativeReturnPath()
 
 ### Community 40 - "DataCollection"
-Cohesion: 0.08
-Nodes (19): PostgresRecordRepository, RecordRepository, CollectionParams, parseCollection(), RecordParams, registerDataRoutes(), MemoryRecordRepository, metadata (+11 more)
+Cohesion: 0.10
+Nodes (12): PostgresRecordRepository, RecordRepository, parseCollection(), registerDataRoutes(), MemoryRecordRepository, metadata, Providers(), DataRepository (+4 more)
 
 ### Community 41 - "knowledge-base/page.tsx"
-Cohesion: 0.12
-Nodes (37): blankExperience(), blankLanguage(), blankProject(), blankQualification(), emptyKnowledge, experienceFromResume(), Field(), FieldProps (+29 more)
+Cohesion: 0.13
+Nodes (35): blankExperience(), blankLanguage(), blankProject(), blankQualification(), emptyKnowledge, experienceFromResume(), FieldProps, ImportResult (+27 more)
 
 ### Community 42 - "ai/package.json"
 Cohesion: 0.14
@@ -308,20 +299,12 @@ Cohesion: 0.25
 Nodes (7): compilerOptions, esModuleInterop, forceConsistentCasingInFileNames, resolveJsonModule, skipLibCheck, strict, target
 
 ### Community 47 - "job-import.ts"
-Cohesion: 0.26
+Cohesion: 0.28
 Nodes (15): allowedHostSuffixes, decodeEntities(), extractAttribute(), extractCompanyLogoUrl(), extractJobText(), extractMetaContent(), getLinkedInJobId(), isAllowedHost() (+7 more)
-
-### Community 48 - "apiRequest"
-Cohesion: 0.16
-Nodes (26): AccountPage(), MembershipsAdminPage(), AdminOrdersPage(), AdminPaymentsPage(), AdminRecordsPage(), collectionOptions, recordFilterParsers, RecordRow (+18 more)
 
 ### Community 49 - "model-usage/page.tsx"
 Cohesion: 0.10
 Nodes (27): AdminModelUsagePage(), dateTime(), downloadCsv(), modelUsageFilterParsers, number(), operationLabels, percent(), RecentModelRequest (+19 more)
-
-### Community 50 - "jobs/page.tsx"
-Cohesion: 0.23
-Nodes (9): SectionTitle(), categoryOptions, applicationStore, boundedMatchParser, jobFilterParsers, jobFilterUrlKeys, JobScope, jobScopes (+1 more)
 
 ### Community 51 - "compilerOptions"
 Cohesion: 0.17
@@ -329,119 +312,95 @@ Nodes (11): compilerOptions, module, moduleResolution, noEmit, types, extends, i
 
 ### Community 52 - "ai/routes.ts"
 Cohesion: 0.07
-Nodes (59): asObject(), hasResumeContent(), JsonObject, validateJobDescription(), ValidationResult, aiSettingsSchema, Analysis, bodyOf() (+51 more)
+Nodes (57): asObject(), hasResumeContent(), JsonObject, validateJobDescription(), ValidationResult, aiSettingsSchema, Analysis, bodyOf() (+49 more)
 
 ### Community 54 - "memberships/page.tsx"
-Cohesion: 0.14
-Nodes (16): cancelSchema, creditSchema, detailNumber(), detailString(), eventContent(), extendSchema, grantSchema, membershipFilterParsers (+8 more)
+Cohesion: 0.10
+Nodes (30): cancelSchema, creditSchema, detailNumber(), detailString(), eventContent(), extendSchema, grantSchema, membershipFilterParsers (+22 more)
 
 ### Community 55 - "validators/src/index.ts"
 Cohesion: 0.09
-Nodes (32): LoginPage(), localizedNumber(), aliasedObjectInput(), baseRecordSchema, boundedImportedArray(), collectionInput(), collectionWrapperKeys, firstDefined() (+24 more)
+Nodes (29): CollectionParams, RecordParams, ApiError, dataCollections, DataRecord, aliasedObjectInput(), baseRecordSchema, boundedImportedArray() (+21 more)
 
 ### Community 56 - "job-url.ts"
 Cohesion: 0.83
 Nodes (3): getLinkedInJobId(), isLinkedInHost(), resolveJobUrls()
 
 ### Community 57 - "marketing-sections.tsx"
-Cohesion: 0.10
+Cohesion: 0.11
 Nodes (24): AnimatedNumber(), BorderBeam(), DotPattern(), MagicCard(), Marquee(), Meteors(), ShimmerButton(), ShineBorder() (+16 more)
 
-### Community 58 - "toast.tsx"
-Cohesion: 0.16
-Nodes (13): ToastContext, ToastNotifier, ToastProvider(), ToastState, ToastVariant, ApiError, clearPendingPlanUpgradeMessage(), getPendingPlanUpgradeMessage() (+5 more)
-
-### Community 64 - "interview/page.tsx"
-Cohesion: 0.16
-Nodes (19): useToast(), JobCard(), JobCardData, JobDetailsData, JobDetailsModal(), JobLogo(), toneStyles, useModelTasks() (+11 more)
+### Community 64 - "panel-shell.tsx"
+Cohesion: 0.27
+Nodes (12): adminEventHref(), adminEventMessage(), adminEventTime(), initials(), MenuItem, menuItems, pageTitles, PanelShellContent() (+4 more)
 
 ### Community 66 - "api/[...path]/route.ts"
 Cohesion: 0.13
 Nodes (16): DELETE, GET, OPTIONS, PATCH, POST, proxy(), PUT, DELETE (+8 more)
 
-### Community 67 - "Radikar — Project Knowledge Base"
-Cohesion: 0.17
-Nodes (12): Radikar — Project Knowledge Base, اجرای محلی, استقرار, تضمین به‌روزرسانی knowledge base, تنظیمات محیطی و امنیت, دیتابیس، داده و پلن‌ها, ساختار سریع repository, نقاط ورود و مسیرهای مهم (+4 more)
+### Community 67 - "build-app.ts"
+Cohesion: 0.30
+Nodes (10): buildApp(), BuildAppOptions, handleAuthError(), registerAuthRoutes(), requirePermission(), handleBillingError(), registerBillingRoutes(), registerHealthRoutes() (+2 more)
 
 ### Community 69 - "field-direction.ts"
-Cohesion: 0.35
-Nodes (10): ALWAYS_LTR_INPUT_TYPES, applyFieldDirection(), applyWithin(), DirectionalField, getFieldDirection(), IGNORED_INPUT_TYPES, isDirectionalField(), refreshFieldDirections() (+2 more)
+Cohesion: 0.32
+Nodes (11): ALWAYS_LTR_INPUT_TYPES, applyFieldDirection(), applyWithin(), DirectionalField, getFieldDirection(), IGNORED_INPUT_TYPES, isDirectionalField(), refreshFieldDirections() (+3 more)
 
 ### Community 73 - "jalali-date-picker.tsx"
-Cohesion: 0.27
-Nodes (15): JalaliDatePicker(), JalaliDatePickerProps, weekDays, addCalendarDays(), atNoon(), formatPersianCalendarDate(), formatPersianCalendarMonth(), getPersianDateParts() (+7 more)
+Cohesion: 0.17
+Nodes (20): JalaliDatePicker(), JalaliDatePickerProps, weekDays, addCalendarDays(), atNoon(), formatPersianCalendarDate(), formatPersianCalendarMonth(), getPersianDateParts() (+12 more)
 
-### Community 74 - "scheduleFieldDirectionRefresh"
-Cohesion: 0.39
-Nodes (6): MultiSkillAutocomplete(), parseSkills(), scheduleFieldDirectionRefresh(), isStandaloneTechnicalToken(), parseResumeSkills(), serializeResumeSkills()
+### Community 74 - "parseResumeSkills"
+Cohesion: 0.48
+Nodes (5): MultiSkillAutocomplete(), parseSkills(), isStandaloneTechnicalToken(), parseResumeSkills(), serializeResumeSkills()
 
 ### Community 75 - "استقرار Production رادیکار"
 Cohesion: 0.25
 Nodes (7): DeepSeek محلی, آماده‌سازی, اجرا, استقرار Production رادیکار, انتشار نسخه جدید, پشتیبان‌گیری PostgreSQL, پیش‌نیاز
+
+### Community 76 - "Database"
+Cohesion: 0.18
+Nodes (7): createDatabase(), Database, database, migrationsFolder, database, now, timestamp
 
 ### Community 79 - "vercel.json"
 Cohesion: 0.50
 Nodes (3): regions, $schema, fra1
 
 ### Community 82 - "job-application-filter.ts"
-Cohesion: 0.16
-Nodes (15): JobsPage(), DatedApplication, hasJobActivityInDateRange(), isTimeInRange(), JobIdentity, normalizedIdentity(), normalizedPart(), rangeBoundary() (+7 more)
+Cohesion: 0.27
+Nodes (9): DatedApplication, hasJobActivityInDateRange(), isTimeInRange(), JobIdentity, normalizedIdentity(), normalizedPart(), rangeBoundary(), applications (+1 more)
 
-### Community 83 - "resume-section-flow.ts"
-Cohesion: 0.24
-Nodes (7): ResumeEducation, createContinuationResumePage(), enforceResumeSectionFlow(), hasResumeSectionFlowViolation(), hasWorkContent(), projectRoot, repositoryRoot
+### Community 83 - "resume-import.test.mjs"
+Cohesion: 0.48
+Nodes (5): calculateKnowledgeCompletion(), isSeededKnowledgeSampleProject(), KnowledgeCompletionData, normalizeImportedResumeData(), normalizeResumeImportPayload()
 
-### Community 84 - "account/page.tsx"
-Cohesion: 0.13
-Nodes (16): authQueryKey, CurrentUser, localizedNumericString, otpSchema, OtpValues, phoneSchema, PhoneValues, schema (+8 more)
+### Community 84 - "api-client.ts"
+Cohesion: 0.09
+Nodes (21): AuthGate(), authQueryKey, CurrentUser, useLogout(), localizedNumericString, LoginPage(), otpSchema, OtpValues (+13 more)
 
 ### Community 85 - "match/page.tsx"
-Cohesion: 0.12
-Nodes (20): createTaskId(), isModelTaskCanceledError(), ModelTask, ModelTaskCanceledError, ModelTaskContext, ModelTaskContextValue, ModelTaskProvider(), ModelTaskStateProvider() (+12 more)
-
-### Community 86 - "build-app.ts"
-Cohesion: 0.43
-Nodes (6): buildApp(), BuildAppOptions, handleAuthError(), handleBillingError(), registerHealthRoutes(), registerImportRoutes()
-
-### Community 87 - "رفع خطاهای رایج"
-Cohesion: 0.25
-Nodes (8): dependencyها نامعتبر یا ناقص‌اند, endpoint `/ready` کد 503 می‌دهد, Web پیام اتصال به Node API می‌دهد, خطای CORS دیده می‌شود, رفع خطاهای رایج, قابلیت‌های AI خطای provider می‌دهند, کد OTP در توسعه نمایش داده نمی‌شود, یکی از پورت‌ها اشغال است
-
-### Community 88 - "check-knowledge-base.mjs"
-Cohesion: 0.25
-Nodes (7): hasKnowledgeBaseUpdate, hasNotApplicableReview, ignoredPaths, requiresKnowledgeBaseUpdate, stagedFiles, watchedPrefixes, watchedRootFiles
-
-### Community 89 - "راه‌اندازی سریع پیشنهادی"
-Cohesion: 0.29
-Nodes (7): راه‌اندازی سریع پیشنهادی, ۱. نصب dependencyها, ۲. ساخت فایل‌های تنظیمات محلی, ۳. بالا آوردن PostgreSQL, ۴. اجرای migrationها, ۵. ایجاد داده اولیه, ۶. اجرای هم‌زمان Web و API
-
-### Community 90 - "لایه داده Web"
-Cohesion: 0.33
-Nodes (3): تنظیم Web, قرارداد HTTP, لایه داده Web
-
-### Community 91 - "تنظیم مدل هوش مصنوعی"
-Cohesion: 0.67
-Nodes (3): API سازگار با OpenAI, Proxy محلی DeepSeek, تنظیم مدل هوش مصنوعی
+Cohesion: 0.10
+Nodes (22): CircularProgress(), CircularProgressProps, createTaskId(), isModelTaskCanceledError(), ModelTask, ModelTaskCanceledError, ModelTaskContext, ModelTaskContextValue (+14 more)
 
 ## Knowledge Gaps
-- **536 isolated node(s):** `name`, `version`, `private`, `type`, `dev` (+531 more)
+- **516 isolated node(s):** `name`, `version`, `private`, `type`, `dev` (+511 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **13 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `cn` to `interview/page.tsx`, `resumes/page.tsx`, `loading-skeletons.tsx`, `jalali-date-picker.tsx`, `knowledge-base/page.tsx`, `scheduleFieldDirectionRefresh`, `admin/orders/page.tsx`, `match/page.tsx`, `marketing-sections.tsx`, `toast.tsx`, `stores.ts`?**
-  _High betweenness centrality (0.065) - this node is a cross-community bridge._
-- **Why does `DataCollection` connect `DataCollection` to `data-routes.test.ts`, `stores.ts`, `billing/service.ts`, `validators/src/index.ts`?**
+- **Why does `cn()` connect `cn` to `panel-shell.tsx`, `applications/page.tsx`, `resumes/page.tsx`, `loading-skeletons.tsx`, `jalali-date-picker.tsx`, `knowledge-base/page.tsx`, `parseResumeSkills`, `toast.tsx`, `admin/orders/page.tsx`, `match/page.tsx`, `marketing-sections.tsx`, `TablePagination`?**
+  _High betweenness centrality (0.062) - this node is a cross-community bridge._
+- **Why does `apiRequest()` connect `apiRequest` to `panel-shell.tsx`, `resumes/page.tsx`, `DataCollection`, `knowledge-base/page.tsx`, `dashboard/page.tsx`, `admin/orders/page.tsx`, `model-usage/page.tsx`, `api-client.ts`, `match/page.tsx`, `memberships/page.tsx`, `stores.ts`?**
+  _High betweenness centrality (0.042) - this node is a cross-community bridge._
+- **Why does `BillingService` connect `BillingService` to `data-routes.test.ts`, `build-app.ts`, `billing/service.ts`, `ZarinpalClient`, `app.ts`, `Database`, `ai/routes.ts`, `billing/routes.ts`, `validators/src/index.ts`?**
   _High betweenness centrality (0.033) - this node is a cross-community bridge._
-- **Why does `BillingService` connect `BillingService` to `data-routes.test.ts`, `billing/service.ts`, `ZarinpalClient`, `DataCollection`, `app.ts`, `Database`, `job-import.ts`, `ai/routes.ts`, `build-app.ts`, `billing/routes.ts`?**
-  _High betweenness centrality (0.031) - this node is a cross-community bridge._
 - **Are the 5 inferred relationships involving `KnowledgeBasePage()` (e.g. with `normalizeExperience()` and `normalizeLanguage()`) actually correct?**
   _`KnowledgeBasePage()` has 5 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `name`, `version`, `private` to the rest of the system?**
-  _536 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _516 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `cn` be split into smaller, more focused modules?**
-  _Cohesion score 0.08578263841421736 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.08526315789473685 - nodes in this community are weakly interconnected._
 - **Should `use-rendered-resume-pagination.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.083710407239819 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06386946386946386 - nodes in this community are weakly interconnected._

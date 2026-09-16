@@ -30,7 +30,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html className="bg-[#f6f7f2]" lang="fa" dir="rtl">
+    <html className="scroll-smooth bg-[#f6f7f2] motion-reduce:scroll-auto" lang="fa" dir="rtl">
       <body
         className="m-0 bg-[#f6f7f2] font-sans text-[#19312f]"
       >

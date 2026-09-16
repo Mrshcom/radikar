@@ -12,6 +12,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "prepare": "node scripts/setup-git-hooks.mjs",
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=@radicar/web",
     "dev:api": "turbo run dev --filter=@radicar/api",
@@ -33,7 +34,8 @@
     "infra:down": "docker compose down",
     "db:generate": "npm run db:generate --workspace @radicar/database",
     "db:migrate": "npm run db:migrate --workspace @radicar/database",
-    "db:seed": "npm run db:seed --workspace @radicar/database"
+    "db:seed": "npm run db:seed --workspace @radicar/database",
+    "knowledge:check": "node scripts/check-knowledge-base.mjs"
   },
   "devDependencies": {
     "turbo": "2.10.11"

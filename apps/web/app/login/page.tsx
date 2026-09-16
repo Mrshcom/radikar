@@ -168,6 +168,14 @@ export default function LoginPage() {
 
       <section className="relative grid w-full max-w-[980px] overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_30px_90px_rgba(24,55,48,.12)] lg:grid-cols-[1.05fr_.95fr]">
         <div className="relative hidden min-h-[650px] overflow-hidden bg-[#0f735c] p-12 text-white lg:flex lg:flex-col lg:justify-between">
+          <Image
+            src="/images/login-career-path.png"
+            alt=""
+            fill
+            sizes="(min-width: 1024px) 48vw, 0px"
+            className="pointer-events-none object-cover object-center opacity-55 mix-blend-screen"
+            aria-hidden="true"
+          />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,.16),transparent_36%),linear-gradient(145deg,transparent_45%,rgba(4,69,54,.45))]" />
           <div className="absolute -bottom-28 -left-20 size-[340px] rounded-full border-[55px] border-white/6" />
           <div className="relative flex items-center gap-3">
@@ -320,12 +328,13 @@ export default function LoginPage() {
             </p>
           )}
 
-          <p className="mb-0 mt-8 text-center text-[10px] text-[#7d8c89]">
-            حساب کاربری نداری؟{" "}
-            <Link className="font-extrabold text-[#0f7b62] no-underline" href="#">
-              ساخت حساب جدید
-            </Link>
-          </p>
+          <Link
+            className="mx-auto mt-8 inline-flex items-center gap-1.5 text-[10px] font-bold text-[#0f7b62] no-underline transition hover:text-[#0b6954]"
+            href="/"
+          >
+            <ArrowRight size={14} />
+            بازگشت به سایت
+          </Link>
         </div>
       </section>
     </main>

@@ -544,3 +544,6 @@ npm ci
 
 جزئیات مرز داده Web در
 [`apps/web/lib/data/README.md`](apps/web/lib/data/README.md) آمده است.
+
+نقشهٔ سریع معماری، راه‌اندازی، استقرار و وضعیت‌های شناخته‌شده در
+[`PROJECT_KNOWLEDGE.md`](PROJECT_KNOWLEDGE.md) نگهداری می‌شود.

@@ -1,7 +1,7 @@
 # Graph Report - resumeMaker  (2026-09-16)
 
 ## Corpus Check
-- 183 files · ~542,131 words
+- 183 files · ~494,790 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary

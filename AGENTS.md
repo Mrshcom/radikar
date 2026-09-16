@@ -2,6 +2,12 @@
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
 
+Use `PROJECT_KNOWLEDGE.md` progressively, not by default: for a small change in a
+known file, start there; for a codebase question, use a focused `graphify query`;
+and for architecture, routes, environment, deployment, or incident work, read only
+the relevant section of the knowledge base. Keep it current whenever those topics
+materially change.
+
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
 
 Rules:
