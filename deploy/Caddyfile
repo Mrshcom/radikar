@@ -1,4 +1,4 @@
-{$APP_DOMAIN} {
+http://{$APP_DOMAIN}, :80 {
   encode zstd gzip
 
   @api path /api/* /health /ready
@@ -19,5 +19,5 @@
 }
 
 www.{$APP_DOMAIN} {
-  redir https://{$APP_DOMAIN}{uri} permanent
+  redir http://{$APP_DOMAIN}{uri} permanent
 }

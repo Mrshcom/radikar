@@ -3,7 +3,7 @@ import { toPersianServiceErrorMessage } from "./service-error-message";
 
 export { toPersianServiceErrorMessage } from "./service-error-message";
 
-export const PLAN_UPGRADE_REQUIRED_EVENT = "radicar:plan-upgrade-required";
+export const PLAN_UPGRADE_REQUIRED_EVENT = "radikar:plan-upgrade-required";
 
 export type PlanUpgradeRequiredEventDetail = {
   message: string;

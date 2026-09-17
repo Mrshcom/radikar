@@ -6,7 +6,7 @@ import { ClipboardList, Info, ShieldCheck, UserCog } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { normalizeDigits } from "@radicar/validators";
+import { normalizeDigits } from "@radikar/validators";
 import { z } from "zod";
 import { useAuth } from "@/app/_components/auth";
 import { DataTable, type DataTableColumn } from "../../_components/data-table";

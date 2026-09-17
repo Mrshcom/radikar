@@ -12,17 +12,17 @@ const prompts = ["فرصت‌های مناسب پروفایل من را پیدا
 export function MarketingHeader() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 px-4 pt-4">
-      <div className={`${shell} flex h-16 items-center justify-between rounded-full border border-black/8 bg-[#fbfcf8]/80 px-3 shadow-[0_10px_40px_rgba(20,30,28,.08)] backdrop-blur-2xl sm:px-5`}>
-        <Link href="/" className="flex items-center gap-2.5" aria-label="رادیکار">
-          <span className="grid size-9 place-items-center rounded-full border border-[#4ca57d]/25 bg-[linear-gradient(145deg,#1d7054,#0e4a37)] shadow-[0_8px_22px_rgba(20,93,67,.2)]">
-            <Image src="/logo.svg" alt="" width={21} height={21} priority />
+      <div className="mx-auto flex h-16 w-full max-w-[1180px] items-center justify-between rounded-full border border-black/8 bg-[#fbfcf8]/80 px-3 shadow-[0_10px_40px_rgba(20,30,28,.08)] backdrop-blur-2xl">
+        <Link href="/" className="flex items-center gap-1" aria-label="رادیکار">
+          <span className="grid size-10 place-items-center">
+            <Image src="/radikar-logo.png" alt="" width={50} height={50} priority />
           </span>
           <strong className="text-[17px] font-black text-[#173c30]">رادیکار</strong>
         </Link>
         <nav className="hidden items-center gap-7 text-[13px] font-medium text-[#61706c] md:flex" aria-label="ناوبری اصلی">
           <a href="#product">محصول</a>
-          <a href="#features">امکانات</a>
           <a href="#how-it-works">چطور کار می‌کند؟</a>
+          <a href="#features">امکانات</a>
           <a href="#pricing">تعرفه‌ها</a>
         </nav>
         <div className="flex items-center gap-2">
@@ -61,7 +61,7 @@ function ProductStage() {
             <i className="size-2 rounded-full bg-[#f0c65b]" />
             <i className="size-2 rounded-full bg-[#66d79b]" />
           </div>
-          <span className="text-[8px] font-bold text-white/55">app.radicar.ir</span>
+          <span className="text-[8px] font-bold text-white/55">app.radikar.ir</span>
           <span />
         </div>
 
@@ -69,7 +69,7 @@ function ProductStage() {
           <aside className="hidden border-l border-black/6 bg-white p-4 lg:flex lg:flex-col">
             <div className="mb-7 flex items-center gap-2">
               <span className="grid size-8 place-items-center rounded-xl bg-[#164c3a]">
-                <Image src="/logo.svg" alt="" width={18} height={18} />
+                <Image src="/radikar-logo.png" alt="" width={27} height={27} />
               </span>
               <div><strong className="block text-[11px]">رادیکار</strong><span className="text-[7px] text-[#98a49f]">پنل مسیر شغلی</span></div>
             </div>
@@ -313,7 +313,7 @@ export function PricingSection() {
                 <>
                   <DotPattern className="invert opacity-[.07] [mask-image:none]" />
                   <BorderBeam className="opacity-80" />
-                  <span className="absolute left-7 top-0 z-20 -translate-y-1/2 whitespace-nowrap rounded-full border border-[#4cae83] bg-[#55c891] px-5 py-3 text-[11px] font-black text-[#0b4a36] shadow-[0_10px_24px_rgba(16,91,61,.2)]">
+                  <span className="absolute left-7 top-0 z-20 -translate-y-1/2 whitespace-nowrap rounded-full border border-[#4cae83] bg-[#55c891] px-5 py-3 text-[11px] font-black text-[#FFF] shadow-[0_10px_24px_rgba(16,91,61,.2)]">
                     پیشنهاد رادیکار
                   </span>
                   <div
@@ -395,7 +395,7 @@ export function MarketingFooter() {
           <div className="max-w-md">
             <Link href="/" className="inline-flex items-center gap-3" aria-label="رادیکار">
               <span className="grid size-11 place-items-center rounded-2xl border border-white/15 bg-white/10 shadow-[0_12px_35px_rgba(0,0,0,.2)] backdrop-blur-sm">
-                <Image src="/logo.svg" alt="" width={24} height={24} />
+                <Image src="/radikar-logo.png" alt="" width={34} height={34} />
               </span>
               <span>
                 <strong className="block text-xl font-black">رادیکار</strong>

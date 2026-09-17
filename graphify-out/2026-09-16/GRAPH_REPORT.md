@@ -74,7 +74,7 @@
 - toast.tsx
 - AGENTS.md
 - job-description-validation.ts
-- @radicar/shared-types
+- @radikar/shared-types
 - interview/page.tsx
 - eslint.config.mjs
 - api/[...path]/route.ts
@@ -153,7 +153,7 @@ Nodes (38): devDependencies, turbo, engines, node, turbo, name, packageManager, 
 
 ### Community 5 - "dependencies"
 Cohesion: 0.12
-Nodes (17): dependencies, @fontsource/poppins, lucide-react, next, nuqs, @radicar/validators, react-hook-form, @tanstack/react-query (+9 more)
+Nodes (17): dependencies, @fontsource/poppins, lucide-react, next, nuqs, @radikar/validators, react-hook-form, @tanstack/react-query (+9 more)
 
 ### Community 6 - "resumes/page.tsx"
 Cohesion: 0.09
@@ -173,7 +173,7 @@ Nodes (8): app, billingService, config, database, ApiConfig, environmentSchema, 
 
 ### Community 10 - "dependencies"
 Cohesion: 0.04
-Nodes (48): dependencies, drizzle-orm, fastify, @fastify/cookie, @fastify/cors, @fastify/multipart, mammoth, @radicar/ai (+40 more)
+Nodes (48): dependencies, drizzle-orm, fastify, @fastify/cookie, @fastify/cors, @fastify/multipart, mammoth, @radikar/ai (+40 more)
 
 ### Community 11 - "normalizeImportedText"
 Cohesion: 0.55
@@ -249,7 +249,7 @@ Nodes (14): اجرای PostgreSQL و API داخل Docker, اجرای Web و API 
 
 ### Community 31 - "database/package.json"
 Cohesion: 0.07
-Nodes (26): drizzle-kit, dependencies, drizzle-orm, postgres, @radicar/shared-types, tsx, devDependencies, drizzle-kit (+18 more)
+Nodes (26): drizzle-kit, dependencies, drizzle-orm, postgres, @radikar/shared-types, tsx, devDependencies, drizzle-kit (+18 more)
 
 ### Community 32 - "compilerOptions"
 Cohesion: 0.18
@@ -269,7 +269,7 @@ Nodes (12): devDependencies, typescript, exports, typescript, name, private, scr
 
 ### Community 36 - "validators/package.json"
 Cohesion: 0.11
-Nodes (17): dependencies, @radicar/shared-types, zod, devDependencies, typescript, exports, @radicar/shared-types, typescript (+9 more)
+Nodes (17): dependencies, @radikar/shared-types, zod, devDependencies, typescript, exports, @radikar/shared-types, typescript (+9 more)
 
 ### Community 37 - "billing/service.ts"
 Cohesion: 0.17

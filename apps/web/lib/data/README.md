@@ -26,7 +26,7 @@ Base URL داده: `${NEXT_PUBLIC_API_BASE_URL}/v1/data`
 - `DELETE /{collection}/{id}`: حذف رکورد
 - `DELETE /{collection}`: پاک‌کردن collection همان کاربر
 
-نام collectionها در `@radicar/shared-types` مشترک است و ساختار پایه رکورد با Zod
-در `@radicar/validators` اعتبارسنجی می‌شود.
+نام collectionها در `@radikar/shared-types` مشترک است و ساختار پایه رکورد با Zod
+در `@radikar/validators` اعتبارسنجی می‌شود.
 Node API مالکیت را از نشست سرور استخراج می‌کند و به `profileId` ارسالی مرورگر برای
 تشخیص کاربر اعتماد نمی‌کند. PostgreSQL تنها منبع حقیقت داده‌های پایدار است.

@@ -5,7 +5,7 @@ import {
   normalizeResumeImportPayload,
   sanitizeImportedImageSource,
   sanitizeImportedUrl,
-} from "@radicar/validators";
+} from "@radikar/validators";
 import { normalizeResumeDataInput } from "../lib/resume-input.ts";
 import { calculateKnowledgeCompletion } from "../lib/knowledge-completion.ts";
 import {

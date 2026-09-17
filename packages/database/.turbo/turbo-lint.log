@@ -1,4 +1,4 @@
 
-> @radicar/database@0.1.0 lint
+> @radikar/database@0.1.0 lint
 > tsc --noEmit
 

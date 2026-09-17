@@ -1,7 +1,7 @@
 import {
   normalizeImportedText,
   normalizeImportedTextArray,
-} from "@radicar/validators";
+} from "@radikar/validators";
 
 export type MatchAnalysis = {
   score: number;

@@ -6,6 +6,6 @@ export default defineConfig({
   dialect: "postgresql",
   dbCredentials: {
     url: process.env.DATABASE_URL ??
-      "postgresql://radicar:radicar@localhost:5433/radicar",
+      "postgresql://radikar:radikar@localhost:5433/radikar",
   },
 });

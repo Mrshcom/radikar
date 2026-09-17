@@ -1,4 +1,4 @@
-import { normalizeImportedText } from "@radicar/validators";
+import { normalizeImportedText } from "@radikar/validators";
 
 type ValidationResult = { valid: true } | { valid: false; error: string };
 

@@ -1,6 +1,6 @@
 # Radikar — Project Knowledge Base
 
-> Last curated: 2026-09-16
+> Last curated: 2026-09-18
 >
 > این سند نقشهٔ سریع پروژه است. پیش از اسکن وسیع repository، ابتدا همین فایل،
 > `AGENTS.md` و در صورت نیاز `graphify query` را بخوانید. پس از هر تغییر
@@ -118,6 +118,14 @@ graphify path "A" "B"
 - API Vercel در region `fra1` اجرا می‌شود.
 - جزئیات گزینهٔ VPS/Docker/Caddy در `deploy/README.md` است.
 - API build روی Vercel migration و seed idempotent پلن‌ها را اجرا می‌کند.
+- VPS فعلی رادیکار در مسیر `/home/sport724/mampel/radikar` اجرا می‌شود؛ پورت
+  تست HTTP `5000` و HTTPS `5443` است و پورت‌های داخلی API/Web عمومی نیستند.
+- در تست IP، OTP پیامک نمی‌شود و `developmentCode` نمایش داده می‌شود؛ پیش از
+  انتشار دامنه باید این حالت خاموش، CORS محدود و cookie امن فعال شود.
+- خروجی provider هوش مصنوعی از کانتینر API روی HTTPS استفاده می‌کند و برای
+  پایداری، `api.gapgpt.app` در Compose به edge سالم pin شده است.
+- CI/CD در `.github/workflows/deploy-production.yml` با push تگ‌هایی مثل
+  `0.1.11-p` اجرا می‌شود و فقط مسیر VPS بالا را sync و stack را recreate می‌کند.
 - پس از تغییر `NEXT_PUBLIC_API_BASE_URL` باید Web دوباره build/deploy شود.
 
 ## وضعیت‌ها و تصمیم‌های شناخته‌شده

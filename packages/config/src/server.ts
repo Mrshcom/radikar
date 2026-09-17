@@ -25,7 +25,7 @@ const environmentSchema = z.object({
   API_PORT: z.coerce.number().int().min(1).max(65_535).default(3162),
   DATABASE_URL: z
     .url()
-    .default("postgresql://radicar:radicar@localhost:5433/radicar"),
+    .default("postgresql://radikar:radikar@localhost:5433/radikar"),
   DATABASE_MAX_CONNECTIONS: z.coerce.number().int().min(1).max(50).default(10),
   MAX_UPLOAD_SIZE_MB: z.coerce.number().int().min(1).max(50).default(8),
   CORS_ORIGINS: z.string().default("http://localhost:3161"),

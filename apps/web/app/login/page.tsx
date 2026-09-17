@@ -12,7 +12,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api-client";
 import { authQueryKey, type CurrentUser } from "@/app/_components/auth";
 import { useToast } from "@/app/_components/toast";
-import { normalizeDigits } from "@radicar/validators";
+import { normalizeDigits } from "@radikar/validators";
 
 const localizedNumericString = z.string().trim().transform(normalizeDigits);
 
@@ -167,20 +167,20 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute -bottom-48 -left-36 size-[460px] rounded-full bg-[#d8b35c]/10 blur-3xl" />
 
       <section className="relative grid w-full max-w-[980px] overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_30px_90px_rgba(24,55,48,.12)] lg:grid-cols-[1.05fr_.95fr]">
-        <div className="relative hidden min-h-[650px] overflow-hidden bg-[#0f735c] p-12 text-white lg:flex lg:flex-col lg:justify-between">
+        <div className="relative hidden min-h-[650px] overflow-hidden bg-[#075543] p-12 text-white lg:flex lg:flex-col lg:justify-between">
           <Image
             src="/images/login-career-path.png"
             alt=""
             fill
             sizes="(min-width: 1024px) 48vw, 0px"
-            className="pointer-events-none object-cover object-center opacity-55 mix-blend-screen"
+            className="pointer-events-none object-cover object-center opacity-90"
             aria-hidden="true"
           />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,.16),transparent_36%),linear-gradient(145deg,transparent_45%,rgba(4,69,54,.45))]" />
+          <div className="absolute inset-0 bg-[linear-gradient(145deg,rgba(3,66,52,.08)_25%,rgba(2,43,35,.48)_100%)]" />
           <div className="absolute -bottom-28 -left-20 size-[340px] rounded-full border-[55px] border-white/6" />
           <div className="relative flex items-center gap-3">
             <span className="grid size-12 place-items-center rounded-[15px] bg-white shadow-[0_10px_24px_rgba(2,44,34,.18)]">
-              <Image src="/logo.svg" alt="لوگوی رادیکار" width={31} height={31} />
+              <Image src="/radikar-logo.png" alt="لوگوی رادیکار" width={42} height={42} />
             </span>
             <div>
               <strong className="block text-[21px]">رادیکار</strong>
@@ -209,7 +209,7 @@ export default function LoginPage() {
 
         <div className="flex min-h-[650px] flex-col justify-center px-6 py-10 sm:px-12 lg:px-14">
           <div className="mb-10 flex items-center gap-3 lg:hidden">
-            <Image src="/logo.svg" alt="لوگوی رادیکار" width={42} height={42} />
+            <Image src="/radikar-logo.png" alt="لوگوی رادیکار" width={54} height={54} />
             <strong className="text-[20px]">رادیکار</strong>
           </div>
 

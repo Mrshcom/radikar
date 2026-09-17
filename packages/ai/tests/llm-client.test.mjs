@@ -172,7 +172,7 @@ test("chatJson isolates proxy sessions and switches models after an empty respon
 
     assert.equal(result.resumeData.fullName, "Mohammad Reza Shariatzadeh");
     assert.equal(callCount, 2);
-    assert.match(requestUsers[0], /^radicar-json-/);
+    assert.match(requestUsers[0], /^radikar-json-/);
     assert.notEqual(requestUsers[0], requestUsers[1]);
     assert.deepEqual(
       requestBodies.map((body) => body.model),

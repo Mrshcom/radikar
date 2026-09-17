@@ -69,7 +69,7 @@ import {
   normalizeStoredResumeData,
   sanitizeImportedUrl,
   type ResumeImportPayload,
-} from "@radicar/validators";
+} from "@radikar/validators";
 
 const primaryButton =
   "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] bg-[#0f7b62] px-[15px] text-[11px] font-bold whitespace-nowrap text-white shadow-[0_7px_17px_rgba(15,123,98,.17)] disabled:cursor-not-allowed disabled:opacity-45";
@@ -182,9 +182,9 @@ const blankProject = (): ResumeProject => ({
 const sampleKnowledgeProjects = (): ResumeProject[] => [
   {
     id: createRecordId("project-sample"),
-    name: "Radicar AI Career Platform",
+    name: "Radikar AI Career Platform",
     role: "Lead Frontend Engineer · Personal SaaS Project",
-    url: "github.com/mampel88/radicar",
+    url: "github.com/mampel88/radikar",
     startDate: "2025/01",
     endDate: "",
     isCurrent: true,

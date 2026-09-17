@@ -6,7 +6,7 @@ export function registerHealthRoutes(
 ) {
   app.get("/health", async () => ({
     status: "ok",
-    service: "radicar-api",
+    service: "radikar-api",
     timestamp: new Date().toISOString(),
   }));
 

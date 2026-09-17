@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
-import type { DataCollection } from "@radicar/shared-types";
+import type { DataCollection } from "@radikar/shared-types";
 import {
   dataCollectionSchema,
   normalizeDataRecordForStorage,
-} from "@radicar/validators";
+} from "@radikar/validators";
 import type { RecordRepository } from "./record-repository";
 import { requirePermission } from "../auth/routes";
 import type { BillingService } from "../billing/service";

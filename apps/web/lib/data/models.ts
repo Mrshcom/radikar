@@ -5,7 +5,7 @@ import type {
   ResumeProject,
 } from "@/app/(panel)/resumes/resume-data";
 
-export type { DataCollection } from "@radicar/shared-types";
+export type { DataCollection } from "@radikar/shared-types";
 
 export type BaseRecord = {
   id: string;

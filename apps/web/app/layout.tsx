@@ -10,7 +10,7 @@ import { Providers } from "./providers";
 export const metadata: Metadata = {
   title: "رادیکار | دستیار هوشمند کاریابی",
   description: "پنل هوشمند ساخت رزومه، تطبیق فرصت‌های شغلی و مدیریت اپلای",
-  icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+  icons: { icon: "/radikar-logo.png", shortcut: "/radikar-logo.png" },
   openGraph: {
     title: "رادیکار | دستیار هوشمند مسیر شغلی تو",
     description:

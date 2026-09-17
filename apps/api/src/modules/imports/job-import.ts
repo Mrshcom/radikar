@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { sanitizeRemoteImageSource } from "@radicar/validators";
+import { sanitizeRemoteImageSource } from "@radikar/validators";
 
 const maxTextLength = 7000;
 const allowedHostSuffixes = [

@@ -32,7 +32,7 @@ import {
   ResumePrintPage,
 } from "./resume-pagination-components";
 import { normalizeResumeDataInput } from "@/lib/resume-input";
-import { sanitizeImportedUrl } from "@radicar/validators";
+import { sanitizeImportedUrl } from "@radikar/validators";
 
 type ResumeDocumentProps = {
   templateId: string;

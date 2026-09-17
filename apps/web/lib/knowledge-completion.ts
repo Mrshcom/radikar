@@ -1,5 +1,5 @@
 import type { KnowledgeProfileRecord } from "@/lib/data/models";
-import { normalizeResumeImportPayload } from "@radicar/validators";
+import { normalizeResumeImportPayload } from "@radikar/validators";
 
 type KnowledgeCompletionData = Omit<
   KnowledgeProfileRecord,

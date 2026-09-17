@@ -6,7 +6,7 @@ import {
   randomUUID,
   timingSafeEqual,
 } from "node:crypto";
-import { normalizeDigits } from "@radicar/validators";
+import { normalizeDigits } from "@radikar/validators";
 import { and, count, desc, eq, gt, ilike, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import {
   authSessions,
@@ -18,7 +18,7 @@ import {
   userMemberships,
   users,
   type Database,
-} from "@radicar/database";
+} from "@radikar/database";
 import type { AuthUser, SessionIdentity, UserRole, UserStatus } from "./types";
 
 export type AuthServiceOptions = {

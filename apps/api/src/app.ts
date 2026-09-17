@@ -1,13 +1,13 @@
 import { sql } from "drizzle-orm";
 import Fastify from "fastify";
-import { createDatabase } from "@radicar/database";
+import { createDatabase } from "@radikar/database";
 import { buildApp } from "./build-app";
-import { loadLocalEnvironment, readConfig } from "@radicar/config/server";
+import { loadLocalEnvironment, readConfig } from "@radikar/config/server";
 import { PostgresRecordRepository } from "./modules/data/record-repository";
 import { AuthService } from "./modules/auth/service";
 import { BillingService } from "./modules/billing/service";
-import { setAnalyzeProvider } from "@radicar/ai";
-import { aiSettings } from "@radicar/database";
+import { setAnalyzeProvider } from "@radikar/ai";
+import { aiSettings } from "@radikar/database";
 import { eq } from "drizzle-orm";
 
 loadLocalEnvironment();
@@ -47,8 +47,14 @@ const app = buildApp({
   }),
   billingService,
   database: database.db,
-  sessionCookieName: config.NODE_ENV === "production" ? "__Host-radicar_session" : "radicar_session",
-  secureCookies: config.NODE_ENV === "production",
+      // The temporary demo mode is served over HTTP on the IP:5000 test port.
+      // Use a regular cookie there; production/domain mode keeps the hardened
+      // __Host- cookie and Secure flag.
+      sessionCookieName:
+        config.NODE_ENV === "production" && !config.ALLOW_INSECURE_DEMO_OTP
+          ? "__Host-radikar_session"
+          : "radikar_session",
+      secureCookies: config.NODE_ENV === "production" && !config.ALLOW_INSECURE_DEMO_OTP,
   sessionTtlDays: config.SESSION_TTL_DAYS,
   maxUploadSizeBytes: config.MAX_UPLOAD_SIZE_MB * 1024 * 1024,
 });

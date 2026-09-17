@@ -1,5 +1,5 @@
 {
-  "name": "@radicar/database",
+  "name": "@radikar/database",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "db:seed": "node --env-file-if-exists=../../apps/api/.env --import tsx src/seed.ts"
   },
   "dependencies": {
-    "@radicar/shared-types": "*",
+    "@radikar/shared-types": "*",
     "drizzle-orm": "0.45.2",
     "postgres": "^3.4.7",
     "tsx": "^4.20.6"

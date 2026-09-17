@@ -8906,59 +8906,59 @@
       "norm_label": "mammoth"
     },
     {
-      "label": "@radicar/ai",
+      "label": "@radikar/ai",
       "file_type": "code",
       "source_file": "apps/api/package.json",
       "source_location": "L18",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies_radicar_ai",
+      "id": "apps_api_package_dependencies_radikar_ai",
       "community": 10,
       "community_name": "dependencies",
-      "norm_label": "@radicar/ai"
+      "norm_label": "@radikar/ai"
     },
     {
-      "label": "@radicar/config",
+      "label": "@radikar/config",
       "file_type": "code",
       "source_file": "apps/api/package.json",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies_radicar_config",
+      "id": "apps_api_package_dependencies_radikar_config",
       "community": 10,
       "community_name": "dependencies",
-      "norm_label": "@radicar/config"
+      "norm_label": "@radikar/config"
     },
     {
-      "label": "@radicar/database",
+      "label": "@radikar/database",
       "file_type": "code",
       "source_file": "apps/api/package.json",
       "source_location": "L20",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies_radicar_database",
+      "id": "apps_api_package_dependencies_radikar_database",
       "community": 10,
       "community_name": "dependencies",
-      "norm_label": "@radicar/database"
+      "norm_label": "@radikar/database"
     },
     {
-      "label": "@radicar/shared-types",
+      "label": "@radikar/shared-types",
       "file_type": "code",
       "source_file": "apps/api/package.json",
       "source_location": "L21",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies_radicar_shared_types",
+      "id": "apps_api_package_dependencies_radikar_shared_types",
       "community": 10,
       "community_name": "dependencies",
-      "norm_label": "@radicar/shared-types"
+      "norm_label": "@radikar/shared-types"
     },
     {
-      "label": "@radicar/validators",
+      "label": "@radikar/validators",
       "file_type": "code",
       "source_file": "apps/api/package.json",
       "source_location": "L22",
       "_origin": "ast",
-      "id": "apps_api_package_dependencies_radicar_validators",
+      "id": "apps_api_package_dependencies_radikar_validators",
       "community": 10,
       "community_name": "dependencies",
-      "norm_label": "@radicar/validators"
+      "norm_label": "@radikar/validators"
     },
     {
       "label": "tsx",
@@ -9181,26 +9181,26 @@
       "norm_label": "drizzle-orm"
     },
     {
-      "label": "@radicar/shared-types",
+      "label": "@radikar/shared-types",
       "file_type": "concept",
       "source_file": "apps/api/package.json",
       "source_location": "L21",
       "_origin": "ast",
-      "id": "apps_api_package_json_radicar_shared_types",
+      "id": "apps_api_package_json_radikar_shared_types",
       "community": 10,
       "community_name": "dependencies",
-      "norm_label": "@radicar/shared-types"
+      "norm_label": "@radikar/shared-types"
     },
     {
-      "label": "@radicar/validators",
+      "label": "@radikar/validators",
       "file_type": "concept",
       "source_file": "apps/api/package.json",
       "source_location": "L22",
       "_origin": "ast",
-      "id": "apps_api_package_json_radicar_validators",
+      "id": "apps_api_package_json_radikar_validators",
       "community": 10,
       "community_name": "dependencies",
-      "norm_label": "@radicar/validators"
+      "norm_label": "@radikar/validators"
     },
     {
       "label": "tsx",
@@ -9302,37 +9302,37 @@
       "norm_label": "mammoth"
     },
     {
-      "label": "@radicar/ai",
+      "label": "@radikar/ai",
       "file_type": "concept",
       "source_file": "apps/api/package.json",
       "source_location": "L18",
       "_origin": "ast",
-      "id": "radicar_ai",
+      "id": "radikar_ai",
       "community": 10,
       "community_name": "dependencies",
-      "norm_label": "@radicar/ai"
+      "norm_label": "@radikar/ai"
     },
     {
-      "label": "@radicar/config",
+      "label": "@radikar/config",
       "file_type": "concept",
       "source_file": "apps/api/package.json",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "radicar_config",
+      "id": "radikar_config",
       "community": 10,
       "community_name": "dependencies",
-      "norm_label": "@radicar/config"
+      "norm_label": "@radikar/config"
     },
     {
-      "label": "@radicar/database",
+      "label": "@radikar/database",
       "file_type": "concept",
       "source_file": "apps/api/package.json",
       "source_location": "L20",
       "_origin": "ast",
-      "id": "radicar_database",
+      "id": "radikar_database",
       "community": 10,
       "community_name": "dependencies",
-      "norm_label": "@radicar/database"
+      "norm_label": "@radikar/database"
     },
     {
       "label": "unpdf",
@@ -12309,15 +12309,15 @@
       "norm_label": "postgres"
     },
     {
-      "label": "@radicar/shared-types",
+      "label": "@radikar/shared-types",
       "file_type": "code",
       "source_file": "packages/database/package.json",
       "source_location": "L16",
       "_origin": "ast",
-      "id": "packages_database_package_dependencies_radicar_shared_types",
+      "id": "packages_database_package_dependencies_radikar_shared_types",
       "community": 31,
       "community_name": "database/package.json",
-      "norm_label": "@radicar/shared-types"
+      "norm_label": "@radikar/shared-types"
     },
     {
       "label": "tsx",
@@ -12518,15 +12518,15 @@
       "norm_label": "drizzle-orm"
     },
     {
-      "label": "@radicar/shared-types",
+      "label": "@radikar/shared-types",
       "file_type": "concept",
       "source_file": "packages/database/package.json",
       "source_location": "L16",
       "_origin": "ast",
-      "id": "packages_database_package_json_radicar_shared_types",
+      "id": "packages_database_package_json_radikar_shared_types",
       "community": 31,
       "community_name": "database/package.json",
-      "norm_label": "@radicar/shared-types"
+      "norm_label": "@radikar/shared-types"
     },
     {
       "label": "tsx",
@@ -13178,15 +13178,15 @@
       "norm_label": "dependencies"
     },
     {
-      "label": "@radicar/shared-types",
+      "label": "@radikar/shared-types",
       "file_type": "code",
       "source_file": "packages/validators/package.json",
       "source_location": "L13",
       "_origin": "ast",
-      "id": "packages_validators_package_dependencies_radicar_shared_types",
+      "id": "packages_validators_package_dependencies_radikar_shared_types",
       "community": 36,
       "community_name": "validators/package.json",
-      "norm_label": "@radicar/shared-types"
+      "norm_label": "@radikar/shared-types"
     },
     {
       "label": "zod",
@@ -13321,15 +13321,15 @@
       "norm_label": "version"
     },
     {
-      "label": "@radicar/shared-types",
+      "label": "@radikar/shared-types",
       "file_type": "concept",
       "source_file": "packages/validators/package.json",
       "source_location": "L13",
       "_origin": "ast",
-      "id": "packages_validators_package_json_radicar_shared_types",
+      "id": "packages_validators_package_json_radikar_shared_types",
       "community": 36,
       "community_name": "validators/package.json",
-      "norm_label": "@radicar/shared-types"
+      "norm_label": "@radikar/shared-types"
     },
     {
       "label": "typescript",
@@ -14795,15 +14795,15 @@
       "norm_label": "nuqs"
     },
     {
-      "label": "@radicar/validators",
+      "label": "@radikar/validators",
       "file_type": "code",
       "source_file": "apps/web/package.json",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "apps_web_package_dependencies_radicar_validators",
+      "id": "apps_web_package_dependencies_radikar_validators",
       "community": 5,
       "community_name": "dependencies",
-      "norm_label": "@radicar/validators"
+      "norm_label": "@radikar/validators"
     },
     {
       "label": "react-hook-form",
@@ -14839,15 +14839,15 @@
       "norm_label": "zod"
     },
     {
-      "label": "@radicar/validators",
+      "label": "@radikar/validators",
       "file_type": "concept",
       "source_file": "apps/web/package.json",
       "source_location": "L19",
       "_origin": "ast",
-      "id": "apps_web_package_json_radicar_validators",
+      "id": "apps_web_package_json_radikar_validators",
       "community": 5,
       "community_name": "dependencies",
-      "norm_label": "@radicar/validators"
+      "norm_label": "@radikar/validators"
     },
     {
       "label": "zod",
@@ -16261,26 +16261,26 @@
       "norm_label": "drizzle.config.ts"
     },
     {
-      "label": "@radicar/shared-types",
+      "label": "@radikar/shared-types",
       "file_type": "code",
       "source_file": "apps/web/package.json",
       "source_location": "L18",
       "_origin": "ast",
-      "id": "apps_web_package_dependencies_radicar_shared_types",
+      "id": "apps_web_package_dependencies_radikar_shared_types",
       "community": 73,
-      "community_name": "@radicar/shared-types",
-      "norm_label": "@radicar/shared-types"
+      "community_name": "@radikar/shared-types",
+      "norm_label": "@radikar/shared-types"
     },
     {
-      "label": "@radicar/shared-types",
+      "label": "@radikar/shared-types",
       "file_type": "concept",
       "source_file": "apps/web/package.json",
       "source_location": "L18",
       "_origin": "ast",
-      "id": "apps_web_package_json_radicar_shared_types",
+      "id": "apps_web_package_json_radikar_shared_types",
       "community": 73,
-      "community_name": "@radicar/shared-types",
-      "norm_label": "@radicar/shared-types"
+      "community_name": "@radikar/shared-types",
+      "norm_label": "@radikar/shared-types"
     },
     {
       "label": "react",
@@ -27051,8 +27051,8 @@
       "weight": 1.0,
       "context": "import",
       "_origin": "ast",
-      "source": "apps_api_package_dependencies_radicar_ai",
-      "target": "radicar_ai",
+      "source": "apps_api_package_dependencies_radikar_ai",
+      "target": "radikar_ai",
       "confidence_score": 1.0
     },
     {
@@ -27063,8 +27063,8 @@
       "weight": 1.0,
       "context": "import",
       "_origin": "ast",
-      "source": "apps_api_package_dependencies_radicar_config",
-      "target": "radicar_config",
+      "source": "apps_api_package_dependencies_radikar_config",
+      "target": "radikar_config",
       "confidence_score": 1.0
     },
     {
@@ -27075,8 +27075,8 @@
       "weight": 1.0,
       "context": "import",
       "_origin": "ast",
-      "source": "apps_api_package_dependencies_radicar_database",
-      "target": "radicar_database",
+      "source": "apps_api_package_dependencies_radikar_database",
+      "target": "radikar_database",
       "confidence_score": 1.0
     },
     {
@@ -27087,8 +27087,8 @@
       "weight": 1.0,
       "context": "import",
       "_origin": "ast",
-      "source": "apps_api_package_dependencies_radicar_shared_types",
-      "target": "apps_api_package_json_radicar_shared_types",
+      "source": "apps_api_package_dependencies_radikar_shared_types",
+      "target": "apps_api_package_json_radikar_shared_types",
       "confidence_score": 1.0
     },
     {
@@ -27099,8 +27099,8 @@
       "weight": 1.0,
       "context": "import",
       "_origin": "ast",
-      "source": "apps_api_package_dependencies_radicar_validators",
-      "target": "apps_api_package_json_radicar_validators",
+      "source": "apps_api_package_dependencies_radikar_validators",
+      "target": "apps_api_package_json_radikar_validators",
       "confidence_score": 1.0
     },
     {
@@ -34179,8 +34179,8 @@
       "weight": 1.0,
       "context": "import",
       "_origin": "ast",
-      "source": "apps_web_package_dependencies_radicar_shared_types",
-      "target": "apps_web_package_json_radicar_shared_types",
+      "source": "apps_web_package_dependencies_radikar_shared_types",
+      "target": "apps_web_package_json_radikar_shared_types",
       "confidence_score": 1.0
     },
     {
@@ -34191,8 +34191,8 @@
       "weight": 1.0,
       "context": "import",
       "_origin": "ast",
-      "source": "apps_web_package_dependencies_radicar_validators",
-      "target": "apps_web_package_json_radicar_validators",
+      "source": "apps_web_package_dependencies_radikar_validators",
+      "target": "apps_web_package_json_radikar_validators",
       "confidence_score": 1.0
     },
     {
@@ -34791,8 +34791,8 @@
       "weight": 1.0,
       "context": "import",
       "_origin": "ast",
-      "source": "packages_database_package_dependencies_radicar_shared_types",
-      "target": "packages_database_package_json_radicar_shared_types",
+      "source": "packages_database_package_dependencies_radikar_shared_types",
+      "target": "packages_database_package_json_radikar_shared_types",
       "confidence_score": 1.0
     },
     {
@@ -34911,8 +34911,8 @@
       "weight": 1.0,
       "context": "import",
       "_origin": "ast",
-      "source": "packages_validators_package_dependencies_radicar_shared_types",
-      "target": "packages_validators_package_json_radicar_shared_types",
+      "source": "packages_validators_package_dependencies_radikar_shared_types",
+      "target": "packages_validators_package_json_radikar_shared_types",
       "confidence_score": 1.0
     },
     {
@@ -39950,7 +39950,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_package_dependencies",
-      "target": "apps_api_package_dependencies_radicar_ai",
+      "target": "apps_api_package_dependencies_radikar_ai",
       "confidence_score": 1.0
     },
     {
@@ -39961,7 +39961,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_package_dependencies",
-      "target": "apps_api_package_dependencies_radicar_config",
+      "target": "apps_api_package_dependencies_radikar_config",
       "confidence_score": 1.0
     },
     {
@@ -39972,7 +39972,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_package_dependencies",
-      "target": "apps_api_package_dependencies_radicar_database",
+      "target": "apps_api_package_dependencies_radikar_database",
       "confidence_score": 1.0
     },
     {
@@ -39983,7 +39983,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_package_dependencies",
-      "target": "apps_api_package_dependencies_radicar_shared_types",
+      "target": "apps_api_package_dependencies_radikar_shared_types",
       "confidence_score": 1.0
     },
     {
@@ -39994,7 +39994,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_package_dependencies",
-      "target": "apps_api_package_dependencies_radicar_validators",
+      "target": "apps_api_package_dependencies_radikar_validators",
       "confidence_score": 1.0
     },
     {
@@ -48189,7 +48189,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_package_dependencies",
-      "target": "apps_web_package_dependencies_radicar_shared_types",
+      "target": "apps_web_package_dependencies_radikar_shared_types",
       "confidence_score": 1.0
     },
     {
@@ -48200,7 +48200,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_package_dependencies",
-      "target": "apps_web_package_dependencies_radicar_validators",
+      "target": "apps_web_package_dependencies_radikar_validators",
       "confidence_score": 1.0
     },
     {
@@ -49982,7 +49982,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_database_package_dependencies",
-      "target": "packages_database_package_dependencies_radicar_shared_types",
+      "target": "packages_database_package_dependencies_radikar_shared_types",
       "confidence_score": 1.0
     },
     {
@@ -50708,7 +50708,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_validators_package_dependencies",
-      "target": "packages_validators_package_dependencies_radicar_shared_types",
+      "target": "packages_validators_package_dependencies_radikar_shared_types",
       "confidence_score": 1.0
     },
     {
