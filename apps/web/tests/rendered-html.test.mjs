@@ -97,7 +97,7 @@ test("login page uses a two-step validated mobile OTP flow backed by the auth AP
     /router\.replace\(result\.user\.role === "user" \? "\/dashboard" : "\/admin"\)/,
   );
   assert.match(loginPage, /ورود به حساب کاربری/);
-  assert.match(loginPage, /src="\/logo\.svg"/);
+  assert.match(loginPage, /src="\/radikar-logo\.png"/);
 });
 
 test("API requests do not label an empty logout request as JSON", async () => {
@@ -575,7 +575,7 @@ test("an empty knowledge base starts with four editable English sample projects"
   );
 
   for (const projectName of [
-    "Radicar AI Career Platform",
+    "Radikar AI Career Platform",
     "Enterprise Design System",
     "Real-Time Analytics Dashboard",
     "Headless Commerce Storefront",
@@ -643,7 +643,7 @@ test("persists domain data only through the Node API and PostgreSQL", async () =
   assert.match(repository, /apiRequest<T\[\]>/);
   assert.match(repository, /`\/v1\/data\/\$\{collection\}`/);
   assert.doesNotMatch(repository, /indexedDB|IndexedDbRepository|MigratingHttpDataRepository/);
-  assert.match(models, /DataCollection.*from "@radicar\/shared-types"/);
+  assert.match(models, /DataCollection.*from "@radikar\/shared-types"/);
   assert.match(stores, /userProfileStore/);
   assert.match(stores, /resumeStore/);
   assert.match(stores, /jobStore/);

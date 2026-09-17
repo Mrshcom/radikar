@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { DataCollection, DataRecord } from "@radicar/shared-types";
+import type { DataCollection, DataRecord } from "@radikar/shared-types";
 import { buildApp } from "../src/build-app";
 import type { RecordRepository } from "../src/modules/data/record-repository";
 import type { AuthServicePort } from "../src/modules/auth/routes";
@@ -108,7 +108,7 @@ function createTestApp(authServiceOverride: AuthServicePort = authService) {
     corsOrigins: ["http://localhost:3161"],
     logger: false,
     authService: authServiceOverride,
-    sessionCookieName: "radicar_session",
+    sessionCookieName: "radikar_session",
     secureCookies: false,
     sessionTtlDays: 30,
   });
@@ -165,7 +165,7 @@ test("persists the authenticated user's table page-size preference", async () =>
     method: "PATCH",
     url: "/api/account/preferences",
     payload: { tablePageSize: 100 },
-    cookies: { radicar_session: "test-token" },
+    cookies: { radikar_session: "test-token" },
   });
 
   assert.equal(response.statusCode, 200);
@@ -188,18 +188,18 @@ test("stores, reads and removes a data record", async () => {
     method: "PUT",
     url: "/v1/data/jobs/job-1",
     payload: record,
-    cookies: { radicar_session: "other-token" },
+    cookies: { radikar_session: "other-token" },
   });
   assert.equal(saved.statusCode, 200);
   assert.deepEqual(saved.json(), record);
 
-  const listed = await app.inject({ method: "GET", url: "/v1/data/jobs", cookies: { radicar_session: "other-token" } });
+  const listed = await app.inject({ method: "GET", url: "/v1/data/jobs", cookies: { radikar_session: "other-token" } });
   assert.deepEqual(listed.json(), [record]);
 
   const removed = await app.inject({
     method: "DELETE",
     url: "/v1/data/jobs/job-1",
-    cookies: { radicar_session: "other-token" },
+    cookies: { radikar_session: "other-token" },
   });
   assert.equal(removed.statusCode, 204);
   await app.close();
@@ -234,7 +234,7 @@ test("canonicalizes imported knowledge before it reaches storage", async () => {
     method: "PUT",
     url: "/v1/data/knowledgeProfiles/profile-mixed-input",
     payload: record,
-    cookies: { radicar_session: "other-token" },
+    cookies: { radikar_session: "other-token" },
   });
   assert.equal(saved.statusCode, 200);
   const payload = saved.json();
@@ -250,7 +250,7 @@ test("canonicalizes imported knowledge before it reaches storage", async () => {
   const listed = await app.inject({
     method: "GET",
     url: "/v1/data/knowledgeProfiles",
-    cookies: { radicar_session: "other-token" },
+    cookies: { radikar_session: "other-token" },
   });
   assert.deepEqual(listed.json(), [payload]);
   await app.close();
@@ -281,7 +281,7 @@ test("canonicalizes malformed resume records before storage", async () => {
       createdAt: "2026-08-27T10:00:00.000Z",
       updatedAt: "2026-08-27T10:00:00.000Z",
     },
-    cookies: { radicar_session: "other-token" },
+    cookies: { radikar_session: "other-token" },
   });
 
   assert.equal(saved.statusCode, 200);
@@ -301,7 +301,7 @@ test("canonicalizes malformed resume records before storage", async () => {
 
 test("rejects unknown collections and mismatched ids", async () => {
   const app = createTestApp();
-  const unknown = await app.inject({ method: "GET", url: "/v1/data/unknown", cookies: { radicar_session: "other-token" } });
+  const unknown = await app.inject({ method: "GET", url: "/v1/data/unknown", cookies: { radikar_session: "other-token" } });
   assert.equal(unknown.statusCode, 400);
 
   const mismatch = await app.inject({
@@ -312,7 +312,7 @@ test("rejects unknown collections and mismatched ids", async () => {
       createdAt: "2026-08-27T10:00:00.000Z",
       updatedAt: "2026-08-27T10:00:00.000Z",
     },
-    cookies: { radicar_session: "other-token" },
+    cookies: { radikar_session: "other-token" },
   });
   assert.equal(mismatch.statusCode, 400);
   await app.close();
@@ -332,12 +332,12 @@ test("requires a session and isolates records by authenticated owner", async () 
     method: "PUT",
     url: "/v1/data/jobs/private-job",
     payload: record,
-    cookies: { radicar_session: "other-token" },
+    cookies: { radikar_session: "other-token" },
   });
   const otherUsersRecords = await app.inject({
     method: "GET",
     url: "/v1/data/jobs",
-    cookies: { radicar_session: "second-user-token" },
+    cookies: { radikar_session: "second-user-token" },
   });
   assert.deepEqual(otherUsersRecords.json(), []);
   await app.close();
@@ -353,7 +353,7 @@ test("logout is idempotent and clears an expired or missing session cookie", asy
   assert.equal(response.statusCode, 204);
   const setCookie = response.headers["set-cookie"];
   const cookieHeader = Array.isArray(setCookie) ? setCookie.join("; ") : setCookie || "";
-  assert.match(cookieHeader, /radicar_session=;/);
+  assert.match(cookieHeader, /radikar_session=;/);
   assert.match(cookieHeader, /Max-Age=0/);
   await app.close();
 });
@@ -363,19 +363,19 @@ test("allows only superadmins to access system reports", async () => {
   const admin = await app.inject({
     method: "GET",
     url: "/api/admin/stats",
-    cookies: { radicar_session: "admin-token" },
+    cookies: { radikar_session: "admin-token" },
   });
   const superadmin = await app.inject({
     method: "GET",
     url: "/api/admin/stats",
-    cookies: { radicar_session: "test-token" },
+    cookies: { radikar_session: "test-token" },
   });
   assert.equal(admin.statusCode, 403);
   assert.equal(superadmin.statusCode, 200);
   const events = await app.inject({
     method: "GET",
     url: "/api/admin/events?limit=20",
-    cookies: { radicar_session: "test-token" },
+    cookies: { radikar_session: "test-token" },
   });
   assert.equal(events.statusCode, 200);
   await app.close();
@@ -387,7 +387,7 @@ test("management roles cannot use customer-owned workspace data", async () => {
     const response = await app.inject({
       method: "GET",
       url: "/v1/data/resumes",
-      cookies: { radicar_session: token },
+      cookies: { radikar_session: token },
     });
     assert.equal(response.statusCode, 403);
   }
@@ -400,7 +400,7 @@ test("rejects state-changing browser requests from untrusted origins", async () 
     method: "PUT",
     url: "/v1/data/jobs/csrf-attempt",
     headers: { origin: "https://attacker.example" },
-    cookies: { radicar_session: "test-token" },
+    cookies: { radikar_session: "test-token" },
     payload: {
       id: "csrf-attempt",
       createdAt: "2026-08-27T10:00:00.000Z",
@@ -426,13 +426,13 @@ test("registers AI routes with validation before model execution", async () => {
     method: "POST",
     url: "/api/match/analyze",
     payload: { jobDescription: "کوتاه", resume: {} },
-    cookies: { radicar_session: "test-token" },
+    cookies: { radikar_session: "test-token" },
   });
   const feedback = await app.inject({
     method: "POST",
     url: "/api/interview/feedback",
     payload: { question: "خودت را معرفی کن", answer: "" },
-    cookies: { radicar_session: "test-token" },
+    cookies: { radikar_session: "test-token" },
   });
   assert.equal(analysis.statusCode, 422);
   assert.equal(feedback.statusCode, 400);
@@ -445,7 +445,7 @@ test("job import rejects local targets before performing a fetch", async () => {
     method: "POST",
     url: "/api/job-import",
     payload: { url: "http://127.0.0.1/private" },
-    cookies: { radicar_session: "test-token" },
+    cookies: { radikar_session: "test-token" },
   });
   assert.equal(response.statusCode, 400);
   await app.close();
@@ -481,7 +481,7 @@ test("knowledge import requires a multipart resume file", async () => {
   const response = await app.inject({
     method: "POST",
     url: "/api/knowledge/import",
-    cookies: { radicar_session: "test-token" },
+    cookies: { radikar_session: "test-token" },
   });
   assert.equal(response.statusCode, 400);
   await app.close();

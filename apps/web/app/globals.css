@@ -8,3 +8,60 @@
   --font-matrix: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Vazirmatn Variable", Vazirmatn, Tahoma, monospace;
 }
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes gradient {
+  to {
+    background-position: 200% center;
+  }
+}
+
+@keyframes meteor {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(-35deg);
+  }
+  8%,
+  28% {
+    opacity: 0.65;
+  }
+  42%,
+  100% {
+    opacity: 0;
+    transform: translate3d(-320px, 420px, 0) rotate(-35deg);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--tilt, 0deg));
+  }
+  50% {
+    transform: translateY(-10px) rotate(var(--tilt, 0deg));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

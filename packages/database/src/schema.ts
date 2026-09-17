@@ -9,7 +9,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { DataRecord } from "@radicar/shared-types";
+import type { DataRecord } from "@radikar/shared-types";
 
 export const aiSettings = pgTable("ai_settings", {
   id: text("id").primaryKey(),

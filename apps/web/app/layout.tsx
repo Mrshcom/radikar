@@ -10,7 +10,7 @@ import { Providers } from "./providers";
 export const metadata: Metadata = {
   title: "رادیکار | دستیار هوشمند کاریابی",
   description: "پنل هوشمند ساخت رزومه، تطبیق فرصت‌های شغلی و مدیریت اپلای",
-  icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
+  icons: { icon: "/radikar-logo.png", shortcut: "/radikar-logo.png" },
   openGraph: {
     title: "رادیکار | دستیار هوشمند مسیر شغلی تو",
     description:
@@ -30,7 +30,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html className="bg-[#f6f7f2]" lang="fa" dir="rtl">
+    <html className="scroll-smooth bg-[#f6f7f2] motion-reduce:scroll-auto" lang="fa" dir="rtl">
       <body
         className="m-0 bg-[#f6f7f2] font-sans text-[#19312f]"
       >

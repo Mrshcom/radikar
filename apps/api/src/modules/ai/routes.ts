@@ -6,13 +6,13 @@ import {
   getAnalyzeProviderSettings,
   getWriteConfig,
   setAnalyzeProvider,
-} from "@radicar/ai";
+} from "@radikar/ai";
 import {
   normalizeImportedBoolean,
   normalizeImportedText,
   normalizeImportedTextArray,
   normalizeStoredResumeData,
-} from "@radicar/validators";
+} from "@radikar/validators";
 import {
   asObject,
   hasResumeContent,
@@ -21,9 +21,9 @@ import {
 } from "./helpers";
 import type { BillingService, UsageCosts } from "../billing/service";
 import { requirePermission } from "../auth/routes";
-import type { ProviderName } from "@radicar/ai";
+import type { ProviderName } from "@radikar/ai";
 import { eq } from "drizzle-orm";
-import { aiSettings, type Database } from "@radicar/database";
+import { aiSettings, type Database } from "@radikar/database";
 
 const aiSettingsId = "analysis-provider";
 

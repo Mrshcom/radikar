@@ -4,7 +4,7 @@ import { createDatabase } from "./client";
 
 const databaseUrl =
   process.env.DATABASE_URL ??
-  "postgresql://radicar:radicar@localhost:5433/radicar";
+  "postgresql://radikar:radikar@localhost:5433/radikar";
 const migrationsFolder = fileURLToPath(new URL("../migrations", import.meta.url));
 const database = createDatabase(databaseUrl, 1);
 

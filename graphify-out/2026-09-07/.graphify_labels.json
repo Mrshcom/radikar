@@ -72,7 +72,7 @@
   "70": "postcss.config.mjs",
   "71": "config/src/index.ts",
   "72": "drizzle.config.ts",
-  "73": "@radicar/shared-types",
+  "73": "@radikar/shared-types",
   "74": "model-task-provider.tsx",
   "75": "data/routes.ts",
   "76": "resume-import.test.mjs",

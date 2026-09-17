@@ -1,7 +1,8 @@
 # استقرار Production رادیکار
 
-این پیکربندی Web، API، PostgreSQL و Caddy را روی یک سرور اجرا می‌کند. فقط
-پورت‌های ۸۰ و ۴۴۳ عمومی می‌شوند و Caddy گواهی HTTPS را مدیریت می‌کند.
+این پیکربندی Web، API، PostgreSQL و Caddy را روی یک سرور اجرا می‌کند. برای
+جلوگیری از تداخل با پروژه‌های دیگر، پورت تست HTTP برابر `5000` و پورت HTTPS
+برابر `5443` است؛ پورت‌های داخلی API و Web فقط داخل شبکه Docker هستند.
 
 ## پیش‌نیاز
 
@@ -60,8 +61,39 @@ docker compose --env-file deploy/.env.production -f compose.production.yml build
 docker compose --env-file deploy/.env.production -f compose.production.yml up -d
 ```
 
+### انتشار خودکار با GitHub Actions
+
+فایل `.github/workflows/deploy-production.yml` با push شدن tagهایی مثل
+`0.1.11-p` اجرا می‌شود (هر tagای که به `-p` ختم شود). در GitHub، داخل Environment با نام
+`production` این secretها را تعریف کنید:
+
+- `DEPLOY_HOST`: آی‌پی سرور
+- `DEPLOY_USER`: کاربر SSH (در این پروژه `sport724`)
+- `DEPLOY_SSH_KEY`: کلید خصوصی deploy
+- `DEPLOY_KNOWN_HOSTS`: خروجی fingerprint معتبر `ssh-keyscan` برای سرور
+
+Workflow فقط سورس tagشده را به مسیر `/home/sport724/mampel/radikar` sync می‌کند؛
+فایل `deploy/.env.production` هرگز از GitHub کپی نمی‌شود. سپس imageها را build،
+stack را recreate و endpoint آماده‌بودن را روی پورت `5000` بررسی می‌کند.
+
 مقدار `NEXT_PUBLIC_API_BASE_URL` هنگام build داخل Web قرار می‌گیرد؛ پس بعد از
 تغییر دامنه حتماً image وب را دوباره بسازید.
+
+## چک‌لیست انتقال از تست IP به دامنه
+
+در deployment فعلی، ورود آزمایشی روی IP فعال است و پیامک ارسال نمی‌شود. قبل از
+انتشار عمومی دامنه، همهٔ موارد زیر باید انجام شوند:
+
+- مقدار واقعی `OTP_WEBHOOK_URL` و در صورت نیاز `OTP_WEBHOOK_TOKEN` تنظیم شود.
+- `ALLOW_INSECURE_DEMO_OTP=false` و `EXPOSE_DEVELOPMENT_OTP=false` قرار گیرد.
+- `NEXT_PUBLIC_API_BASE_URL` و `API_PUBLIC_URL` به آدرس HTTPS دامنه تغییر کنند.
+- `CORS_ORIGINS` فقط شامل originهای HTTPS دامنه باشد و `http://IP:5000` حذف شود.
+- با غیرفعال‌شدن demo، cookie امن `__Host-radikar_session` و پرچم `Secure` فعال
+  می‌شوند؛ سپس imageهای API و Web دوباره build و سرویس‌ها restart شوند.
+- پس از انتشار، درخواست OTP، ورود، `/health` و `/ready` با دامنهٔ HTTPS تست شوند.
+
+تا قبل از تکمیل این چک‌لیست، پورت `5000` فقط برای تست موقت است و نباید به‌عنوان
+آدرس production عمومی معرفی شود.
 
 ## پشتیبان‌گیری PostgreSQL
 

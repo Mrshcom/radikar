@@ -41,7 +41,7 @@ import type {
   KnowledgeProfileRecord,
   ResumeRecord,
 } from "@/lib/data/models";
-import { normalizeResumeImportPayload } from "@radicar/validators";
+import { normalizeResumeImportPayload } from "@radikar/validators";
 import { cn } from "@/lib/cn";
 import { formatPersianNumber } from "@/lib/fa-number";
 import { normalizeResumeDataInput } from "@/lib/resume-input";

@@ -1,5 +1,5 @@
 {
-  "name": "@radicar/validators",
+  "name": "@radikar/validators",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@radicar/shared-types": "*",
+    "@radikar/shared-types": "*",
     "zod": "^4.4.3"
   },
   "devDependencies": {

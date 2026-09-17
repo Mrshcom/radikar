@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
-import type { DataCollection, DataRecord } from "@radicar/shared-types";
-import { dataRecords, type Database } from "@radicar/database";
-import { normalizeDataRecordForStorage } from "@radicar/validators";
+import type { DataCollection, DataRecord } from "@radikar/shared-types";
+import { dataRecords, type Database } from "@radikar/database";
+import { normalizeDataRecordForStorage } from "@radikar/validators";
 
 export interface RecordRepository {
   list(ownerUserId: string, collection: DataCollection): Promise<DataRecord[]>;

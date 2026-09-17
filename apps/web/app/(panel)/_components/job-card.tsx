@@ -17,7 +17,7 @@ import type { Job } from "../_data/jobs";
 import { Modal } from "./ui";
 import { cn } from "@/lib/cn";
 import { formatPersianNumber, toPersianDigits } from "@/lib/fa-number";
-import { sanitizeRemoteImageSource } from "@radicar/validators";
+import { sanitizeRemoteImageSource } from "@radikar/validators";
 
 const toneStyles: Record<
   Job["tone"],

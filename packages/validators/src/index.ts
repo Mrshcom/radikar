@@ -3,7 +3,7 @@ import {
   dataCollections,
   type DataCollection,
   type DataRecord,
-} from "@radicar/shared-types";
+} from "@radikar/shared-types";
 
 const localizedDigitPattern = /[۰-۹٠-٩]/g;
 const persianDigits = "۰۱۲۳۴۵۶۷۸۹";

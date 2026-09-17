@@ -445,9 +445,9 @@
       "apps_api_package_dependencies_fastify_cors",
       "apps_api_package_dependencies_fastify_multipart",
       "apps_api_package_dependencies_mammoth",
-      "apps_api_package_dependencies_radicar_config",
-      "apps_api_package_dependencies_radicar_database",
-      "apps_api_package_dependencies_radicar_validators",
+      "apps_api_package_dependencies_radikar_config",
+      "apps_api_package_dependencies_radikar_database",
+      "apps_api_package_dependencies_radikar_validators",
       "apps_api_package_dependencies_tsx",
       "apps_api_package_dependencies_unpdf",
       "apps_api_package_dependencies_zod",
@@ -458,9 +458,9 @@
       "fastify_cors",
       "fastify_multipart",
       "mammoth",
-      "radicar_config",
-      "radicar_database",
-      "radicar_validators",
+      "radikar_config",
+      "radikar_database",
+      "radikar_validators",
       "unpdf"
     ],
     "11": [
@@ -890,7 +890,7 @@
       "packages_database_package_dependencies",
       "packages_database_package_dependencies_drizzle_orm",
       "packages_database_package_dependencies_postgres",
-      "packages_database_package_dependencies_radicar_shared_types",
+      "packages_database_package_dependencies_radikar_shared_types",
       "packages_database_package_dependencies_tsx",
       "packages_database_package_json_tsx",
       "postgres"
@@ -988,11 +988,11 @@
       "apps_api_package_version"
     ],
     "47": [
-      "apps_api_package_dependencies_radicar_shared_types",
-      "apps_api_package_json_radicar_shared_types",
-      "apps_web_package_dependencies_radicar_shared_types",
+      "apps_api_package_dependencies_radikar_shared_types",
+      "apps_api_package_json_radikar_shared_types",
+      "apps_web_package_dependencies_radikar_shared_types",
       "packages_validators_package_dependencies",
-      "packages_validators_package_dependencies_radicar_shared_types",
+      "packages_validators_package_dependencies_radikar_shared_types",
       "packages_validators_package_dependencies_zod",
       "packages_validators_package_json_zod"
     ],
@@ -1100,8 +1100,8 @@
       "apps_web_lib_job_description_validation_validationresult"
     ],
     "63": [
-      "apps_api_package_dependencies_radicar_ai",
-      "radicar_ai"
+      "apps_api_package_dependencies_radikar_ai",
+      "radikar_ai"
     ],
     "64": [
       "apps_web_app_page",

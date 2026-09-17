@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { chatJson, getAnalyzeConfig } from "@radicar/ai";
+import { chatJson, getAnalyzeConfig } from "@radikar/ai";
 import {
   extractLinks as extractPdfLinks,
   extractText as extractPdfText,
@@ -10,7 +10,7 @@ import {
   normalizeResumeImportPayload,
   sanitizeImportedUrl,
   type ResumeImportPayload,
-} from "@radicar/validators";
+} from "@radikar/validators";
 import { serializeResumeSkills, type JsonObject } from "../ai/helpers";
 import type { BillingService } from "../billing/service";
 

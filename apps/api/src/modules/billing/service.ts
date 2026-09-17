@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { and, count, desc, eq, gt, gte, ilike, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
-import type { ModelUsageEvent } from "@radicar/ai";
+import type { ModelUsageEvent } from "@radikar/ai";
 import {
   membershipEvents,
   modelUsageEvents,
@@ -11,7 +11,7 @@ import {
   userMemberships,
   users,
   type Database,
-} from "@radicar/database";
+} from "@radikar/database";
 import { ZarinpalClient, ZarinpalError } from "./zarinpal-client";
 
 export class BillingError extends Error {

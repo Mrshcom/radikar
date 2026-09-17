@@ -359,10 +359,10 @@ function PanelShellContent({ children }: { children: ReactNode }) {
           >
             <span className="grid size-[39px] place-items-center rounded-[13px_13px_13px_5px] border border-[#cfe9df] bg-[#ecf8f3] shadow-[0_8px_18px_rgba(18,60,55,.16)]">
               <Image
-                className="block size-6"
-                src="/logo.svg"
-                width={24}
-                height={24}
+                className="block size-8"
+                src="/radikar-logo.png"
+                width={32}
+                height={32}
                 alt=""
                 priority
               />
@@ -512,10 +512,10 @@ function PanelShellContent({ children }: { children: ReactNode }) {
             <div className="hidden items-center gap-2 max-[820px]:flex">
               <span className="grid size-8 place-items-center rounded-[10px_10px_10px_4px] border border-[#cfe9df] bg-[#ecf8f3]">
                 <Image
-                  className="size-[21px]"
-                  src="/logo.svg"
-                  width={21}
-                  height={21}
+                  className="size-[28px]"
+                  src="/radikar-logo.png"
+                  width={28}
+                  height={28}
                   alt=""
                 />
               </span>

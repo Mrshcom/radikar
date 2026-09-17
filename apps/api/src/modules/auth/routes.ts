@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { normalizeDigits } from "@radicar/validators";
+import { normalizeDigits } from "@radikar/validators";
 import { z } from "zod";
 import { AuthError, AuthService } from "./service";
 import { can, type AuthUser, type Permission, type SessionIdentity } from "./types";

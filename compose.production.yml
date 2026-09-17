@@ -1,4 +1,4 @@
-name: radicar
+name: radikar
 
 services:
   postgres:
@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
-      - radicar_postgres_data:/var/lib/postgresql/data
+      - radikar_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
@@ -32,6 +32,9 @@ services:
       - "3162"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      # Keep provider egress stable when the provider DNS returns an
+      # intermittently unreachable edge address.
+      - "api.gapgpt.app:185.143.233.238"
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,6 +64,7 @@ services:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: 3161
+      API_PROXY_ORIGIN: http://api:3162
     expose:
       - "3161"
     depends_on:
@@ -85,19 +89,22 @@ services:
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN is required}
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      # Keep the deployment isolated from other applications on the host.
+      # Put a shared reverse proxy in front of these dedicated ports if the
+      # domain should remain available without an explicit port suffix.
+      - "5000:80"
+      - "5443:443"
+      - "5443:443/udp"
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - radicar_caddy_data:/data
-      - radicar_caddy_config:/config
+      - radikar_caddy_data:/data
+      - radikar_caddy_config:/config
     depends_on:
       web:
         condition: service_healthy
     restart: unless-stopped
 
 volumes:
-  radicar_postgres_data:
-  radicar_caddy_data:
-  radicar_caddy_config:
+  radikar_postgres_data:
+  radikar_caddy_data:
+  radikar_caddy_config:

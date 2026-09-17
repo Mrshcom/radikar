@@ -5,7 +5,7 @@ compose_file="${COMPOSE_FILE:-compose.production.yml}"
 env_file="${ENV_FILE:-deploy/.env.production}"
 backup_dir="${BACKUP_DIR:-backups}"
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-backup_path="${backup_dir}/radicar-${timestamp}.dump"
+backup_path="${backup_dir}/radikar-${timestamp}.dump"
 
 mkdir -p "${backup_dir}"
 

@@ -356,7 +356,7 @@ export async function chatJson<T>(
                   messages,
                   temperature: 0.2,
                   stream: false,
-                  user: `radicar-json-${requestId}-${attempt}`,
+                  user: `radikar-json-${requestId}-${attempt}`,
                   ...(options.maxOutputTokens
                     ? { max_tokens: Math.max(1, Math.round(options.maxOutputTokens)) }
                     : {}),

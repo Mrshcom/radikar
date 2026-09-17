@@ -10,6 +10,7 @@ COPY packages/config/package.json packages/config/package.json
 COPY packages/database/package.json packages/database/package.json
 COPY packages/shared-types/package.json packages/shared-types/package.json
 COPY packages/validators/package.json packages/validators/package.json
+COPY scripts scripts
 
 RUN --mount=type=cache,target=/root/.npm npm ci
 
@@ -27,7 +28,7 @@ ARG NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm run build --workspace @radicar/web
+RUN npm run build --workspace @radikar/web
 
 FROM node:22-alpine AS runner
 

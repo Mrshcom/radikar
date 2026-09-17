@@ -9,14 +9,15 @@ COPY packages/database/package.json packages/database/package.json
 COPY packages/ai/package.json packages/ai/package.json
 COPY packages/shared-types/package.json packages/shared-types/package.json
 COPY packages/validators/package.json packages/validators/package.json
+COPY scripts scripts
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev \
-      --workspace @radicar/api \
-      --workspace @radicar/config \
-      --workspace @radicar/database \
-      --workspace @radicar/ai \
-      --workspace @radicar/shared-types \
-      --workspace @radicar/validators \
+      --workspace @radikar/api \
+      --workspace @radikar/config \
+      --workspace @radikar/database \
+      --workspace @radikar/ai \
+      --workspace @radikar/shared-types \
+      --workspace @radikar/validators \
       --include-workspace-root=false
 
 COPY apps/api apps/api

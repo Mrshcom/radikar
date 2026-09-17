@@ -91,7 +91,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:3162
 تنظیم پیش‌فرض اتصال API به PostgreSQL محلی:
 
 ```dotenv
-DATABASE_URL=postgresql://radicar:radicar@127.0.0.1:5433/radicar
+DATABASE_URL=postgresql://radikar:radikar@127.0.0.1:5433/radikar
 ```
 
 ### ۳. بالا آوردن PostgreSQL
@@ -365,10 +365,10 @@ npm run db:seed
 ورود به PostgreSQL داخل Docker:
 
 ```bash
-docker compose exec postgres psql -U radicar -d radicar
+docker compose exec postgres psql -U radikar -d radikar
 ```
 
-اطلاعات PostgreSQL داخل volume با نام `radicar_postgres_data` باقی می‌ماند؛ بنابراین
+اطلاعات PostgreSQL داخل volume با نام `radikar_postgres_data` باقی می‌ماند؛ بنابراین
 `docker compose down` داده‌ها را حذف نمی‌کند.
 
 برای حذف کامل دیتابیس محلی و شروع از صفر، فقط در صورتی که مطمئن هستید داده‌ای
@@ -544,3 +544,6 @@ npm ci
 
 جزئیات مرز داده Web در
 [`apps/web/lib/data/README.md`](apps/web/lib/data/README.md) آمده است.
+
+نقشهٔ سریع معماری، راه‌اندازی، استقرار و وضعیت‌های شناخته‌شده در
+[`PROJECT_KNOWLEDGE.md`](PROJECT_KNOWLEDGE.md) نگهداری می‌شود.

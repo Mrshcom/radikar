@@ -3,7 +3,7 @@ import { createDatabase } from "./client";
 
 const databaseUrl =
   process.env.DATABASE_URL ??
-  "postgresql://radicar:radicar@localhost:5433/radicar";
+  "postgresql://radikar:radikar@localhost:5433/radikar";
 const database = createDatabase(databaseUrl, 1);
 const now = new Date();
 const timestamp = now.toISOString();

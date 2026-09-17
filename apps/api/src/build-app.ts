@@ -3,7 +3,7 @@ import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
 import { randomUUID } from "node:crypto";
 import Fastify, { type FastifyServerOptions } from "fastify";
-import { normalizeDigitsDeep } from "@radicar/validators";
+import { normalizeDigitsDeep } from "@radikar/validators";
 import { ZodError } from "zod";
 import { registerDataRoutes } from "./modules/data/routes";
 import { registerAiRoutes } from "./modules/ai/routes";
@@ -13,7 +13,7 @@ import { registerImportRoutes } from "./modules/imports/routes";
 import { handleAuthError, registerAuthRoutes, type AuthServicePort } from "./modules/auth/routes";
 import { handleBillingError, registerBillingRoutes } from "./modules/billing/routes";
 import type { BillingService } from "./modules/billing/service";
-import type { Database } from "@radicar/database";
+import type { Database } from "@radikar/database";
 
 type BuildAppOptions = {
   fastifyFactory?: typeof Fastify;

@@ -1,0 +1,72 @@
+name: Deploy production
+
+on:
+  push:
+    tags:
+      - "*-p"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout tagged release
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        shell: bash
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_SSH_KEY"
+          test -n "$DEPLOY_KNOWN_HOSTS"
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/radikar_deploy"
+          chmod 600 "$HOME/.ssh/radikar_deploy"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+
+      - name: Sync tagged source to the dedicated project path
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          rsync -az --omit-dir-times \
+            --exclude='node_modules' --exclude='*/node_modules' \
+            --exclude='.git' --exclude='.next' --exclude='*/.next' \
+            --exclude='.next-dev' --exclude='*/.next-dev' \
+            --exclude='.turbo' --exclude='*/.turbo' \
+            --exclude='dist' --exclude='*/dist' \
+            --exclude='apps/api/.env' --exclude='apps/api/.env.local' \
+            --exclude='apps/web/.env.local' --exclude='deploy/.env.production' \
+            --exclude='.env.local' \
+            -e "ssh -i $HOME/.ssh/radikar_deploy -o IdentitiesOnly=yes" \
+            ./ "$DEPLOY_USER@$DEPLOY_HOST:/home/sport724/mampel/radikar/"
+
+      - name: Build and restart production stack
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i "$HOME/.ssh/radikar_deploy" -o IdentitiesOnly=yes \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            'cd /home/sport724/mampel/radikar && \
+             docker compose --env-file deploy/.env.production -f compose.production.yml build && \
+             docker compose --env-file deploy/.env.production -f compose.production.yml up -d --force-recreate && \
+             sleep 8 && \
+             test "$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/ready)" = 200 && \
+             docker compose --env-file deploy/.env.production -f compose.production.yml ps'
