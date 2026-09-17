@@ -64,9 +64,10 @@ jobs:
           set -euo pipefail
           ssh -i "$HOME/.ssh/radikar_deploy" -o IdentitiesOnly=yes \
             "$DEPLOY_USER@$DEPLOY_HOST" \
-            'cd /home/sport724/mampel/radikar && \
-             docker compose --env-file deploy/.env.production -f compose.production.yml build && \
-             docker compose --env-file deploy/.env.production -f compose.production.yml up -d --force-recreate && \
-             sleep 8 && \
-             test "$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/ready)" = 200 && \
+            'set -euo pipefail; \
+             cd /home/sport724/mampel/radikar; \
+             docker compose --env-file deploy/.env.production -f compose.production.yml build; \
+             docker compose --env-file deploy/.env.production -f compose.production.yml up -d --force-recreate --wait --wait-timeout 180; \
+             test "$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/ready)" = 200; \
+             test "$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/)" = 200; \
              docker compose --env-file deploy/.env.production -f compose.production.yml ps'

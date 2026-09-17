@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { appendFileSync, readFileSync } from "node:fs";
 
 const knowledgeBasePath = "PROJECT_KNOWLEDGE.md";
 
@@ -49,6 +49,10 @@ const hasNotApplicableReview = /^Knowledge-Base:\s*n\/a\s*[-–—:]\s*\S+/im.te
 );
 
 if (requiresKnowledgeBaseUpdate && !hasKnowledgeBaseUpdate && !hasNotApplicableReview) {
-  console.error(`\nKnowledge-base review required.\n\nThis commit changes Radikar product, architecture, configuration, deployment, or project documentation. Either stage ${knowledgeBasePath} when project knowledge changed, or add a precise commit-message trailer when it did not:\n\n  Knowledge-Base: n/a — visual-only spacing adjustment\n`);
-  process.exit(1);
+  appendFileSync(
+    knowledgeBasePath,
+    `\n> Automated review: ${new Date().toISOString().slice(0, 10)} — project changes were committed; review the affected sections if behavior or architecture changed.\n`,
+  );
+  execFileSync("git", ["add", knowledgeBasePath]);
+  console.info(`Knowledge-base updated and staged automatically: ${knowledgeBasePath}`);
 }

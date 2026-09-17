@@ -126,6 +126,8 @@ graphify path "A" "B"
   پایداری، `api.gapgpt.app` در Compose به edge سالم pin شده است.
 - CI/CD در `.github/workflows/deploy-production.yml` با push تگ‌هایی مثل
   `0.1.11-p` اجرا می‌شود و فقط مسیر VPS بالا را sync و stack را recreate می‌کند.
+- خطاهای ساخت سفارش پرداخت در صفحهٔ ارتقا داخل مودال پیش‌فاکتور نمایش داده
+  می‌شوند تا هنگام بازبودن پیش‌فاکتور از دید کاربر خارج نباشند.
 - پس از تغییر `NEXT_PUBLIC_API_BASE_URL` باید Web دوباره build/deploy شود.
 
 ## وضعیت‌ها و تصمیم‌های شناخته‌شده

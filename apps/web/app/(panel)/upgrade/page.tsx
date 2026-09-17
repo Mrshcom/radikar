@@ -48,8 +48,6 @@ export default function UpgradePage() {
         </section>
       )}
 
-      {error && <p className="m-0 rounded-xl border border-[#efc9c5] bg-[#fff1ef] p-4 text-[11px] text-[#a13f37]">{error}</p>}
-
       <section className="grid grid-cols-3 gap-5 max-[1050px]:grid-cols-1">
         {(plans.data ?? []).map((plan) => {
           const current = membership.data?.planId === plan.id && membership.data.status === "active";
@@ -111,6 +109,12 @@ export default function UpgradePage() {
           onClose={closeInvoice}
           showCloseButton
         >
+          {error && (
+            <div className="mt-5 rounded-[12px] border border-[#efc9c5] bg-[#fff1ef] px-4 py-3 text-[11px] leading-6 text-[#a13f37]" role="alert">
+              {error}
+            </div>
+          )}
+
           <div className="mt-5 overflow-hidden rounded-[14px] border border-[#dfe8e2] bg-[#fbfdfb]">
             <div className="flex items-center gap-3 border-b border-[#e5ece7] bg-[#edf7f2] px-4 py-4">
               <span className="grid size-10 shrink-0 place-items-center rounded-[11px] bg-white text-[#0f7b62] shadow-sm">
