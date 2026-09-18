@@ -1,4 +1,4 @@
-# Graph Report - resumeMaker  (2026-09-16)
+# Graph Report - radikar  (2026-09-16)
 
 ## Corpus Check
 - 183 files · ~494,790 words
@@ -44,7 +44,7 @@
 - react-dom
 - stores.ts
 - compilerOptions
-- رادیکار — Resume Maker
+- رادیکار
 - database/package.json
 - compilerOptions
 - config/package.json
@@ -243,9 +243,9 @@ Nodes (38): adminEventHref(), adminEventMessage(), adminEventTime(), initials(),
 Cohesion: 0.17
 Nodes (11): compilerOptions, module, moduleResolution, noEmit, types, extends, include, node (+3 more)
 
-### Community 30 - "رادیکار — Resume Maker"
+### Community 30 - "رادیکار"
 Cohesion: 0.14
-Nodes (14): اجرای PostgreSQL و API داخل Docker, اجرای Web و API در terminalهای جدا, اجرای خروجی Build روی سیستم محلی, الزامات Production, تست و کنترل کیفیت, رادیکار — Resume Maker, ساختار Monorepo, فرمان‌های مهم Monorepo (+6 more)
+Nodes (14): اجرای PostgreSQL و API داخل Docker, اجرای Web و API در terminalهای جدا, اجرای خروجی Build روی سیستم محلی, الزامات Production, تست و کنترل کیفیت, رادیکار, ساختار Monorepo, فرمان‌های مهم Monorepo (+6 more)
 
 ### Community 31 - "database/package.json"
 Cohesion: 0.07

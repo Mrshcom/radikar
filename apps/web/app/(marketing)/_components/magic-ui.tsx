@@ -1,6 +1,4 @@
-"use client";
-
-import type { MouseEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { cn } from "../../../lib/cn";
 
@@ -50,32 +48,6 @@ export function Meteors({ count = 7 }: { count?: number }) {
         />
       ))}
     </div>
-  );
-}
-
-export function MagicCard({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const handleMouseMove = (event: MouseEvent<HTMLElement>) => {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    event.currentTarget.style.setProperty("--mouse-x", `${event.clientX - bounds.left}px`);
-    event.currentTarget.style.setProperty("--mouse-y", `${event.clientY - bounds.top}px`);
-  };
-
-  return (
-    <article
-      onMouseMove={handleMouseMove}
-      className={cn(
-        "group relative overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:z-0 before:opacity-0 before:transition-opacity before:duration-300 before:[background:radial-gradient(380px_circle_at_var(--mouse-x)_var(--mouse-y),rgba(255,255,255,.72),transparent_48%)] hover:before:opacity-100",
-        className,
-      )}
-    >
-      <div className="relative z-10 h-full">{children}</div>
-    </article>
   );
 }
 

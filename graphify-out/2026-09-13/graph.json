@@ -12077,7 +12077,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_data_readme",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "data/readme.md"
     },
     {
@@ -12089,7 +12089,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_data_readme_\u062a\u0646\u0638\u06cc\u0645_web",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u062a\u0646\u0638\u06cc\u0645 web"
     },
     {
@@ -12101,7 +12101,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_data_readme_\u0642\u0631\u0627\u0631\u062f\u0627\u062f_http",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0642\u0631\u0627\u0631\u062f\u0627\u062f http"
     },
     {
@@ -12113,7 +12113,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_data_readme_\u0644\u0627\u06cc\u0647_\u062f\u0627\u062f\u0647_web",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0644\u0627\u06cc\u0647 \u062f\u0627\u062f\u0647 web"
     },
     {
@@ -12125,7 +12125,7 @@
       "_origin": "ast",
       "id": "readme",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "readme.md"
     },
     {
@@ -12137,7 +12137,7 @@
       "_origin": "ast",
       "id": "readme_api_\u0633\u0627\u0632\u06af\u0627\u0631_\u0628\u0627_openai",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "api \u0633\u0627\u0632\u06af\u0627\u0631 \u0628\u0627 openai"
     },
     {
@@ -12149,7 +12149,7 @@
       "_origin": "ast",
       "id": "readme_dependency\u0647\u0627_\u0646\u0627\u0645\u0639\u062a\u0628\u0631_\u06cc\u0627_\u0646\u0627\u0642\u0635_\u0627\u0646\u062f",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "dependency\u0647\u0627 \u0646\u0627\u0645\u0639\u062a\u0628\u0631 \u06cc\u0627 \u0646\u0627\u0642\u0635\u200c\u0627\u0646\u062f"
     },
     {
@@ -12161,7 +12161,7 @@
       "_origin": "ast",
       "id": "readme_endpoint_ready_\u06a9\u062f_503_\u0645\u06cc_\u062f\u0647\u062f",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "endpoint `/ready` \u06a9\u062f 503 \u0645\u06cc\u200c\u062f\u0647\u062f"
     },
     {
@@ -12173,7 +12173,7 @@
       "_origin": "ast",
       "id": "readme_proxy_\u0645\u062d\u0644\u06cc_deepseek",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "proxy \u0645\u062d\u0644\u06cc deepseek"
     },
     {
@@ -12185,7 +12185,7 @@
       "_origin": "ast",
       "id": "readme_web_\u067e\u06cc\u0627\u0645_\u0627\u062a\u0635\u0627\u0644_\u0628\u0647_node_api_\u0645\u06cc_\u062f\u0647\u062f",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "web \u067e\u06cc\u0627\u0645 \u0627\u062a\u0635\u0627\u0644 \u0628\u0647 node api \u0645\u06cc\u200c\u062f\u0647\u062f"
     },
     {
@@ -12197,7 +12197,7 @@
       "_origin": "ast",
       "id": "readme_\u0627\u062c\u0631\u0627\u06cc_postgresql_\u0648_api_\u062f\u0627\u062e\u0644_docker",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0627\u062c\u0631\u0627\u06cc postgresql \u0648 api \u062f\u0627\u062e\u0644 docker"
     },
     {
@@ -12209,7 +12209,7 @@
       "_origin": "ast",
       "id": "readme_\u0627\u062c\u0631\u0627\u06cc_web_\u0648_api_\u062f\u0631_terminal\u0647\u0627\u06cc_\u062c\u062f\u0627",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0627\u062c\u0631\u0627\u06cc web \u0648 api \u062f\u0631 terminal\u0647\u0627\u06cc \u062c\u062f\u0627"
     },
     {
@@ -12221,7 +12221,7 @@
       "_origin": "ast",
       "id": "readme_\u0627\u062c\u0631\u0627\u06cc_\u062e\u0631\u0648\u062c\u06cc_build_\u0631\u0648\u06cc_\u0633\u06cc\u0633\u062a\u0645_\u0645\u062d\u0644\u06cc",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0627\u062c\u0631\u0627\u06cc \u062e\u0631\u0648\u062c\u06cc build \u0631\u0648\u06cc \u0633\u06cc\u0633\u062a\u0645 \u0645\u062d\u0644\u06cc"
     },
     {
@@ -12233,7 +12233,7 @@
       "_origin": "ast",
       "id": "readme_\u0627\u0644\u0632\u0627\u0645\u0627\u062a_production",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0627\u0644\u0632\u0627\u0645\u0627\u062a production"
     },
     {
@@ -12245,7 +12245,7 @@
       "_origin": "ast",
       "id": "readme_\u062a\u0633\u062a_\u0648_\u06a9\u0646\u062a\u0631\u0644_\u06a9\u06cc\u0641\u06cc\u062a",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u062a\u0633\u062a \u0648 \u06a9\u0646\u062a\u0631\u0644 \u06a9\u06cc\u0641\u06cc\u062a"
     },
     {
@@ -12257,7 +12257,7 @@
       "_origin": "ast",
       "id": "readme_\u062a\u0646\u0638\u06cc\u0645_\u0645\u062f\u0644_\u0647\u0648\u0634_\u0645\u0635\u0646\u0648\u0639\u06cc",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u062a\u0646\u0638\u06cc\u0645 \u0645\u062f\u0644 \u0647\u0648\u0634 \u0645\u0635\u0646\u0648\u0639\u06cc"
     },
     {
@@ -12269,20 +12269,20 @@
       "_origin": "ast",
       "id": "readme_\u062e\u0637\u0627\u06cc_cors_\u062f\u06cc\u062f\u0647_\u0645\u06cc_\u0634\u0648\u062f",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u062e\u0637\u0627\u06cc cors \u062f\u06cc\u062f\u0647 \u0645\u06cc\u200c\u0634\u0648\u062f"
     },
     {
-      "label": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "label": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "README.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "id": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
-      "norm_label": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 resume maker"
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
+      "norm_label": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 radikar"
     },
     {
       "label": "\u0631\u0627\u0647\u200c\u0627\u0646\u062f\u0627\u0632\u06cc \u0633\u0631\u06cc\u0639 \u067e\u06cc\u0634\u0646\u0647\u0627\u062f\u06cc",
@@ -12293,7 +12293,7 @@
       "_origin": "ast",
       "id": "readme_\u0631\u0627\u0647_\u0627\u0646\u062f\u0627\u0632\u06cc_\u0633\u0631\u06cc\u0639_\u067e\u06cc\u0634\u0646\u0647\u0627\u062f\u06cc",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0631\u0627\u0647\u200c\u0627\u0646\u062f\u0627\u0632\u06cc \u0633\u0631\u06cc\u0639 \u067e\u06cc\u0634\u0646\u0647\u0627\u062f\u06cc"
     },
     {
@@ -12305,7 +12305,7 @@
       "_origin": "ast",
       "id": "readme_\u0631\u0641\u0639_\u062e\u0637\u0627\u0647\u0627\u06cc_\u0631\u0627\u06cc\u062c",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0631\u0641\u0639 \u062e\u0637\u0627\u0647\u0627\u06cc \u0631\u0627\u06cc\u062c"
     },
     {
@@ -12317,7 +12317,7 @@
       "_origin": "ast",
       "id": "readme_\u0633\u0627\u062e\u062a\u0627\u0631_monorepo",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0633\u0627\u062e\u062a\u0627\u0631 monorepo"
     },
     {
@@ -12329,7 +12329,7 @@
       "_origin": "ast",
       "id": "readme_\u0641\u0631\u0645\u0627\u0646_\u0647\u0627\u06cc_\u0645\u0647\u0645_monorepo",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0641\u0631\u0645\u0627\u0646\u200c\u0647\u0627\u06cc \u0645\u0647\u0645 monorepo"
     },
     {
@@ -12341,7 +12341,7 @@
       "_origin": "ast",
       "id": "readme_\u0642\u0627\u0628\u0644\u06cc\u062a_\u0647\u0627\u06cc_ai_\u062e\u0637\u0627\u06cc_provider_\u0645\u06cc_\u062f\u0647\u0646\u062f",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0642\u0627\u0628\u0644\u06cc\u062a\u200c\u0647\u0627\u06cc ai \u062e\u0637\u0627\u06cc provider \u0645\u06cc\u200c\u062f\u0647\u0646\u062f"
     },
     {
@@ -12353,7 +12353,7 @@
       "_origin": "ast",
       "id": "readme_\u0645\u062a\u063a\u06cc\u0631\u0647\u0627\u06cc_\u0645\u062d\u06cc\u0637\u06cc_api",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0645\u062a\u063a\u06cc\u0631\u0647\u0627\u06cc \u0645\u062d\u06cc\u0637\u06cc api"
     },
     {
@@ -12365,7 +12365,7 @@
       "_origin": "ast",
       "id": "readme_\u0645\u062f\u06cc\u0631\u06cc\u062a_\u062f\u06cc\u062a\u0627\u0628\u06cc\u0633",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0645\u062f\u06cc\u0631\u06cc\u062a \u062f\u06cc\u062a\u0627\u0628\u06cc\u0633"
     },
     {
@@ -12377,7 +12377,7 @@
       "_origin": "ast",
       "id": "readme_\u0645\u0633\u062a\u0646\u062f\u0627\u062a_\u0628\u06cc\u0634\u062a\u0631",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0645\u0633\u062a\u0646\u062f\u0627\u062a \u0628\u06cc\u0634\u062a\u0631"
     },
     {
@@ -12389,7 +12389,7 @@
       "_origin": "ast",
       "id": "readme_\u0648\u0631\u0648\u062f_\u0628\u0627_otp_\u062f\u0631_\u0645\u062d\u06cc\u0637_\u062a\u0648\u0633\u0639\u0647",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u0648\u0631\u0648\u062f \u0628\u0627 otp \u062f\u0631 \u0645\u062d\u06cc\u0637 \u062a\u0648\u0633\u0639\u0647"
     },
     {
@@ -12401,7 +12401,7 @@
       "_origin": "ast",
       "id": "readme_\u067e\u0644\u0646_\u0647\u0627_\u0648_\u062f\u0631\u06af\u0627\u0647_\u0632\u0631\u06cc\u0646_\u067e\u0627\u0644_sandbox",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u067e\u0644\u0646\u200c\u0647\u0627 \u0648 \u062f\u0631\u06af\u0627\u0647 \u0632\u0631\u06cc\u0646\u200c\u067e\u0627\u0644 sandbox"
     },
     {
@@ -12413,7 +12413,7 @@
       "_origin": "ast",
       "id": "readme_\u067e\u06cc\u0634_\u0646\u06cc\u0627\u0632\u0647\u0627",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u067e\u06cc\u0634\u200c\u0646\u06cc\u0627\u0632\u0647\u0627"
     },
     {
@@ -12425,7 +12425,7 @@
       "_origin": "ast",
       "id": "readme_\u06a9\u062f_otp_\u062f\u0631_\u062a\u0648\u0633\u0639\u0647_\u0646\u0645\u0627\u06cc\u0634_\u062f\u0627\u062f\u0647_\u0646\u0645\u06cc_\u0634\u0648\u062f",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u06a9\u062f otp \u062f\u0631 \u062a\u0648\u0633\u0639\u0647 \u0646\u0645\u0627\u06cc\u0634 \u062f\u0627\u062f\u0647 \u0646\u0645\u06cc\u200c\u0634\u0648\u062f"
     },
     {
@@ -12437,7 +12437,7 @@
       "_origin": "ast",
       "id": "readme_\u06cc\u06a9\u06cc_\u0627\u0632_\u067e\u0648\u0631\u062a_\u0647\u0627_\u0627\u0634\u063a\u0627\u0644_\u0627\u0633\u062a",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u06cc\u06a9\u06cc \u0627\u0632 \u067e\u0648\u0631\u062a\u200c\u0647\u0627 \u0627\u0634\u063a\u0627\u0644 \u0627\u0633\u062a"
     },
     {
@@ -12449,7 +12449,7 @@
       "_origin": "ast",
       "id": "readme_\u06f1_\u0646\u0635\u0628_dependency\u0647\u0627",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u06f1. \u0646\u0635\u0628 dependency\u0647\u0627"
     },
     {
@@ -12461,7 +12461,7 @@
       "_origin": "ast",
       "id": "readme_\u06f2_\u0633\u0627\u062e\u062a_\u0641\u0627\u06cc\u0644_\u0647\u0627\u06cc_\u062a\u0646\u0638\u06cc\u0645\u0627\u062a_\u0645\u062d\u0644\u06cc",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u06f2. \u0633\u0627\u062e\u062a \u0641\u0627\u06cc\u0644\u200c\u0647\u0627\u06cc \u062a\u0646\u0638\u06cc\u0645\u0627\u062a \u0645\u062d\u0644\u06cc"
     },
     {
@@ -12473,7 +12473,7 @@
       "_origin": "ast",
       "id": "readme_\u06f3_\u0628\u0627\u0644\u0627_\u0622\u0648\u0631\u062f\u0646_postgresql",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u06f3. \u0628\u0627\u0644\u0627 \u0627\u0648\u0631\u062f\u0646 postgresql"
     },
     {
@@ -12485,7 +12485,7 @@
       "_origin": "ast",
       "id": "readme_\u06f4_\u0627\u062c\u0631\u0627\u06cc_migration\u0647\u0627",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u06f4. \u0627\u062c\u0631\u0627\u06cc migration\u0647\u0627"
     },
     {
@@ -12497,7 +12497,7 @@
       "_origin": "ast",
       "id": "readme_\u06f5_\u0627\u06cc\u062c\u0627\u062f_\u062f\u0627\u062f\u0647_\u0627\u0648\u0644\u06cc\u0647",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u06f5. \u0627\u06cc\u062c\u0627\u062f \u062f\u0627\u062f\u0647 \u0627\u0648\u0644\u06cc\u0647"
     },
     {
@@ -12509,7 +12509,7 @@
       "_origin": "ast",
       "id": "readme_\u06f6_\u0627\u062c\u0631\u0627\u06cc_\u0647\u0645_\u0632\u0645\u0627\u0646_web_\u0648_api",
       "community": 30,
-      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Resume Maker",
+      "community_name": "\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631 \u2014 Radikar",
       "norm_label": "\u06f6. \u0627\u062c\u0631\u0627\u06cc \u0647\u0645\u200c\u0632\u0645\u0627\u0646 web \u0648 api"
     },
     {
@@ -53479,7 +53479,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "readme",
-      "target": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "target": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "confidence_score": 1.0
     },
     {
@@ -53511,7 +53511,7 @@
       "source_location": "L155",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u0627\u062c\u0631\u0627\u06cc_web_\u0648_api_\u062f\u0631_terminal\u0647\u0627\u06cc_\u062c\u062f\u0627",
       "confidence_score": 1.0
     },
@@ -53522,7 +53522,7 @@
       "source_location": "L16",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u0633\u0627\u062e\u062a\u0627\u0631_monorepo",
       "confidence_score": 1.0
     },
@@ -53533,7 +53533,7 @@
       "source_location": "L175",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u0627\u062c\u0631\u0627\u06cc_postgresql_\u0648_api_\u062f\u0627\u062e\u0644_docker",
       "confidence_score": 1.0
     },
@@ -53544,7 +53544,7 @@
       "source_location": "L212",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u0648\u0631\u0648\u062f_\u0628\u0627_otp_\u062f\u0631_\u0645\u062d\u06cc\u0637_\u062a\u0648\u0633\u0639\u0647",
       "confidence_score": 1.0
     },
@@ -53555,7 +53555,7 @@
       "source_location": "L238",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u067e\u0644\u0646_\u0647\u0627_\u0648_\u062f\u0631\u06af\u0627\u0647_\u0632\u0631\u06cc\u0646_\u067e\u0627\u0644_sandbox",
       "confidence_score": 1.0
     },
@@ -53566,7 +53566,7 @@
       "source_location": "L280",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u062a\u0646\u0638\u06cc\u0645_\u0645\u062f\u0644_\u0647\u0648\u0634_\u0645\u0635\u0646\u0648\u0639\u06cc",
       "confidence_score": 1.0
     },
@@ -53577,7 +53577,7 @@
       "source_location": "L322",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u0645\u062a\u063a\u06cc\u0631\u0647\u0627\u06cc_\u0645\u062d\u06cc\u0637\u06cc_api",
       "confidence_score": 1.0
     },
@@ -53588,7 +53588,7 @@
       "source_location": "L345",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u0645\u062f\u06cc\u0631\u06cc\u062a_\u062f\u06cc\u062a\u0627\u0628\u06cc\u0633",
       "confidence_score": 1.0
     },
@@ -53599,7 +53599,7 @@
       "source_location": "L38",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u067e\u06cc\u0634_\u0646\u06cc\u0627\u0632\u0647\u0627",
       "confidence_score": 1.0
     },
@@ -53610,7 +53610,7 @@
       "source_location": "L387",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u062a\u0633\u062a_\u0648_\u06a9\u0646\u062a\u0631\u0644_\u06a9\u06cc\u0641\u06cc\u062a",
       "confidence_score": 1.0
     },
@@ -53621,7 +53621,7 @@
       "source_location": "L413",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u0627\u062c\u0631\u0627\u06cc_\u062e\u0631\u0648\u062c\u06cc_build_\u0631\u0648\u06cc_\u0633\u06cc\u0633\u062a\u0645_\u0645\u062d\u0644\u06cc",
       "confidence_score": 1.0
     },
@@ -53632,7 +53632,7 @@
       "source_location": "L434",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u0627\u0644\u0632\u0627\u0645\u0627\u062a_production",
       "confidence_score": 1.0
     },
@@ -53643,7 +53643,7 @@
       "source_location": "L452",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u0641\u0631\u0645\u0627\u0646_\u0647\u0627\u06cc_\u0645\u0647\u0645_monorepo",
       "confidence_score": 1.0
     },
@@ -53654,7 +53654,7 @@
       "source_location": "L474",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u0631\u0641\u0639_\u062e\u0637\u0627\u0647\u0627\u06cc_\u0631\u0627\u06cc\u062c",
       "confidence_score": 1.0
     },
@@ -53665,7 +53665,7 @@
       "source_location": "L543",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u0645\u0633\u062a\u0646\u062f\u0627\u062a_\u0628\u06cc\u0634\u062a\u0631",
       "confidence_score": 1.0
     },
@@ -53676,7 +53676,7 @@
       "source_location": "L59",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_resume_maker",
+      "source": "readme_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631_radikar",
       "target": "readme_\u0631\u0627\u0647_\u0627\u0646\u062f\u0627\u0632\u06cc_\u0633\u0631\u06cc\u0639_\u067e\u06cc\u0634\u0646\u0647\u0627\u062f\u06cc",
       "confidence_score": 1.0
     },

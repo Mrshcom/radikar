@@ -1,4 +1,4 @@
-# رادیکار — Resume Maker
+# رادیکار
 
 رادیکار یک Monorepo ماژولار برای ساخت و مدیریت رزومه فارسی است. رابط کاربری با
 Next.js App Router، بک‌اند با Node.js و Fastify و دیتابیس با PostgreSQL و Drizzle

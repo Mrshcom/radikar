@@ -42,4 +42,4 @@ services:
 
 volumes:
   radikar_postgres_data:
-    name: resumemaker_radikar_postgres_data
+    name: radikar_postgres_data

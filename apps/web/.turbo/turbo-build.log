@@ -4,23 +4,24 @@
 
 ▲ Next.js 16.3.3 (Turbopack)
 - Environments: .env.local
-✓ Running next.config.ts took 97ms
+✓ Running next.config.ts took 21ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 1862ms
+✓ Compiled successfully in 5.2s
   Running TypeScript ...
-  Finished TypeScript in 2.4s ...
+  Finished TypeScript in 5.1s ...
   Collecting page data using 7 workers ...
-  Generating static pages using 7 workers (0/24) ...
-  Generating static pages using 7 workers (6/24) 
-  Generating static pages using 7 workers (12/24) 
-  Generating static pages using 7 workers (18/24) 
-✓ Generating static pages using 7 workers (24/24) in 484ms
+  Generating static pages using 7 workers (0/37) ...
+  Generating static pages using 7 workers (9/37)
+  Generating static pages using 7 workers (18/37)
+  Generating static pages using 7 workers (27/37)
+✓ Generating static pages using 7 workers (37/37) in 441ms
   Finalizing page optimization ...
 
 Route (app)
 ┌ ○ /
 ├ ○ /_not-found
+├ ○ /about
 ├ ○ /account
 ├ ○ /admin
 ├ ○ /admin/memberships
@@ -30,18 +31,30 @@ Route (app)
 ├ ○ /admin/records
 ├ ○ /admin/settings
 ├ ○ /admin/users
+├ ○ /ai-resume-builder
 ├ ƒ /api/[...path]
+├ ○ /application-tracker
 ├ ○ /applications
 ├ ○ /billing/result
+├ ○ /contact
 ├ ○ /dashboard
+├ ○ /guides
 ├ ○ /interview
+├ ○ /interview-practice
 ├ ○ /jobs
 ├ ○ /knowledge-base
 ├ ○ /login
+├ ○ /manifest.webmanifest
 ├ ○ /match
 ├ ○ /orders
+├ ○ /privacy
+├ ○ /resume-builder
+├ ○ /resume-job-match
 ├ ○ /resumes
+├ ○ /robots.txt
 ├ ○ /settings
+├ ○ /sitemap.xml
+├ ○ /terms
 ├ ○ /upgrade
 └ ƒ /v1/[...path]
 

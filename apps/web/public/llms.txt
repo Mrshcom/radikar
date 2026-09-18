@@ -1,0 +1,25 @@
+# رادیکار
+
+رادیکار یک دستیار فارسی مسیر شغلی برای ساخت رزومه فارسی و انگلیسی، تحلیل تطابق رزومه با آگهی، ساخت نسخه هدفمند رزومه، تمرین مصاحبه و مدیریت درخواست‌های شغلی است.
+
+## صفحات اصلی
+
+- خانه: https://radikar.ir/
+- رزومه‌ساز آنلاین: https://radikar.ir/resume-builder
+- رزومه‌ساز هوشمند: https://radikar.ir/ai-resume-builder
+- تحلیل تطابق رزومه و شغل: https://radikar.ir/resume-job-match
+- تمرین مصاحبه: https://radikar.ir/interview-practice
+- مدیریت اپلای: https://radikar.ir/application-tracker
+- راهنماها: https://radikar.ir/guides
+- درباره رادیکار: https://radikar.ir/about
+- حریم خصوصی: https://radikar.ir/privacy
+- شرایط استفاده: https://radikar.ir/terms
+
+## نکات دقیق
+
+- رادیکار نتیجه استخدام، دعوت به مصاحبه یا عبور از سامانه‌های جذب را تضمین نمی‌کند.
+- امتیاز تطابق یک ابزار تصمیم‌یار است.
+- پیشنهادهای هوشمند باید پیش از استفاده توسط کاربر بازبینی شوند و نباید اطلاعات غیرواقعی به رزومه اضافه کنند.
+- زبان اصلی محتوای عمومی فارسی است.
+
+Sitemap: https://radikar.ir/sitemap.xml
