@@ -199,19 +199,6 @@
       "norm_label": "circularprogressprops"
     },
     {
-      "label": "SkeletonProps",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L3",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_skeletonprops",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "skeletonprops"
-    },
-    {
       "label": "DashboardState",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/dashboard/page.tsx",
@@ -223,6 +210,19 @@
       "community": 15,
       "community_name": "dashboard/page.tsx",
       "norm_label": "dashboardstate"
+    },
+    {
+      "label": "DashboardSnapshotRecord",
+      "file_type": "code",
+      "source_file": "apps/web/lib/data/models.ts",
+      "source_location": "L167",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_data_models_dashboardsnapshotrecord",
+      "community": 15,
+      "community_name": "dashboard/page.tsx",
+      "norm_label": "dashboardsnapshotrecord"
     },
     {
       "label": "AuthService",
@@ -329,32 +329,6 @@
       "norm_label": "response"
     },
     {
-      "label": "RecordRow",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/records/page.tsx",
-      "source_location": "L19",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_admin_records_page_recordrow",
-      "community": 17,
-      "community_name": "admin/orders/page.tsx",
-      "norm_label": "recordrow"
-    },
-    {
-      "label": "RecordsResponse",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/records/page.tsx",
-      "source_location": "L18",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_admin_records_page_recordsresponse",
-      "community": 17,
-      "community_name": "admin/orders/page.tsx",
-      "norm_label": "recordsresponse"
-    },
-    {
       "label": "AdminUser",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/admin/users/page.tsx",
@@ -459,19 +433,6 @@
       "norm_label": "order"
     },
     {
-      "label": "QueryParameter",
-      "file_type": "code",
-      "source_file": "apps/web/lib/build-query-string.ts",
-      "source_location": "L1",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_build_query_string_queryparameter",
-      "community": 17,
-      "community_name": "admin/orders/page.tsx",
-      "norm_label": "queryparameter"
-    },
-    {
       "label": "MatchAnalysis",
       "file_type": "code",
       "source_file": "apps/web/lib/match-analysis.ts",
@@ -509,6 +470,19 @@
       "community": 2,
       "community_name": "data-routes.test.ts",
       "norm_label": "extractedfilecontent"
+    },
+    {
+      "label": "ResumeImportPayload",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L537",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_resumeimportpayload",
+      "community": 2,
+      "community_name": "data-routes.test.ts",
+      "norm_label": "resumeimportpayload"
     },
     {
       "label": "BillingError",
@@ -550,56 +524,43 @@
       "norm_label": "tablepagesize"
     },
     {
-      "label": "Feedback",
+      "label": "Job",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/interview/page.tsx",
-      "source_location": "L46",
+      "source_file": "apps/web/app/(panel)/_data/jobs.ts",
+      "source_location": "L3",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_interview_page_feedback",
+      "id": "apps_web_app_panel_data_jobs_job",
       "community": 28,
       "community_name": "stores.ts",
-      "norm_label": "feedback"
+      "norm_label": "job"
     },
     {
-      "label": "PracticeCard",
+      "label": "JobTone",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/interview/page.tsx",
-      "source_location": "L38",
+      "source_file": "apps/web/app/(panel)/_data/jobs.ts",
+      "source_location": "L1",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_interview_page_practicecard",
+      "id": "apps_web_app_panel_data_jobs_jobtone",
       "community": 28,
       "community_name": "stores.ts",
-      "norm_label": "practicecard"
+      "norm_label": "jobtone"
     },
     {
-      "label": "SessionData",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/interview/page.tsx",
-      "source_location": "L39",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_interview_page_sessiondata",
-      "community": 28,
-      "community_name": "stores.ts",
-      "norm_label": "sessiondata"
-    },
-    {
-      "label": "DashboardSnapshotRecord",
+      "label": "AppProfileRecord",
       "file_type": "code",
       "source_file": "apps/web/lib/data/models.ts",
-      "source_location": "L167",
+      "source_location": "L17",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "id": "apps_web_lib_data_models_dashboardsnapshotrecord",
+      "id": "apps_web_lib_data_models_appprofilerecord",
       "community": 28,
       "community_name": "stores.ts",
-      "norm_label": "dashboardsnapshotrecord"
+      "norm_label": "appprofilerecord"
     },
     {
       "label": "InterviewFeedbackRecord",
@@ -693,19 +654,6 @@
       "norm_label": "matchanalysisrecord"
     },
     {
-      "label": "ResumeRecord",
-      "file_type": "code",
-      "source_file": "apps/web/lib/data/models.ts",
-      "source_location": "L93",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_data_models_resumerecord",
-      "community": 28,
-      "community_name": "stores.ts",
-      "norm_label": "resumerecord"
-    },
-    {
       "label": "UserProfileRecord",
       "file_type": "code",
       "source_file": "apps/web/lib/data/models.ts",
@@ -732,6 +680,32 @@
       "norm_label": "workspacestaterecord"
     },
     {
+      "label": "JobCardData",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
+      "source_location": "L48",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_job_card_jobcarddata",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "jobcarddata"
+    },
+    {
+      "label": "JobDetailsData",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
+      "source_location": "L40",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_job_card_jobdetailsdata",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "jobdetailsdata"
+    },
+    {
       "label": "ApplicationRecord",
       "file_type": "code",
       "source_file": "apps/web/lib/data/models.ts",
@@ -741,7 +715,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_data_models_applicationrecord",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "applicationrecord"
     },
     {
@@ -754,7 +728,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_data_models_applicationstage",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "applicationstage"
     },
     {
@@ -767,7 +741,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_data_models_jobrecord",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "jobrecord"
     },
     {
@@ -1096,17 +1070,30 @@
       "norm_label": "knowledgetabid"
     },
     {
-      "label": "ResumeImportPayload",
+      "label": "RecordRow",
       "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L537",
+      "source_file": "apps/web/app/(panel)/admin/records/page.tsx",
+      "source_location": "L19",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "id": "packages_validators_src_index_resumeimportpayload",
-      "community": 41,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "resumeimportpayload"
+      "id": "apps_web_app_panel_admin_records_page_recordrow",
+      "community": 48,
+      "community_name": "apiRequest",
+      "norm_label": "recordrow"
+    },
+    {
+      "label": "RecordsResponse",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/admin/records/page.tsx",
+      "source_location": "L18",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_admin_records_page_recordsresponse",
+      "community": 48,
+      "community_name": "apiRequest",
+      "norm_label": "recordsresponse"
     },
     {
       "label": "AdminMembershipDetails",
@@ -1148,16 +1135,42 @@
       "norm_label": "plan"
     },
     {
+      "label": "QueryParameter",
+      "file_type": "code",
+      "source_file": "apps/web/lib/build-query-string.ts",
+      "source_location": "L1",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_build_query_string_queryparameter",
+      "community": 48,
+      "community_name": "apiRequest",
+      "norm_label": "queryparameter"
+    },
+    {
+      "label": "RecentModelRequest",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
+      "source_location": "L29",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_admin_model_usage_page_recentmodelrequest",
+      "community": 49,
+      "community_name": "model-usage/page.tsx",
+      "norm_label": "recentmodelrequest"
+    },
+    {
       "label": "FormValues",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L22",
+      "source_location": "L21",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "id": "apps_web_app_panel_admin_settings_page_formvalues",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "formvalues"
     },
     {
@@ -1170,7 +1183,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_adminaisettings",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "adminaisettings"
     },
     {
@@ -1183,7 +1196,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_adminbillingstats",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "adminbillingstats"
     },
     {
@@ -1196,7 +1209,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_adminevent",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "adminevent"
     },
     {
@@ -1209,7 +1222,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_adminmodelusagestats",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "adminmodelusagestats"
     },
     {
@@ -1222,7 +1235,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_adminstats",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "adminstats"
     },
     {
@@ -1235,7 +1248,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_modelusagetotals",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "modelusagetotals"
     },
     {
@@ -1248,7 +1261,7 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_components_model_task_provider_modeltask",
       "community": 50,
-      "community_name": "match/page.tsx",
+      "community_name": "model-task-provider.tsx",
       "norm_label": "modeltask"
     },
     {
@@ -1261,7 +1274,7 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_components_model_task_provider_modeltaskcancelederror",
       "community": 50,
-      "community_name": "match/page.tsx",
+      "community_name": "model-task-provider.tsx",
       "norm_label": "modeltaskcancelederror"
     },
     {
@@ -1274,7 +1287,7 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_components_model_task_provider_modeltaskcontextvalue",
       "community": 50,
-      "community_name": "match/page.tsx",
+      "community_name": "model-task-provider.tsx",
       "norm_label": "modeltaskcontextvalue"
     },
     {
@@ -1287,7 +1300,7 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_components_model_task_provider_modeltaskstatus",
       "community": 50,
-      "community_name": "match/page.tsx",
+      "community_name": "model-task-provider.tsx",
       "norm_label": "modeltaskstatus"
     },
     {
@@ -1300,60 +1313,8 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_components_model_task_provider_runmodeltaskinput",
       "community": 50,
-      "community_name": "match/page.tsx",
+      "community_name": "model-task-provider.tsx",
       "norm_label": "runmodeltaskinput"
-    },
-    {
-      "label": "ImportJobResponse",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/match/page.tsx",
-      "source_location": "L61",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_match_page_importjobresponse",
-      "community": 50,
-      "community_name": "match/page.tsx",
-      "norm_label": "importjobresponse"
-    },
-    {
-      "label": "JobSourceMode",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/match/page.tsx",
-      "source_location": "L67",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_match_page_jobsourcemode",
-      "community": 50,
-      "community_name": "match/page.tsx",
-      "norm_label": "jobsourcemode"
-    },
-    {
-      "label": "MatchAnalysisTaskContext",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/match/page.tsx",
-      "source_location": "L76",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_match_page_matchanalysistaskcontext",
-      "community": 50,
-      "community_name": "match/page.tsx",
-      "norm_label": "matchanalysistaskcontext"
-    },
-    {
-      "label": "ResumeOption",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/match/page.tsx",
-      "source_location": "L68",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_match_page_resumeoption",
-      "community": 50,
-      "community_name": "match/page.tsx",
-      "norm_label": "resumeoption"
     },
     {
       "label": "JsonObject",
@@ -1525,19 +1486,6 @@
       "norm_label": "providername"
     },
     {
-      "label": "Values",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/account/page.tsx",
-      "source_location": "L24",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_account_page_values",
-      "community": 54,
-      "community_name": "memberships/page.tsx",
-      "norm_label": "values"
-    },
-    {
       "label": "MembershipUser",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/admin/memberships/page.tsx",
@@ -1577,19 +1525,6 @@
       "norm_label": "response"
     },
     {
-      "label": "UsageKey",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
-      "source_location": "L15",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_membership_summary_usagekey",
-      "community": 54,
-      "community_name": "memberships/page.tsx",
-      "norm_label": "usagekey"
-    },
-    {
       "label": "AdminMembershipEvent",
       "file_type": "code",
       "source_file": "apps/web/lib/billing.ts",
@@ -1601,19 +1536,6 @@
       "community": 54,
       "community_name": "memberships/page.tsx",
       "norm_label": "adminmembershipevent"
-    },
-    {
-      "label": "Membership",
-      "file_type": "code",
-      "source_file": "apps/web/lib/billing.ts",
-      "source_location": "L23",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_billing_membership",
-      "community": 54,
-      "community_name": "memberships/page.tsx",
-      "norm_label": "membership"
     },
     {
       "label": "ToastNotifier",
@@ -1772,19 +1694,6 @@
       "norm_label": "resumedata"
     },
     {
-      "label": "ResumeEducation",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/resumes/resume-data.ts",
-      "source_location": "L19",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_resumes_resume_data_resumeeducation",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "resumeeducation"
-    },
-    {
       "label": "ResumeExperience",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/resumes/resume-data.ts",
@@ -1824,6 +1733,32 @@
       "norm_label": "resumeproject"
     },
     {
+      "label": "KnowledgeProfileRecord",
+      "file_type": "code",
+      "source_file": "apps/web/lib/data/models.ts",
+      "source_location": "L73",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_data_models_knowledgeprofilerecord",
+      "community": 6,
+      "community_name": "resumes/page.tsx",
+      "norm_label": "knowledgeprofilerecord"
+    },
+    {
+      "label": "KnowledgeCompletionData",
+      "file_type": "code",
+      "source_file": "apps/web/lib/knowledge-completion.ts",
+      "source_location": "L4",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_knowledge_completion_knowledgecompletiondata",
+      "community": 6,
+      "community_name": "resumes/page.tsx",
+      "norm_label": "knowledgecompletiondata"
+    },
+    {
       "label": "ValidationResult",
       "file_type": "code",
       "source_file": "apps/web/lib/job-description-validation.ts",
@@ -1850,17 +1785,43 @@
       "norm_label": "menuitem"
     },
     {
-      "label": "AppProfileRecord",
+      "label": "Feedback",
       "file_type": "code",
-      "source_file": "apps/web/lib/data/models.ts",
-      "source_location": "L17",
+      "source_file": "apps/web/app/(panel)/interview/page.tsx",
+      "source_location": "L46",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "id": "apps_web_lib_data_models_appprofilerecord",
+      "id": "apps_web_app_panel_interview_page_feedback",
       "community": 64,
       "community_name": "panel-shell.tsx",
-      "norm_label": "appprofilerecord"
+      "norm_label": "feedback"
+    },
+    {
+      "label": "PracticeCard",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/interview/page.tsx",
+      "source_location": "L38",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_interview_page_practicecard",
+      "community": 64,
+      "community_name": "panel-shell.tsx",
+      "norm_label": "practicecard"
+    },
+    {
+      "label": "SessionData",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/interview/page.tsx",
+      "source_location": "L39",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_interview_page_sessiondata",
+      "community": 64,
+      "community_name": "panel-shell.tsx",
+      "norm_label": "sessiondata"
     },
     {
       "label": "DirectionalField",
@@ -1876,43 +1837,17 @@
       "norm_label": "directionalfield"
     },
     {
-      "label": "ClassifiableJob",
+      "label": "SkeletonProps",
       "file_type": "code",
-      "source_file": "apps/web/lib/job-category.ts",
-      "source_location": "L1",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L3",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "id": "apps_web_lib_job_category_classifiablejob",
+      "id": "apps_web_app_panel_components_loading_skeletons_skeletonprops",
       "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "classifiablejob"
-    },
-    {
-      "label": "JobCategory",
-      "file_type": "code",
-      "source_file": "apps/web/lib/job-category.ts",
-      "source_location": "L6",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_job_category_jobcategory",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "jobcategory"
-    },
-    {
-      "label": "JobScope",
-      "file_type": "code",
-      "source_file": "apps/web/lib/job-filter-search-params.ts",
-      "source_location": "L71",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_job_filter_search_params_jobscope",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "jobscope"
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "skeletonprops"
     },
     {
       "label": "JalaliDatePickerProps",
@@ -1926,6 +1861,19 @@
       "community": 73,
       "community_name": "jalali-date-picker.tsx",
       "norm_label": "jalalidatepickerprops"
+    },
+    {
+      "label": "JobScope",
+      "file_type": "code",
+      "source_file": "apps/web/lib/job-filter-search-params.ts",
+      "source_location": "L71",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_job_filter_search_params_jobscope",
+      "community": 73,
+      "community_name": "jalali-date-picker.tsx",
+      "norm_label": "jobscope"
     },
     {
       "label": "BillingService",
@@ -1967,56 +1915,43 @@
       "norm_label": "jobidentity"
     },
     {
-      "label": "JobCardData",
+      "label": "ClassifiableJob",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
-      "source_location": "L48",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_job_card_jobcarddata",
-      "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "jobcarddata"
-    },
-    {
-      "label": "JobDetailsData",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
-      "source_location": "L40",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_job_card_jobdetailsdata",
-      "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "jobdetailsdata"
-    },
-    {
-      "label": "Job",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_data/jobs.ts",
-      "source_location": "L3",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_data_jobs_job",
-      "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "job"
-    },
-    {
-      "label": "JobTone",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_data/jobs.ts",
+      "source_file": "apps/web/lib/job-category.ts",
       "source_location": "L1",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_data_jobs_jobtone",
+      "id": "apps_web_lib_job_category_classifiablejob",
+      "community": 82,
+      "community_name": "job-application-filter.ts",
+      "norm_label": "classifiablejob"
+    },
+    {
+      "label": "JobCategory",
+      "file_type": "code",
+      "source_file": "apps/web/lib/job-category.ts",
+      "source_location": "L6",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_job_category_jobcategory",
+      "community": 82,
+      "community_name": "job-application-filter.ts",
+      "norm_label": "jobcategory"
+    },
+    {
+      "label": "ResumeEducation",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/resumes/resume-data.ts",
+      "source_location": "L19",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_resumes_resume_data_resumeeducation",
       "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "jobtone"
+      "community_name": "resume-section-flow.ts",
+      "norm_label": "resumeeducation"
     },
     {
       "label": "CurrentUser",
@@ -2028,7 +1963,7 @@
       "_origin": "ast",
       "id": "apps_web_app_components_auth_currentuser",
       "community": 84,
-      "community_name": "login/page.tsx",
+      "community_name": "account/page.tsx",
       "norm_label": "currentuser"
     },
     {
@@ -2041,7 +1976,7 @@
       "_origin": "ast",
       "id": "apps_web_app_login_page_otpvalues",
       "community": 84,
-      "community_name": "login/page.tsx",
+      "community_name": "account/page.tsx",
       "norm_label": "otpvalues"
     },
     {
@@ -2054,21 +1989,112 @@
       "_origin": "ast",
       "id": "apps_web_app_login_page_phonevalues",
       "community": 84,
-      "community_name": "login/page.tsx",
+      "community_name": "account/page.tsx",
       "norm_label": "phonevalues"
     },
     {
-      "label": "RecentModelRequest",
+      "label": "Values",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
-      "source_location": "L29",
+      "source_file": "apps/web/app/(panel)/account/page.tsx",
+      "source_location": "L24",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_model_usage_page_recentmodelrequest",
+      "id": "apps_web_app_panel_account_page_values",
+      "community": 84,
+      "community_name": "account/page.tsx",
+      "norm_label": "values"
+    },
+    {
+      "label": "UsageKey",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
+      "source_location": "L15",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_membership_summary_usagekey",
+      "community": 84,
+      "community_name": "account/page.tsx",
+      "norm_label": "usagekey"
+    },
+    {
+      "label": "Membership",
+      "file_type": "code",
+      "source_file": "apps/web/lib/billing.ts",
+      "source_location": "L23",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_billing_membership",
+      "community": 84,
+      "community_name": "account/page.tsx",
+      "norm_label": "membership"
+    },
+    {
+      "label": "ImportJobResponse",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/match/page.tsx",
+      "source_location": "L61",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_match_page_importjobresponse",
       "community": 85,
-      "community_name": "model-usage/page.tsx",
-      "norm_label": "recentmodelrequest"
+      "community_name": "match/page.tsx",
+      "norm_label": "importjobresponse"
+    },
+    {
+      "label": "JobSourceMode",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/match/page.tsx",
+      "source_location": "L67",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_match_page_jobsourcemode",
+      "community": 85,
+      "community_name": "match/page.tsx",
+      "norm_label": "jobsourcemode"
+    },
+    {
+      "label": "MatchAnalysisTaskContext",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/match/page.tsx",
+      "source_location": "L76",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_match_page_matchanalysistaskcontext",
+      "community": 85,
+      "community_name": "match/page.tsx",
+      "norm_label": "matchanalysistaskcontext"
+    },
+    {
+      "label": "ResumeOption",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/match/page.tsx",
+      "source_location": "L68",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_match_page_resumeoption",
+      "community": 85,
+      "community_name": "match/page.tsx",
+      "norm_label": "resumeoption"
+    },
+    {
+      "label": "ResumeRecord",
+      "file_type": "code",
+      "source_file": "apps/web/lib/data/models.ts",
+      "source_location": "L93",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_data_models_resumerecord",
+      "community": 85,
+      "community_name": "match/page.tsx",
+      "norm_label": "resumerecord"
     },
     {
       "label": "BuildAppOptions",
@@ -2095,32 +2121,6 @@
       "community": 9,
       "community_name": "app.ts",
       "norm_label": "apiconfig"
-    },
-    {
-      "label": "KnowledgeProfileRecord",
-      "file_type": "code",
-      "source_file": "apps/web/lib/data/models.ts",
-      "source_location": "L73",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_data_models_knowledgeprofilerecord",
-      "community": 94,
-      "community_name": "resume-import.test.mjs",
-      "norm_label": "knowledgeprofilerecord"
-    },
-    {
-      "label": "KnowledgeCompletionData",
-      "file_type": "code",
-      "source_file": "apps/web/lib/knowledge-completion.ts",
-      "source_location": "L4",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_knowledge_completion_knowledgecompletiondata",
-      "community": 94,
-      "community_name": "resume-import.test.mjs",
-      "norm_label": "knowledgecompletiondata"
     },
     {
       "label": "DataTableSkeleton()",
@@ -2903,18 +2903,6 @@
       "norm_label": "cn()"
     },
     {
-      "label": "ResumeDocument()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/resumes/resume-document.tsx",
-      "source_location": "L5026",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_resumes_resume_document_resumedocument",
-      "community": 1,
-      "community_name": "use-rendered-resume-pagination.ts",
-      "norm_label": "resumedocument()"
-    },
-    {
       "label": "getFlowContentBounds()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/resumes/resume-pagination-layout.ts",
@@ -3455,30 +3443,6 @@
       "norm_label": "normalizestoredresumedata()"
     },
     {
-      "label": "sanitizeImportedImageSource()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L104",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_sanitizeimportedimagesource",
-      "community": 11,
-      "community_name": "normalizeImportedText",
-      "norm_label": "sanitizeimportedimagesource()"
-    },
-    {
-      "label": "sanitizeImportedScalar()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L47",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_sanitizeimportedscalar",
-      "community": 11,
-      "community_name": "normalizeImportedText",
-      "norm_label": "sanitizeimportedscalar()"
-    },
-    {
       "label": "sanitizeImportedUrl()",
       "file_type": "code",
       "source_file": "packages/validators/src/index.ts",
@@ -3551,244 +3515,100 @@
       "norm_label": "can()"
     },
     {
-      "label": "blankExperience()",
+      "label": "AuthGate()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L149",
+      "source_file": "apps/web/app/_components/auth.tsx",
+      "source_location": "L32",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_blankexperience",
+      "id": "apps_web_app_components_auth_authgate",
       "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "blankexperience()"
+      "community_name": "useAuth",
+      "norm_label": "authgate()"
     },
     {
-      "label": "blankLanguage()",
+      "label": "useAuth()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L237",
+      "source_file": "apps/web/app/_components/auth.tsx",
+      "source_location": "L22",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_blanklanguage",
+      "id": "apps_web_app_components_auth_useauth",
       "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "blanklanguage()"
+      "community_name": "useAuth",
+      "norm_label": "useauth()"
     },
     {
-      "label": "blankProject()",
+      "label": "useLogout()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L170",
+      "source_file": "apps/web/app/_components/auth.tsx",
+      "source_location": "L61",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_blankproject",
+      "id": "apps_web_app_components_auth_uselogout",
       "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "blankproject()"
+      "community_name": "useAuth",
+      "norm_label": "uselogout()"
     },
     {
-      "label": "blankQualification()",
+      "label": "AdminPage()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L161",
+      "source_file": "apps/web/app/(panel)/admin/page.tsx",
+      "source_location": "L30",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_blankqualification",
+      "id": "apps_web_app_panel_admin_page_adminpage",
       "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "blankqualification()"
+      "community_name": "useAuth",
+      "norm_label": "adminpage()"
     },
     {
-      "label": "experienceFromResume()",
+      "label": "formatNumber()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L328",
+      "source_file": "apps/web/app/(panel)/admin/page.tsx",
+      "source_location": "L26",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_experiencefromresume",
+      "id": "apps_web_app_panel_admin_page_formatnumber",
       "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "experiencefromresume()"
+      "community_name": "useAuth",
+      "norm_label": "formatnumber()"
     },
     {
-      "label": "KnowledgeBasePage()",
+      "label": "SettingsPage()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L586",
+      "source_file": "apps/web/app/(panel)/settings/page.tsx",
+      "source_location": "L6",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_knowledgebasepage",
+      "id": "apps_web_app_panel_settings_page_settingspage",
       "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "knowledgebasepage()"
+      "community_name": "useAuth",
+      "norm_label": "settingspage()"
     },
     {
-      "label": "mergeImportedKnowledge()",
+      "label": "useAdminBillingStats()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L487",
+      "source_file": "apps/web/lib/admin-stats.ts",
+      "source_location": "L143",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_mergeimportedknowledge",
+      "id": "apps_web_lib_admin_stats_useadminbillingstats",
       "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "mergeimportedknowledge()"
+      "community_name": "useAuth",
+      "norm_label": "useadminbillingstats()"
     },
     {
-      "label": "normalizeExperience()",
+      "label": "useAdminStats()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L344",
+      "source_file": "apps/web/lib/admin-stats.ts",
+      "source_location": "L133",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizeexperience",
+      "id": "apps_web_lib_admin_stats_useadminstats",
       "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "normalizeexperience()"
-    },
-    {
-      "label": "normalizeKnowledgeForm()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L445",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizeknowledgeform",
-      "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "normalizeknowledgeform()"
-    },
-    {
-      "label": "normalizeLanguage()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L294",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizelanguage",
-      "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "normalizelanguage()"
-    },
-    {
-      "label": "normalizeProficiency()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L258",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizeproficiency",
-      "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "normalizeproficiency()"
-    },
-    {
-      "label": "normalizeProject()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L380",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizeproject",
-      "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "normalizeproject()"
-    },
-    {
-      "label": "normalizeQualification()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L418",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizequalification",
-      "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "normalizequalification()"
-    },
-    {
-      "label": "normalizeResumeData()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L435",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizeresumedata",
-      "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "normalizeresumedata()"
-    },
-    {
-      "label": "normalizeWorkMode()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L477",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_normalizeworkmode",
-      "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "normalizeworkmode()"
-    },
-    {
-      "label": "parseLanguageItems()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L275",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_parselanguageitems",
-      "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "parselanguageitems()"
-    },
-    {
-      "label": "qualificationFromResume()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L406",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_qualificationfromresume",
-      "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "qualificationfromresume()"
-    },
-    {
-      "label": "sampleKnowledgeProjects()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L182",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_sampleknowledgeprojects",
-      "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "sampleknowledgeprojects()"
-    },
-    {
-      "label": "splitExperienceDate()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L315",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_splitexperiencedate",
-      "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "splitexperiencedate()"
-    },
-    {
-      "label": "createRecordId()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/data/stores.ts",
-      "source_location": "L196",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_data_stores_createrecordid",
-      "community": 13,
-      "community_name": "KnowledgeBasePage",
-      "norm_label": "createrecordid()"
+      "community_name": "useAuth",
+      "norm_label": "useadminstats()"
     },
     {
       "label": ".constructor()",
@@ -3837,150 +3657,6 @@
       "community": 15,
       "community_name": "dashboard/page.tsx",
       "norm_label": "circularprogress()"
-    },
-    {
-      "label": "ApplicationsSkeleton()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L284",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_applicationsskeleton",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "applicationsskeleton()"
-    },
-    {
-      "label": "DashboardSkeleton()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L120",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_dashboardskeleton",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "dashboardskeleton()"
-    },
-    {
-      "label": "GenerationShimmer()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L400",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_generationshimmer",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "generationshimmer()"
-    },
-    {
-      "label": "JobCardsSkeleton()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L82",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_jobcardsskeleton",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "jobcardsskeleton()"
-    },
-    {
-      "label": "LoadingContext()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L14",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_loadingcontext",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "loadingcontext()"
-    },
-    {
-      "label": "MatchAnalysisSkeleton()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L363",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_matchanalysisskeleton",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "matchanalysisskeleton()"
-    },
-    {
-      "label": "ResumePreviewSkeleton()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L432",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_resumepreviewskeleton",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "resumepreviewskeleton()"
-    },
-    {
-      "label": "ResumesSkeleton()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L235",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_resumesskeleton",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "resumesskeleton()"
-    },
-    {
-      "label": "Shimmer()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L5",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_shimmer",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "shimmer()"
-    },
-    {
-      "label": "SkeletonJobCard()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L50",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_skeletonjobcard",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "skeletonjobcard()"
-    },
-    {
-      "label": "SkeletonLines()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L37",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_skeletonlines",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "skeletonlines()"
-    },
-    {
-      "label": "SkeletonTitle()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L107",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_skeletontitle",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "skeletontitle()"
     },
     {
       "label": "barHeightClass()",
@@ -4053,6 +3729,18 @@
       "community": 15,
       "community_name": "dashboard/page.tsx",
       "norm_label": "hasresumecontent()"
+    },
+    {
+      "label": "prioritizeSavedJobs()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/job-order.ts",
+      "source_location": "L1",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_job_order_prioritizesavedjobs",
+      "community": 15,
+      "community_name": "dashboard/page.tsx",
+      "norm_label": "prioritizesavedjobs()"
     },
     {
       "label": ".getRecentEvents()",
@@ -4329,18 +4017,6 @@
       "community": 17,
       "community_name": "admin/orders/page.tsx",
       "norm_label": "tablepagination()"
-    },
-    {
-      "label": "ConfirmActionModal()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/ui.tsx",
-      "source_location": "L113",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_ui_confirmactionmodal",
-      "community": 17,
-      "community_name": "admin/orders/page.tsx",
-      "norm_label": "confirmactionmodal()"
     },
     {
       "label": "boundedString()",
@@ -4655,28 +4331,16 @@
       "norm_label": ".constructor()"
     },
     {
-      "label": "FeedbackSkeleton()",
+      "label": "useTablePageSize()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L415",
+      "source_file": "apps/web/lib/table-page-size.ts",
+      "source_location": "L23",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_feedbackskeleton",
-      "community": 28,
-      "community_name": "stores.ts",
-      "norm_label": "feedbackskeleton()"
-    },
-    {
-      "label": "InterviewSkeleton()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L326",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons_interviewskeleton",
-      "community": 28,
-      "community_name": "stores.ts",
-      "norm_label": "interviewskeleton()"
+      "id": "apps_web_lib_table_page_size_usetablepagesize",
+      "community": 26,
+      "community_name": "table-page-size.ts",
+      "norm_label": "usetablepagesize()"
     },
     {
       "label": "getDataRepository()",
@@ -4715,18 +4379,6 @@
       "norm_label": "createunscopedstore()"
     },
     {
-      "label": "removeWorkspace()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/data/stores.ts",
-      "source_location": "L123",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_data_stores_removeworkspace",
-      "community": 28,
-      "community_name": "stores.ts",
-      "norm_label": "removeworkspace()"
-    },
-    {
       "label": "ApplicationsPage()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/applications/page.tsx",
@@ -4735,7 +4387,7 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_applications_page_applicationspage",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "applicationspage()"
     },
     {
@@ -4747,7 +4399,7 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_applications_page_formatupdatetime",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "formatupdatetime()"
     },
     {
@@ -4759,8 +4411,80 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_applications_page_readapplicationboard",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "readapplicationboard()"
+    },
+    {
+      "label": "JobCard()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
+      "source_location": "L168",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_job_card_jobcard",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "jobcard()"
+    },
+    {
+      "label": "JobDetailsModal()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
+      "source_location": "L102",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_job_card_jobdetailsmodal",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "jobdetailsmodal()"
+    },
+    {
+      "label": "JobLogo()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
+      "source_location": "L54",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_job_card_joblogo",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "joblogo()"
+    },
+    {
+      "label": "JobCardsSkeleton()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L82",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_loading_skeletons_jobcardsskeleton",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "jobcardsskeleton()"
+    },
+    {
+      "label": "SectionTitle()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/ui.tsx",
+      "source_location": "L168",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_ui_sectiontitle",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "sectiontitle()"
+    },
+    {
+      "label": "KnowledgeSectionTabs()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L2142",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_knowledgesectiontabs",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "knowledgesectiontabs()"
     },
     {
       "label": "createSavedApplicationForJob()",
@@ -4771,7 +4495,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_application_board_createsavedapplicationforjob",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "createsavedapplicationforjob()"
     },
     {
@@ -4783,7 +4507,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_application_board_moveapplicationtostage",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "moveapplicationtostage()"
     },
     {
@@ -4795,8 +4519,32 @@
       "_origin": "ast",
       "id": "apps_web_lib_application_board_synchronizejobswithapplicationboard",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "synchronizejobswithapplicationboard()"
+    },
+    {
+      "label": "formatPersianNumber()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/fa-number.ts",
+      "source_location": "L7",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_fa_number_formatpersiannumber",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "formatpersiannumber()"
+    },
+    {
+      "label": "toPersianDigits()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/fa-number.ts",
+      "source_location": "L3",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_fa_number_topersiandigits",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "topersiandigits()"
     },
     {
       "label": "job()",
@@ -4807,7 +4555,7 @@
       "_origin": "ast",
       "id": "apps_web_tests_application_board_test_job",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "job()"
     },
     {
@@ -5399,6 +5147,66 @@
       "norm_label": "getbrowserqueryclient()"
     },
     {
+      "label": "blankExperience()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L149",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_blankexperience",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "blankexperience()"
+    },
+    {
+      "label": "blankLanguage()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L237",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_blanklanguage",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "blanklanguage()"
+    },
+    {
+      "label": "blankProject()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L170",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_blankproject",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "blankproject()"
+    },
+    {
+      "label": "blankQualification()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L161",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_blankqualification",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "blankqualification()"
+    },
+    {
+      "label": "experienceFromResume()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L328",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_experiencefromresume",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "experiencefromresume()"
+    },
+    {
       "label": "Field()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
@@ -5433,6 +5241,18 @@
       "community": 41,
       "community_name": "knowledge-base/page.tsx",
       "norm_label": "isprojectempty()"
+    },
+    {
+      "label": "KnowledgeBasePage()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L586",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_knowledgebasepage",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "knowledgebasepage()"
     },
     {
       "label": "KnowledgeCardsSkeleton()",
@@ -5483,28 +5303,124 @@
       "norm_label": "languagessummary()"
     },
     {
-      "label": "MultiSkillAutocomplete()",
+      "label": "mergeImportedKnowledge()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L2386",
+      "source_location": "L487",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_multiskillautocomplete",
+      "id": "apps_web_app_panel_knowledge_base_page_mergeimportedknowledge",
       "community": 41,
       "community_name": "knowledge-base/page.tsx",
-      "norm_label": "multiskillautocomplete()"
+      "norm_label": "mergeimportedknowledge()"
     },
     {
-      "label": "parseSkills()",
+      "label": "normalizeExperience()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L2382",
+      "source_location": "L344",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_parseskills",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizeexperience",
       "community": 41,
       "community_name": "knowledge-base/page.tsx",
-      "norm_label": "parseskills()"
+      "norm_label": "normalizeexperience()"
+    },
+    {
+      "label": "normalizeKnowledgeForm()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L445",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizeknowledgeform",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "normalizeknowledgeform()"
+    },
+    {
+      "label": "normalizeLanguage()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L294",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizelanguage",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "normalizelanguage()"
+    },
+    {
+      "label": "normalizeProficiency()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L258",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizeproficiency",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "normalizeproficiency()"
+    },
+    {
+      "label": "normalizeProject()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L380",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizeproject",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "normalizeproject()"
+    },
+    {
+      "label": "normalizeQualification()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L418",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizequalification",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "normalizequalification()"
+    },
+    {
+      "label": "normalizeResumeData()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L435",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizeresumedata",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "normalizeresumedata()"
+    },
+    {
+      "label": "normalizeWorkMode()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L477",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_normalizeworkmode",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "normalizeworkmode()"
+    },
+    {
+      "label": "parseLanguageItems()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L275",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_parselanguageitems",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "parselanguageitems()"
     },
     {
       "label": "proficiencyLabel()",
@@ -5517,6 +5433,18 @@
       "community": 41,
       "community_name": "knowledge-base/page.tsx",
       "norm_label": "proficiencylabel()"
+    },
+    {
+      "label": "qualificationFromResume()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L406",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_qualificationfromresume",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "qualificationfromresume()"
     },
     {
       "label": "qualificationSummary()",
@@ -5543,6 +5471,18 @@
       "norm_label": "resumedatafromknowledge()"
     },
     {
+      "label": "sampleKnowledgeProjects()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L182",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_sampleknowledgeprojects",
+      "community": 41,
+      "community_name": "knowledge-base/page.tsx",
+      "norm_label": "sampleknowledgeprojects()"
+    },
+    {
       "label": "SelectField()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
@@ -5555,52 +5495,28 @@
       "norm_label": "selectfield()"
     },
     {
-      "label": "ResumeBuilder()",
+      "label": "splitExperienceDate()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/resumes/resume-builder.tsx",
-      "source_location": "L272",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L315",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_resumes_resume_builder_resumebuilder",
+      "id": "apps_web_app_panel_knowledge_base_page_splitexperiencedate",
       "community": 41,
       "community_name": "knowledge-base/page.tsx",
-      "norm_label": "resumebuilder()"
+      "norm_label": "splitexperiencedate()"
     },
     {
-      "label": "getActiveProfileId()",
+      "label": "createRecordId()",
       "file_type": "code",
       "source_file": "apps/web/lib/data/stores.ts",
-      "source_location": "L48",
+      "source_location": "L196",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_lib_data_stores_getactiveprofileid",
+      "id": "apps_web_lib_data_stores_createrecordid",
       "community": 41,
       "community_name": "knowledge-base/page.tsx",
-      "norm_label": "getactiveprofileid()"
-    },
-    {
-      "label": "getLatestResume()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/data/stores.ts",
-      "source_location": "L217",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_data_stores_getlatestresume",
-      "community": 41,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "getlatestresume()"
-    },
-    {
-      "label": "scheduleFieldDirectionRefresh()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/field-direction.ts",
-      "source_location": "L77",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_field_direction_schedulefielddirectionrefresh",
-      "community": 41,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "schedulefielddirectionrefresh()"
+      "norm_label": "createrecordid()"
     },
     {
       "label": "readProfileImage()",
@@ -5613,18 +5529,6 @@
       "community": 41,
       "community_name": "knowledge-base/page.tsx",
       "norm_label": "readprofileimage()"
-    },
-    {
-      "label": "sanitizeLtrField()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/ltr-field.ts",
-      "source_location": "L3",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_ltr_field_sanitizeltrfield",
-      "community": 41,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "sanitizeltrfield()"
     },
     {
       "label": "BillingResultPage()",
@@ -5805,18 +5709,6 @@
       "community": 47,
       "community_name": "job-import.ts",
       "norm_label": "resolvejoburls()"
-    },
-    {
-      "label": "sanitizeRemoteImageSource()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L118",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_sanitizeremoteimagesource",
-      "community": 47,
-      "community_name": "job-import.ts",
-      "norm_label": "sanitizeremoteimagesource()"
     },
     {
       "label": "AccountPage()",
@@ -6023,18 +5915,6 @@
       "norm_label": "buildquerystring()"
     },
     {
-      "label": "useTablePageSize()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/table-page-size.ts",
-      "source_location": "L23",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_table_page_size_usetablepagesize",
-      "community": 48,
-      "community_name": "apiRequest",
-      "norm_label": "usetablepagesize()"
-    },
-    {
       "label": "useUrlTablePagination()",
       "file_type": "code",
       "source_file": "apps/web/lib/table-page-size.ts",
@@ -6047,100 +5927,112 @@
       "norm_label": "useurltablepagination()"
     },
     {
-      "label": "AuthGate()",
+      "label": "AdminModelUsagePage()",
       "file_type": "code",
-      "source_file": "apps/web/app/_components/auth.tsx",
-      "source_location": "L32",
+      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
+      "source_location": "L94",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_components_auth_authgate",
+      "id": "apps_web_app_panel_admin_model_usage_page_adminmodelusagepage",
       "community": 49,
-      "community_name": "useAuth",
-      "norm_label": "authgate()"
+      "community_name": "model-usage/page.tsx",
+      "norm_label": "adminmodelusagepage()"
     },
     {
-      "label": "useAuth()",
+      "label": "dateTime()",
       "file_type": "code",
-      "source_file": "apps/web/app/_components/auth.tsx",
-      "source_location": "L22",
+      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
+      "source_location": "L62",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_components_auth_useauth",
+      "id": "apps_web_app_panel_admin_model_usage_page_datetime",
       "community": 49,
-      "community_name": "useAuth",
-      "norm_label": "useauth()"
+      "community_name": "model-usage/page.tsx",
+      "norm_label": "datetime()"
     },
     {
-      "label": "useLogout()",
+      "label": "downloadCsv()",
       "file_type": "code",
-      "source_file": "apps/web/app/_components/auth.tsx",
-      "source_location": "L61",
+      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
+      "source_location": "L71",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_components_auth_uselogout",
+      "id": "apps_web_app_panel_admin_model_usage_page_downloadcsv",
       "community": 49,
-      "community_name": "useAuth",
-      "norm_label": "uselogout()"
+      "community_name": "model-usage/page.tsx",
+      "norm_label": "downloadcsv()"
     },
     {
-      "label": "AdminPage()",
+      "label": "number()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/page.tsx",
-      "source_location": "L30",
+      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
+      "source_location": "L45",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_page_adminpage",
+      "id": "apps_web_app_panel_admin_model_usage_page_number",
       "community": 49,
-      "community_name": "useAuth",
-      "norm_label": "adminpage()"
+      "community_name": "model-usage/page.tsx",
+      "norm_label": "number()"
     },
     {
-      "label": "formatNumber()",
+      "label": "percent()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/page.tsx",
-      "source_location": "L26",
+      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
+      "source_location": "L58",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_page_formatnumber",
+      "id": "apps_web_app_panel_admin_model_usage_page_percent",
       "community": 49,
-      "community_name": "useAuth",
-      "norm_label": "formatnumber()"
+      "community_name": "model-usage/page.tsx",
+      "norm_label": "percent()"
+    },
+    {
+      "label": "UsageTable()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
+      "source_location": "L268",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_admin_model_usage_page_usagetable",
+      "community": 49,
+      "community_name": "model-usage/page.tsx",
+      "norm_label": "usagetable()"
+    },
+    {
+      "label": "usd()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
+      "source_location": "L49",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_admin_model_usage_page_usd",
+      "community": 49,
+      "community_name": "model-usage/page.tsx",
+      "norm_label": "usd()"
     },
     {
       "label": "AdminSettingsPage()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L52",
+      "source_location": "L51",
       "_callable": true,
       "_origin": "ast",
       "id": "apps_web_app_panel_admin_settings_page_adminsettingspage",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "adminsettingspage()"
     },
     {
       "label": "SettingsSkeleton()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L24",
+      "source_location": "L23",
       "_callable": true,
       "_origin": "ast",
       "id": "apps_web_app_panel_admin_settings_page_settingsskeleton",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "settingsskeleton()"
-    },
-    {
-      "label": "SettingsPage()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/settings/page.tsx",
-      "source_location": "L6",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_settings_page_settingspage",
-      "community": 49,
-      "community_name": "useAuth",
-      "norm_label": "settingspage()"
     },
     {
       "label": "useAdminAiSettings()",
@@ -6151,32 +6043,20 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_useadminaisettings",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "useadminaisettings()"
     },
     {
-      "label": "useAdminBillingStats()",
+      "label": "useAdminModelUsage()",
       "file_type": "code",
       "source_file": "apps/web/lib/admin-stats.ts",
-      "source_location": "L143",
+      "source_location": "L163",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_lib_admin_stats_useadminbillingstats",
+      "id": "apps_web_lib_admin_stats_useadminmodelusage",
       "community": 49,
-      "community_name": "useAuth",
-      "norm_label": "useadminbillingstats()"
-    },
-    {
-      "label": "useAdminStats()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/admin-stats.ts",
-      "source_location": "L133",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_admin_stats_useadminstats",
-      "community": 49,
-      "community_name": "useAuth",
-      "norm_label": "useadminstats()"
+      "community_name": "model-usage/page.tsx",
+      "norm_label": "useadminmodelusage()"
     },
     {
       "label": "useUpdateAdminAiSettings()",
@@ -6187,20 +6067,8 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_useupdateadminaisettings",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "useupdateadminaisettings()"
-    },
-    {
-      "label": "useToast()",
-      "file_type": "code",
-      "source_file": "apps/web/app/_components/toast.tsx",
-      "source_location": "L30",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_components_toast_usetoast",
-      "community": 50,
-      "community_name": "match/page.tsx",
-      "norm_label": "usetoast()"
     },
     {
       "label": "createTaskId()",
@@ -6211,7 +6079,7 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_components_model_task_provider_createtaskid",
       "community": 50,
-      "community_name": "match/page.tsx",
+      "community_name": "model-task-provider.tsx",
       "norm_label": "createtaskid()"
     },
     {
@@ -6223,7 +6091,7 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_components_model_task_provider_ismodeltaskcancelederror",
       "community": 50,
-      "community_name": "match/page.tsx",
+      "community_name": "model-task-provider.tsx",
       "norm_label": "ismodeltaskcancelederror()"
     },
     {
@@ -6235,7 +6103,7 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_components_model_task_provider_modeltaskcancelederror_constructor",
       "community": 50,
-      "community_name": "match/page.tsx",
+      "community_name": "model-task-provider.tsx",
       "norm_label": ".constructor()"
     },
     {
@@ -6247,7 +6115,7 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_components_model_task_provider_modeltaskprovider",
       "community": 50,
-      "community_name": "match/page.tsx",
+      "community_name": "model-task-provider.tsx",
       "norm_label": "modeltaskprovider()"
     },
     {
@@ -6259,68 +6127,8 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_components_model_task_provider_modeltaskstateprovider",
       "community": 50,
-      "community_name": "match/page.tsx",
+      "community_name": "model-task-provider.tsx",
       "norm_label": "modeltaskstateprovider()"
-    },
-    {
-      "label": "useModelTasks()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/model-task-provider.tsx",
-      "source_location": "L210",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_model_task_provider_usemodeltasks",
-      "community": 50,
-      "community_name": "match/page.tsx",
-      "norm_label": "usemodeltasks()"
-    },
-    {
-      "label": "getJobTextDirection()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/match/page.tsx",
-      "source_location": "L120",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_match_page_getjobtextdirection",
-      "community": 50,
-      "community_name": "match/page.tsx",
-      "norm_label": "getjobtextdirection()"
-    },
-    {
-      "label": "isMatchAnalysisTaskContext()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/match/page.tsx",
-      "source_location": "L86",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_match_page_ismatchanalysistaskcontext",
-      "community": 50,
-      "community_name": "match/page.tsx",
-      "norm_label": "ismatchanalysistaskcontext()"
-    },
-    {
-      "label": "MatchPage()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/match/page.tsx",
-      "source_location": "L124",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_match_page_matchpage",
-      "community": 50,
-      "community_name": "match/page.tsx",
-      "norm_label": "matchpage()"
-    },
-    {
-      "label": "scoreWidth()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/match/page.tsx",
-      "source_location": "L109",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_match_page_scorewidth",
-      "community": 50,
-      "community_name": "match/page.tsx",
-      "norm_label": "scorewidth()"
     },
     {
       "label": "asObject()",
@@ -6863,64 +6671,52 @@
       "norm_label": "eventcontent()"
     },
     {
-      "label": "formatDate()",
+      "label": "ConfirmActionModal()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
-      "source_location": "L30",
+      "source_file": "apps/web/app/(panel)/_components/ui.tsx",
+      "source_location": "L113",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_components_membership_summary_formatdate",
+      "id": "apps_web_app_panel_components_ui_confirmactionmodal",
       "community": 54,
       "community_name": "memberships/page.tsx",
-      "norm_label": "formatdate()"
+      "norm_label": "confirmactionmodal()"
     },
     {
-      "label": "MembershipSummary()",
+      "label": "Modal()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
-      "source_location": "L85",
+      "source_file": "apps/web/app/(panel)/_components/ui.tsx",
+      "source_location": "L6",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_components_membership_summary_membershipsummary",
+      "id": "apps_web_app_panel_components_ui_modal",
       "community": 54,
       "community_name": "memberships/page.tsx",
-      "norm_label": "membershipsummary()"
+      "norm_label": "modal()"
     },
     {
-      "label": "MembershipSummarySkeleton()",
+      "label": "LoginPage()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
-      "source_location": "L120",
+      "source_file": "apps/web/app/login/page.tsx",
+      "source_location": "L40",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_components_membership_summary_membershipsummaryskeleton",
-      "community": 54,
-      "community_name": "memberships/page.tsx",
-      "norm_label": "membershipsummaryskeleton()"
+      "id": "apps_web_app_login_page_loginpage",
+      "community": 55,
+      "community_name": "validators/src/index.ts",
+      "norm_label": "loginpage()"
     },
     {
-      "label": "remainingDays()",
+      "label": "localizedNumber()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
-      "source_location": "L34",
+      "source_file": "apps/web/app/(panel)/admin/memberships/page.tsx",
+      "source_location": "L57",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_components_membership_summary_remainingdays",
-      "community": 54,
-      "community_name": "memberships/page.tsx",
-      "norm_label": "remainingdays()"
-    },
-    {
-      "label": "UsageCard()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
-      "source_location": "L38",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_membership_summary_usagecard",
-      "community": 54,
-      "community_name": "memberships/page.tsx",
-      "norm_label": "usagecard()"
+      "id": "apps_web_app_panel_admin_memberships_page_localizednumber",
+      "community": 55,
+      "community_name": "validators/src/index.ts",
+      "norm_label": "localizednumber()"
     },
     {
       "label": "aliasedObjectInput()",
@@ -6969,6 +6765,42 @@
       "community": 55,
       "community_name": "validators/src/index.ts",
       "norm_label": "firstdefined()"
+    },
+    {
+      "label": "normalizeDigits()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L12",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_normalizedigits",
+      "community": 55,
+      "community_name": "validators/src/index.ts",
+      "norm_label": "normalizedigits()"
+    },
+    {
+      "label": "normalizeDigitsDeep()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L19",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_normalizedigitsdeep",
+      "community": 55,
+      "community_name": "validators/src/index.ts",
+      "norm_label": "normalizedigitsdeep()"
+    },
+    {
+      "label": "normalizeImportedResumeData()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L543",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_normalizeimportedresumedata",
+      "community": 55,
+      "community_name": "validators/src/index.ts",
+      "norm_label": "normalizeimportedresumedata()"
     },
     {
       "label": "objectInput()",
@@ -7031,6 +6863,18 @@
       "norm_label": "sanitizeimportedemail()"
     },
     {
+      "label": "sanitizeImportedImageSource()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L104",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_sanitizeimportedimagesource",
+      "community": 55,
+      "community_name": "validators/src/index.ts",
+      "norm_label": "sanitizeimportedimagesource()"
+    },
+    {
       "label": "sanitizeImportedPhone()",
       "file_type": "code",
       "source_file": "packages/validators/src/index.ts",
@@ -7041,6 +6885,30 @@
       "community": 55,
       "community_name": "validators/src/index.ts",
       "norm_label": "sanitizeimportedphone()"
+    },
+    {
+      "label": "sanitizeImportedScalar()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L47",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_sanitizeimportedscalar",
+      "community": 55,
+      "community_name": "validators/src/index.ts",
+      "norm_label": "sanitizeimportedscalar()"
+    },
+    {
+      "label": "sanitizeRemoteImageSource()",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L118",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "packages_validators_src_index_sanitizeremoteimagesource",
+      "community": 55,
+      "community_name": "validators/src/index.ts",
+      "norm_label": "sanitizeremoteimagesource()"
     },
     {
       "label": "getLinkedInJobId()",
@@ -7475,30 +7343,6 @@
       "norm_label": "deleteconfirmmodal()"
     },
     {
-      "label": "Modal()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/ui.tsx",
-      "source_location": "L6",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_ui_modal",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "modal()"
-    },
-    {
-      "label": "SectionTitle()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/ui.tsx",
-      "source_location": "L168",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_ui_sectiontitle",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "sectiontitle()"
-    },
-    {
       "label": "getDefaultResumeName()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/resumes/page.tsx",
@@ -7631,16 +7475,16 @@
       "norm_label": "serializelanguages()"
     },
     {
-      "label": "supportsResumeColors()",
+      "label": "ResumeDocument()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/resumes/resume-data.ts",
-      "source_location": "L108",
+      "source_file": "apps/web/app/(panel)/resumes/resume-document.tsx",
+      "source_location": "L5026",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_resumes_resume_data_supportsresumecolors",
+      "id": "apps_web_app_panel_resumes_resume_document_resumedocument",
       "community": 6,
       "community_name": "resumes/page.tsx",
-      "norm_label": "supportsresumecolors()"
+      "norm_label": "resumedocument()"
     },
     {
       "label": "ResumeDocumentPage()",
@@ -7655,54 +7499,6 @@
       "norm_label": "resumedocumentpage()"
     },
     {
-      "label": "createContinuationResumePage()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/resumes/resume-section-flow.ts",
-      "source_location": "L7",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_resumes_resume_section_flow_createcontinuationresumepage",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "createcontinuationresumepage()"
-    },
-    {
-      "label": "enforceResumeSectionFlow()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/resumes/resume-section-flow.ts",
-      "source_location": "L29",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_resumes_resume_section_flow_enforceresumesectionflow",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "enforceresumesectionflow()"
-    },
-    {
-      "label": "hasResumeSectionFlowViolation()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/resumes/resume-section-flow.ts",
-      "source_location": "L91",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_resumes_resume_section_flow_hasresumesectionflowviolation",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "hasresumesectionflowviolation()"
-    },
-    {
-      "label": "hasWorkContent()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/resumes/resume-section-flow.ts",
-      "source_location": "L3",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_resumes_resume_section_flow_hasworkcontent",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "hasworkcontent()"
-    },
-    {
       "label": "ScaledResumePreview()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/resumes/scaled-resume-preview.tsx",
@@ -7713,6 +7509,30 @@
       "community": 6,
       "community_name": "resumes/page.tsx",
       "norm_label": "scaledresumepreview()"
+    },
+    {
+      "label": "calculateKnowledgeCompletion()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/knowledge-completion.ts",
+      "source_location": "L17",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_knowledge_completion_calculateknowledgecompletion",
+      "community": 6,
+      "community_name": "resumes/page.tsx",
+      "norm_label": "calculateknowledgecompletion()"
+    },
+    {
+      "label": "isSeededKnowledgeSampleProject()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/knowledge-completion.ts",
+      "source_location": "L11",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_knowledge_completion_isseededknowledgesampleproject",
+      "community": 6,
+      "community_name": "resumes/page.tsx",
+      "norm_label": "isseededknowledgesampleproject()"
     },
     {
       "label": "normalizeResumeDataInput()",
@@ -7727,28 +7547,16 @@
       "norm_label": "normalizeresumedatainput()"
     },
     {
-      "label": "filesWithExtension()",
+      "label": "normalizeResumeImportPayload()",
       "file_type": "code",
-      "source_file": "apps/web/tests/rendered-html.test.mjs",
-      "source_location": "L23",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L539",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_tests_rendered_html_test_fileswithextension",
+      "id": "packages_validators_src_index_normalizeresumeimportpayload",
       "community": 6,
       "community_name": "resumes/page.tsx",
-      "norm_label": "fileswithextension()"
-    },
-    {
-      "label": "sourceFiles()",
-      "file_type": "code",
-      "source_file": "apps/web/tests/rendered-html.test.mjs",
-      "source_location": "L8",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_tests_rendered_html_test_sourcefiles",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "sourcefiles()"
+      "norm_label": "normalizeresumeimportpayload()"
     },
     {
       "label": "NotFound()",
@@ -7773,6 +7581,30 @@
       "community": 62,
       "community_name": "job-description-validation.ts",
       "norm_label": "validatejobdescription()"
+    },
+    {
+      "label": "useToast()",
+      "file_type": "code",
+      "source_file": "apps/web/app/_components/toast.tsx",
+      "source_location": "L30",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_components_toast_usetoast",
+      "community": 64,
+      "community_name": "panel-shell.tsx",
+      "norm_label": "usetoast()"
+    },
+    {
+      "label": "useModelTasks()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/model-task-provider.tsx",
+      "source_location": "L210",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_model_task_provider_usemodeltasks",
+      "community": 64,
+      "community_name": "panel-shell.tsx",
+      "norm_label": "usemodeltasks()"
     },
     {
       "label": "adminEventHref()",
@@ -7847,6 +7679,18 @@
       "norm_label": "panelshellcontent()"
     },
     {
+      "label": "InterviewPage()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/interview/page.tsx",
+      "source_location": "L49",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_interview_page_interviewpage",
+      "community": 64,
+      "community_name": "panel-shell.tsx",
+      "norm_label": "interviewpage()"
+    },
+    {
       "label": "PanelLayout()",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/layout.tsx",
@@ -7857,6 +7701,18 @@
       "community": 64,
       "community_name": "panel-shell.tsx",
       "norm_label": "panellayout()"
+    },
+    {
+      "label": "ResumeBuilder()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/resumes/resume-builder.tsx",
+      "source_location": "L272",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_resumes_resume_builder_resumebuilder",
+      "community": 64,
+      "community_name": "panel-shell.tsx",
+      "norm_label": "resumebuilder()"
     },
     {
       "label": "useAdminEvents()",
@@ -7881,6 +7737,42 @@
       "community": 64,
       "community_name": "panel-shell.tsx",
       "norm_label": "ensuredefaultappprofile()"
+    },
+    {
+      "label": "getActiveProfileId()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/data/stores.ts",
+      "source_location": "L48",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_data_stores_getactiveprofileid",
+      "community": 64,
+      "community_name": "panel-shell.tsx",
+      "norm_label": "getactiveprofileid()"
+    },
+    {
+      "label": "getLatestResume()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/data/stores.ts",
+      "source_location": "L217",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_data_stores_getlatestresume",
+      "community": 64,
+      "community_name": "panel-shell.tsx",
+      "norm_label": "getlatestresume()"
+    },
+    {
+      "label": "removeWorkspace()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/data/stores.ts",
+      "source_location": "L123",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_data_stores_removeworkspace",
+      "community": 64,
+      "community_name": "panel-shell.tsx",
+      "norm_label": "removeworkspace()"
     },
     {
       "label": "setActiveProfileId()",
@@ -8015,64 +7907,160 @@
       "norm_label": "usefielddirectionmanager()"
     },
     {
-      "label": "JobsPage()",
+      "label": "ApplicationsSkeleton()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/jobs/page.tsx",
-      "source_location": "L39",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L284",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_jobs_page_jobspage",
+      "id": "apps_web_app_panel_components_loading_skeletons_applicationsskeleton",
       "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "jobspage()"
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "applicationsskeleton()"
     },
     {
-      "label": "inferJobCategories()",
+      "label": "DashboardSkeleton()",
       "file_type": "code",
-      "source_file": "apps/web/lib/job-category.ts",
-      "source_location": "L21",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L120",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_lib_job_category_inferjobcategories",
+      "id": "apps_web_app_panel_components_loading_skeletons_dashboardskeleton",
       "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "inferjobcategories()"
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "dashboardskeleton()"
     },
     {
-      "label": "matchesJobCategory()",
+      "label": "FeedbackSkeleton()",
       "file_type": "code",
-      "source_file": "apps/web/lib/job-category.ts",
-      "source_location": "L38",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L415",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_lib_job_category_matchesjobcategory",
+      "id": "apps_web_app_panel_components_loading_skeletons_feedbackskeleton",
       "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "matchesjobcategory()"
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "feedbackskeleton()"
     },
     {
-      "label": "normalized()",
+      "label": "GenerationShimmer()",
       "file_type": "code",
-      "source_file": "apps/web/lib/job-category.ts",
-      "source_location": "L17",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L400",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_lib_job_category_normalized",
+      "id": "apps_web_app_panel_components_loading_skeletons_generationshimmer",
       "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "normalized()"
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "generationshimmer()"
     },
     {
-      "label": "prioritizeSavedJobs()",
+      "label": "InterviewSkeleton()",
       "file_type": "code",
-      "source_file": "apps/web/lib/job-order.ts",
-      "source_location": "L1",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L326",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_lib_job_order_prioritizesavedjobs",
+      "id": "apps_web_app_panel_components_loading_skeletons_interviewskeleton",
       "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "prioritizesavedjobs()"
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "interviewskeleton()"
+    },
+    {
+      "label": "LoadingContext()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L14",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_loading_skeletons_loadingcontext",
+      "community": 7,
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "loadingcontext()"
+    },
+    {
+      "label": "MatchAnalysisSkeleton()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L363",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_loading_skeletons_matchanalysisskeleton",
+      "community": 7,
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "matchanalysisskeleton()"
+    },
+    {
+      "label": "ResumePreviewSkeleton()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L432",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_loading_skeletons_resumepreviewskeleton",
+      "community": 7,
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "resumepreviewskeleton()"
+    },
+    {
+      "label": "ResumesSkeleton()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L235",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_loading_skeletons_resumesskeleton",
+      "community": 7,
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "resumesskeleton()"
+    },
+    {
+      "label": "Shimmer()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L5",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_loading_skeletons_shimmer",
+      "community": 7,
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "shimmer()"
+    },
+    {
+      "label": "SkeletonJobCard()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L50",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_loading_skeletons_skeletonjobcard",
+      "community": 7,
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "skeletonjobcard()"
+    },
+    {
+      "label": "SkeletonLines()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L37",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_loading_skeletons_skeletonlines",
+      "community": 7,
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "skeletonlines()"
+    },
+    {
+      "label": "SkeletonTitle()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
+      "source_location": "L107",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_loading_skeletons_skeletontitle",
+      "community": 7,
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "skeletontitle()"
     },
     {
       "label": "JalaliDatePicker()",
@@ -8195,6 +8183,42 @@
       "norm_label": "tolocalisodate()"
     },
     {
+      "label": "MultiSkillAutocomplete()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L2386",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_multiskillautocomplete",
+      "community": 74,
+      "community_name": "scheduleFieldDirectionRefresh",
+      "norm_label": "multiskillautocomplete()"
+    },
+    {
+      "label": "parseSkills()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
+      "source_location": "L2382",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_knowledge_base_page_parseskills",
+      "community": 74,
+      "community_name": "scheduleFieldDirectionRefresh",
+      "norm_label": "parseskills()"
+    },
+    {
+      "label": "scheduleFieldDirectionRefresh()",
+      "file_type": "code",
+      "source_file": "apps/web/lib/field-direction.ts",
+      "source_location": "L77",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_lib_field_direction_schedulefielddirectionrefresh",
+      "community": 74,
+      "community_name": "scheduleFieldDirectionRefresh",
+      "norm_label": "schedulefielddirectionrefresh()"
+    },
+    {
       "label": "isStandaloneTechnicalToken()",
       "file_type": "code",
       "source_file": "apps/web/lib/resume-skills.ts",
@@ -8203,7 +8227,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_resume_skills_isstandalonetechnicaltoken",
       "community": 74,
-      "community_name": "parseResumeSkills",
+      "community_name": "scheduleFieldDirectionRefresh",
       "norm_label": "isstandalonetechnicaltoken()"
     },
     {
@@ -8215,7 +8239,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_resume_skills_parseresumeskills",
       "community": 74,
-      "community_name": "parseResumeSkills",
+      "community_name": "scheduleFieldDirectionRefresh",
       "norm_label": "parseresumeskills()"
     },
     {
@@ -8227,7 +8251,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_resume_skills_serializeresumeskills",
       "community": 74,
-      "community_name": "parseResumeSkills",
+      "community_name": "scheduleFieldDirectionRefresh",
       "norm_label": "serializeresumeskills()"
     },
     {
@@ -8459,6 +8483,18 @@
       "norm_label": "ordernumber()"
     },
     {
+      "label": "JobsPage()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/jobs/page.tsx",
+      "source_location": "L39",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_jobs_page_jobspage",
+      "community": 82,
+      "community_name": "job-application-filter.ts",
+      "norm_label": "jobspage()"
+    },
+    {
       "label": "hasJobActivityInDateRange()",
       "file_type": "code",
       "source_file": "apps/web/lib/job-application-filter.ts",
@@ -8519,232 +8555,244 @@
       "norm_label": "rangeboundary()"
     },
     {
-      "label": "JobCard()",
+      "label": "inferJobCategories()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
-      "source_location": "L168",
+      "source_file": "apps/web/lib/job-category.ts",
+      "source_location": "L21",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_components_job_card_jobcard",
-      "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "jobcard()"
+      "id": "apps_web_lib_job_category_inferjobcategories",
+      "community": 82,
+      "community_name": "job-application-filter.ts",
+      "norm_label": "inferjobcategories()"
     },
     {
-      "label": "JobDetailsModal()",
+      "label": "matchesJobCategory()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
-      "source_location": "L102",
+      "source_file": "apps/web/lib/job-category.ts",
+      "source_location": "L38",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_components_job_card_jobdetailsmodal",
-      "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "jobdetailsmodal()"
+      "id": "apps_web_lib_job_category_matchesjobcategory",
+      "community": 82,
+      "community_name": "job-application-filter.ts",
+      "norm_label": "matchesjobcategory()"
     },
     {
-      "label": "JobLogo()",
+      "label": "normalized()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
-      "source_location": "L54",
+      "source_file": "apps/web/lib/job-category.ts",
+      "source_location": "L17",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_components_job_card_joblogo",
-      "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "joblogo()"
+      "id": "apps_web_lib_job_category_normalized",
+      "community": 82,
+      "community_name": "job-application-filter.ts",
+      "norm_label": "normalized()"
     },
     {
-      "label": "InterviewPage()",
+      "label": "createContinuationResumePage()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/interview/page.tsx",
-      "source_location": "L49",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_interview_page_interviewpage",
-      "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "interviewpage()"
-    },
-    {
-      "label": "KnowledgeSectionTabs()",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/knowledge-base/page.tsx",
-      "source_location": "L2142",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_app_panel_knowledge_base_page_knowledgesectiontabs",
-      "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "knowledgesectiontabs()"
-    },
-    {
-      "label": "formatPersianNumber()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/fa-number.ts",
+      "source_file": "apps/web/app/(panel)/resumes/resume-section-flow.ts",
       "source_location": "L7",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_lib_fa_number_formatpersiannumber",
+      "id": "apps_web_app_panel_resumes_resume_section_flow_createcontinuationresumepage",
       "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "formatpersiannumber()"
+      "community_name": "resume-section-flow.ts",
+      "norm_label": "createcontinuationresumepage()"
     },
     {
-      "label": "toPersianDigits()",
+      "label": "enforceResumeSectionFlow()",
       "file_type": "code",
-      "source_file": "apps/web/lib/fa-number.ts",
+      "source_file": "apps/web/app/(panel)/resumes/resume-section-flow.ts",
+      "source_location": "L29",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_resumes_resume_section_flow_enforceresumesectionflow",
+      "community": 83,
+      "community_name": "resume-section-flow.ts",
+      "norm_label": "enforceresumesectionflow()"
+    },
+    {
+      "label": "hasResumeSectionFlowViolation()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/resumes/resume-section-flow.ts",
+      "source_location": "L91",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_resumes_resume_section_flow_hasresumesectionflowviolation",
+      "community": 83,
+      "community_name": "resume-section-flow.ts",
+      "norm_label": "hasresumesectionflowviolation()"
+    },
+    {
+      "label": "hasWorkContent()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/resumes/resume-section-flow.ts",
       "source_location": "L3",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_lib_fa_number_topersiandigits",
+      "id": "apps_web_app_panel_resumes_resume_section_flow_hasworkcontent",
       "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "topersiandigits()"
+      "community_name": "resume-section-flow.ts",
+      "norm_label": "hasworkcontent()"
     },
     {
-      "label": "LoginPage()",
+      "label": "filesWithExtension()",
       "file_type": "code",
-      "source_file": "apps/web/app/login/page.tsx",
-      "source_location": "L40",
+      "source_file": "apps/web/tests/rendered-html.test.mjs",
+      "source_location": "L23",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_login_page_loginpage",
+      "id": "apps_web_tests_rendered_html_test_fileswithextension",
+      "community": 83,
+      "community_name": "resume-section-flow.ts",
+      "norm_label": "fileswithextension()"
+    },
+    {
+      "label": "sourceFiles()",
+      "file_type": "code",
+      "source_file": "apps/web/tests/rendered-html.test.mjs",
+      "source_location": "L8",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_tests_rendered_html_test_sourcefiles",
+      "community": 83,
+      "community_name": "resume-section-flow.ts",
+      "norm_label": "sourcefiles()"
+    },
+    {
+      "label": "formatDate()",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
+      "source_location": "L30",
+      "_callable": true,
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_membership_summary_formatdate",
       "community": 84,
-      "community_name": "login/page.tsx",
-      "norm_label": "loginpage()"
+      "community_name": "account/page.tsx",
+      "norm_label": "formatdate()"
     },
     {
-      "label": "localizedNumber()",
+      "label": "MembershipSummary()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/memberships/page.tsx",
-      "source_location": "L57",
+      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
+      "source_location": "L85",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_memberships_page_localizednumber",
+      "id": "apps_web_app_panel_components_membership_summary_membershipsummary",
       "community": 84,
-      "community_name": "login/page.tsx",
-      "norm_label": "localizednumber()"
+      "community_name": "account/page.tsx",
+      "norm_label": "membershipsummary()"
     },
     {
-      "label": "normalizeDigits()",
+      "label": "MembershipSummarySkeleton()",
       "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L12",
+      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
+      "source_location": "L120",
       "_callable": true,
       "_origin": "ast",
-      "id": "packages_validators_src_index_normalizedigits",
+      "id": "apps_web_app_panel_components_membership_summary_membershipsummaryskeleton",
       "community": 84,
-      "community_name": "login/page.tsx",
-      "norm_label": "normalizedigits()"
+      "community_name": "account/page.tsx",
+      "norm_label": "membershipsummaryskeleton()"
     },
     {
-      "label": "normalizeDigitsDeep()",
+      "label": "remainingDays()",
       "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L19",
+      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
+      "source_location": "L34",
       "_callable": true,
       "_origin": "ast",
-      "id": "packages_validators_src_index_normalizedigitsdeep",
+      "id": "apps_web_app_panel_components_membership_summary_remainingdays",
       "community": 84,
-      "community_name": "login/page.tsx",
-      "norm_label": "normalizedigitsdeep()"
+      "community_name": "account/page.tsx",
+      "norm_label": "remainingdays()"
     },
     {
-      "label": "AdminModelUsagePage()",
+      "label": "UsageCard()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
-      "source_location": "L94",
+      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
+      "source_location": "L38",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_model_usage_page_adminmodelusagepage",
-      "community": 85,
-      "community_name": "model-usage/page.tsx",
-      "norm_label": "adminmodelusagepage()"
+      "id": "apps_web_app_panel_components_membership_summary_usagecard",
+      "community": 84,
+      "community_name": "account/page.tsx",
+      "norm_label": "usagecard()"
     },
     {
-      "label": "dateTime()",
+      "label": "getJobTextDirection()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
-      "source_location": "L62",
+      "source_file": "apps/web/app/(panel)/match/page.tsx",
+      "source_location": "L120",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_model_usage_page_datetime",
+      "id": "apps_web_app_panel_match_page_getjobtextdirection",
       "community": 85,
-      "community_name": "model-usage/page.tsx",
-      "norm_label": "datetime()"
+      "community_name": "match/page.tsx",
+      "norm_label": "getjobtextdirection()"
     },
     {
-      "label": "downloadCsv()",
+      "label": "isMatchAnalysisTaskContext()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
-      "source_location": "L71",
+      "source_file": "apps/web/app/(panel)/match/page.tsx",
+      "source_location": "L86",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_model_usage_page_downloadcsv",
+      "id": "apps_web_app_panel_match_page_ismatchanalysistaskcontext",
       "community": 85,
-      "community_name": "model-usage/page.tsx",
-      "norm_label": "downloadcsv()"
+      "community_name": "match/page.tsx",
+      "norm_label": "ismatchanalysistaskcontext()"
     },
     {
-      "label": "number()",
+      "label": "MatchPage()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
-      "source_location": "L45",
+      "source_file": "apps/web/app/(panel)/match/page.tsx",
+      "source_location": "L124",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_model_usage_page_number",
+      "id": "apps_web_app_panel_match_page_matchpage",
       "community": 85,
-      "community_name": "model-usage/page.tsx",
-      "norm_label": "number()"
+      "community_name": "match/page.tsx",
+      "norm_label": "matchpage()"
     },
     {
-      "label": "percent()",
+      "label": "scoreWidth()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
-      "source_location": "L58",
+      "source_file": "apps/web/app/(panel)/match/page.tsx",
+      "source_location": "L109",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_model_usage_page_percent",
+      "id": "apps_web_app_panel_match_page_scorewidth",
       "community": 85,
-      "community_name": "model-usage/page.tsx",
-      "norm_label": "percent()"
+      "community_name": "match/page.tsx",
+      "norm_label": "scorewidth()"
     },
     {
-      "label": "UsageTable()",
+      "label": "supportsResumeColors()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
-      "source_location": "L268",
+      "source_file": "apps/web/app/(panel)/resumes/resume-data.ts",
+      "source_location": "L108",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_model_usage_page_usagetable",
+      "id": "apps_web_app_panel_resumes_resume_data_supportsresumecolors",
       "community": 85,
-      "community_name": "model-usage/page.tsx",
-      "norm_label": "usagetable()"
+      "community_name": "match/page.tsx",
+      "norm_label": "supportsresumecolors()"
     },
     {
-      "label": "usd()",
+      "label": "sanitizeLtrField()",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
-      "source_location": "L49",
+      "source_file": "apps/web/lib/ltr-field.ts",
+      "source_location": "L3",
       "_callable": true,
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_model_usage_page_usd",
+      "id": "apps_web_lib_ltr_field_sanitizeltrfield",
       "community": 85,
-      "community_name": "model-usage/page.tsx",
-      "norm_label": "usd()"
-    },
-    {
-      "label": "useAdminModelUsage()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/admin-stats.ts",
-      "source_location": "L163",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_admin_stats_useadminmodelusage",
-      "community": 85,
-      "community_name": "model-usage/page.tsx",
-      "norm_label": "useadminmodelusage()"
+      "community_name": "match/page.tsx",
+      "norm_label": "sanitizeltrfield()"
     },
     {
       "label": "buildApp()",
@@ -8810,7 +8858,7 @@
       "label": "shutdown()",
       "file_type": "code",
       "source_file": "apps/api/src/app.ts",
-      "source_location": "L62",
+      "source_location": "L56",
       "_callable": true,
       "_origin": "ast",
       "id": "apps_api_src_app_shutdown",
@@ -8841,54 +8889,6 @@
       "community": 9,
       "community_name": "app.ts",
       "norm_label": "readconfig()"
-    },
-    {
-      "label": "calculateKnowledgeCompletion()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/knowledge-completion.ts",
-      "source_location": "L17",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_knowledge_completion_calculateknowledgecompletion",
-      "community": 94,
-      "community_name": "resume-import.test.mjs",
-      "norm_label": "calculateknowledgecompletion()"
-    },
-    {
-      "label": "isSeededKnowledgeSampleProject()",
-      "file_type": "code",
-      "source_file": "apps/web/lib/knowledge-completion.ts",
-      "source_location": "L11",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "apps_web_lib_knowledge_completion_isseededknowledgesampleproject",
-      "community": 94,
-      "community_name": "resume-import.test.mjs",
-      "norm_label": "isseededknowledgesampleproject()"
-    },
-    {
-      "label": "normalizeImportedResumeData()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L543",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_normalizeimportedresumedata",
-      "community": 94,
-      "community_name": "resume-import.test.mjs",
-      "norm_label": "normalizeimportedresumedata()"
-    },
-    {
-      "label": "normalizeResumeImportPayload()",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L539",
-      "_callable": true,
-      "_origin": "ast",
-      "id": "packages_validators_src_index_normalizeresumeimportpayload",
-      "community": 94,
-      "community_name": "resume-import.test.mjs",
-      "norm_label": "normalizeresumeimportpayload()"
     },
     {
       "label": "resume-document.tsx",
@@ -9661,17 +9661,6 @@
       "norm_label": "unpdf"
     },
     {
-      "label": "optionalImportedImageSchema",
-      "file_type": "code",
-      "source_file": "packages/validators/src/index.ts",
-      "source_location": "L249",
-      "_origin": "ast",
-      "id": "packages_validators_src_index_optionalimportedimageschema",
-      "community": 11,
-      "community_name": "normalizeImportedText",
-      "norm_label": "optionalimportedimageschema"
-    },
-    {
       "label": "auth/routes.ts",
       "file_type": "code",
       "source_file": "apps/api/src/modules/auth/routes.ts",
@@ -9826,6 +9815,50 @@
       "norm_label": "roles"
     },
     {
+      "label": "auth.tsx",
+      "file_type": "code",
+      "source_file": "apps/web/app/_components/auth.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_app_components_auth",
+      "community": 13,
+      "community_name": "useAuth",
+      "norm_label": "auth.tsx"
+    },
+    {
+      "label": "admin/page.tsx",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/admin/page.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_admin_page",
+      "community": 13,
+      "community_name": "useAuth",
+      "norm_label": "admin/page.tsx"
+    },
+    {
+      "label": "collectionLabels",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/admin/page.tsx",
+      "source_location": "L16",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_admin_page_collectionlabels",
+      "community": 13,
+      "community_name": "useAuth",
+      "norm_label": "collectionlabels"
+    },
+    {
+      "label": "(panel)/settings/page.tsx",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/settings/page.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_settings_page",
+      "community": 13,
+      "community_name": "useAuth",
+      "norm_label": "(panel)/settings/page.tsx"
+    },
+    {
       "label": "database/src/client.ts",
       "file_type": "code",
       "source_file": "packages/database/src/client.ts",
@@ -9925,17 +9958,6 @@
       "norm_label": "circular-progress.tsx"
     },
     {
-      "label": "loading-skeletons.tsx",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_loading_skeletons",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "loading-skeletons.tsx"
-    },
-    {
       "label": "dashboard/page.tsx",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/dashboard/page.tsx",
@@ -9980,17 +10002,6 @@
       "norm_label": "toneclasses"
     },
     {
-      "label": "applicationStore",
-      "file_type": "code",
-      "source_file": "apps/web/lib/data/stores.ts",
-      "source_location": "L209",
-      "_origin": "ast",
-      "id": "apps_web_lib_data_stores_applicationstore",
-      "community": 15,
-      "community_name": "dashboard/page.tsx",
-      "norm_label": "applicationstore"
-    },
-    {
       "label": "dashboardSnapshotStore",
       "file_type": "code",
       "source_file": "apps/web/lib/data/stores.ts",
@@ -10000,6 +10011,39 @@
       "community": 15,
       "community_name": "dashboard/page.tsx",
       "norm_label": "dashboardsnapshotstore"
+    },
+    {
+      "label": "resumeStore",
+      "file_type": "code",
+      "source_file": "apps/web/lib/data/stores.ts",
+      "source_location": "L207",
+      "_origin": "ast",
+      "id": "apps_web_lib_data_stores_resumestore",
+      "community": 15,
+      "community_name": "dashboard/page.tsx",
+      "norm_label": "resumestore"
+    },
+    {
+      "label": "job-order.ts",
+      "file_type": "code",
+      "source_file": "apps/web/lib/job-order.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_lib_job_order",
+      "community": 15,
+      "community_name": "dashboard/page.tsx",
+      "norm_label": "job-order.ts"
+    },
+    {
+      "label": "job-order.test.mjs",
+      "file_type": "code",
+      "source_file": "apps/web/tests/job-order.test.mjs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_tests_job_order_test",
+      "community": 15,
+      "community_name": "dashboard/page.tsx",
+      "norm_label": "job-order.test.mjs"
     },
     {
       "label": "admin-table-controls.tsx",
@@ -10077,39 +10121,6 @@
       "community": 17,
       "community_name": "admin/orders/page.tsx",
       "norm_label": "statusoptions"
-    },
-    {
-      "label": "records/page.tsx",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/records/page.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_admin_records_page",
-      "community": 17,
-      "community_name": "admin/orders/page.tsx",
-      "norm_label": "records/page.tsx"
-    },
-    {
-      "label": "collectionOptions",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/records/page.tsx",
-      "source_location": "L20",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_admin_records_page_collectionoptions",
-      "community": 17,
-      "community_name": "admin/orders/page.tsx",
-      "norm_label": "collectionoptions"
-    },
-    {
-      "label": "recordFilterParsers",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/records/page.tsx",
-      "source_location": "L27",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_admin_records_page_recordfilterparsers",
-      "community": 17,
-      "community_name": "admin/orders/page.tsx",
-      "norm_label": "recordfilterparsers"
     },
     {
       "label": "users/page.tsx",
@@ -10231,17 +10242,6 @@
       "community": 17,
       "community_name": "admin/orders/page.tsx",
       "norm_label": "statusoptions"
-    },
-    {
-      "label": "build-query-string.ts",
-      "file_type": "code",
-      "source_file": "apps/web/lib/build-query-string.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_lib_build_query_string",
-      "community": 17,
-      "community_name": "admin/orders/page.tsx",
-      "norm_label": "build-query-string.ts"
     },
     {
       "label": "cn.ts",
@@ -11586,26 +11586,15 @@
       "norm_label": "react-dom"
     },
     {
-      "label": "interview/page.tsx",
+      "label": "jobs.ts",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/interview/page.tsx",
+      "source_file": "apps/web/app/(panel)/_data/jobs.ts",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_web_app_panel_interview_page",
+      "id": "apps_web_app_panel_data_jobs",
       "community": 28,
       "community_name": "stores.ts",
-      "norm_label": "interview/page.tsx"
-    },
-    {
-      "label": "icons",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/interview/page.tsx",
-      "source_location": "L47",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_interview_page_icons",
-      "community": 28,
-      "community_name": "stores.ts",
-      "norm_label": "icons"
+      "norm_label": "jobs.ts"
     },
     {
       "label": "models.ts",
@@ -11628,6 +11617,17 @@
       "community": 28,
       "community_name": "stores.ts",
       "norm_label": "stores.ts"
+    },
+    {
+      "label": "appProfileStore",
+      "file_type": "code",
+      "source_file": "apps/web/lib/data/stores.ts",
+      "source_location": "L43",
+      "_origin": "ast",
+      "id": "apps_web_lib_data_stores_appprofilestore",
+      "community": 28,
+      "community_name": "stores.ts",
+      "norm_label": "appprofilestore"
     },
     {
       "label": "DEFAULT_PROFILE_ID",
@@ -11661,28 +11661,6 @@
       "community": 28,
       "community_name": "stores.ts",
       "norm_label": "knowledgeprofilestore"
-    },
-    {
-      "label": "matchAnalysisStore",
-      "file_type": "code",
-      "source_file": "apps/web/lib/data/stores.ts",
-      "source_location": "L212",
-      "_origin": "ast",
-      "id": "apps_web_lib_data_stores_matchanalysisstore",
-      "community": 28,
-      "community_name": "stores.ts",
-      "norm_label": "matchanalysisstore"
-    },
-    {
-      "label": "resumeStore",
-      "file_type": "code",
-      "source_file": "apps/web/lib/data/stores.ts",
-      "source_location": "L207",
-      "_origin": "ast",
-      "id": "apps_web_lib_data_stores_resumestore",
-      "community": 28,
-      "community_name": "stores.ts",
-      "norm_label": "resumestore"
     },
     {
       "label": "SCOPED_COLLECTIONS",
@@ -11857,8 +11835,52 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_applications_page",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "applications/page.tsx"
+    },
+    {
+      "label": "job-card.tsx",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_job_card",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "job-card.tsx"
+    },
+    {
+      "label": "toneStyles",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_job_card_tonestyles",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "tonestyles"
+    },
+    {
+      "label": "jobs/page.tsx",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/jobs/page.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_jobs_page",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "jobs/page.tsx"
+    },
+    {
+      "label": "categoryOptions",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/jobs/page.tsx",
+      "source_location": "L32",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_jobs_page_categoryoptions",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "categoryoptions"
     },
     {
       "label": "application-board.ts",
@@ -11868,7 +11890,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_application_board",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "application-board.ts"
     },
     {
@@ -11879,8 +11901,41 @@
       "_origin": "ast",
       "id": "apps_web_lib_application_board_applicationpipelinestages",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "applicationpipelinestages"
+    },
+    {
+      "label": "applicationStore",
+      "file_type": "code",
+      "source_file": "apps/web/lib/data/stores.ts",
+      "source_location": "L209",
+      "_origin": "ast",
+      "id": "apps_web_lib_data_stores_applicationstore",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "applicationstore"
+    },
+    {
+      "label": "jobStore",
+      "file_type": "code",
+      "source_file": "apps/web/lib/data/stores.ts",
+      "source_location": "L208",
+      "_origin": "ast",
+      "id": "apps_web_lib_data_stores_jobstore",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "jobstore"
+    },
+    {
+      "label": "fa-number.ts",
+      "file_type": "code",
+      "source_file": "apps/web/lib/fa-number.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_lib_fa_number",
+      "community": 3,
+      "community_name": "jobs/page.tsx",
+      "norm_label": "fa-number.ts"
     },
     {
       "label": "application-board.test.mjs",
@@ -11890,7 +11945,7 @@
       "_origin": "ast",
       "id": "apps_web_tests_application_board_test",
       "community": 3,
-      "community_name": "applications/page.tsx",
+      "community_name": "jobs/page.tsx",
       "norm_label": "application-board.test.mjs"
     },
     {
@@ -13965,17 +14020,6 @@
       "norm_label": "image-file.ts"
     },
     {
-      "label": "ltr-field.ts",
-      "file_type": "code",
-      "source_file": "apps/web/lib/ltr-field.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_lib_ltr_field",
-      "community": 41,
-      "community_name": "knowledge-base/page.tsx",
-      "norm_label": "ltr-field.ts"
-    },
-    {
       "label": "skill-suggestions.ts",
       "file_type": "code",
       "source_file": "apps/web/lib/skill-suggestions.ts",
@@ -14482,6 +14526,39 @@
       "norm_label": "imports/routes.ts"
     },
     {
+      "label": "records/page.tsx",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/admin/records/page.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_admin_records_page",
+      "community": 48,
+      "community_name": "apiRequest",
+      "norm_label": "records/page.tsx"
+    },
+    {
+      "label": "collectionOptions",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/admin/records/page.tsx",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_admin_records_page_collectionoptions",
+      "community": 48,
+      "community_name": "apiRequest",
+      "norm_label": "collectionoptions"
+    },
+    {
+      "label": "recordFilterParsers",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/admin/records/page.tsx",
+      "source_location": "L27",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_admin_records_page_recordfilterparsers",
+      "community": 48,
+      "community_name": "apiRequest",
+      "norm_label": "recordfilterparsers"
+    },
+    {
       "label": "upgrade/page.tsx",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/upgrade/page.tsx",
@@ -14504,37 +14581,48 @@
       "norm_label": "billing.ts"
     },
     {
-      "label": "auth.tsx",
+      "label": "build-query-string.ts",
       "file_type": "code",
-      "source_file": "apps/web/app/_components/auth.tsx",
+      "source_file": "apps/web/lib/build-query-string.ts",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_web_app_components_auth",
-      "community": 49,
-      "community_name": "useAuth",
-      "norm_label": "auth.tsx"
+      "id": "apps_web_lib_build_query_string",
+      "community": 48,
+      "community_name": "apiRequest",
+      "norm_label": "build-query-string.ts"
     },
     {
-      "label": "admin/page.tsx",
+      "label": "model-usage/page.tsx",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/page.tsx",
+      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_page",
+      "id": "apps_web_app_panel_admin_model_usage_page",
       "community": 49,
-      "community_name": "useAuth",
-      "norm_label": "admin/page.tsx"
+      "community_name": "model-usage/page.tsx",
+      "norm_label": "model-usage/page.tsx"
     },
     {
-      "label": "collectionLabels",
+      "label": "modelUsageFilterParsers",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/page.tsx",
-      "source_location": "L16",
+      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
+      "source_location": "L30",
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_page_collectionlabels",
+      "id": "apps_web_app_panel_admin_model_usage_page_modelusagefilterparsers",
       "community": 49,
-      "community_name": "useAuth",
-      "norm_label": "collectionlabels"
+      "community_name": "model-usage/page.tsx",
+      "norm_label": "modelusagefilterparsers"
+    },
+    {
+      "label": "operationLabels",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
+      "source_location": "L35",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_admin_model_usage_page_operationlabels",
+      "community": 49,
+      "community_name": "model-usage/page.tsx",
+      "norm_label": "operationlabels"
     },
     {
       "label": "admin/settings/page.tsx",
@@ -14544,30 +14632,19 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_admin_settings_page",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "admin/settings/page.tsx"
     },
     {
       "label": "schema",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L16",
+      "source_location": "L15",
       "_origin": "ast",
       "id": "apps_web_app_panel_admin_settings_page_schema",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "schema"
-    },
-    {
-      "label": "(panel)/settings/page.tsx",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/settings/page.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_settings_page",
-      "community": 49,
-      "community_name": "useAuth",
-      "norm_label": "(panel)/settings/page.tsx"
     },
     {
       "label": "admin-stats.ts",
@@ -14577,7 +14654,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "admin-stats.ts"
     },
     {
@@ -14588,7 +14665,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_adminaisettingsquerykey",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "adminaisettingsquerykey"
     },
     {
@@ -14599,7 +14676,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_adminbillingstatsquerykey",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "adminbillingstatsquerykey"
     },
     {
@@ -14610,7 +14687,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_admineventsquerykey",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "admineventsquerykey"
     },
     {
@@ -14621,7 +14698,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_adminmodelusagequerykey",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "adminmodelusagequerykey"
     },
     {
@@ -14632,7 +14709,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_admin_stats_adminstatsquerykey",
       "community": 49,
-      "community_name": "useAuth",
+      "community_name": "model-usage/page.tsx",
       "norm_label": "adminstatsquerykey"
     },
     {
@@ -14830,7 +14907,7 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_components_model_task_provider",
       "community": 50,
-      "community_name": "match/page.tsx",
+      "community_name": "model-task-provider.tsx",
       "norm_label": "model-task-provider.tsx"
     },
     {
@@ -14841,19 +14918,8 @@
       "_origin": "ast",
       "id": "apps_web_app_panel_components_model_task_provider_modeltaskcontext",
       "community": 50,
-      "community_name": "match/page.tsx",
+      "community_name": "model-task-provider.tsx",
       "norm_label": "modeltaskcontext"
-    },
-    {
-      "label": "match/page.tsx",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/match/page.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_match_page",
-      "community": 50,
-      "community_name": "match/page.tsx",
-      "norm_label": "match/page.tsx"
     },
     {
       "label": "api/tsconfig.json",
@@ -15142,39 +15208,6 @@
       "norm_label": "react"
     },
     {
-      "label": "authQueryKey",
-      "file_type": "code",
-      "source_file": "apps/web/app/_components/auth.tsx",
-      "source_location": "L20",
-      "_origin": "ast",
-      "id": "apps_web_app_components_auth_authquerykey",
-      "community": 54,
-      "community_name": "memberships/page.tsx",
-      "norm_label": "authquerykey"
-    },
-    {
-      "label": "account/page.tsx",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/account/page.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_account_page",
-      "community": 54,
-      "community_name": "memberships/page.tsx",
-      "norm_label": "account/page.tsx"
-    },
-    {
-      "label": "schema",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/account/page.tsx",
-      "source_location": "L21",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_account_page_schema",
-      "community": 54,
-      "community_name": "memberships/page.tsx",
-      "norm_label": "schema"
-    },
-    {
       "label": "memberships/page.tsx",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/admin/memberships/page.tsx",
@@ -15252,26 +15285,15 @@
       "norm_label": "resourcelabels"
     },
     {
-      "label": "membership-summary.tsx",
+      "label": "ui.tsx",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
+      "source_file": "apps/web/app/(panel)/_components/ui.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_web_app_panel_components_membership_summary",
+      "id": "apps_web_app_panel_components_ui",
       "community": 54,
       "community_name": "memberships/page.tsx",
-      "norm_label": "membership-summary.tsx"
-    },
-    {
-      "label": "usageItems",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
-      "source_location": "L17",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_membership_summary_usageitems",
-      "community": 54,
-      "community_name": "memberships/page.tsx",
-      "norm_label": "usageitems"
+      "norm_label": "ui.tsx"
     },
     {
       "label": "billingKeys",
@@ -15283,6 +15305,17 @@
       "community": 54,
       "community_name": "memberships/page.tsx",
       "norm_label": "billingkeys"
+    },
+    {
+      "label": "resume-import.test.mjs",
+      "file_type": "code",
+      "source_file": "apps/web/tests/resume-import.test.mjs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_tests_resume_import_test",
+      "community": 55,
+      "community_name": "validators/src/index.ts",
+      "norm_label": "resume-import.test.mjs"
     },
     {
       "label": "validators/src/index.ts",
@@ -15404,6 +15437,17 @@
       "community": 55,
       "community_name": "validators/src/index.ts",
       "norm_label": "optionalimportedemailschema"
+    },
+    {
+      "label": "optionalImportedImageSchema",
+      "file_type": "code",
+      "source_file": "packages/validators/src/index.ts",
+      "source_location": "L249",
+      "_origin": "ast",
+      "id": "packages_validators_src_index_optionalimportedimageschema",
+      "community": 55,
+      "community_name": "validators/src/index.ts",
+      "norm_label": "optionalimportedimageschema"
     },
     {
       "label": "optionalImportedPhoneSchema",
@@ -15637,17 +15681,6 @@
       "norm_label": "global-error.tsx"
     },
     {
-      "label": "ui.tsx",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/ui.tsx",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_ui",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "ui.tsx"
-    },
-    {
       "label": "resumes/page.tsx",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/resumes/page.tsx",
@@ -15780,17 +15813,6 @@
       "norm_label": "selectabletemplateids"
     },
     {
-      "label": "resume-section-flow.ts",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/resumes/resume-section-flow.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_resumes_resume_section_flow",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "resume-section-flow.ts"
-    },
-    {
       "label": "scaled-resume-preview.tsx",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/resumes/scaled-resume-preview.tsx",
@@ -15824,6 +15846,17 @@
       "norm_label": "templatepreviewdata"
     },
     {
+      "label": "knowledge-completion.ts",
+      "file_type": "code",
+      "source_file": "apps/web/lib/knowledge-completion.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_lib_knowledge_completion",
+      "community": 6,
+      "community_name": "resumes/page.tsx",
+      "norm_label": "knowledge-completion.ts"
+    },
+    {
       "label": "resume-input.ts",
       "file_type": "code",
       "source_file": "apps/web/lib/resume-input.ts",
@@ -15833,39 +15866,6 @@
       "community": 6,
       "community_name": "resumes/page.tsx",
       "norm_label": "resume-input.ts"
-    },
-    {
-      "label": "rendered-html.test.mjs",
-      "file_type": "code",
-      "source_file": "apps/web/tests/rendered-html.test.mjs",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_tests_rendered_html_test",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "rendered-html.test.mjs"
-    },
-    {
-      "label": "projectRoot",
-      "file_type": "code",
-      "source_file": "apps/web/tests/rendered-html.test.mjs",
-      "source_location": "L5",
-      "_origin": "ast",
-      "id": "apps_web_tests_rendered_html_test_projectroot",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "projectroot"
-    },
-    {
-      "label": "repositoryRoot",
-      "file_type": "code",
-      "source_file": "apps/web/tests/rendered-html.test.mjs",
-      "source_location": "L6",
-      "_origin": "ast",
-      "id": "apps_web_tests_rendered_html_test_repositoryroot",
-      "community": 6,
-      "community_name": "resumes/page.tsx",
-      "norm_label": "repositoryroot"
     },
     {
       "label": "AGENTS.md",
@@ -15981,6 +15981,28 @@
       "norm_label": "pagetitles"
     },
     {
+      "label": "interview/page.tsx",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/interview/page.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_interview_page",
+      "community": 64,
+      "community_name": "panel-shell.tsx",
+      "norm_label": "interview/page.tsx"
+    },
+    {
+      "label": "icons",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/interview/page.tsx",
+      "source_location": "L47",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_interview_page_icons",
+      "community": 64,
+      "community_name": "panel-shell.tsx",
+      "norm_label": "icons"
+    },
+    {
       "label": "(panel)/layout.tsx",
       "file_type": "code",
       "source_file": "apps/web/app/(panel)/layout.tsx",
@@ -15990,28 +16012,6 @@
       "community": 64,
       "community_name": "panel-shell.tsx",
       "norm_label": "(panel)/layout.tsx"
-    },
-    {
-      "label": "appProfileStore",
-      "file_type": "code",
-      "source_file": "apps/web/lib/data/stores.ts",
-      "source_location": "L43",
-      "_origin": "ast",
-      "id": "apps_web_lib_data_stores_appprofilestore",
-      "community": 64,
-      "community_name": "panel-shell.tsx",
-      "norm_label": "appprofilestore"
-    },
-    {
-      "label": "jobStore",
-      "file_type": "code",
-      "source_file": "apps/web/lib/data/stores.ts",
-      "source_location": "L208",
-      "_origin": "ast",
-      "id": "apps_web_lib_data_stores_jobstore",
-      "community": 64,
-      "community_name": "panel-shell.tsx",
-      "norm_label": "jobstore"
     },
     {
       "label": "eslint.config.mjs",
@@ -16252,7 +16252,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "PROJECT_KNOWLEDGE.md",
-      "source_location": "L160",
+      "source_location": "L149",
       "_origin": "ast",
       "id": "project_knowledge_\u062a\u0636\u0645\u06cc\u0646_\u0628\u0647_\u0631\u0648\u0632\u0631\u0633\u0627\u0646\u06cc_knowledge_base",
       "community": 67,
@@ -16324,7 +16324,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "PROJECT_KNOWLEDGE.md",
-      "source_location": "L134",
+      "source_location": "L123",
       "_origin": "ast",
       "id": "project_knowledge_\u0648\u0636\u0639\u06cc\u062a_\u0647\u0627_\u0648_\u062a\u0635\u0645\u06cc\u0645_\u0647\u0627\u06cc_\u0634\u0646\u0627\u062e\u062a\u0647_\u0634\u062f\u0647",
       "community": 67,
@@ -16336,7 +16336,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "PROJECT_KNOWLEDGE.md",
-      "source_location": "L148",
+      "source_location": "L137",
       "_origin": "ast",
       "id": "project_knowledge_\u067e\u0631\u0648\u062a\u06a9\u0644_\u062a\u063a\u06cc\u06cc\u0631\u0627\u062a_\u0628\u0631\u0627\u06cc_agent\u0647\u0627",
       "community": 67,
@@ -16411,147 +16411,15 @@
       "norm_label": "ignored_input_types"
     },
     {
-      "label": "jobs/page.tsx",
+      "label": "loading-skeletons.tsx",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/jobs/page.tsx",
+      "source_file": "apps/web/app/(panel)/_components/loading-skeletons.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_web_app_panel_jobs_page",
+      "id": "apps_web_app_panel_components_loading_skeletons",
       "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "jobs/page.tsx"
-    },
-    {
-      "label": "categoryOptions",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/jobs/page.tsx",
-      "source_location": "L32",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_jobs_page_categoryoptions",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "categoryoptions"
-    },
-    {
-      "label": "job-category.ts",
-      "file_type": "code",
-      "source_file": "apps/web/lib/job-category.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_lib_job_category",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "job-category.ts"
-    },
-    {
-      "label": "job-filter-search-params.ts",
-      "file_type": "code",
-      "source_file": "apps/web/lib/job-filter-search-params.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_lib_job_filter_search_params",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "job-filter-search-params.ts"
-    },
-    {
-      "label": "boundedMatchParser",
-      "file_type": "code",
-      "source_file": "apps/web/lib/job-filter-search-params.ts",
-      "source_location": "L17",
-      "_origin": "ast",
-      "id": "apps_web_lib_job_filter_search_params_boundedmatchparser",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "boundedmatchparser"
-    },
-    {
-      "label": "jobFilterParsers",
-      "file_type": "code",
-      "source_file": "apps/web/lib/job-filter-search-params.ts",
-      "source_location": "L51",
-      "_origin": "ast",
-      "id": "apps_web_lib_job_filter_search_params_jobfilterparsers",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "jobfilterparsers"
-    },
-    {
-      "label": "jobFilterUrlKeys",
-      "file_type": "code",
-      "source_file": "apps/web/lib/job-filter-search-params.ts",
-      "source_location": "L63",
-      "_origin": "ast",
-      "id": "apps_web_lib_job_filter_search_params_jobfilterurlkeys",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "jobfilterurlkeys"
-    },
-    {
-      "label": "jobScopes",
-      "file_type": "code",
-      "source_file": "apps/web/lib/job-filter-search-params.ts",
-      "source_location": "L10",
-      "_origin": "ast",
-      "id": "apps_web_lib_job_filter_search_params_jobscopes",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "jobscopes"
-    },
-    {
-      "label": "localIsoDateParser",
-      "file_type": "code",
-      "source_file": "apps/web/lib/job-filter-search-params.ts",
-      "source_location": "L29",
-      "_origin": "ast",
-      "id": "apps_web_lib_job_filter_search_params_localisodateparser",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "localisodateparser"
-    },
-    {
-      "label": "job-order.ts",
-      "file_type": "code",
-      "source_file": "apps/web/lib/job-order.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_lib_job_order",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "job-order.ts"
-    },
-    {
-      "label": "job-category.test.mjs",
-      "file_type": "code",
-      "source_file": "apps/web/tests/job-category.test.mjs",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_tests_job_category_test",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "job-category.test.mjs"
-    },
-    {
-      "label": "job-filter-search-params.test.mjs",
-      "file_type": "code",
-      "source_file": "apps/web/tests/job-filter-search-params.test.mjs",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_tests_job_filter_search_params_test",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "job-filter-search-params.test.mjs"
-    },
-    {
-      "label": "job-order.test.mjs",
-      "file_type": "code",
-      "source_file": "apps/web/tests/job-order.test.mjs",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_tests_job_order_test",
-      "community": 7,
-      "community_name": "jobs/page.tsx",
-      "norm_label": "job-order.test.mjs"
+      "community_name": "loading-skeletons.tsx",
+      "norm_label": "loading-skeletons.tsx"
     },
     {
       "label": "postcss.config.mjs",
@@ -16675,6 +16543,72 @@
       "norm_label": "persianpartsformatter"
     },
     {
+      "label": "job-filter-search-params.ts",
+      "file_type": "code",
+      "source_file": "apps/web/lib/job-filter-search-params.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_lib_job_filter_search_params",
+      "community": 73,
+      "community_name": "jalali-date-picker.tsx",
+      "norm_label": "job-filter-search-params.ts"
+    },
+    {
+      "label": "boundedMatchParser",
+      "file_type": "code",
+      "source_file": "apps/web/lib/job-filter-search-params.ts",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "apps_web_lib_job_filter_search_params_boundedmatchparser",
+      "community": 73,
+      "community_name": "jalali-date-picker.tsx",
+      "norm_label": "boundedmatchparser"
+    },
+    {
+      "label": "jobFilterParsers",
+      "file_type": "code",
+      "source_file": "apps/web/lib/job-filter-search-params.ts",
+      "source_location": "L51",
+      "_origin": "ast",
+      "id": "apps_web_lib_job_filter_search_params_jobfilterparsers",
+      "community": 73,
+      "community_name": "jalali-date-picker.tsx",
+      "norm_label": "jobfilterparsers"
+    },
+    {
+      "label": "jobFilterUrlKeys",
+      "file_type": "code",
+      "source_file": "apps/web/lib/job-filter-search-params.ts",
+      "source_location": "L63",
+      "_origin": "ast",
+      "id": "apps_web_lib_job_filter_search_params_jobfilterurlkeys",
+      "community": 73,
+      "community_name": "jalali-date-picker.tsx",
+      "norm_label": "jobfilterurlkeys"
+    },
+    {
+      "label": "jobScopes",
+      "file_type": "code",
+      "source_file": "apps/web/lib/job-filter-search-params.ts",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "apps_web_lib_job_filter_search_params_jobscopes",
+      "community": 73,
+      "community_name": "jalali-date-picker.tsx",
+      "norm_label": "jobscopes"
+    },
+    {
+      "label": "localIsoDateParser",
+      "file_type": "code",
+      "source_file": "apps/web/lib/job-filter-search-params.ts",
+      "source_location": "L29",
+      "_origin": "ast",
+      "id": "apps_web_lib_job_filter_search_params_localisodateparser",
+      "community": 73,
+      "community_name": "jalali-date-picker.tsx",
+      "norm_label": "localisodateparser"
+    },
+    {
       "label": "jalali-date.test.mjs",
       "file_type": "code",
       "source_file": "apps/web/tests/jalali-date.test.mjs",
@@ -16686,6 +16620,17 @@
       "norm_label": "jalali-date.test.mjs"
     },
     {
+      "label": "job-filter-search-params.test.mjs",
+      "file_type": "code",
+      "source_file": "apps/web/tests/job-filter-search-params.test.mjs",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_tests_job_filter_search_params_test",
+      "community": 73,
+      "community_name": "jalali-date-picker.tsx",
+      "norm_label": "job-filter-search-params.test.mjs"
+    },
+    {
       "label": "resume-skills.ts",
       "file_type": "code",
       "source_file": "apps/web/lib/resume-skills.ts",
@@ -16693,7 +16638,7 @@
       "_origin": "ast",
       "id": "apps_web_lib_resume_skills",
       "community": 74,
-      "community_name": "parseResumeSkills",
+      "community_name": "scheduleFieldDirectionRefresh",
       "norm_label": "resume-skills.ts"
     },
     {
@@ -16704,7 +16649,7 @@
       "_origin": "ast",
       "id": "apps_web_tests_resume_skills_test",
       "community": 74,
-      "community_name": "parseResumeSkills",
+      "community_name": "scheduleFieldDirectionRefresh",
       "norm_label": "resume-skills.test.mjs"
     },
     {
@@ -16724,7 +16669,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "deploy/README.md",
-      "source_location": "L108",
+      "source_location": "L76",
       "_origin": "ast",
       "id": "deploy_readme_deepseek_\u0645\u062d\u0644\u06cc",
       "community": 75,
@@ -16736,7 +16681,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "deploy/README.md",
-      "source_location": "L13",
+      "source_location": "L12",
       "_origin": "ast",
       "id": "deploy_readme_\u0622\u0645\u0627\u062f\u0647_\u0633\u0627\u0632\u06cc",
       "community": 75,
@@ -16748,7 +16693,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "deploy/README.md",
-      "source_location": "L31",
+      "source_location": "L30",
       "_origin": "ast",
       "id": "deploy_readme_\u0627\u062c\u0631\u0627",
       "community": 75,
@@ -16768,23 +16713,11 @@
       "norm_label": "\u0627\u0633\u062a\u0642\u0631\u0627\u0631 production \u0631\u0627\u062f\u06cc\u06a9\u0627\u0631"
     },
     {
-      "label": "\u0627\u0646\u062a\u0634\u0627\u0631 \u062e\u0648\u062f\u06a9\u0627\u0631 \u0628\u0627 GitHub Actions",
-      "file_type": "document",
-      "node_kind": "heading",
-      "source_file": "deploy/README.md",
-      "source_location": "L64",
-      "_origin": "ast",
-      "id": "deploy_readme_\u0627\u0646\u062a\u0634\u0627\u0631_\u062e\u0648\u062f\u06a9\u0627\u0631_\u0628\u0627_github_actions",
-      "community": 75,
-      "community_name": "\u0627\u0633\u062a\u0642\u0631\u0627\u0631 Production \u0631\u0627\u062f\u06cc\u06a9\u0627\u0631",
-      "norm_label": "\u0627\u0646\u062a\u0634\u0627\u0631 \u062e\u0648\u062f\u06a9\u0627\u0631 \u0628\u0627 github actions"
-    },
-    {
       "label": "\u0627\u0646\u062a\u0634\u0627\u0631 \u0646\u0633\u062e\u0647 \u062c\u062f\u06cc\u062f",
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "deploy/README.md",
-      "source_location": "L56",
+      "source_location": "L55",
       "_origin": "ast",
       "id": "deploy_readme_\u0627\u0646\u062a\u0634\u0627\u0631_\u0646\u0633\u062e\u0647_\u062c\u062f\u06cc\u062f",
       "community": 75,
@@ -16796,7 +16729,7 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "deploy/README.md",
-      "source_location": "L98",
+      "source_location": "L66",
       "_origin": "ast",
       "id": "deploy_readme_\u067e\u0634\u062a\u06cc\u0628\u0627\u0646_\u06af\u06cc\u0631\u06cc_postgresql",
       "community": 75,
@@ -16808,24 +16741,12 @@
       "file_type": "document",
       "node_kind": "heading",
       "source_file": "deploy/README.md",
-      "source_location": "L7",
+      "source_location": "L6",
       "_origin": "ast",
       "id": "deploy_readme_\u067e\u06cc\u0634_\u0646\u06cc\u0627\u0632",
       "community": 75,
       "community_name": "\u0627\u0633\u062a\u0642\u0631\u0627\u0631 Production \u0631\u0627\u062f\u06cc\u06a9\u0627\u0631",
       "norm_label": "\u067e\u06cc\u0634\u200c\u0646\u06cc\u0627\u0632"
-    },
-    {
-      "label": "\u0686\u06a9\u200c\u0644\u06cc\u0633\u062a \u0627\u0646\u062a\u0642\u0627\u0644 \u0627\u0632 \u062a\u0633\u062a IP \u0628\u0647 \u062f\u0627\u0645\u0646\u0647",
-      "file_type": "document",
-      "node_kind": "heading",
-      "source_file": "deploy/README.md",
-      "source_location": "L82",
-      "_origin": "ast",
-      "id": "deploy_readme_\u0686\u06a9_\u0644\u06cc\u0633\u062a_\u0627\u0646\u062a\u0642\u0627\u0644_\u0627\u0632_\u062a\u0633\u062a_ip_\u0628\u0647_\u062f\u0627\u0645\u0646\u0647",
-      "community": 75,
-      "community_name": "\u0627\u0633\u062a\u0642\u0631\u0627\u0631 Production \u0631\u0627\u062f\u06cc\u06a9\u0627\u0631",
-      "norm_label": "\u0686\u06a9\u200c\u0644\u06cc\u0633\u062a \u0627\u0646\u062a\u0642\u0627\u0644 \u0627\u0632 \u062a\u0633\u062a ip \u0628\u0647 \u062f\u0627\u0645\u0646\u0647"
     },
     {
       "label": "@fontsource-variable/vazirmatn",
@@ -16982,6 +16903,17 @@
       "norm_label": "job-application-filter.ts"
     },
     {
+      "label": "job-category.ts",
+      "file_type": "code",
+      "source_file": "apps/web/lib/job-category.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_lib_job_category",
+      "community": 82,
+      "community_name": "job-application-filter.ts",
+      "norm_label": "job-category.ts"
+    },
+    {
       "label": "job-application-filter.test.mjs",
       "file_type": "code",
       "source_file": "apps/web/tests/job-application-filter.test.mjs",
@@ -17015,48 +16947,70 @@
       "norm_label": "job"
     },
     {
-      "label": "job-card.tsx",
+      "label": "job-category.test.mjs",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
+      "source_file": "apps/web/tests/job-category.test.mjs",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_web_app_panel_components_job_card",
-      "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "job-card.tsx"
+      "id": "apps_web_tests_job_category_test",
+      "community": 82,
+      "community_name": "job-application-filter.ts",
+      "norm_label": "job-category.test.mjs"
     },
     {
-      "label": "toneStyles",
+      "label": "resume-section-flow.ts",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_components/job-card.tsx",
-      "source_location": "L22",
-      "_origin": "ast",
-      "id": "apps_web_app_panel_components_job_card_tonestyles",
-      "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "tonestyles"
-    },
-    {
-      "label": "jobs.ts",
-      "file_type": "code",
-      "source_file": "apps/web/app/(panel)/_data/jobs.ts",
+      "source_file": "apps/web/app/(panel)/resumes/resume-section-flow.ts",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_web_app_panel_data_jobs",
+      "id": "apps_web_app_panel_resumes_resume_section_flow",
       "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "jobs.ts"
+      "community_name": "resume-section-flow.ts",
+      "norm_label": "resume-section-flow.ts"
     },
     {
-      "label": "fa-number.ts",
+      "label": "rendered-html.test.mjs",
       "file_type": "code",
-      "source_file": "apps/web/lib/fa-number.ts",
+      "source_file": "apps/web/tests/rendered-html.test.mjs",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_web_lib_fa_number",
+      "id": "apps_web_tests_rendered_html_test",
       "community": 83,
-      "community_name": "formatPersianNumber",
-      "norm_label": "fa-number.ts"
+      "community_name": "resume-section-flow.ts",
+      "norm_label": "rendered-html.test.mjs"
+    },
+    {
+      "label": "projectRoot",
+      "file_type": "code",
+      "source_file": "apps/web/tests/rendered-html.test.mjs",
+      "source_location": "L5",
+      "_origin": "ast",
+      "id": "apps_web_tests_rendered_html_test_projectroot",
+      "community": 83,
+      "community_name": "resume-section-flow.ts",
+      "norm_label": "projectroot"
+    },
+    {
+      "label": "repositoryRoot",
+      "file_type": "code",
+      "source_file": "apps/web/tests/rendered-html.test.mjs",
+      "source_location": "L6",
+      "_origin": "ast",
+      "id": "apps_web_tests_rendered_html_test_repositoryroot",
+      "community": 83,
+      "community_name": "resume-section-flow.ts",
+      "norm_label": "repositoryroot"
+    },
+    {
+      "label": "authQueryKey",
+      "file_type": "code",
+      "source_file": "apps/web/app/_components/auth.tsx",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "apps_web_app_components_auth_authquerykey",
+      "community": 84,
+      "community_name": "account/page.tsx",
+      "norm_label": "authquerykey"
     },
     {
       "label": "login/page.tsx",
@@ -17066,7 +17020,7 @@
       "_origin": "ast",
       "id": "apps_web_app_login_page",
       "community": 84,
-      "community_name": "login/page.tsx",
+      "community_name": "account/page.tsx",
       "norm_label": "login/page.tsx"
     },
     {
@@ -17077,7 +17031,7 @@
       "_origin": "ast",
       "id": "apps_web_app_login_page_localizednumericstring",
       "community": 84,
-      "community_name": "login/page.tsx",
+      "community_name": "account/page.tsx",
       "norm_label": "localizednumericstring"
     },
     {
@@ -17088,7 +17042,7 @@
       "_origin": "ast",
       "id": "apps_web_app_login_page_otpschema",
       "community": 84,
-      "community_name": "login/page.tsx",
+      "community_name": "account/page.tsx",
       "norm_label": "otpschema"
     },
     {
@@ -17099,41 +17053,85 @@
       "_origin": "ast",
       "id": "apps_web_app_login_page_phoneschema",
       "community": 84,
-      "community_name": "login/page.tsx",
+      "community_name": "account/page.tsx",
       "norm_label": "phoneschema"
     },
     {
-      "label": "model-usage/page.tsx",
+      "label": "account/page.tsx",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
+      "source_file": "apps/web/app/(panel)/account/page.tsx",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_model_usage_page",
-      "community": 85,
-      "community_name": "model-usage/page.tsx",
-      "norm_label": "model-usage/page.tsx"
+      "id": "apps_web_app_panel_account_page",
+      "community": 84,
+      "community_name": "account/page.tsx",
+      "norm_label": "account/page.tsx"
     },
     {
-      "label": "modelUsageFilterParsers",
+      "label": "schema",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
-      "source_location": "L30",
+      "source_file": "apps/web/app/(panel)/account/page.tsx",
+      "source_location": "L21",
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_model_usage_page_modelusagefilterparsers",
-      "community": 85,
-      "community_name": "model-usage/page.tsx",
-      "norm_label": "modelusagefilterparsers"
+      "id": "apps_web_app_panel_account_page_schema",
+      "community": 84,
+      "community_name": "account/page.tsx",
+      "norm_label": "schema"
     },
     {
-      "label": "operationLabels",
+      "label": "membership-summary.tsx",
       "file_type": "code",
-      "source_file": "apps/web/app/(panel)/admin/model-usage/page.tsx",
-      "source_location": "L35",
+      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
+      "source_location": "L1",
       "_origin": "ast",
-      "id": "apps_web_app_panel_admin_model_usage_page_operationlabels",
+      "id": "apps_web_app_panel_components_membership_summary",
+      "community": 84,
+      "community_name": "account/page.tsx",
+      "norm_label": "membership-summary.tsx"
+    },
+    {
+      "label": "usageItems",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/_components/membership-summary.tsx",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_components_membership_summary_usageitems",
+      "community": 84,
+      "community_name": "account/page.tsx",
+      "norm_label": "usageitems"
+    },
+    {
+      "label": "match/page.tsx",
+      "file_type": "code",
+      "source_file": "apps/web/app/(panel)/match/page.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_app_panel_match_page",
       "community": 85,
-      "community_name": "model-usage/page.tsx",
-      "norm_label": "operationlabels"
+      "community_name": "match/page.tsx",
+      "norm_label": "match/page.tsx"
+    },
+    {
+      "label": "matchAnalysisStore",
+      "file_type": "code",
+      "source_file": "apps/web/lib/data/stores.ts",
+      "source_location": "L212",
+      "_origin": "ast",
+      "id": "apps_web_lib_data_stores_matchanalysisstore",
+      "community": 85,
+      "community_name": "match/page.tsx",
+      "norm_label": "matchanalysisstore"
+    },
+    {
+      "label": "ltr-field.ts",
+      "file_type": "code",
+      "source_file": "apps/web/lib/ltr-field.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "apps_web_lib_ltr_field",
+      "community": 85,
+      "community_name": "match/page.tsx",
+      "norm_label": "ltr-field.ts"
     },
     {
       "label": "build-app.ts",
@@ -17661,28 +17659,6 @@
       "community": 93,
       "community_name": "setup-git-hooks.mjs",
       "norm_label": "setup-git-hooks.mjs"
-    },
-    {
-      "label": "knowledge-completion.ts",
-      "file_type": "code",
-      "source_file": "apps/web/lib/knowledge-completion.ts",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_lib_knowledge_completion",
-      "community": 94,
-      "community_name": "resume-import.test.mjs",
-      "norm_label": "knowledge-completion.ts"
-    },
-    {
-      "label": "resume-import.test.mjs",
-      "file_type": "code",
-      "source_file": "apps/web/tests/resume-import.test.mjs",
-      "source_location": "L1",
-      "_origin": "ast",
-      "id": "apps_web_tests_resume_import_test",
-      "community": 94,
-      "community_name": "resume-import.test.mjs",
-      "norm_label": "resume-import.test.mjs"
     }
   ],
   "links": [
@@ -18063,7 +18039,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L338",
+      "source_location": "L337",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18075,7 +18051,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L339",
+      "source_location": "L338",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18088,7 +18064,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L340",
+      "source_location": "L339",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18100,7 +18076,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L340",
+      "source_location": "L339",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18112,7 +18088,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L341",
+      "source_location": "L340",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18124,7 +18100,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L344",
+      "source_location": "L343",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18135,7 +18111,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L348",
+      "source_location": "L347",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18147,7 +18123,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L349",
+      "source_location": "L348",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18159,7 +18135,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L351",
+      "source_location": "L350",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18171,7 +18147,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L362",
+      "source_location": "L361",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18183,7 +18159,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L369",
+      "source_location": "L368",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18195,7 +18171,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L372",
+      "source_location": "L371",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18207,7 +18183,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L399",
+      "source_location": "L398",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18219,7 +18195,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L419",
+      "source_location": "L418",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18231,7 +18207,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L422",
+      "source_location": "L421",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18244,7 +18220,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L437",
+      "source_location": "L436",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18255,7 +18231,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L447",
+      "source_location": "L446",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18268,7 +18244,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L463",
+      "source_location": "L462",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18279,7 +18255,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L492",
+      "source_location": "L491",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -18291,7 +18267,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/modules/ai/routes.ts",
-      "source_location": "L527",
+      "source_location": "L526",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_modules_ai_routes_registerairoutes",
@@ -20164,19 +20140,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L131",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "apps_web_app_panel_admin_settings_page_adminsettingspage",
-      "target": "packages_validators_src_index_normalizedigits"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L53",
+      "source_location": "L52",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page_adminsettingspage",
@@ -20188,7 +20152,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L54",
+      "source_location": "L53",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page_adminsettingspage",
@@ -20200,7 +20164,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L57",
+      "source_location": "L56",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page_adminsettingspage",
@@ -20212,7 +20176,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L58",
+      "source_location": "L57",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page_adminsettingspage",
@@ -25732,7 +25696,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/app/(panel)/upgrade/page.tsx",
-      "source_location": "L70",
+      "source_location": "L65",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_upgrade_page_upgradepage",
@@ -25744,7 +25708,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "apps/web/app/(panel)/upgrade/page.tsx",
-      "source_location": "L86",
+      "source_location": "L81",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_upgrade_page_upgradepage",
@@ -31411,18 +31375,6 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page",
-      "target": "apps_web_app_components_toast_usetoast",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L11",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "apps_web_app_panel_admin_settings_page",
       "target": "apps_web_lib_admin_stats_useadminaisettings",
       "confidence_score": 1.0
     },
@@ -31431,7 +31383,7 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L11",
+      "source_location": "L10",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page",
@@ -31447,7 +31399,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page",
-      "target": "packages_validators_src_index_normalizedigits",
+      "target": "apps_web_app_components_auth_useauth",
       "confidence_score": 1.0
     },
     {
@@ -31459,7 +31411,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page",
-      "target": "apps_web_app_components_auth_useauth",
+      "target": "apps_web_app_components_toast_usetoast",
       "confidence_score": 1.0
     },
     {
@@ -38119,18 +38071,6 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page",
-      "target": "apps_web_app_components_toast",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L11",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "apps_web_app_panel_admin_settings_page",
       "target": "apps_web_lib_admin_stats",
       "confidence_score": 1.0
     },
@@ -38143,7 +38083,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page",
-      "target": "packages_validators_src_index",
+      "target": "apps_web_app_components_auth",
       "confidence_score": 1.0
     },
     {
@@ -38155,7 +38095,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page",
-      "target": "apps_web_app_components_auth",
+      "target": "apps_web_app_components_toast",
       "confidence_score": 1.0
     },
     {
@@ -42024,7 +41964,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "apps/api/src/app.ts",
-      "source_location": "L62",
+      "source_location": "L56",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_api_src_app",
@@ -44917,7 +44857,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L16",
+      "source_location": "L15",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page",
@@ -44928,7 +44868,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L22",
+      "source_location": "L21",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page",
@@ -44939,7 +44879,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L24",
+      "source_location": "L23",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page",
@@ -44950,7 +44890,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "apps/web/app/(panel)/admin/settings/page.tsx",
-      "source_location": "L52",
+      "source_location": "L51",
       "weight": 1.0,
       "_origin": "ast",
       "source": "apps_web_app_panel_admin_settings_page",
@@ -51121,18 +51061,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "deploy/README.md",
-      "source_location": "L108",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "deploy_readme_\u0627\u0633\u062a\u0642\u0631\u0627\u0631_production_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631",
-      "target": "deploy_readme_deepseek_\u0645\u062d\u0644\u06cc",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "deploy/README.md",
-      "source_location": "L13",
+      "source_location": "L12",
       "weight": 1.0,
       "_origin": "ast",
       "source": "deploy_readme_\u0627\u0633\u062a\u0642\u0631\u0627\u0631_production_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631",
@@ -51143,7 +51072,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "deploy/README.md",
-      "source_location": "L31",
+      "source_location": "L30",
       "weight": 1.0,
       "_origin": "ast",
       "source": "deploy_readme_\u0627\u0633\u062a\u0642\u0631\u0627\u0631_production_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631",
@@ -51154,7 +51083,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "deploy/README.md",
-      "source_location": "L56",
+      "source_location": "L55",
       "weight": 1.0,
       "_origin": "ast",
       "source": "deploy_readme_\u0627\u0633\u062a\u0642\u0631\u0627\u0631_production_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631",
@@ -51165,7 +51094,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "deploy/README.md",
-      "source_location": "L7",
+      "source_location": "L6",
       "weight": 1.0,
       "_origin": "ast",
       "source": "deploy_readme_\u0627\u0633\u062a\u0642\u0631\u0627\u0631_production_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631",
@@ -51176,18 +51105,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "deploy/README.md",
-      "source_location": "L82",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "deploy_readme_\u0627\u0633\u062a\u0642\u0631\u0627\u0631_production_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631",
-      "target": "deploy_readme_\u0686\u06a9_\u0644\u06cc\u0633\u062a_\u0627\u0646\u062a\u0642\u0627\u0644_\u0627\u0632_\u062a\u0633\u062a_ip_\u0628\u0647_\u062f\u0627\u0645\u0646\u0647",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "deploy/README.md",
-      "source_location": "L98",
+      "source_location": "L66",
       "weight": 1.0,
       "_origin": "ast",
       "source": "deploy_readme_\u0627\u0633\u062a\u0642\u0631\u0627\u0631_production_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631",
@@ -51198,11 +51116,11 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "deploy/README.md",
-      "source_location": "L64",
+      "source_location": "L76",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "deploy_readme_\u0627\u0646\u062a\u0634\u0627\u0631_\u0646\u0633\u062e\u0647_\u062c\u062f\u06cc\u062f",
-      "target": "deploy_readme_\u0627\u0646\u062a\u0634\u0627\u0631_\u062e\u0648\u062f\u06a9\u0627\u0631_\u0628\u0627_github_actions",
+      "source": "deploy_readme_\u0627\u0633\u062a\u0642\u0631\u0627\u0631_production_\u0631\u0627\u062f\u06cc\u06a9\u0627\u0631",
+      "target": "deploy_readme_deepseek_\u0645\u062d\u0644\u06cc",
       "confidence_score": 1.0
     },
     {
@@ -53882,7 +53800,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "PROJECT_KNOWLEDGE.md",
-      "source_location": "L134",
+      "source_location": "L123",
       "weight": 1.0,
       "_origin": "ast",
       "source": "project_knowledge_radikar_project_knowledge_base",
@@ -53893,7 +53811,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "PROJECT_KNOWLEDGE.md",
-      "source_location": "L148",
+      "source_location": "L137",
       "weight": 1.0,
       "_origin": "ast",
       "source": "project_knowledge_radikar_project_knowledge_base",
@@ -53904,7 +53822,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "PROJECT_KNOWLEDGE.md",
-      "source_location": "L160",
+      "source_location": "L149",
       "weight": 1.0,
       "_origin": "ast",
       "source": "project_knowledge_radikar_project_knowledge_base",
@@ -55895,5 +55813,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "4ccadf1965d3ac3604d106900e7ad1cd0f67f09b"
+  "built_at_commit": "e2cf8fdc2081e88dcabd5e479b4f1537abf06c9b"
 }

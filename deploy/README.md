@@ -1,8 +1,8 @@
 # استقرار Production رادیکار
 
 این پیکربندی Web، API، PostgreSQL و Caddy را روی یک سرور اجرا می‌کند. برای
-جلوگیری از تداخل با پروژه‌های دیگر، پورت تست HTTP برابر `5000` و پورت HTTPS
-برابر `5443` است؛ پورت‌های داخلی API و Web فقط داخل شبکه Docker هستند.
+دامنهٔ production از پورت‌های استاندارد HTTP (`80`) و HTTPS (`443`) استفاده
+می‌کند؛ پورت‌های داخلی API و Web فقط داخل شبکه Docker هستند.
 
 ## پیش‌نیاز
 
@@ -74,7 +74,7 @@ docker compose --env-file deploy/.env.production -f compose.production.yml up -d
 
 Workflow فقط سورس tagشده را به مسیر `/home/sport724/mampel/radikar` sync می‌کند؛
 فایل `deploy/.env.production` هرگز از GitHub کپی نمی‌شود. سپس imageها را build،
-stack را recreate و endpoint آماده‌بودن را روی پورت `5000` بررسی می‌کند.
+stack را recreate و endpoint آماده‌بودن را روی آدرس HTTPS دامنه بررسی می‌کند.
 
 مقدار `NEXT_PUBLIC_API_BASE_URL` هنگام build داخل Web قرار می‌گیرد؛ پس بعد از
 تغییر دامنه حتماً image وب را دوباره بسازید.
@@ -92,8 +92,8 @@ stack را recreate و endpoint آماده‌بودن را روی پورت `5000
   می‌شوند؛ سپس imageهای API و Web دوباره build و سرویس‌ها restart شوند.
 - پس از انتشار، درخواست OTP، ورود، `/health` و `/ready` با دامنهٔ HTTPS تست شوند.
 
-تا قبل از تکمیل این چک‌لیست، پورت `5000` فقط برای تست موقت است و نباید به‌عنوان
-آدرس production عمومی معرفی شود.
+تا قبل از تکمیل این چک‌لیست، حالت OTP آزمایشی نباید روی آدرس production عمومی
+فعال بماند.
 
 ## پشتیبان‌گیری PostgreSQL
 

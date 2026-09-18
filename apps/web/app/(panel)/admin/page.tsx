@@ -99,11 +99,11 @@ export default function AdminPage() {
         <p className="mb-4 mt-1 text-[9px] text-[#8a9794]">
           مجموع {formatNumber(stats.data?.records.total ?? 0)} رکورد متعلق به کاربران
         </p>
-        <div className="grid grid-cols-4 gap-2 max-[900px]:grid-cols-2 max-[520px]:grid-cols-1">
+        <div className="grid grid-cols-3 gap-3 max-[1050px]:grid-cols-2 max-[520px]:grid-cols-1">
           {(stats.data?.records.byCollection ?? []).map((item) => (
-            <div className="rounded-[11px] bg-[#f2f6f3] px-4 py-3 text-[10px] text-[#526762]" key={item.collection}>
-              <span>{collectionLabels[item.collection] ?? item.collection}</span>
-              <strong className="mt-1 block text-[16px] text-[#19312f]">{formatNumber(item.total)}</strong>
+            <div className="group flex min-h-14 items-center justify-between gap-3 rounded-[14px] border border-[#e2eee7] bg-gradient-to-l from-[#f0f8f4] to-[#fbfdfb] px-4 py-3 text-[10px] text-[#526762] shadow-[0_6px_18px_rgba(30,86,68,.05)] transition-transform hover:-translate-y-0.5" key={item.collection}>
+              <span className="min-w-0 truncate font-semibold" title={collectionLabels[item.collection] ?? item.collection}>{collectionLabels[item.collection] ?? item.collection}</span>
+              <strong className="shrink-0 rounded-full bg-white px-3 py-1 text-[16px] leading-none text-[#19312f] shadow-sm">{formatNumber(item.total)}</strong>
             </div>
           ))}
         </div>

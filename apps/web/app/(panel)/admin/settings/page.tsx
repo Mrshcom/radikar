@@ -5,6 +5,7 @@ import { Bot, CheckCircle2, DollarSign, LoaderCircle, Settings2 } from "lucide-r
 import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
+import { normalizeDigits } from "@radikar/validators";
 import { useAuth } from "@/app/_components/auth";
 import { useToast } from "@/app/_components/toast";
 import {
@@ -127,7 +128,7 @@ export default function AdminSettingsPage() {
           </div>
         </div> : <div className="grid gap-3">
           <h2 className="m-0 flex items-center gap-2 text-[13px] font-extrabold text-[#19312f]"><DollarSign size={17} className="text-[#0f7b62]" /> نرخ روز دلار</h2>
-          <label className="flex items-center gap-3 text-[10px] font-bold text-[#536562]">قیمت هر دلار به تومان<input type="text" inputMode="numeric" dir="ltr" className="min-w-0 flex-1 rounded-[10px] border border-[#dfe5df] bg-[#fbfcfa] px-3 py-3 text-left text-[12px] outline-0 focus:border-[#9bc8b8]" value={Number(dollarRateRials || 0).toLocaleString("en-US")} onChange={(event) => { const value = Number(event.target.value.replace(/[^0-9]/g, "")); form.setValue("dollarRateRials", Number.isFinite(value) ? value : 0, { shouldDirty: true, shouldValidate: true }); }} /></label>
+          <label className="flex items-center gap-3 text-[10px] font-bold text-[#536562]">قیمت هر دلار به تومان<input type="text" inputMode="numeric" dir="ltr" className="min-w-0 flex-1 rounded-[10px] border border-[#dfe5df] bg-[#fbfcfa] px-3 py-3 text-left text-[12px] outline-0 focus:border-[#9bc8b8]" value={Number(dollarRateRials || 0).toLocaleString("en-US")} onChange={(event) => { const normalized = normalizeDigits(event.target.value); const value = Number(normalized.replace(/[^0-9]/g, "")); form.setValue("dollarRateRials", Number.isFinite(value) ? value : 0, { shouldDirty: true, shouldValidate: true }); }} /></label>
           <small className="font-normal text-[#899793]">این نرخ برای نمایش معادل تومانی هزینه‌های برآوردی استفاده می‌شود.</small>
         </div>}
 

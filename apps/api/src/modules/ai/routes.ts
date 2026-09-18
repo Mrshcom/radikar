@@ -316,9 +316,10 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
     const input = aiSettingsSchema.parse(request.body);
     const provider = input.provider as ProviderName;
     setAnalyzeProvider(provider, input.model || undefined);
+    let dollarRateRials = input.dollarRateRials ?? 0;
     if (database) {
       const saved = await database.select({ dollarRateRials: aiSettings.dollarRateRials }).from(aiSettings).where(eq(aiSettings.id, aiSettingsId)).limit(1);
-      const dollarRateRials = input.dollarRateRials ?? Number(saved[0]?.dollarRateRials ?? 0);
+      dollarRateRials = input.dollarRateRials ?? Number(saved[0]?.dollarRateRials ?? 0);
       await database.insert(aiSettings).values({
         id: aiSettingsId,
         provider,
@@ -330,7 +331,7 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
         set: { provider, model: input.model?.trim() || (provider === "gapgpt" ? "gapgpt-qwen-3.6" : "deepseek-chat"), dollarRateRials, updatedAt: new Date() },
       });
     }
-    return getAnalyzeProviderSettings();
+    return { ...getAnalyzeProviderSettings(), dollarRateRials };
   });
 
   app.post("/api/match/analyze", async (request, reply) => {

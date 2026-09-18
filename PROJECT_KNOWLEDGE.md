@@ -118,8 +118,9 @@ graphify path "A" "B"
 - API Vercel در region `fra1` اجرا می‌شود.
 - جزئیات گزینهٔ VPS/Docker/Caddy در `deploy/README.md` است.
 - API build روی Vercel migration و seed idempotent پلن‌ها را اجرا می‌کند.
-- VPS فعلی رادیکار در مسیر `/home/sport724/mampel/radikar` اجرا می‌شود؛ پورت
-  تست HTTP `5000` و HTTPS `5443` است و پورت‌های داخلی API/Web عمومی نیستند.
+- VPS فعلی رادیکار در مسیر `/home/sport724/mampel/radikar` اجرا می‌شود؛ دامنهٔ
+  production از پورت‌های استاندارد HTTP `80` و HTTPS `443` استفاده می‌کند و
+  پورت‌های داخلی API/Web عمومی نیستند.
 - در تست IP، OTP پیامک نمی‌شود و `developmentCode` نمایش داده می‌شود؛ پیش از
   انتشار دامنه باید این حالت خاموش، CORS محدود و cookie امن فعال شود.
 - خروجی provider هوش مصنوعی از کانتینر API روی HTTPS استفاده می‌کند و برای

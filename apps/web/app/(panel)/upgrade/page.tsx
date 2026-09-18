@@ -21,7 +21,14 @@ export default function UpgradePage() {
   const error = createOrder.error instanceof ApiError ? createOrder.error.message : null;
 
   const closeInvoice = () => {
-    if (!createOrder.isPending) setInvoicePlan(null);
+    if (createOrder.isPending) return;
+    createOrder.reset();
+    setInvoicePlan(null);
+  };
+
+  const openInvoice = (plan: Plan) => {
+    createOrder.reset();
+    setInvoicePlan(plan);
   };
 
   const confirmPurchase = () => {
@@ -85,7 +92,7 @@ export default function UpgradePage() {
               <button
                 className="mt-auto inline-flex min-h-11 items-center justify-center gap-2 rounded-[11px] border-0 bg-[#0f7b62] px-4 text-[11px] font-bold text-white disabled:bg-[#e7ece8] disabled:text-[#84918e]"
                 disabled={!plan.isPurchasable || current || downgradeBlocked || createOrder.isPending}
-                onClick={() => setInvoicePlan(plan)}
+                onClick={() => openInvoice(plan)}
                 type="button"
               >
                 {createOrder.isPending && createOrder.variables === plan.id && <LoaderCircle className="animate-spin" size={16} />}
