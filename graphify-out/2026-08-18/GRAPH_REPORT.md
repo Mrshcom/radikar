@@ -1,4 +1,4 @@
-# Graph Report - resumeMaker  (2026-08-18)
+# Graph Report - radikar  (2026-08-18)
 
 ## Corpus Check
 - 73 files · ~178,057 words

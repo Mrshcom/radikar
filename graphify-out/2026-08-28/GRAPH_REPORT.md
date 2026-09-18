@@ -1,4 +1,4 @@
-# Graph Report - resumeMaker  (2026-08-28)
+# Graph Report - radikar  (2026-08-28)
 
 ## Corpus Check
 - 111 files · ~184,412 words
@@ -45,7 +45,7 @@
 - tasks
 - job-url.ts
 - dependencies
-- رادیکار — Resume Maker
+- رادیکار
 - database/package.json
 - AGENTS.md
 - stage-sites-build.mjs
@@ -211,9 +211,9 @@ Nodes (3): getLinkedInJobId(), isLinkedInHost(), resolveJobUrls()
 Cohesion: 0.04
 Nodes (47): dependencies, drizzle-orm, fastify, @fastify/cookie, @fastify/cors, @fastify/multipart, mammoth, @radikar/ai (+39 more)
 
-### Community 30 - "رادیکار — Resume Maker"
+### Community 30 - "رادیکار"
 Cohesion: 0.20
-Nodes (8): تنظیم Web, قرارداد HTTP, لایه داده Web, اجرای محلی, رادیکار — Resume Maker, ساختار پروژه, فرمان‌های اصلی, معماری داده و دسترسی
+Nodes (8): تنظیم Web, قرارداد HTTP, لایه داده Web, اجرای محلی, رادیکار, ساختار پروژه, فرمان‌های اصلی, معماری داده و دسترسی
 
 ### Community 31 - "database/package.json"
 Cohesion: 0.07

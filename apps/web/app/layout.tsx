@@ -1,40 +1,43 @@
 import type { Metadata } from "next";
+import type { Viewport } from "next";
 import "@fontsource-variable/vazirmatn";
 import "@fontsource/poppins/400.css";
 import "@fontsource/poppins/500.css";
 import "@fontsource/poppins/600.css";
 import "@fontsource/poppins/700.css";
 import "./globals.css";
-import { Providers } from "./providers";
+import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "رادیکار | دستیار هوشمند کاریابی",
-  description: "پنل هوشمند ساخت رزومه، تطبیق فرصت‌های شغلی و مدیریت اپلای",
-  icons: { icon: "/radikar-logo.png", shortcut: "/radikar-logo.png" },
-  openGraph: {
-    title: "رادیکار | دستیار هوشمند مسیر شغلی تو",
-    description:
-      "رزومه‌ات را بساز، فرصت مناسب را پیدا کن و هوشمندانه اپلای کن.",
-    locale: "fa_IR",
-    type: "website",
+  metadataBase: new URL(siteConfig.url),
+  applicationName: siteConfig.name,
+  title: {
+    default: siteConfig.title,
+    template: `%s | ${siteConfig.name}`,
   },
-  twitter: {
-    card: "summary",
-    title: "رادیکار | دستیار هوشمند مسیر شغلی تو",
-    description:
-      "رزومه‌ات را بساز، فرصت مناسب را پیدا کن و هوشمندانه اپلای کن.",
+  description: siteConfig.description,
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+    shortcut: "/favicon.svg",
+    apple: "/apple-touch-icon.png",
   },
+  manifest: "/manifest.webmanifest",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0f5b42",
+  colorScheme: "light",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html className="scroll-smooth bg-[#f6f7f2] motion-reduce:scroll-auto" lang="fa" dir="rtl">
+    <html className="scroll-smooth bg-[#f6f7f2] motion-reduce:scroll-auto" lang="fa" dir="rtl" data-scroll-behavior="smooth">
       <body
         className="m-0 bg-[#f6f7f2] font-sans text-[#19312f]"
       >
-        <Providers>{children}</Providers>
+        {children}
       </body>
     </html>
   );

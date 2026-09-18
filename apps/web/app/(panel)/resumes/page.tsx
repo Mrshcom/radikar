@@ -392,7 +392,7 @@ export default function ResumesPage() {
   return (
     <>
       <SectionTitle
-        title="رزومه‌های من"
+        title="رزومه‌های هدفمند من"
         description="رزومه‌های ذخیره‌شده‌ات را مدیریت کن یا از قالب‌های آماده یک رزومه جدید بساز."
         action={
           <button
@@ -443,7 +443,7 @@ export default function ResumesPage() {
         <section className="mb-6 min-w-0 overflow-hidden rounded-[18px] border border-[#dfe8e2] bg-white p-5 shadow-[0_12px_36px_rgba(27,55,50,.055)]">
           <header className="mb-4 flex items-start justify-between gap-4">
             <div>
-              <h2 className="m-0 text-[14px]">رزومه‌های من</h2>
+              <h2 className="m-0 text-[14px]">رزومه‌های هدفمند من</h2>
               <p className="mb-0 mt-1 text-[8px] text-[#84928f]">
                 نسخه‌های ذخیره‌شده و رزومه‌هایی که برای فرصت‌های مشخص ساخته‌ای.
               </p>

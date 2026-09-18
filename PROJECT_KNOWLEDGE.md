@@ -118,8 +118,9 @@ graphify path "A" "B"
 - API Vercel در region `fra1` اجرا می‌شود.
 - جزئیات گزینهٔ VPS/Docker/Caddy در `deploy/README.md` است.
 - API build روی Vercel migration و seed idempotent پلن‌ها را اجرا می‌کند.
-- VPS فعلی رادیکار در مسیر `/home/sport724/mampel/radikar` اجرا می‌شود؛ پورت
-  تست HTTP `5000` و HTTPS `5443` است و پورت‌های داخلی API/Web عمومی نیستند.
+- VPS فعلی رادیکار در مسیر `/home/sport724/mampel/radikar` اجرا می‌شود؛ دامنهٔ
+  production از پورت‌های استاندارد HTTP `80` و HTTPS `443` استفاده می‌کند و
+  پورت‌های داخلی API/Web عمومی نیستند.
 - در تست IP، OTP پیامک نمی‌شود و `developmentCode` نمایش داده می‌شود؛ پیش از
   انتشار دامنه باید این حالت خاموش، CORS محدود و cookie امن فعال شود.
 - خروجی provider هوش مصنوعی از کانتینر API روی HTTPS استفاده می‌کند و برای
@@ -129,6 +130,20 @@ graphify path "A" "B"
 - خطاهای ساخت سفارش پرداخت در صفحهٔ ارتقا داخل مودال پیش‌فاکتور نمایش داده
   می‌شوند تا هنگام بازبودن پیش‌فاکتور از دید کاربر خارج نباشند.
 - پس از تغییر `NEXT_PUBLIC_API_BASE_URL` باید Web دوباره build/deploy شود.
+
+## SEO، AEO و GEO عمومی
+
+- تنظیمات canonical، Open Graph، Twitter Card و URL پایه در `apps/web/lib/site.ts`
+  متمرکز است؛ داده‌های ساختاریافته با کامپوننت امن `JsonLd` تولید می‌شوند.
+- routeهای عمومی قابل ایندکس شامل صفحه خانه، رزومه‌ساز، رزومه‌ساز هوشمند، تطبیق
+  رزومه و شغل، تمرین مصاحبه، مدیریت اپلای، راهنماها، درباره، تماس، حریم خصوصی و
+  شرایط استفاده هستند و در `sitemap.xml` ثبت شده‌اند.
+- `robots.txt` صفحه‌های عمومی و crawlerهای جست‌وجوی پاسخ‌گو را مجاز می‌کند،
+  routeهای حساب/API را می‌بندد و crawlerهای آموزش مدل را مسدود می‌کند.
+- `llms.txt` خلاصهٔ factual محصول و لینک صفحه‌های مرجع را ارائه می‌کند.
+- تمام routeهای ورود و پنل metadata صریح `noindex, nofollow` دارند.
+- لندینگ server-rendered است و providerهای کلاینتی فقط در layoutهای ورود و پنل
+  بارگذاری می‌شوند تا JavaScript عمومی و زمان تعامل کمتر باشد.
 
 ## وضعیت‌ها و تصمیم‌های شناخته‌شده
 
@@ -146,14 +161,18 @@ graphify path "A" "B"
 
 ## پروتکل تغییرات برای agentها
 
-1. `AGENTS.md` را اول بخوانید. این فایل را فقط برای کار معماری، route، env،
+1. نام canonical پروژه فقط `radikar` / «رادیکار» است؛ هیچ نام یا املای قدیمی در
+   کد، مستندات، زیرساخت، دیتابیس، volumeها، artifactها یا مسیر پروژه مجاز نیست.
+2. همهٔ تغییرات به‌صورت پیش‌فرض فقط روی پروژهٔ لوکال انجام می‌شوند. تغییر، sync،
+   deploy یا restart سرور فقط با درخواست صریح کاربر در همان درخواست مجاز است.
+3. `AGENTS.md` را اول بخوانید. این فایل را فقط برای کار معماری، route، env،
    deploy یا incident و فقط در بخش مرتبط بخوانید.
-2. برای تغییر کوچک در فایل شناخته‌شده، مستقیم همان فایل را باز کنید.
-3. برای codebase question از graphify query با پرسش محدود استفاده کنید.
-4. تغییرات ناخواستهٔ worktree را متعلق به کاربر بدانید؛ reset یا حذف نکنید.
-5. برای پروژهٔ فارسی، Vazirmatn محلی و RTL الزامی است؛ برای UI از Tailwind استفاده
+4. برای تغییر کوچک در فایل شناخته‌شده، مستقیم همان فایل را باز کنید.
+5. برای codebase question از graphify query با پرسش محدود استفاده کنید.
+6. تغییرات ناخواستهٔ worktree را متعلق به کاربر بدانید؛ reset یا حذف نکنید.
+7. برای پروژهٔ فارسی، Vazirmatn محلی و RTL الزامی است؛ برای UI از Tailwind استفاده
    کنید. فرم‌ها با React Hook Form + Zod و fetching سمت کلاینت با TanStack Query.
-6. پس از تغییر code، بررسی متناسب (test/typecheck/build) و `graphify update .`
+8. پس از تغییر code، بررسی متناسب (test/typecheck/build) و `graphify update .`
    را اجرا کنید و بخش مرتبط همین سند را تازه‌سازی کنید.
 
 ## تضمین به‌روزرسانی knowledge base
@@ -167,3 +186,5 @@ graphify path "A" "B"
 - این روش هم مرور دانش را قابل‌ردیابی می‌کند و هم از پرشدن سند با یادداشت‌های
   بی‌ارزش برای تغییرات کوچک جلوگیری می‌کند.
 - artifactهای تولیدی مانند `.turbo`، `.next` و `graphify-out` از این کنترل خارج‌اند.
+
+> Automated review: 2026-09-18 — project changes were committed; review the affected sections if behavior or architecture changed.

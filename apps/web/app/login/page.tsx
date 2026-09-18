@@ -35,7 +35,7 @@ type PhoneValues = z.infer<typeof phoneSchema>;
 type OtpValues = z.infer<typeof otpSchema>;
 
 const fieldClass =
-  "h-12 w-full rounded-[12px] border border-[#dce5df] bg-white ps-11 pe-4 text-left text-[13px] text-[#233936] outline-none transition placeholder:text-[#a3afac] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10";
+  "h-11 w-full rounded-[12px] border border-[#dce5df] bg-white ps-11 pe-4 text-left text-[13px] text-[#233936] outline-none transition placeholder:text-[#a3afac] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 sm:h-12";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -162,12 +162,21 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative grid min-h-screen place-items-center overflow-hidden bg-[#f2f5f0] px-4 py-8 sm:px-6">
-      <div className="pointer-events-none absolute -right-32 -top-40 size-[420px] rounded-full bg-[#0f7b62]/8 blur-3xl" />
+    <main className="relative grid min-h-screen place-items-center overflow-hidden bg-[#f2f5f0] px-4 py-8 sm:px-6 max-lg:bg-[radial-gradient(circle_at_85%_0%,#23765c_0%,#075543_52%,#043a2f_100%)]">
+      <Image
+        src="/images/login-career-path.png"
+        alt=""
+        fill
+        sizes="(max-width: 1023px) 100vw, 0px"
+        className="pointer-events-none object-cover object-center opacity-30 lg:hidden"
+        aria-hidden="true"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(145deg,rgba(3,66,52,.2)_0%,rgba(2,43,35,.68)_100%)] lg:hidden" />
+      <div className="pointer-events-none absolute -right-32 -top-40 size-[420px] rounded-full bg-white/10 blur-3xl lg:bg-[#0f7b62]/8" />
       <div className="pointer-events-none absolute -bottom-48 -left-36 size-[460px] rounded-full bg-[#d8b35c]/10 blur-3xl" />
 
-      <section className="relative grid w-full max-w-[980px] overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_30px_90px_rgba(24,55,48,.12)] lg:grid-cols-[1.05fr_.95fr]">
-        <div className="relative hidden min-h-[650px] overflow-hidden bg-[#075543] p-12 text-white lg:flex lg:flex-col lg:justify-between">
+      <section className="relative grid w-full max-w-[980px] overflow-hidden lg:rounded-[28px] lg:border lg:border-white/80 lg:bg-white lg:shadow-[0_30px_90px_rgba(24,55,48,.12)] lg:grid-cols-[1.05fr_.95fr]">
+        <div className="relative hidden min-h-[560px] overflow-hidden bg-[#075543] p-10 text-white lg:flex lg:flex-col lg:justify-between">
           <Image
             src="/images/login-career-path.png"
             alt=""
@@ -207,16 +216,18 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="flex min-h-[650px] flex-col justify-center px-6 py-10 sm:px-12 lg:px-14">
-          <div className="mb-10 flex items-center gap-3 lg:hidden">
-            <Image src="/radikar-logo.png" alt="لوگوی رادیکار" width={54} height={54} />
-            <strong className="text-[20px]">رادیکار</strong>
+        <div className="flex flex-col justify-center rounded-[24px] bg-white px-5 py-7 shadow-[0_18px_50px_rgba(2,44,34,.22)] sm:px-8 sm:py-9 lg:min-h-[560px] lg:rounded-none lg:px-14 lg:py-10 lg:shadow-none">
+          <div className="mb-6 flex items-center gap-3 lg:hidden">
+            <span className="grid size-11 place-items-center rounded-[14px] bg-[#edf7f1]">
+              <Image src="/radikar-logo.png" alt="لوگوی رادیکار" width={34} height={34} />
+            </span>
+            <strong className="text-[19px] text-[#19312f]">رادیکار</strong>
           </div>
 
-          <div className="mb-8">
-            <p className="mb-2 mt-0 text-[11px] font-bold text-[#0f7b62]">خوش آمدی</p>
-            <h2 className="m-0 text-[27px] font-black tracking-[-.5px] text-[#19312f]">ورود به حساب کاربری</h2>
-            <p className="mb-0 mt-3 text-[11px] leading-[1.9] text-[#7b8b87]">
+          <div className="mb-6">
+            <p className="mb-1.5 mt-0 text-[11px] font-bold text-[#0f7b62]">خوش آمدی</p>
+            <h2 className="m-0 text-[25px] font-black tracking-[-.5px] text-[#19312f] sm:text-[27px]">ورود به حساب کاربری</h2>
+            <p className="mb-0 mt-2 text-[11px] leading-7 text-[#7b8b87] sm:mt-3 sm:leading-[1.9]">
               {step === "phone"
                 ? "شماره همراهت را وارد کن تا کد ورود برایت ارسال شود."
                 : `کد ۶ رقمی ارسال‌شده به ${submittedPhone} را وارد کن.`}
@@ -224,7 +235,7 @@ export default function LoginPage() {
           </div>
 
           {step === "phone" ? (
-            <form className="grid gap-5" onSubmit={handlePhoneSubmit(sendOtp)} noValidate>
+            <form className="grid gap-4" onSubmit={handlePhoneSubmit(sendOtp)} noValidate>
               <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
                 شماره همراه
                 <span className="relative block" dir="ltr">
@@ -246,7 +257,7 @@ export default function LoginPage() {
               </label>
 
               <button
-                className="mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65"
+                className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"
                 type="submit"
                 disabled={isSending}
               >
@@ -255,7 +266,7 @@ export default function LoginPage() {
               </button>
             </form>
           ) : (
-            <form className="grid gap-5" onSubmit={handleOtpSubmit(verifyOtp)} noValidate>
+            <form className="grid gap-4" onSubmit={handleOtpSubmit(verifyOtp)} noValidate>
               <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
                 کد یک‌بارمصرف
                 <input {...registerOtp("otp")} type="hidden" />
@@ -266,7 +277,7 @@ export default function LoginPage() {
                 >
                   {Array.from({ length: 6 }, (_, index) => (
                     <input
-                      className="h-14 min-w-0 rounded-[14px] border border-[#d9dfda] bg-white text-center text-[21px] font-bold text-[#233936] outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/12"
+                      className="h-12 min-w-0 rounded-[12px] border border-[#d9dfda] bg-white text-center text-[20px] font-bold text-[#233936] outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/12 sm:h-14 sm:rounded-[14px] sm:text-[21px]"
                       ref={(element) => {
                         otpInputRefs.current[index] = element;
                       }}
@@ -312,7 +323,7 @@ export default function LoginPage() {
               )}
 
               <button
-                className="mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65"
+                className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"
                 type="submit"
                 disabled={isVerifying}
               >
@@ -329,7 +340,7 @@ export default function LoginPage() {
           )}
 
           <Link
-            className="mx-auto mt-8 inline-flex items-center gap-1.5 text-[10px] font-bold text-[#0f7b62] no-underline transition hover:text-[#0b6954]"
+            className="mx-auto mt-6 inline-flex items-center gap-1.5 text-[10px] font-bold text-[#0f7b62] no-underline transition hover:text-[#0b6954] sm:mt-8"
             href="/"
           >
             <ArrowRight size={14} />

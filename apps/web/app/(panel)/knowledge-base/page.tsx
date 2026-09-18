@@ -1182,7 +1182,7 @@ export default function KnowledgeBasePage() {
     <>
       <SectionTitle
         eyebrow="منبع واحد اطلاعات حرفه‌ای"
-        title="پایگاه دانش من"
+        title="پروفایل مسیر شغلی من"
         description="اطلاعاتت را یک‌بار کامل کن تا در ساخت رزومه، تطبیق شغلی و آمادگی مصاحبه از آن استفاده شود."
       />
 
@@ -1209,7 +1209,7 @@ export default function KnowledgeBasePage() {
               {completion.toLocaleString("fa-IR")}٪ تکمیل
             </span>
             <div
-              aria-label="درصد تکمیل پایگاه دانش"
+              aria-label="درصد تکمیل پروفایل مسیر شغلی"
               aria-valuemax={100}
               aria-valuemin={0}
               aria-valuenow={completion}
@@ -2037,7 +2037,7 @@ export default function KnowledgeBasePage() {
           disabled={saving || importBusy}
           onClick={() => void save()}
         >
-          <Save size={16} /> ذخیره پایگاه دانش
+          <Save size={16} /> ذخیره پروفایل مسیر شغلی
         </button>
       </div>
       {pendingDelete && (

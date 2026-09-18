@@ -116,7 +116,7 @@ export default function InterviewPage() {
           const resumeData = resume?.data ?? knowledge?.resumeData;
           if (!resumeData)
             throw new Error(
-              "برای ساخت جلسه مصاحبه ابتدا پایگاه دانش یا رزومه را تکمیل کن.",
+              "برای ساخت جلسه مصاحبه ابتدا پروفایل مسیر شغلی یا رزومه‌ات را تکمیل کن.",
             );
           const result = await apiRequest<SessionData & { error?: string }>(
             "/api/interview/session",
@@ -228,11 +228,11 @@ export default function InterviewPage() {
         <FileCheck2 size={34} />
         <h3>اطلاعاتی برای تمرین وجود ندارد</h3>
         <p>
-          ابتدا پایگاه دانش را کامل کن تا سؤال‌ها براساس اطلاعات واقعی تو تولید
+          ابتدا پروفایل مسیر شغلی را کامل کن تا سؤال‌ها براساس اطلاعات واقعی تو تولید
           شوند.
         </p>
         <Link className={primaryButton} href="/knowledge-base">
-          تکمیل پایگاه دانش
+          تکمیل پروفایل مسیر شغلی
         </Link>
       </div>
     );

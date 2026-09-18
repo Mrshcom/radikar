@@ -1,5 +1,10 @@
 ## graphify
 
+## Project identity and change target
+
+- The canonical and only project name is `radikar` (Persian: `رادیکار`). Never use legacy spellings or names in source code, documentation, infrastructure, database names, Docker resources, generated artifacts, or paths.
+- Apply every requested change to the local project by default. Never modify, sync, deploy, restart, or otherwise change the production server unless the user explicitly asks for a server-side change or deployment in that request.
+
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
 
 Use `PROJECT_KNOWLEDGE.md` progressively, not by default: for a small change in a

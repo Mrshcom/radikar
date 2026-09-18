@@ -1,4 +1,4 @@
-# Graph Report - resumeMaker  (2026-08-29)
+# Graph Report - radikar  (2026-08-29)
 
 ## Corpus Check
 - 123 files · ~197,675 words
@@ -45,7 +45,7 @@
 - react-dom
 - react-hook-form
 - compilerOptions
-- رادیکار — Resume Maker
+- رادیکار
 - database/package.json
 - compilerOptions
 - config/package.json
@@ -205,7 +205,7 @@ Nodes (4): name, private, type, version
 Cohesion: 0.17
 Nodes (11): compilerOptions, module, moduleResolution, noEmit, types, extends, include, node (+3 more)
 
-### Community 30 - "رادیکار — Resume Maker"
+### Community 30 - "رادیکار"
 Cohesion: 0.05
 Nodes (35): تنظیم Web, قرارداد HTTP, لایه داده Web, API سازگار با OpenAI, dependencyها نامعتبر یا ناقص‌اند, endpoint `/ready` کد 503 می‌دهد, Proxy محلی DeepSeek, Web پیام اتصال به Node API می‌دهد (+27 more)
 
