@@ -1,8 +1,8 @@
 import { SeoPage } from "../_components/seo-page";
 import { createPageMetadata } from "@/lib/site";
 
-const title = "تمرین مصاحبه شغلی هدفمند";
-const description = "براساس رزومه و موقعیت شغلی، پرسش‌های مرتبط را تمرین کنید و برای پاسخ‌های روشن، مستند و حرفه‌ای آماده شوید.";
+const title = "آمادگی مصاحبه شغلی با هوش مصنوعی";
+const description = "براساس رزومه و موقعیت شغلی، پرسش‌های مرتبط را تمرین کنید و برای مصاحبه همان فرصت آماده‌تر شوید.";
 export const metadata = createPageMetadata({ title, description, path: "/interview-practice" });
 
 export default function InterviewPracticePage() {

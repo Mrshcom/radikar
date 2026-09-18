@@ -6,7 +6,6 @@ import {
   BriefcaseBusiness,
   Check,
   ChevronDown,
-  CircleCheck,
   FileText,
   Layers3,
   MapPin,
@@ -82,7 +81,7 @@ export function MarketingHeader() {
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-[#fbfcf8] pb-16 pt-28 sm:pb-20 sm:pt-40">
+    <section className="relative min-h-[100svh] overflow-hidden bg-[#fbfcf8] pb-16 pt-28 sm:pb-20 sm:pt-40">
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-0 h-[1000px] [mask-image:linear-gradient(to_bottom,black_0%,black_82%,transparent_100%)]"
@@ -93,11 +92,20 @@ export function HeroSection() {
           fill
           priority
           quality={65}
-          sizes="100vw"
-          className="object-cover object-center opacity-[.48] saturate-[.9]"
+          sizes="(min-width: 640px) 100vw, 0px"
+          className="hidden object-cover object-center opacity-[.48] saturate-[.9] sm:block"
+        />
+        <Image
+          src="/images/career-match-hero-mobile.png"
+          alt=""
+          fill
+          priority
+          quality={65}
+          sizes="(max-width: 639px) 100vw, 0px"
+          className="object-cover object-[68%_center] opacity-[.58] saturate-[.9] sm:hidden"
         />
         <div className="absolute inset-0 bg-white/15" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(251,252,248,.88)_0%,rgba(251,252,248,.62)_38%,rgba(251,252,248,.16)_70%,transparent_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(251,252,248,.88)_0%,rgba(251,252,248,.62)_38%,rgba(251,252,248,.16)_70%,transparent_100%)] max-sm:bg-[linear-gradient(to_bottom,rgba(251,252,248,.18),rgba(251,252,248,.46))]" />
       </div>
       <DotPattern className="opacity-45" />
       <Meteors />
@@ -105,7 +113,7 @@ export function HeroSection() {
       <div className={`${shell} relative text-center`}>
         <a
           href="#product"
-          className="relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-black/8 bg-white/85 px-3 py-2 text-[10px] font-bold text-[#596762] shadow-sm backdrop-blur-sm"
+          className="relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-black/8 bg-white/85 px-3 py-2 text-[10px] font-bold text-[#596762]"
         >
           <span className="rounded-full bg-[#dffceb] px-2 py-1 text-[#087b4f]">
             جدید
@@ -113,47 +121,35 @@ export function HeroSection() {
           دستیار هوشمند مسیر شغلی تو
         </a>
         <h1 className="mx-auto mt-7 max-w-[980px] text-[clamp(32px,4.7vw,60px)] font-black leading-[1.35] tracking-[-1.8px] text-[#151c1b]">
-          رادیکار؛ رزومه‌ساز هوشمند و دستیار کاریابی
+          شغل مناسبت را هوشمندانه پیدا کن
           <br />
-          <span className="mt-1 inline-block max-w-full px-2">
+          <span className="mt-2 inline-block max-w-full px-2 text-[clamp(18px,2.6vw,36px)] leading-[1.5] tracking-[-.8px] sm:mt-3">
             <AnimatedNumber>
-              برای پیدا کردن شغل مناسب و اپلای هدفمند
+              از پیدا کردن فرصت تا آماده‌شدن برای مصاحبه و فرصت‌های بین‌المللی
             </AnimatedNumber>
           </span>
         </h1>
         <p className="mx-auto mt-7 max-w-2xl text-[13px] leading-8 text-[#53635e] sm:text-[15px]">
-          رادیکار فرصت‌های متناسب با تجربه‌ات را پیدا می‌کند، میزان تطابق رزومه
-          با آگهی را می‌سنجد و برای هر موقعیت، یک رزومه اختصاصی فارسی یا انگلیسی
-          آماده می‌کند.
+          رادیکار فرصت‌های متناسب با تجربه‌ات را پیدا می‌کند، میزان تطابقت با هر
+          آگهی را می‌سنجد، برای همان موقعیت رزومه هدفمند می‌سازد و برای مصاحبه
+          آماده‌ات می‌کند.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
             href="/login"
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-[#4da980]/40 bg-[linear-gradient(135deg,#1d7a59_0%,#0f5b42_55%,#0b4433_100%)] px-7 text-sm font-black text-white shadow-[0_18px_48px_rgba(15,91,66,.22)]"
           >
-            فرصت مناسبم را پیدا کن <ArrowLeft size={16} />
+            شروع کاریابی هوشمند <ArrowLeft size={16} />
           </Link>
           <a
             href="#product"
             className="inline-flex min-h-12 items-center gap-2 rounded-full border border-black/10 bg-white/75 px-6 text-xs font-black text-[#34413e] backdrop-blur-sm"
           >
-            نحوه کار را ببین <MousePointer2 size={15} />
+            ببین رادیکار چطور کار می‌کند <MousePointer2 size={15} />
           </a>
         </div>
-        <div className="mt-6 flex flex-wrap justify-center gap-5 text-[10px] font-bold text-[#65746f]">
-          {[
-            "پیشنهاد شغل هوشمند",
-            "تطبیق دقیق با آگهی",
-            "رزومه خودکار برای هر فرصت",
-          ].map((x) => (
-            <span key={x} className="flex items-center gap-1.5">
-              <CircleCheck size={13} className="text-[#147a54]" />
-              {x}
-            </span>
-          ))}
-        </div>
       </div>
-      <div className="relative mx-auto mt-16 max-w-[1380px] overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+      <div className="relative mx-auto mt-14 hidden max-w-[1380px] overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)] sm:block sm:mt-16">
         <Marquee>
           {prompts.map((p, i) => (
             <div
@@ -542,26 +538,26 @@ const workflow = [
   {
     icon: FileText,
     n: "۰۱",
-    title: "پروفایل حرفه‌ای‌ات را بساز",
-    text: "سوابق، مهارت‌ها و ترجیحات شغلی‌ات را یک‌بار وارد کن.",
+    title: "پروفایل مسیر شغلی‌ات را بساز",
+    text: "سوابق، مهارت‌ها و ترجیحات شغلی‌ات را یک‌بار وارد کن تا پیشنهادها دقیق‌تر شوند.",
   },
   {
     icon: BriefcaseBusiness,
     n: "۰۲",
-    title: "فرصت‌های مناسب را ببین",
-    text: "رادیکار شغل‌های مرتبط را براساس تجربه و هدف تو پیشنهاد می‌دهد.",
+    title: "فرصت‌های مناسب را پیدا کن",
+    text: "رادیکار فرصت‌های مرتبط را براساس تجربه، هدف و ترجیحات تو پیشنهاد می‌دهد.",
   },
   {
     icon: Target,
     n: "۰۳",
-    title: "تطابق را دقیق بسنج",
-    text: "برای هر آگهی، نقاط قوت و شکاف‌های مهم پروفایلت را ببین.",
+    title: "تطابقت را با آگهی بسنج",
+    text: "برای هر موقعیت، نقاط قوت، مهارت‌های مشترک و شکاف‌های مهم را ببین.",
   },
   {
     icon: WandSparkles,
     n: "۰۴",
-    title: "رزومه اختصاصی بگیر",
-    text: "نسخه مناسب همان موقعیت به‌صورت خودکار ساخته و آماده ارسال می‌شود.",
+    title: "رزومه هدفمند بساز",
+    text: "نسخه متناسب با همان موقعیت را از اطلاعات واقعی خودت آماده کن.",
   },
 ];
 export function WorkflowSection() {
@@ -578,8 +574,8 @@ export function WorkflowSection() {
       <div className={`${shell} relative`}>
         <SectionIntro
           eyebrow="از کشف فرصت تا اپلای"
-          title="چهار قدم تا یک اپلای هوشمند و هدفمند"
-          text="رادیکار فقط رزومه نمی‌سازد؛ فرصت مناسب را پیدا می‌کند، تطابق را می‌سنجد و بهترین نسخه تو را برای همان شغل آماده می‌کند."
+          title="از پیدا کردن فرصت تا آماده‌شدن برای مصاحبه"
+          text="رادیکار مسیر کاریابی را یکپارچه می‌کند: فرصت مناسب را پیدا می‌کنی، تطابقت را می‌سنجی، رزومه هدفمند می‌سازی و برای مصاحبه همان موقعیت تمرین می‌کنی."
           dark
         />
         <div className="mt-9 grid grid-cols-2 gap-3 sm:mt-14 sm:gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -613,29 +609,29 @@ export function WorkflowSection() {
 const features = [
   {
     icon: BriefcaseBusiness,
-    title: "پیداکردن هوشمند فرصت‌های مناسب",
-    text: "فرصت‌هایی را ببین که واقعاً با تجربه، مهارت‌ها و ترجیحات شغلی تو هم‌خوان‌اند.",
+    title: "پیدا کردن هوشمند فرصت‌های مناسب",
+    text: "فرصت‌هایی را پیدا کن که با تجربه، مهارت‌ها و ترجیحات شغلی تو هم‌خوانی بیشتری دارند.",
     bg: "bg-[#e2f3e9]",
     span: "lg:col-span-7",
   },
   {
     icon: Target,
-    title: "تطبیق دقیق قبل از اپلای",
-    text: "امتیاز واقعی، مهارت‌های مشترک و شکاف‌های مهم هر آگهی را بشناس.",
+    title: "تحلیل تطابق قبل از اپلای",
+    text: "امتیاز تطابق، مهارت‌های مشترک و شکاف‌های مهم هر آگهی را بشناس.",
     bg: "bg-[#edf6f1]",
     span: "lg:col-span-5",
   },
   {
     icon: WandSparkles,
-    title: "رزومه خودکار برای همان موقعیت",
-    text: "رادیکار بدون تغییر اطلاعات واقعی، مرتبط‌ترین نسخه رزومه را آماده می‌کند.",
+    title: "رزومه هدفمند برای همان موقعیت",
+    text: "رادیکار بدون تغییر اطلاعات واقعی، مرتبط‌ترین تجربه‌ها و مهارت‌ها را برجسته می‌کند.",
     bg: "bg-[#dcefe4]",
     span: "lg:col-span-5",
   },
   {
     icon: Layers3,
-    title: "مدیریت مسیر تا مصاحبه",
-    text: "هر فرصت، نسخه رزومه و مرحله اپلای را منظم و یکپارچه دنبال کن.",
+    title: "آمادگی مصاحبه و پیگیری اپلای",
+    text: "برای همان موقعیت تمرین کن و هر فرصت، نسخه رزومه و مرحله اپلای را دنبال کن.",
     bg: "bg-[#f1f6f3]",
     span: "lg:col-span-7",
   },
@@ -826,8 +822,8 @@ export function FeaturesSection() {
       <div className={shell}>
         <SectionIntro
           eyebrow="یک موتور هوشمند کاریابی"
-          title="فرصت بهتر را پیدا کن و برای همان فرصت آماده شو"
-          text="کشف شغل، تحلیل تطابق، ساخت رزومه اختصاصی و پیگیری اپلای در یک جریان منسجم و شخصی‌سازی‌شده."
+          title="ابزارهای هوشمند برای کاریابی بهتر"
+          text="از کشف فرصت و تحلیل آگهی تا ساخت رزومه هدفمند، تمرین مصاحبه و پیگیری اپلای؛ همه‌چیز در یک مسیر منسجم."
         />
         <p className="mt-5 text-[10px] font-bold text-[#53635e] lg:hidden">
           برای دیدن امکانات بیشتر، کارت‌ها را ورق بزن ←
@@ -865,8 +861,8 @@ export function DemoSection() {
         <div>
           <SectionIntro
             eyebrow="تطبیق هوشمند، نه حدس و گمان"
-            title="قبل از اپلای بدان چقدر برای این شغل آماده‌ای"
-            text="رادیکار پروفایل تو را با نیازهای واقعی آگهی مقایسه می‌کند، دلیل امتیاز را توضیح می‌دهد و همان‌جا رزومه مناسب آن موقعیت را می‌سازد."
+            title="قبل از اپلای بدان چقدر با این شغل تناسب داری"
+            text="رادیکار پروفایل تو را با نیازهای واقعی آگهی مقایسه می‌کند، شکاف‌ها را توضیح می‌دهد و برای همان موقعیت رزومه هدفمند پیشنهاد می‌کند."
           />
           <Link
             href="/login"
@@ -926,7 +922,7 @@ export function TemplatesSection() {
         <SectionIntro
           eyebrow="فرصت‌هایی متناسب با تو"
           title="به‌جای جست‌وجوی بیشتر، انتخاب دقیق‌تری داشته باش"
-          text="رادیکار آگهی‌ها را با پروفایل حرفه‌ای و ترجیحات تو مقایسه می‌کند تا فرصت‌های ارزشمند زودتر دیده شوند."
+          text="رادیکار آگهی‌ها را با پروفایل مسیر شغلی و ترجیحات تو مقایسه می‌کند تا فرصت‌های مناسب‌تر زودتر دیده شوند."
           dark
         />
       </div>
@@ -1221,8 +1217,8 @@ export function MarketingFooter() {
         className="absolute -bottom-36 left-1/4 size-80 rounded-full bg-[#1c8b61]/10 blur-3xl"
       />
       <div className={`${shell} relative py-14 sm:py-16`}>
-        <div className="grid gap-12 border-b border-white/10 pb-12 lg:grid-cols-[1.35fr_.65fr_.65fr]">
-          <div className="max-w-md">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 border-b border-white/10 pb-12 sm:gap-12 lg:grid-cols-[1.35fr_.65fr_.65fr]">
+          <div className="col-span-2 max-w-md lg:col-span-1">
             <Link
               href="/"
               className="inline-flex items-center gap-3"

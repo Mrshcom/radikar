@@ -186,3 +186,5 @@ graphify path "A" "B"
 - این روش هم مرور دانش را قابل‌ردیابی می‌کند و هم از پرشدن سند با یادداشت‌های
   بی‌ارزش برای تغییرات کوچک جلوگیری می‌کند.
 - artifactهای تولیدی مانند `.turbo`، `.next` و `graphify-out` از این کنترل خارج‌اند.
+
+> Automated review: 2026-09-18 — project changes were committed; review the affected sections if behavior or architecture changed.

@@ -163,6 +163,15 @@ export default function LoginPage() {
 
   return (
     <main className="relative grid min-h-screen place-items-center overflow-hidden bg-[#f2f5f0] px-4 py-8 sm:px-6 max-lg:bg-[radial-gradient(circle_at_85%_0%,#23765c_0%,#075543_52%,#043a2f_100%)]">
+      <Image
+        src="/images/login-career-path.png"
+        alt=""
+        fill
+        sizes="(max-width: 1023px) 100vw, 0px"
+        className="pointer-events-none object-cover object-center opacity-30 lg:hidden"
+        aria-hidden="true"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(145deg,rgba(3,66,52,.2)_0%,rgba(2,43,35,.68)_100%)] lg:hidden" />
       <div className="pointer-events-none absolute -right-32 -top-40 size-[420px] rounded-full bg-white/10 blur-3xl lg:bg-[#0f7b62]/8" />
       <div className="pointer-events-none absolute -bottom-48 -left-36 size-[460px] rounded-full bg-[#d8b35c]/10 blur-3xl" />
 

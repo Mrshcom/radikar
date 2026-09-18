@@ -3,11 +3,11 @@ import { ArrowLeft } from "lucide-react";
 import { JsonLd } from "../../_components/json-ld";
 import { absoluteUrl, createPageMetadata, siteConfig } from "@/lib/site";
 
-const title = "راهنمای رزومه، اپلای و مسیر شغلی";
-const description = "راهنماهای کاربردی رادیکار برای ساخت رزومه، تطبیق با آگهی، تمرین مصاحبه و مدیریت هدفمند درخواست‌های شغلی.";
+const title = "راهنمای کاریابی هوشمند، رزومه و مصاحبه";
+const description = "راهنماهای کاربردی رادیکار برای پیدا کردن شغل، تحلیل آگهی، ساخت رزومه هدفمند، تمرین مصاحبه و مدیریت اپلای.";
 export const metadata = createPageMetadata({ title, description, path: "/guides" });
 const guides = [
-  ["ساخت رزومه حرفه‌ای", "از اطلاعات پایه تا نسخه‌ای منظم و قابل ویرایش.", "/resume-builder"],
+  ["پیدا کردن شغل مناسب", "از شناخت هدف شغلی تا انتخاب فرصت‌های متناسب.", "/resume-job-match"],
   ["رزومه‌ساز هوشمند", "استفاده مسئولانه از هوش مصنوعی برای رزومه هدفمند.", "/ai-resume-builder"],
   ["تطبیق رزومه و شغل", "درک امتیاز تطابق و شکاف‌های قابل بهبود.", "/resume-job-match"],
   ["تمرین مصاحبه", "آمادگی براساس رزومه و شرح موقعیت.", "/interview-practice"],

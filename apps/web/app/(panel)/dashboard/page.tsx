@@ -390,7 +390,7 @@ export default function DashboardPage() {
       tone: "sky",
     },
     {
-      label: "نسخه‌های رزومه",
+      label: "رزومه‌های هدفمند",
       value: formatPersianNumber(data.resumes.length),
       note: "ذخیره‌شده در حساب شما",
       tone: "lemon",
@@ -400,7 +400,7 @@ export default function DashboardPage() {
   return (
     <>
       <SectionTitle
-        eyebrow="داشبورد داینامیک"
+        eyebrow="دستیار هوشمند کاریابی"
         title={dashboardTitle(data.displayName)}
         description={data.snapshot.subtitle}
         action={
@@ -427,9 +427,9 @@ export default function DashboardPage() {
             </ExpandableText>
             <Link
               className="mt-4 inline-flex min-h-10 w-fit items-center justify-center gap-2 rounded-[10px] bg-white px-[17px] text-[11px] font-bold whitespace-nowrap text-[#123c37] no-underline transition-colors duration-200 hover:bg-[#eaf4ef]"
-              href="/resumes"
+              href="/jobs"
             >
-              بهبود رزومه <ArrowLeft size={17} />
+              مشاهده فرصت‌های مناسب <ArrowLeft size={17} />
             </Link>
           </div>
           <CircularProgress

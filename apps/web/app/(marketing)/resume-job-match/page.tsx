@@ -1,8 +1,8 @@
 import { SeoPage } from "../_components/seo-page";
 import { createPageMetadata } from "@/lib/site";
 
-const title = "تحلیل تطابق رزومه با آگهی شغلی";
-const description = "پیش از اپلای، میزان تطابق رزومه با شرح شغل، مهارت‌های مشترک و شکاف‌های قابل بهبود را در رادیکار بررسی کنید.";
+const title = "کاریابی هوشمند و تحلیل تطابق رزومه با شغل";
+const description = "با رادیکار فرصت مناسب را پیدا کنید، تطابق رزومه با شرح شغل را بسنجید و پیش از اپلای شکاف‌های مهم را بشناسید.";
 export const metadata = createPageMetadata({ title, description, path: "/resume-job-match" });
 
 export default function ResumeJobMatchPage() {

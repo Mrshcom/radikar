@@ -73,11 +73,11 @@ type MenuItem = {
 };
 
 const menuItems: MenuItem[] = [
-  { href: "/dashboard", label: "نمای کلی", icon: LayoutDashboard, roles: ["user"] },
-  { href: "/knowledge-base", label: "پایگاه دانش", icon: BookOpenText, roles: ["user"] },
-  { href: "/resumes", label: "رزومه‌های من", icon: FileText, roles: ["user"] },
-  { href: "/match", label: "تطبیق با شغل", icon: Target, roles: ["user"] },
-  { href: "/jobs", label: "فرصت‌های شغلی", icon: BriefcaseBusiness, roles: ["user"] },
+  { href: "/dashboard", label: "نمای کلی مسیر شغلی", icon: LayoutDashboard, roles: ["user"] },
+  { href: "/knowledge-base", label: "پروفایل مسیر شغلی", icon: BookOpenText, roles: ["user"] },
+  { href: "/jobs", label: "فرصت‌های مناسب من", icon: BriefcaseBusiness, roles: ["user"] },
+  { href: "/match", label: "تحلیل تطابق با آگهی", icon: Target, roles: ["user"] },
+  { href: "/resumes", label: "رزومه‌های هدفمند", icon: FileText, roles: ["user"] },
   { href: "/applications", label: "پیگیری اپلای‌ها", icon: BarChart3, roles: ["user"] },
   { href: "/interview", label: "آمادگی مصاحبه", icon: MessageSquareText, roles: ["user"] },
   { href: "/admin", label: "داشبورد مدیریتی", icon: LayoutDashboard, roles: ["admin", "superadmin"] },
