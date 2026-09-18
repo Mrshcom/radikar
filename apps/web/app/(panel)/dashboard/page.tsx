@@ -20,6 +20,12 @@ import { CircularProgress } from "../_components/circular-progress";
 import { JobCard } from "../_components/job-card";
 import { DashboardSkeleton } from "../_components/loading-skeletons";
 import { SectionTitle } from "../_components/ui";
+import {
+  emptyState,
+  panelSurface,
+  primaryAction,
+  secondaryAction,
+} from "../_components/panel-styles";
 import { useToast } from "@/app/_components/toast";
 import { useModelTasks } from "../_components/model-task-provider";
 import {
@@ -60,14 +66,6 @@ const stageLabels: Record<
   interview: { label: "مصاحبه", className: "bg-[#e6f4ee] text-[#0f7b62]" },
 };
 
-const buttonPrimary =
-  "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] bg-[#0f7b62] px-[15px] text-[11px] font-bold whitespace-nowrap text-white no-underline shadow-[0_7px_17px_rgba(15,123,98,.17)] transition-colors duration-200 hover:bg-[#0b6954] disabled:cursor-not-allowed disabled:opacity-45";
-const buttonSecondary =
-  "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-[#e1e6e0] bg-white px-[15px] text-[11px] font-bold whitespace-nowrap text-[#526461]";
-const panel =
-  "rounded-[17px] border border-[#e7ebe6] bg-white shadow-[0_12px_36px_rgba(27,55,50,.055)]";
-const empty =
-  "grid min-h-[220px] place-items-center gap-3 rounded-[17px] border border-dashed border-[#d9e2dd] bg-white p-10 text-center text-[#758582] [&_h3]:m-0 [&_h3]:text-[15px] [&_h3]:text-[#19312f] [&_p]:m-0 [&_p]:text-[11px]";
 const toneClasses = [
   "bg-[#fae8dc] text-[#bb704e]",
   "bg-[#eee9f8] text-[#7660a8]",
@@ -342,23 +340,23 @@ export default function DashboardPage() {
   if (loading) return <DashboardSkeleton />;
   if (!hasResume)
     return (
-      <div className={empty}>
+      <div className={emptyState}>
         <FileCheck2 size={34} />
         <h3>داشبورد هنوز داده‌ای ندارد</h3>
         <p>اولین رزومه‌ات را بساز تا تحلیل و آمار واقعی نمایش داده شود.</p>
-        <Link className={buttonPrimary} href="/resumes">
+        <Link className={primaryAction} href="/resumes">
           ساخت اولین رزومه
         </Link>
       </div>
     );
   if (error || !data)
     return (
-      <div className={empty}>
+      <div className={emptyState}>
         <Sparkles size={34} />
         <h3>ساخت داشبورد ناموفق بود</h3>
         <p>{error}</p>
         <button
-          className={buttonSecondary}
+          className={secondaryAction}
           onClick={() => window.location.reload()}
         >
           تلاش دوباره
@@ -406,7 +404,7 @@ export default function DashboardPage() {
         title={dashboardTitle(data.displayName)}
         description={data.snapshot.subtitle}
         action={
-          <Link className={buttonPrimary} href="/match">
+          <Link className={primaryAction} href="/match">
             تحلیل شغل جدید
           </Link>
         }
@@ -479,7 +477,7 @@ export default function DashboardPage() {
           const Icon = statIcons[index] || Gauge;
           return (
             <div
-              className={`${panel} flex items-center gap-[13px] p-[17px]`}
+              className={`${panelSurface} flex items-center gap-[13px] p-[17px]`}
               key={stat.label}
             >
               <div
@@ -501,7 +499,7 @@ export default function DashboardPage() {
         })}
       </section>
       <section className="grid gap-4 min-[1121px]:grid-cols-[minmax(0,1.65fr)_minmax(280px,.7fr)]">
-        <div className={`${panel} p-[21px]`}>
+        <div className={`${panelSurface} p-[21px]`}>
           <div className="flex items-start justify-between gap-5">
             <div>
               <h3 className="m-0 mb-[5px] text-[13px]">آخرین اپلای‌ها</h3>
@@ -562,7 +560,7 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-        <div className={`${panel} p-[21px]`}>
+        <div className={`${panelSurface} p-[21px]`}>
           <div className="flex items-start justify-between gap-5">
             <div>
               <h3 className="m-0 mb-[5px] text-[13px]">عملکرد این هفته</h3>
@@ -610,7 +608,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
-      <section className={`${panel} mt-4 p-[21px]`}>
+      <section className={`${panelSurface} mt-4 p-[21px]`}>
         <div className="flex items-start justify-between gap-5">
           <div>
             <h3 className="m-0 mb-[5px] text-[13px]">فرصت‌های ذخیره‌شده</h3>

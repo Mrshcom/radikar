@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn";
+import { panelSurface } from "./panel-styles";
 
 type SkeletonProps = { label?: string };
 
@@ -30,9 +31,6 @@ function LoadingContext({
     </div>
   );
 }
-
-const panel =
-  "rounded-[17px] border border-[#e7ebe6] bg-white shadow-[0_12px_36px_rgba(27,55,50,.055)]";
 
 function SkeletonLines({ count = 3 }: { count?: number }) {
   return (
@@ -159,7 +157,7 @@ export function DashboardSkeleton() {
       <section className="my-4 grid grid-cols-1 gap-3 min-[700px]:grid-cols-2 min-[1121px]:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <div
-            className={cn(panel, "flex items-center gap-[13px] p-[17px]")}
+            className={cn(panelSurface, "flex items-center gap-[13px] p-[17px]")}
             key={index}
           >
             <Shimmer className="size-10 rounded-xl" />
@@ -174,7 +172,7 @@ export function DashboardSkeleton() {
         ))}
       </section>
       <section className="grid gap-4 min-[1121px]:grid-cols-[minmax(0,1.65fr)_minmax(280px,.7fr)]">
-        <div className={cn(panel, "min-h-80 p-[21px]")}>
+        <div className={cn(panelSurface, "min-h-80 p-[21px]")}>
           <div className="flex justify-between">
             <div className="w-1/2">
               <Shimmer className="h-4 w-28" />
@@ -198,7 +196,7 @@ export function DashboardSkeleton() {
             ))}
           </div>
         </div>
-        <div className={cn(panel, "min-h-80 p-[21px]")}>
+        <div className={cn(panelSurface, "min-h-80 p-[21px]")}>
           <div className="flex justify-between">
             <div className="w-2/3">
               <Shimmer className="h-4 w-28" />
@@ -216,7 +214,7 @@ export function DashboardSkeleton() {
           </div>
         </div>
       </section>
-      <div className={cn(panel, "mt-4 p-[21px]")}>
+      <div className={cn(panelSurface, "mt-4 p-[21px]")}>
         <div className="flex justify-between">
           <div className="w-1/2">
             <Shimmer className="h-4 w-32" />
@@ -240,7 +238,7 @@ export function ResumesSkeleton() {
         <Shimmer className="h-10 flex-1 rounded-[10px] bg-white" />
         <Shimmer className="h-10 flex-1 rounded-[10px]" />
       </div>
-      <section className={cn(panel, "mb-6 min-w-0 overflow-hidden p-5")}>
+      <section className={cn(panelSurface, "mb-6 min-w-0 overflow-hidden p-5")}>
         <div className="mb-4 flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <Shimmer className="h-4 w-28" />
@@ -286,7 +284,7 @@ export function ApplicationsSkeleton() {
     <div role="status" aria-live="polite">
       <LoadingContext>در حال ساخت ستون‌ها و وضعیت اپلای‌ها</LoadingContext>
       <SkeletonTitle />
-      <div className={cn(panel, "mb-4 flex h-12 items-center gap-7 px-4")}>
+      <div className={cn(panelSurface, "mb-4 flex h-12 items-center gap-7 px-4")}>
         <Shimmer className="h-2.5 w-28" />
         <Shimmer className="h-2.5 w-24" />
         <Shimmer className="h-2.5 w-28" />
@@ -346,7 +344,7 @@ export function InterviewSkeleton() {
       </div>
       <div className="mt-4 grid grid-cols-3 gap-3 max-[820px]:grid-cols-1">
         {Array.from({ length: 3 }, (_, index) => (
-          <div className={cn(panel, "p-5")} key={index}>
+          <div className={cn(panelSurface, "p-5")} key={index}>
             <Shimmer className="size-10 rounded-xl" />
             <Shimmer className="mt-4 h-4 w-2/3" />
             <div className="mt-3">

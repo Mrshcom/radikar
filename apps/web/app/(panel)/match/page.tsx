@@ -17,6 +17,12 @@ import {
 import { CircularProgress } from "../_components/circular-progress";
 import { Modal, SectionTitle } from "../_components/ui";
 import {
+  panelSurfacePadded,
+  primaryAction,
+  scoreWidthClass,
+  secondaryAction,
+} from "../_components/panel-styles";
+import {
   GenerationShimmer,
   MatchAnalysisSkeleton,
 } from "../_components/loading-skeletons";
@@ -100,22 +106,6 @@ function isMatchAnalysisTaskContext(
 }
 
 const PERSIAN_SCRIPT_PATTERN = /\p{Script=Arabic}/u;
-const panel =
-  "rounded-[17px] border border-[#e7ebe6] bg-white p-[22px] shadow-[0_12px_36px_rgba(27,55,50,.055)]";
-const primaryButton =
-  "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] bg-[#0f7b62] px-[15px] text-[11px] font-bold whitespace-nowrap text-white shadow-[0_7px_17px_rgba(15,123,98,.17)] disabled:cursor-not-allowed disabled:opacity-45";
-const secondaryButton =
-  "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-[#dfe5df] bg-white px-[15px] text-[10px] font-bold text-[#526461] transition-colors duration-200 hover:bg-[#f3f7f4]";
-const scoreWidth = (value: number) =>
-  value < 20
-    ? "w-1/5"
-    : value < 40
-      ? "w-2/5"
-      : value < 60
-        ? "w-3/5"
-        : value < 80
-          ? "w-4/5"
-          : "w-full";
 
 export function getJobTextDirection(text: string): "rtl" | "ltr" {
   return PERSIAN_SCRIPT_PATTERN.test(text) ? "rtl" : "ltr";
@@ -599,7 +589,7 @@ export default function MatchPage() {
         </div>
       )}
       <div className="grid gap-4 min-[1121px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <section className={panel}>
+        <section className={panelSurfacePadded}>
           <div className="mb-4 flex items-center gap-2.5">
             <span className="grid size-8 place-items-center rounded-[10px] bg-[#e6f4ee] text-[10px] font-bold text-[#0f7b62]">
               ۱
@@ -872,7 +862,7 @@ export default function MatchPage() {
             )}
           </div>
           <button
-            className={`${primaryButton} mt-4 w-full`}
+            className={`${primaryAction} mt-4 w-full`}
             disabled={
               !hasSelectedInput || !selectedResume || analysisBusy || importingUrl
             }
@@ -890,7 +880,7 @@ export default function MatchPage() {
                   : "تحلیل تطابق متن"}
           </button>
         </section>
-        <section className={`${panel} min-h-[470px]`}>
+        <section className={`${panelSurfacePadded} min-h-[470px]`}>
           {analyzed && analysis ? (
             <>
               <div className="flex items-center gap-4 border-b border-[#edf0ec] pb-5">
@@ -928,7 +918,7 @@ export default function MatchPage() {
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-[#e8eeeb]">
                       <div
-                        className={`h-full rounded-full bg-[#0f7b62] ${scoreWidth(item.value)}`}
+                        className={`h-full rounded-full bg-[#0f7b62] ${scoreWidthClass(item.value)}`}
                       />
                     </div>
                   </div>
@@ -974,7 +964,7 @@ export default function MatchPage() {
                 </div>
               )}
               <button
-                className={`${primaryButton} mt-4 w-full`}
+                className={`${primaryAction} mt-4 w-full`}
                 disabled={tailoring}
                 onClick={() => {
                   setTailoringTemplateId(
@@ -1164,14 +1154,14 @@ export default function MatchPage() {
           )}
           <div className="sticky -bottom-[22px] -mx-[22px] mt-5 flex justify-end gap-2 border-t border-[#e7ebe6] bg-white/95 px-[22px] py-3 backdrop-blur">
             <button
-              className={secondaryButton}
+              className={secondaryAction}
               type="button"
               onClick={() => setTemplatePickerOpen(false)}
             >
               انصراف
             </button>
             <button
-              className={primaryButton}
+              className={primaryAction}
               type="button"
               disabled={!tailoringTemplateId || tailoring}
               onClick={() =>
