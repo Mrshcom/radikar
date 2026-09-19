@@ -33,12 +33,12 @@ export function TablePagination({
   const items = paginationItems(safePage, totalPages);
 
   return (
-    <div className="flex min-h-[68px] items-center justify-between gap-5 border-t border-[#edf0ec] px-5 py-3 max-[700px]:flex-col max-[700px]:items-stretch">
+    <div className="flex min-h-[68px] items-center justify-between gap-5 border-t border-[#edf0ec] px-5 py-3 max-[700px]:gap-2 max-[700px]:px-4">
       <label className="flex items-center gap-2 whitespace-nowrap text-[9px] font-bold text-[#60736f]">
-        تعداد ردیف
+        <span className="max-[700px]:hidden">تعداد ردیف</span>
         <select
           aria-label="تعداد ردیف در هر صفحه"
-          className="h-9 min-w-[72px] rounded-[10px] border border-[#cfdcd6] bg-white px-3 text-[10px] font-extrabold text-[#245348] outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 disabled:opacity-60"
+          className="h-9 min-w-[72px] rounded-[10px] border border-[#cfdcd6] bg-white px-3 text-[10px] font-extrabold text-[#245348] outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 disabled:opacity-60 max-[700px]:w-13 max-[700px]:min-w-0 max-[700px]:px-2"
           disabled={pageSizeSaving}
           onChange={(event) => onPageSizeChange(Number(event.target.value) as TablePageSize)}
           value={pageSize}
@@ -50,23 +50,24 @@ export function TablePagination({
         {pageSizeSaving && <span className="text-[8px] font-medium text-[#84918e]">در حال ذخیره…</span>}
       </label>
 
-      <nav aria-label="صفحه‌بندی جدول" className="flex items-center justify-end gap-2.5" dir="ltr">
+      <nav aria-label="صفحه‌بندی جدول" className="flex min-w-0 flex-1 items-center justify-start gap-2.5 max-[700px]:gap-1.5" dir="ltr">
         <button
           aria-label="صفحه قبل"
-          className="grid size-10 shrink-0 place-items-center rounded-full border-0 bg-[#edf0ee] p-0 text-[#65736f] transition-colors hover:bg-[#dfe7e2] disabled:cursor-not-allowed disabled:opacity-40"
+          className="grid size-10 shrink-0 place-items-center rounded-full border-0 bg-[#edf0ee] p-0 text-[#65736f] transition-colors hover:bg-[#dfe7e2] disabled:cursor-not-allowed disabled:opacity-40 max-[700px]:size-8"
           disabled={safePage <= 1}
           onClick={() => onPageChange(safePage - 1)}
           type="button"
         >
-          <ChevronLeft size={18} strokeWidth={2.2} />
+          <ChevronLeft className="max-[700px]:size-4" size={18} strokeWidth={2.2} />
         </button>
-        <div className="flex h-10 items-center overflow-hidden rounded-full bg-[#edf0ee] px-1">
+        <div className="flex h-10 min-w-0 items-center overflow-hidden rounded-full bg-[#edf0ee] p-0.5 max-[700px]:h-8">
           {items.map((item) =>
             typeof item === "number" ? (
               <button
                 aria-current={item === safePage ? "page" : undefined}
                 className={cn(
-                  "grid size-10 shrink-0 place-items-center border-0 p-0 text-[11px] font-bold transition-colors",
+                  "grid size-9 shrink-0 place-items-center border-0 p-0 text-[11px] font-bold transition-colors max-[700px]:size-7 max-[700px]:text-[10px]",
+                  !(item === 1 || item === safePage || item === totalPages) && "max-[700px]:hidden",
                   item === safePage
                     ? "rounded-full bg-[#0f7b62] text-white"
                     : "rounded-full bg-transparent text-[#687872] hover:bg-[#e1e7e3]",
@@ -78,18 +79,18 @@ export function TablePagination({
                 {item.toLocaleString("fa-IR")}
               </button>
             ) : (
-              <span className="grid size-10 shrink-0 place-items-center text-[12px] font-bold text-[#6f7d79]" key={item}>…</span>
+              <span className="grid size-9 shrink-0 place-items-center text-[12px] font-bold text-[#6f7d79] max-[700px]:size-7 max-[700px]:text-[10px]" key={item}>…</span>
             ),
           )}
         </div>
         <button
           aria-label="صفحه بعد"
-          className="grid size-10 shrink-0 place-items-center rounded-full border-0 bg-[#edf0ee] p-0 text-[#65736f] transition-colors hover:bg-[#dfe7e2] disabled:cursor-not-allowed disabled:opacity-40"
+          className="grid size-10 shrink-0 place-items-center rounded-full border-0 bg-[#edf0ee] p-0 text-[#65736f] transition-colors hover:bg-[#dfe7e2] disabled:cursor-not-allowed disabled:opacity-40 max-[700px]:size-8"
           disabled={safePage >= totalPages}
           onClick={() => onPageChange(safePage + 1)}
           type="button"
         >
-          <ChevronRight size={18} strokeWidth={2.2} />
+          <ChevronRight className="max-[700px]:size-4" size={18} strokeWidth={2.2} />
         </button>
       </nav>
     </div>

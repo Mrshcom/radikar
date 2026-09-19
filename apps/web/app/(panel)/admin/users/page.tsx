@@ -80,7 +80,7 @@ export default function AdminUsersPage() {
 
   if (user?.role !== "superadmin") return null;
   const columns: DataTableColumn<AdminUser>[] = [
-    { key: "user", title: "کاربر", skeletonClassName: "w-32", render: (item) => <><strong className="block text-[11px]">{item.fullName || "بدون نام"}</strong><span className="mt-1 block w-fit text-[#899592]" dir="ltr">{item.phone}</span></> },
+    { key: "user", title: "کاربر", skeletonClassName: "w-32", render: (item) => <><strong className="block text-[11px]">{item.fullName || "بدون نام"}</strong><span className="mt-1 block text-[#899592]" dir="ltr">{item.phone}</span></> },
     { key: "role", title: "نقش", render: (item) => <select className="rounded-[8px] border border-[#dfe5df] bg-white px-2 py-1.5" value={item.role} disabled={item.id === user.id || updateUser.isPending} onChange={(event) => { const nextRole = event.target.value as UserRole; setPendingAction({ user: item, input: { role: nextRole }, title: "تأیید تغییر سطح دسترسی", description: `نقش ${item.fullName || item.phone} از «${roleLabels[item.role]}» به «${roleLabels[nextRole]}» تغییر کند؟`, confirmLabel: "تغییر نقش" }); }}>{Object.entries(roleLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select> },
     { key: "status", title: "وضعیت", render: (item) => <span className={item.status === "active" ? "text-[#14705a]" : "text-[#b14848]"}>{item.status === "active" ? "فعال" : "تعلیق‌شده"}</span> },
     { key: "records", title: "رکوردها", render: (item) => Number(item.recordsCount).toLocaleString("fa-IR") },
@@ -95,22 +95,16 @@ export default function AdminUsersPage() {
         <h1 className="mb-0 mt-3 text-[25px] font-black">کاربران و سطح دسترسی</h1>
       </header>
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
-        <div className="border-b border-[#edf0ec] p-5">
-          <div>
-            <h2 className="m-0 text-[14px] font-extrabold">فهرست همه کاربران</h2>
-            <small className="mt-1 block text-[9px] text-[#8a9794]">{Number(users.data?.total ?? 0).toLocaleString("fa-IR")} حساب</small>
-          </div>
-          <AdminTableToolbar
-            search={search}
-            searchPlaceholder="نام یا شماره همراه"
-            activeFilterCount={Number(Boolean(role)) + Number(Boolean(status))}
-            onSearch={(value) => { void setFilters({ search: value }); setPage(1); }}
-            onResetFilters={() => { void setFilters({ role: "", status: "" }); setPage(1); }}
-          >
-            <AdminFilterSelect label="نقش" value={role} onChange={(value) => { void setFilters({ role: value as typeof role }); setPage(1); }} options={[{ value: "", label: "همه نقش‌ها" }, { value: "user", label: "کاربر" }, { value: "admin", label: "ادمین" }, { value: "superadmin", label: "سوپرادمین" }]} />
-            <AdminFilterSelect label="وضعیت حساب" value={status} onChange={(value) => { void setFilters({ status: value as typeof status }); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "suspended", label: "تعلیق‌شده" }]} />
-          </AdminTableToolbar>
-        </div>
+        <AdminTableToolbar
+          search={search}
+          searchPlaceholder="نام یا شماره همراه"
+          activeFilterCount={Number(Boolean(role)) + Number(Boolean(status))}
+          onSearch={(value) => { void setFilters({ search: value }); setPage(1); }}
+          onResetFilters={() => { void setFilters({ role: "", status: "" }); setPage(1); }}
+        >
+          <AdminFilterSelect label="نقش" value={role} onChange={(value) => { void setFilters({ role: value as typeof role }); setPage(1); }} options={[{ value: "", label: "همه نقش‌ها" }, { value: "user", label: "کاربر" }, { value: "admin", label: "ادمین" }, { value: "superadmin", label: "سوپرادمین" }]} />
+          <AdminFilterSelect label="وضعیت حساب" value={status} onChange={(value) => { void setFilters({ status: value as typeof status }); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "suspended", label: "تعلیق‌شده" }]} />
+        </AdminTableToolbar>
         <DataTable columns={columns} rows={users.data?.items ?? []} getRowKey={(item) => item.id} loading={users.isLoading} error={users.error} retrying={users.isFetching} onRetry={() => void users.refetch()} filtered={Boolean(search || role || status)} minWidthClassName="min-w-[800px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={users.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
       </section>
       {pendingAction && (

@@ -72,7 +72,6 @@ function DataTableCardSkeleton<T>({
               className={cn(
                 "flex min-h-11 items-center justify-between gap-4 px-4 py-3",
                 columnIndex > 0 && "border-t border-[#edf1ee]",
-                columnIndex === 0 && "bg-[#f8faf8]",
               )}
               key={column.key}
             >
@@ -200,7 +199,6 @@ export function DataTable<T>({
                       className={cn(
                         "flex min-h-11 items-center justify-between gap-4 px-4 py-3",
                         column.key !== columns[0]?.key && "border-t border-[#edf1ee]",
-                        column.key === columns[0]?.key && "bg-[#f8faf8]",
                       )}
                       key={column.key}
                     >

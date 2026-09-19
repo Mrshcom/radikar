@@ -1225,7 +1225,7 @@ export default function KnowledgeBasePage() {
             </div>
           </div>
           <button
-            className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-[#cfe3da] bg-white px-2.5 text-[8px] font-bold text-[#0f7b62]"
+            className="inline-flex min-h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#cfe3da] bg-white px-2.5 text-[8px] font-bold text-[#0f7b62]"
             type="button"
             aria-expanded={showCompletionDetails}
             onClick={() => setShowCompletionDetails((current) => !current)}

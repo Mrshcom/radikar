@@ -287,6 +287,7 @@ export function ResumeBuilder({
   const notify = useToast();
   const { isRunning, runModelTask } = useModelTasks();
   const [step, setStep] = useState(0);
+  const [mobileView, setMobileView] = useState<"form" | "preview">("form");
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [generating, setGenerating] = useState(false);
@@ -500,7 +501,7 @@ export function ResumeBuilder({
       headerActions={
         <>
           <button
-            className={secondaryButton}
+            className={`${secondaryButton} max-[820px]:hidden`}
             type="button"
             disabled={generationBusy}
             onClick={() => setModelOverwriteConfirmOpen(true)}
@@ -509,7 +510,7 @@ export function ResumeBuilder({
             {generationBusy ? "در حال تکمیل با مدل..." : "تکمیل رزومه با AI"}
           </button>
           <button
-            className={secondaryButton}
+            className={`${secondaryButton} max-[820px]:hidden`}
             type="button"
             disabled={saving}
             onClick={() => void saveResume()}
@@ -518,7 +519,7 @@ export function ResumeBuilder({
           </button>
           {hasBeenSaved && (
             <button
-              className={primaryButton}
+              className={`${primaryButton} max-[820px]:hidden`}
               type="button"
               disabled={saving}
               onClick={() => void finish()}
@@ -530,8 +531,28 @@ export function ResumeBuilder({
       }
       onClose={onClose}
     >
-      <div className="grid h-[min(760px,calc(100vh-120px))] min-w-0 grid-cols-1 [grid-template-areas:'form'_'preview'] min-[821px]:grid-cols-[minmax(0,1fr)_430px] min-[821px]:[grid-template-areas:'preview_form'] min-[1121px]:grid-cols-[minmax(0,1fr)_520px]">
-        <aside className="flex min-h-0 min-w-0 flex-col overflow-hidden [grid-area:form]">
+      <div className={cn("grid h-[min(760px,calc(100vh-120px))] min-w-0 grid-cols-1 [grid-template-areas:'form'_'preview'] max-[820px]:h-[calc(100dvh-155px)] min-[821px]:grid-cols-[minmax(0,1fr)_430px] min-[821px]:[grid-template-areas:'preview_form'] min-[1121px]:grid-cols-[minmax(0,1fr)_520px]", mobileView === "form" ? "max-[820px]:[grid-template-areas:'tabs'_'actions'_'form']" : "max-[820px]:[grid-template-areas:'tabs'_'actions'_'preview']")}>
+        <div className="col-span-full hidden items-center gap-1 rounded-[12px] border border-[#dfe7e1] bg-[#f0f4f1] p-1 [grid-area:tabs] max-[820px]:flex" role="tablist" aria-label="نمایش رزومه">
+          <button
+            className={cn("min-h-10 flex-1 rounded-[9px] px-3 text-[10px] font-bold", mobileView === "form" ? "bg-white text-[#0f7b62] shadow-sm" : "text-[#71817d]")}
+            type="button"
+            role="tab"
+            aria-selected={mobileView === "form"}
+            onClick={() => setMobileView("form")}
+          >ویرایش اطلاعات</button>
+          <button
+            className={cn("min-h-10 flex-1 rounded-[9px] px-3 text-[10px] font-bold", mobileView === "preview" ? "bg-white text-[#0f7b62] shadow-sm" : "text-[#71817d]")}
+            type="button"
+            role="tab"
+            aria-selected={mobileView === "preview"}
+            onClick={() => setMobileView("preview")}
+          >پیش‌نمایش</button>
+        </div>
+        <div className="col-span-full hidden items-center justify-end gap-2 pt-2 [grid-area:actions] max-[820px]:flex">
+          <button className={`${secondaryButton} w-fit px-3 text-[9px]`} type="button" disabled={generationBusy} onClick={() => setModelOverwriteConfirmOpen(true)}><Sparkles size={14} /> تکمیل با AI</button>
+          <button className={`${primaryButton} w-fit px-3 text-[9px]`} type="button" disabled={saving} onClick={() => void saveResume()}><Save size={14} /> {saving ? "در حال ذخیره..." : "ذخیره رزومه"}</button>
+        </div>
+        <aside className={cn("flex min-h-0 min-w-0 flex-col overflow-hidden [grid-area:form]", mobileView === "form" ? "max-[820px]:flex" : "max-[820px]:hidden")}>
           <div
             className="min-h-0 flex-1 overflow-y-auto p-[22px] pb-6"
             data-resume-builder-scroll
@@ -1403,7 +1424,7 @@ export function ResumeBuilder({
           </div>
         </aside>
 
-        <section className="flex min-w-0 flex-col overflow-hidden bg-[#edf0ed] [grid-area:preview]">
+        <section className={cn("flex min-w-0 flex-col overflow-hidden bg-[#edf0ed] [grid-area:preview]", mobileView === "preview" ? "max-[820px]:flex" : "max-[820px]:hidden")}>
           <div
             className={cn(
               "grid min-h-0 flex-1 items-start justify-items-center overflow-auto p-5 print:contents",

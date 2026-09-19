@@ -79,17 +79,17 @@ export default function AdminPage() {
         </p>
       </header>
 
-      <section className="grid grid-cols-4 gap-4 max-[1180px]:grid-cols-3 max-[900px]:grid-cols-2 max-[520px]:grid-cols-1">
+      <section className="grid grid-cols-4 gap-4 max-[1050px]:grid-cols-2">
         {cards.map(({ label, value, icon: Icon }) => (
           <article
-            className="flex min-w-0 items-center gap-3 rounded-[15px] border border-[#e3e9e3] bg-white p-3.5 shadow-[0_8px_24px_rgba(30,61,53,.05)]"
+            className="flex min-w-0 items-center gap-3 rounded-[15px] border border-[#e3e9e3] bg-white p-3.5 shadow-[0_8px_24px_rgba(30,61,53,.05)] max-[520px]:grid max-[520px]:grid-cols-[auto_auto] max-[520px]:justify-center max-[520px]:gap-x-2 max-[520px]:gap-y-1 max-[520px]:text-center"
             key={label}
           >
-            <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#eaf5f0] text-[#0f7b62]">
-              <Icon size={18} />
+            <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#eaf5f0] text-[#0f7b62] max-[520px]:size-8">
+              <Icon className="max-[520px]:size-4" size={18} />
             </span>
-            <small className="min-w-0 flex-1 truncate whitespace-nowrap text-[9px] font-semibold text-[#81908d]" title={label}>{label}</small>
-            <strong className="shrink-0 text-[18px] font-black text-[#19312f]">{formatNumber(value)}</strong>
+            <small className="min-w-0 flex-1 truncate whitespace-nowrap text-[9px] font-semibold text-[#81908d] max-[520px]:flex-none max-[520px]:overflow-visible max-[520px]:whitespace-normal max-[520px]:text-clip max-[520px]:leading-5" title={label}>{label}</small>
+            <strong className="shrink-0 text-[18px] font-black text-[#19312f] max-[520px]:col-span-2 max-[520px]:justify-self-center">{formatNumber(value)}</strong>
           </article>
         ))}
       </section>
@@ -99,11 +99,11 @@ export default function AdminPage() {
         <p className="mb-4 mt-1 text-[9px] text-[#8a9794]">
           مجموع {formatNumber(stats.data?.records.total ?? 0)} رکورد متعلق به کاربران
         </p>
-        <div className="grid grid-cols-3 gap-3 max-[1050px]:grid-cols-2 max-[520px]:grid-cols-1">
+        <div className="grid grid-cols-4 gap-3 max-[1050px]:grid-cols-2">
           {(stats.data?.records.byCollection ?? []).map((item) => (
-            <div className="group flex min-h-14 items-center justify-between gap-3 rounded-[14px] border border-[#e2eee7] bg-gradient-to-l from-[#f0f8f4] to-[#fbfdfb] px-4 py-3 text-[10px] text-[#526762] shadow-[0_6px_18px_rgba(30,86,68,.05)] transition-transform hover:-translate-y-0.5" key={item.collection}>
-              <span className="min-w-0 truncate font-semibold" title={collectionLabels[item.collection] ?? item.collection}>{collectionLabels[item.collection] ?? item.collection}</span>
-              <strong className="shrink-0 rounded-full bg-white px-3 py-1 text-[16px] leading-none text-[#19312f] shadow-sm">{formatNumber(item.total)}</strong>
+            <div className="group flex min-h-14 items-center justify-between gap-3 rounded-[14px] border border-[#e2eee7] bg-gradient-to-l from-[#f0f8f4] to-[#fbfdfb] px-4 py-3 text-[10px] text-[#526762] shadow-[0_6px_18px_rgba(30,86,68,.05)] transition-transform hover:-translate-y-0.5 max-[520px]:flex-col max-[520px]:items-center max-[520px]:text-center" key={item.collection}>
+              <span className="min-w-0 truncate font-semibold max-[520px]:overflow-visible max-[520px]:whitespace-normal max-[520px]:text-clip max-[520px]:leading-5" title={collectionLabels[item.collection] ?? item.collection}>{collectionLabels[item.collection] ?? item.collection}</span>
+              <strong className="shrink-0 rounded-full border border-[#e2eee7] bg-white px-3 py-1 text-[16px] leading-none text-[#19312f]">{formatNumber(item.total)}</strong>
             </div>
           ))}
         </div>

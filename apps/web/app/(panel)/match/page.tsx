@@ -647,7 +647,7 @@ export default function MatchPage() {
                   </span>
                   {active && (
                     <CheckCircle2
-                      className="shrink-0 text-[#0f7b62]"
+                      className="shrink-0 text-[#0f7b62] max-[680px]:hidden"
                       size={18}
                     />
                   )}
