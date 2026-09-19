@@ -43,5 +43,7 @@ next-env.d.ts
 **/src/app.mjs
 /outputs/
 /work/
-/graphify-out/cache/
+# Graphify builds its code graph, reports, HTML and dated snapshots locally.
+# They are reproducible and are not runtime/deployment artifacts.
+/graphify-out/
 /backups/
