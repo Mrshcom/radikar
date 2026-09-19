@@ -124,7 +124,8 @@ export function setAnalyzeProvider(provider: ProviderName, model?: string) {
 }
 
 export function getAnalyzeConfig(): ProviderConfig {
-  const provider = analyzeProviderOverride?.provider ?? process.env.LLM_PROVIDER ?? "";
+  const provider =
+    analyzeProviderOverride?.provider ?? process.env.LLM_PROVIDER ?? "gapgpt";
 
   switch (provider) {
     case "freeDeepseekAPI":
@@ -144,7 +145,7 @@ export function getAnalyzeConfig(): ProviderConfig {
 
 export function getWriteConfig(): ProviderConfig {
   const provider =
-    process.env.LLM_WRITE_PROVIDER ?? process.env.LLM_PROVIDER ?? "";
+    process.env.LLM_WRITE_PROVIDER ?? process.env.LLM_PROVIDER ?? "gapgpt";
 
   switch (provider) {
     case "freeDeepseekAPI":

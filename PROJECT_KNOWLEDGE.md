@@ -189,3 +189,5 @@ graphify path "A" "B"
   در Git commit نمی‌شوند؛ در صورت نیاز با `graphify update .` بازسازی شوند.
 
 > Automated review: 2026-09-18 — project changes were committed; review the affected sections if behavior or architecture changed.
+
+> Automated review: 2026-09-19 — project changes were committed; review the affected sections if behavior or architecture changed.
