@@ -44,23 +44,23 @@ export function TableToolbar({
     <div className="border-b border-[#edf0ec] bg-[#fbfcfa]">
       <div className="flex items-center gap-2 p-4 max-[680px]:flex-col max-[680px]:items-stretch">
         <form
-          className="flex h-10 min-w-[280px] flex-1 items-center gap-2 rounded-[11px] border border-[#dfe6e0] bg-white px-3 max-[680px]:min-w-0"
+          className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-[11px] border border-[#dfe6e0] bg-white px-4 max-[680px]:w-full max-[680px]:flex-none min-[1024px]:h-10 min-[1024px]:min-w-[280px] min-[1024px]:px-3"
           onSubmit={handleSubmit(({ search: value }) => onSearch(value))}
         >
-          <Search size={16} className="text-[#84918e]" />
+          <Search size={18} className="shrink-0 text-[#84918e] min-[1024px]:size-4" />
           <input
             {...register("search")}
-            className="min-w-0 flex-1 border-0 bg-transparent text-[10px] outline-none"
+            className="h-full min-w-0 flex-1 border-0 bg-transparent text-[11px] outline-none min-[1024px]:text-[10px]"
             placeholder={searchPlaceholder}
           />
-          <button className="border-0 bg-transparent text-[9px] font-bold text-[#0f7b62]" type="submit">
+          <button className="h-full shrink-0 border-0 bg-transparent text-[10px] font-bold text-[#0f7b62] min-[1024px]:text-[9px]" type="submit">
             جست‌وجو
           </button>
         </form>
         <button
           aria-expanded={advancedOpen}
           className={cn(
-            "flex h-10 items-center justify-center gap-2 rounded-[11px] border px-3 text-[9px] font-bold",
+            "flex h-12 items-center justify-center gap-2 rounded-[11px] border px-3 text-[9px] font-bold min-[1024px]:h-10",
             advancedOpen || activeFilterCount > 0
               ? "border-[#9dcdbd] bg-[#eaf5f0] text-[#0f7b62]"
               : "border-[#dfe6e0] bg-white text-[#657672]",
@@ -78,7 +78,7 @@ export function TableToolbar({
         </button>
         {(search || activeFilterCount > 0) && (
           <button
-            className="flex h-10 items-center justify-center gap-1.5 rounded-[11px] border border-[#ead8d5] bg-white px-3 text-[9px] font-bold text-[#a34e45]"
+            className="flex h-12 items-center justify-center gap-1.5 rounded-[11px] border border-[#ead8d5] bg-white px-3 text-[9px] font-bold text-[#a34e45] min-[1024px]:h-10"
             onClick={clearAll}
             type="button"
           >

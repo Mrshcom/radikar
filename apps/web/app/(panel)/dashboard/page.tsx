@@ -472,16 +472,16 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
-      <section className="my-4 grid grid-cols-1 gap-3 min-[700px]:grid-cols-2 min-[1121px]:grid-cols-4">
+      <section className="my-4 grid grid-cols-2 gap-2 sm:gap-3 min-[1121px]:grid-cols-4">
         {stats.map((stat, index) => {
           const Icon = statIcons[index] || Gauge;
           return (
             <div
-              className={`${panelSurface} flex items-center gap-[13px] p-[17px]`}
+              className={`${panelSurface} flex items-center gap-[13px] p-[17px] max-[699px]:gap-2 max-[699px]:p-3`}
               key={stat.label}
             >
               <div
-                className={`grid size-[39px] place-items-center rounded-xl ${toneClasses[index]}`}
+                className={`grid size-[39px] place-items-center rounded-xl max-[699px]:size-[24px] max-[699px]:rounded-lg max-[699px]:[&>svg]:size-[14px] ${toneClasses[index]}`}
               >
                 <Icon size={20} />
               </div>

@@ -602,7 +602,7 @@ export default function MatchPage() {
             </div>
           </div>
           <div
-            className="grid grid-cols-1 gap-[9px] min-[561px]:grid-cols-2"
+            className="grid grid-cols-2 gap-2"
             role="radiogroup"
             aria-label="روش ورود آگهی شغلی"
           >

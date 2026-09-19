@@ -162,7 +162,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative grid min-h-screen place-items-center overflow-hidden bg-[#f2f5f0] px-4 py-8 sm:px-6 max-lg:bg-[radial-gradient(circle_at_85%_0%,#23765c_0%,#075543_52%,#043a2f_100%)]">
+    <main className="relative grid h-[100dvh] min-h-0 place-items-center overflow-hidden bg-[#f2f5f0] px-4 py-4 sm:px-6 sm:py-6 max-lg:bg-[radial-gradient(circle_at_85%_0%,#23765c_0%,#075543_52%,#043a2f_100%)]">
       <Image
         src="/images/login-career-path.png"
         alt=""
@@ -175,7 +175,7 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute -right-32 -top-40 size-[420px] rounded-full bg-white/10 blur-3xl lg:bg-[#0f7b62]/8" />
       <div className="pointer-events-none absolute -bottom-48 -left-36 size-[460px] rounded-full bg-[#d8b35c]/10 blur-3xl" />
 
-      <section className="relative grid w-full max-w-[980px] overflow-hidden lg:rounded-[28px] lg:border lg:border-white/80 lg:bg-white lg:shadow-[0_30px_90px_rgba(24,55,48,.12)] lg:grid-cols-[1.05fr_.95fr]">
+      <section className="relative grid max-h-full w-full max-w-[980px] overflow-y-auto overflow-x-hidden lg:rounded-[28px] lg:border lg:border-white/80 lg:bg-white lg:shadow-[0_30px_90px_rgba(24,55,48,.12)] lg:grid-cols-[1.05fr_.95fr]">
         <div className="relative hidden min-h-[560px] overflow-hidden bg-[#075543] p-10 text-white lg:flex lg:flex-col lg:justify-between">
           <Image
             src="/images/login-career-path.png"

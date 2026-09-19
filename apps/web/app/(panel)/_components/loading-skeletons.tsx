@@ -144,7 +144,7 @@ export function DashboardSkeleton() {
         </div>
         <div className="flex min-h-[265px] flex-col rounded-[22px] border border-[#e3e9e0] bg-[#eef3eb] p-7">
           <div className="flex justify-between">
-            <Shimmer className="size-10 rounded-xl" />
+            <Shimmer className="size-10 rounded-xl max-[699px]:size-[31px] max-[699px]:rounded-[10px]" />
             <Shimmer className="h-6 w-20" />
           </div>
           <Shimmer className="mt-6 h-5 w-3/4" />
@@ -154,13 +154,16 @@ export function DashboardSkeleton() {
           <Shimmer className="mt-auto h-10 w-full" />
         </div>
       </section>
-      <section className="my-4 grid grid-cols-1 gap-3 min-[700px]:grid-cols-2 min-[1121px]:grid-cols-4">
+      <section className="my-4 grid grid-cols-2 gap-2 sm:gap-3 min-[1121px]:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <div
-            className={cn(panelSurface, "flex items-center gap-[13px] p-[17px]")}
+            className={cn(
+              panelSurface,
+              "flex items-center gap-[13px] p-[17px] max-[699px]:gap-2 max-[699px]:p-3",
+            )}
             key={index}
           >
-            <Shimmer className="size-10 rounded-xl" />
+            <Shimmer className="size-10 rounded-xl max-[699px]:size-[24px] max-[699px]:rounded-lg" />
             <div className="min-w-0 flex-1">
               <Shimmer className="h-2.5 w-24" />
               <div className="mt-2 flex items-end justify-between">

@@ -189,7 +189,11 @@ export function SectionTitle({
           <p className="m-0 text-xs text-[#758582]">{description}</p>
         )}
       </div>
-      {action}
+      {action && (
+        <div className="max-[560px]:mt-4 max-[560px]:w-full">
+          {action}
+        </div>
+      )}
     </div>
   );
 }
