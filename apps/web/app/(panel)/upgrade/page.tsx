@@ -78,7 +78,7 @@ export default function UpgradePage() {
               className={`relative flex min-h-[430px] flex-col rounded-[22px] border bg-white p-6 shadow-[0_14px_40px_rgba(27,63,54,.06)] max-md:min-h-[380px] max-md:p-4 ${plan.id === "job-search" ? "border-[#69b39c] ring-4 ring-[#e9f5f0]" : "border-[#e1e8e2]"}`}
               key={plan.id}
             >
-              {plan.id === "job-search" && <span className="absolute -top-3 right-6 rounded-full bg-[#0f7b62] px-3 py-1 text-[9px] font-bold text-white">پیشنهاد رادیکار</span>}
+              {plan.id === "job-search" && <span className="absolute -top-3 left-6 rounded-full bg-[#0f7b62] px-3 py-1 text-[9px] font-bold text-white">پیشنهاد رادیکار</span>}
               <div className="flex items-center gap-3">
                 <span className="grid size-11 shrink-0 place-items-center rounded-[13px] bg-[#eaf5f0] text-[#0f7b62]"><Sparkles size={21} /></span>
                 <div>

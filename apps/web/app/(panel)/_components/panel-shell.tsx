@@ -191,18 +191,16 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const mobilePrimaryMenuItems = useMemo(() => {
     const preferredHrefs = isManagement
       ? [
-          "/admin",
           "/admin/users",
           "/admin/memberships",
+          "/admin",
           "/admin/orders",
           "/admin/payments",
-          "/admin/records",
-          "/admin/model-usage",
         ]
       : [
-          "/dashboard",
           "/jobs",
           "/match",
+          "/dashboard",
           "/resumes",
           "/applications",
         ];
@@ -426,21 +424,19 @@ function PanelShellContent({ children }: { children: ReactNode }) {
       >
         <aside className="fixed inset-y-0 start-0 z-20 flex w-[248px] flex-col border-e border-[#e7ebe6] bg-white px-4 pb-[18px] pt-6 max-[820px]:hidden">
           <Link
-            className="flex items-center gap-[11px] border-0 bg-transparent px-[9px] pb-6 text-right text-[#19312f] no-underline"
+            className="flex items-center gap-1 border-0 bg-transparent px-[9px] pb-6 text-right text-[#19312f] no-underline"
             href={isManagement ? "/admin" : "/dashboard"}
           >
-            <span className="grid size-[39px] place-items-center rounded-[13px_13px_13px_5px] border border-[#cfe9df] bg-[#ecf8f3] shadow-[0_8px_18px_rgba(18,60,55,.16)]">
-              <Image
-                className="block size-8"
-                src="/radikar-logo.png"
-                width={32}
-                height={32}
-                alt=""
-                priority
-              />
-            </span>
+            <Image
+              className="block size-9 shrink-0 object-contain"
+              src="/radikar-logo.png"
+              width={36}
+              height={36}
+              alt=""
+              priority
+            />
             <div className="flex flex-col">
-              <strong className="text-[19px] tracking-[-.5px]">رادیکار</strong>
+              <strong className="text-[16px] tracking-[-.4px]">رادیکار</strong>
               <small className="mt-0.5 text-[10px] text-[#93a09d]">
                 همراه حرفه‌ای تو کار
               </small>
@@ -581,7 +577,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
         </aside>
         <main className="ms-[248px] min-w-0 w-[calc(100%-248px)] max-[820px]:ms-0 max-[820px]:w-full">
           <header className="sticky top-0 z-12 flex h-[70px] items-center border-b border-[rgba(226,231,225,.85)] bg-[rgba(246,247,242,.9)] px-[clamp(24px,4vw,60px)] backdrop-blur-[14px] max-[820px]:h-[62px] max-[820px]:px-[18px]">
-            <div className="hidden items-center gap-2 max-[820px]:flex">
+            <div className="hidden items-center gap-1 max-[820px]:flex">
               <button
                 aria-controls="mobile-panel-menu"
                 aria-expanded={mobileMenuOpen}
@@ -596,16 +592,14 @@ function PanelShellContent({ children }: { children: ReactNode }) {
               >
                 <Menu size={20} />
               </button>
-              <span className="grid size-8 place-items-center rounded-[10px_10px_10px_4px] border border-[#cfe9df] bg-[#ecf8f3]">
-                <Image
-                  className="size-[28px]"
-                  src="/radikar-logo.png"
-                  width={28}
-                  height={28}
-                  alt=""
-                />
-              </span>
-              <strong>رادیکار</strong>
+              <Image
+                className="size-9 shrink-0 object-contain"
+                src="/radikar-logo.png"
+                width={36}
+                height={36}
+                alt=""
+              />
+              <strong className="text-[16px] tracking-[-.4px]">رادیکار</strong>
             </div>
             <span className="text-[11px] text-[#8c9996] max-[820px]:hidden">
               {title}
@@ -789,16 +783,14 @@ function PanelShellContent({ children }: { children: ReactNode }) {
             id="mobile-panel-menu"
             role="dialog"
           >
-            <div className="flex items-center gap-3 border-b border-[#e9eeea] pb-4">
-              <span className="grid size-10 place-items-center rounded-[12px_12px_12px_5px] border border-[#cfe9df] bg-[#ecf8f3]">
-                <Image
-                  alt="لوگوی رادیکار"
-                  className="size-8"
-                  height={32}
-                  src="/radikar-logo.png"
-                  width={32}
-                />
-              </span>
+            <div className="flex items-center gap-1 border-b border-[#e9eeea] pb-4">
+              <Image
+                alt="لوگوی رادیکار"
+                className="size-9 shrink-0 object-contain"
+                height={36}
+                src="/radikar-logo.png"
+                width={36}
+              />
               <span className="flex min-w-0 flex-1 flex-col">
                 <strong className="text-[16px] text-[#19312f]">رادیکار</strong>
                 <small className="mt-0.5 text-[9px] text-[#93a09d]">
@@ -878,25 +870,28 @@ function PanelShellContent({ children }: { children: ReactNode }) {
           </aside>
         </div>}
         <nav
-          className="fixed inset-x-0 bottom-0 z-30 hidden min-h-[66px] overflow-hidden border-t border-[#e7ebe6] bg-white/96 px-[7px] pb-[max(8px,env(safe-area-inset-bottom))] pt-[7px] backdrop-blur-xl max-[820px]:flex"
+          className="fixed inset-x-0 bottom-0 z-30 hidden min-h-[66px] overflow-visible border-t border-[#e7ebe6] bg-white/96 px-[7px] pb-[max(8px,env(safe-area-inset-bottom))] pt-[7px] backdrop-blur-xl max-[820px]:flex"
           aria-label="منوی موبایل"
         >
           {mobilePrimaryMenuItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
+            const dashboardItem = item.href === (isManagement ? "/admin" : "/dashboard");
             return (
               <Link
                 key={item.href}
                 className={cn(
                   "flex min-w-0 flex-1 flex-col items-center justify-center gap-[3px] rounded-[9px] border-0 px-1 text-[8px] no-underline",
-                  active
+                  dashboardItem
+                    ? "relative z-10 -translate-y-4 size-14 flex-none rounded-full bg-[#0f7b62] text-white after:absolute after:-bottom-4 after:left-1/2 after:size-1.5 after:-translate-x-1/2 after:rounded-full after:bg-[#0f7b62] after:content-['']"
+                    : active
                     ? "bg-[#edf6f1] text-[#0f7b62]"
                     : "bg-transparent text-[#8a9794]",
                 )}
                 href={item.href}
               >
-                <Icon size={19} />
-                <span>{item.label.split(" ")[0]}</span>
+                <Icon size={dashboardItem ? 23 : 19} />
+                <span className={dashboardItem ? "hidden" : undefined}>{item.label.split(" ")[0]}</span>
               </Link>
             );
           })}

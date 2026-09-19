@@ -149,7 +149,7 @@ export default function JobsPage() {
   const secondaryButton =
     "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-[#e1e6e0] bg-white px-[15px] text-[11px] font-bold text-[#526461] no-underline";
   const emptyState =
-    "flex min-h-[300px] flex-col items-center justify-center rounded-[15px] border border-dashed border-[#dce3dc] text-[#8b9996] [&_h3]:mb-[3px] [&_h3]:mt-3 [&_h3]:text-sm [&_h3]:text-[#19312f] [&_p]:mb-[14px] [&_p]:mt-0 [&_p]:text-[9px]";
+    "flex min-h-[300px] flex-col items-center justify-center rounded-[15px] border border-dashed border-[#dce3dc] text-[#8b9996] [&_h3]:mb-[3px] [&_h3]:mt-3 [&_h3]:text-sm [&_h3]:text-[#19312f] [&_p]:mb-[14px] [&_p]:mt-0 [&_p]:text-[9px] max-[560px]:min-h-[200px] max-[560px]:gap-0 max-[560px]:p-4 max-[560px]:[&_h3]:mt-2 max-[560px]:[&_p]:mb-[10px]";
 
   return (
     <>

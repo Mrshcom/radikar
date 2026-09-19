@@ -195,7 +195,7 @@ export default function MembershipsAdminPage() {
   if (user?.role === "user") return <p className="rounded-xl bg-[#fff1ef] p-5 text-[11px] text-[#a13f37]">اجازه دسترسی به این بخش را نداری.</p>;
   const endpoint = (actionName: string) => `/api/admin/users/${selected!.user.id}/membership/${actionName}`;
   const columns: DataTableColumn<MembershipUser>[] = [
-    { key: "user", title: "کاربر", skeletonClassName: "w-32", render: (item) => <><strong className="block text-[11px]">{item.user.fullName || "بدون نام"}</strong><span dir="ltr" className="mt-1 block w-fit text-[#899592]">{item.user.phone}</span></> },
+    { key: "user", title: "کاربر", skeletonClassName: "w-32", render: (item) => <><strong className="block text-[11px]">{item.user.fullName || "بدون نام"}</strong><span dir="ltr" className="mt-1 block text-[#899592]">{item.user.phone}</span></> },
     { key: "plan", title: "پلن", render: (item) => item.plan?.name || "ثبت‌نشده" },
     { key: "account", title: "وضعیت حساب", render: (item) => item.user.status === "active" ? "فعال" : "تعلیق‌شده" },
     { key: "membership", title: "وضعیت عضویت", render: (item) => item.membership?.status === "active" ? "فعال" : item.membership?.status === "canceled" ? "لغوشده" : "منقضی" },
@@ -207,20 +207,17 @@ export default function MembershipsAdminPage() {
     <div className="grid gap-6">
       <header><span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]"><UserCog size={18} /> مدیریت کاربران و عضویت</span><h1 className="mb-0 mt-3 text-[25px] font-black">عضویت و اعتبار کاربران</h1></header>
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
-        <div className="border-b border-[#edf0ec] p-5">
-          <span className="text-[10px] text-[#71817e]">{Number(users.data?.total ?? 0).toLocaleString("fa-IR")} کاربر</span>
-          <AdminTableToolbar
-            search={search}
-            searchPlaceholder="نام یا شماره همراه"
-            activeFilterCount={Number(Boolean(planId)) + Number(Boolean(membershipStatus)) + Number(Boolean(userStatus))}
-            onSearch={(value) => { void setFilters({ search: value }); setPage(1); }}
-            onResetFilters={() => { void setFilters({ planId: "", membershipStatus: "", userStatus: "" }); setPage(1); }}
-          >
-            <AdminFilterSelect label="پلن" value={planId} onChange={(value) => { void setFilters({ planId: value }); setPage(1); }} options={[{ value: "", label: "همه پلن‌ها" }, ...(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))]} />
-            <AdminFilterSelect label="وضعیت عضویت" value={membershipStatus} onChange={(value) => { void setFilters({ membershipStatus: value as typeof membershipStatus }); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "expired", label: "منقضی" }, { value: "canceled", label: "لغوشده" }]} />
-            <AdminFilterSelect label="وضعیت حساب" value={userStatus} onChange={(value) => { void setFilters({ userStatus: value as typeof userStatus }); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "suspended", label: "تعلیق‌شده" }]} />
-          </AdminTableToolbar>
-        </div>
+        <AdminTableToolbar
+          search={search}
+          searchPlaceholder="نام یا شماره همراه"
+          activeFilterCount={Number(Boolean(planId)) + Number(Boolean(membershipStatus)) + Number(Boolean(userStatus))}
+          onSearch={(value) => { void setFilters({ search: value }); setPage(1); }}
+          onResetFilters={() => { void setFilters({ planId: "", membershipStatus: "", userStatus: "" }); setPage(1); }}
+        >
+          <AdminFilterSelect label="پلن" value={planId} onChange={(value) => { void setFilters({ planId: value }); setPage(1); }} options={[{ value: "", label: "همه پلن‌ها" }, ...(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))]} />
+          <AdminFilterSelect label="وضعیت عضویت" value={membershipStatus} onChange={(value) => { void setFilters({ membershipStatus: value as typeof membershipStatus }); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "expired", label: "منقضی" }, { value: "canceled", label: "لغوشده" }]} />
+          <AdminFilterSelect label="وضعیت حساب" value={userStatus} onChange={(value) => { void setFilters({ userStatus: value as typeof userStatus }); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "suspended", label: "تعلیق‌شده" }]} />
+        </AdminTableToolbar>
         <DataTable columns={columns} rows={users.data?.items ?? []} getRowKey={(item) => item.user.id} loading={users.isLoading} error={users.error} retrying={users.isFetching} onRetry={() => void users.refetch()} filtered={Boolean(search || planId || membershipStatus || userStatus)} minWidthClassName="min-w-[850px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={users.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
       </section>
       {selected && (

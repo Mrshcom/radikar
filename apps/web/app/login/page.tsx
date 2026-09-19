@@ -35,7 +35,7 @@ type PhoneValues = z.infer<typeof phoneSchema>;
 type OtpValues = z.infer<typeof otpSchema>;
 
 const fieldClass =
-  "h-11 w-full rounded-[12px] border border-[#dce5df] bg-white ps-11 pe-4 text-left text-[13px] text-[#233936] outline-none transition placeholder:text-[#a3afac] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 sm:h-12";
+  "h-11 w-full rounded-[12px] border border-[#dce5df] bg-white ps-11 pe-4 text-left text-[13px] font-normal text-[#233936] outline-none transition placeholder:text-[#a3afac] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 sm:h-12";
 
 export default function LoginPage() {
   const router = useRouter();

@@ -40,7 +40,7 @@ export function Modal({
       onMouseDown={onClose}
     >
       <section
-        className={`${document ? "w-[min(804px,calc(100vw-32px))] max-w-[804px] overflow-hidden pb-0" : wide ? "w-[min(1440px,calc(100vw-32px))] max-w-[1440px] overflow-hidden pb-0" : "w-[min(520px,100%)]"} max-h-[calc(100vh-40px)] cursor-default overflow-auto rounded-[19px] border border-white/65 bg-white p-[22px] text-[12px] shadow-[0_26px_80px_rgba(10,38,33,.25)] max-[560px]:max-h-[calc(100vh-20px)] max-[560px]:rounded-[15px] max-[560px]:p-[17px]`}
+        className={`${document ? "w-[min(804px,calc(100vw-32px))] max-w-[804px] pb-0" : wide ? "w-[min(1440px,calc(100vw-32px))] max-w-[1440px] pb-0" : "w-[min(520px,100%)]"} max-h-[calc(100dvh-40px)] cursor-default overflow-y-auto overscroll-contain rounded-[19px] border border-white/65 bg-white p-[22px] text-[12px] shadow-[0_26px_80px_rgba(10,38,33,.25)] [-webkit-overflow-scrolling:touch] max-[560px]:max-h-[calc(100dvh-20px)] max-[560px]:rounded-[15px] max-[560px]:p-[17px]`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -51,12 +51,12 @@ export function Modal({
         >
           <div className="min-w-0 flex-1">
             <h2
-              className={`mb-[7px] mt-0 text-[20px] leading-[1.5] ${titleClassName || ""}`}
+              className={`mb-[7px] mt-0 text-[20px] leading-[1.5] max-[560px]:text-[16px] ${titleClassName || ""}`}
             >
               {title}
             </h2>
             {description && (
-              <p className="m-0 text-[12px] leading-[1.9] text-[#657672]">
+              <p className="m-0 text-[12px] leading-[1.9] text-[#657672] max-[560px]:text-[10px]">
                 {description}
               </p>
             )}
