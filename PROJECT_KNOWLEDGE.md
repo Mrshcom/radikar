@@ -33,7 +33,7 @@ Browser → Next.js Web → Fastify API → Neon/PostgreSQL
 | `packages/ai` | adapter/provider و پردازش پاسخ مدل‌های زبانی |
 | `packages/config` | بارگذاری و اعتبارسنجی تنظیمات server |
 | `deploy` | Docker/Caddy و دستورالعمل استقرار VPS |
-| `graphify-out` | graph تولیدشده؛ فایل‌های dirty آن طبیعی‌اند |
+| `graphify-out` | graph تولیدشدهٔ محلی؛ در Git نادیده گرفته می‌شود و با `graphify update .` بازسازی می‌شود |
 
 ## نقاط ورود و مسیرهای مهم
 
@@ -185,6 +185,7 @@ graphify path "A" "B"
   commit trailer دقیق `Knowledge-Base: n/a — دلیل` را اضافه کنید.
 - این روش هم مرور دانش را قابل‌ردیابی می‌کند و هم از پرشدن سند با یادداشت‌های
   بی‌ارزش برای تغییرات کوچک جلوگیری می‌کند.
-- artifactهای تولیدی مانند `.turbo`، `.next` و `graphify-out` از این کنترل خارج‌اند.
+- artifactهای تولیدی مانند `.turbo`، `.next` و `graphify-out` از این کنترل خارج‌اند و
+  در Git commit نمی‌شوند؛ در صورت نیاز با `graphify update .` بازسازی شوند.
 
 > Automated review: 2026-09-18 — project changes were committed; review the affected sections if behavior or architecture changed.

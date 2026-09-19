@@ -532,6 +532,7 @@ export function useRenderedResumePagination(
     passCount: 0,
     visitedLayouts: new Set([getPagesLayoutKey(initialPages)]),
   }));
+  const [settledSourceKey, setSettledSourceKey] = useState("");
   const pages =
     pagination.sourceKey === sourceKey ? pagination.pages : initialPages;
   const probeRef = useRef<HTMLDivElement>(null);
@@ -559,7 +560,7 @@ export function useRenderedResumePagination(
       pagination.sourceKey === sourceKey &&
       pagination.passCount >= MAX_PAGINATION_PASSES
     ) {
-      return;
+      return schedulePaginationUpdate(() => setSettledSourceKey(sourceKey));
     }
 
     const renderedPages = Array.from(
@@ -658,7 +659,12 @@ export function useRenderedResumePagination(
 
     const probe = probeRef.current;
     const page = probe?.firstElementChild;
-    if (!candidate || !(page instanceof HTMLElement)) return;
+    if (!candidate || !(page instanceof HTMLElement)) {
+      if (!candidate) {
+        return schedulePaginationUpdate(() => setSettledSourceKey(sourceKey));
+      }
+      return;
+    }
 
     syncResumeSectionHeadingVisibility(
       page,
@@ -728,7 +734,13 @@ export function useRenderedResumePagination(
     sourceKey,
   ]);
 
-  return { candidate, pages, pagesRef, probeRef };
+  return {
+    candidate,
+    pages,
+    pagesRef,
+    probeRef,
+    isSettled: settledSourceKey === sourceKey,
+  };
 }
 
 export { PAGE_BOTTOM_RESERVE, PAGE_TOP_RESERVE };

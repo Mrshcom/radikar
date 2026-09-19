@@ -75,18 +75,22 @@ export default function UpgradePage() {
           ];
           return (
             <article
-              className={`relative flex min-h-[430px] flex-col rounded-[22px] border bg-white p-6 shadow-[0_14px_40px_rgba(27,63,54,.06)] ${plan.id === "job-search" ? "border-[#69b39c] ring-4 ring-[#e9f5f0]" : "border-[#e1e8e2]"}`}
+              className={`relative flex min-h-[430px] flex-col rounded-[22px] border bg-white p-6 shadow-[0_14px_40px_rgba(27,63,54,.06)] max-md:min-h-[380px] max-md:p-4 ${plan.id === "job-search" ? "border-[#69b39c] ring-4 ring-[#e9f5f0]" : "border-[#e1e8e2]"}`}
               key={plan.id}
             >
               {plan.id === "job-search" && <span className="absolute -top-3 right-6 rounded-full bg-[#0f7b62] px-3 py-1 text-[9px] font-bold text-white">پیشنهاد رادیکار</span>}
-              <span className="grid size-11 place-items-center rounded-[13px] bg-[#eaf5f0] text-[#0f7b62]"><Sparkles size={21} /></span>
-              <h2 className="mb-0 mt-5 text-[18px] font-black text-[#19312f]">{plan.name}</h2>
-              <p className="mb-0 mt-2 min-h-14 text-[10px] leading-7 text-[#7c8b88]">{plan.description}</p>
-              <div className="mt-4 border-y border-[#edf0ec] py-4">
+              <div className="flex items-center gap-3">
+                <span className="grid size-11 shrink-0 place-items-center rounded-[13px] bg-[#eaf5f0] text-[#0f7b62]"><Sparkles size={21} /></span>
+                <div>
+                  <h2 className="mb-0 text-[18px] font-black text-[#19312f]">{plan.name}</h2>
+                  <p className="mb-0 mt-1 text-[10px] leading-6 text-[#7c8b88]">{plan.description}</p>
+                </div>
+              </div>
+              <div className="mt-4 border-y border-[#edf0ec] py-4 max-md:mt-3 max-md:py-3">
                 <strong className="text-[25px] font-black">{plan.priceRials ? formatTomans(plan.priceRials) : "رایگان"}</strong>
                 {plan.priceRials > 0 && <span className="mr-1 text-[10px] text-[#7d8c89]">تومان / ۳۰ روز</span>}
               </div>
-              <ul className="my-5 grid gap-3 p-0 text-[10px] text-[#536762]">
+              <ul className="my-5 grid gap-3 p-0 text-[10px] text-[#536762] max-md:my-4 max-md:gap-2">
                 {features.map((feature) => <li className="flex items-center gap-2" key={feature}><Check size={15} className="text-[#0f7b62]" />{feature}</li>)}
               </ul>
               <button

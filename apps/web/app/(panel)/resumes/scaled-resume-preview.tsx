@@ -24,10 +24,8 @@ export function ScaledResumePreview({
   const rootRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
   const safeData = useMemo(() => normalizeResumeDataInput(data), [data]);
-  const { candidate, pages, pagesRef, probeRef } = useRenderedResumePagination(
-    safeData,
-    templateId,
-  );
+  const { candidate, pages, pagesRef, probeRef, isSettled } =
+    useRenderedResumePagination(safeData, templateId);
   const visiblePages = showAllPages ? pages : pages.slice(0, 1);
   const pageStackHeight =
     visiblePages.length * DOCUMENT_HEIGHT +
@@ -56,7 +54,7 @@ export function ScaledResumePreview({
         style={{
           width: scale ? DOCUMENT_WIDTH * scale : 0,
           height: scale ? pageStackHeight * scale : 0,
-          visibility: scale ? "visible" : "hidden",
+          visibility: scale && isSettled ? "visible" : "hidden",
         }}
       >
         <div
@@ -74,6 +72,15 @@ export function ScaledResumePreview({
           ))}
         </div>
       </div>
+      {scale && !isSettled && (
+        <div
+          aria-label="در حال آماده‌سازی پیش‌نمایش رزومه"
+          className="absolute inset-0 rounded-[10px] border border-[#dfe8e2] bg-white p-4 shadow-inner"
+          role="status"
+        >
+          <div className="h-full rounded-lg bg-[linear-gradient(110deg,#edf2ee_20%,#ffffff_42%,#edf2ee_64%)] bg-[length:220%_100%] animate-[shimmer_1.35s_ease-in-out_infinite]" />
+        </div>
+      )}
       {candidate && (
         <ResumePaginationProbe probeRef={probeRef}>
           <ResumeDocumentPage

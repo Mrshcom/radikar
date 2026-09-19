@@ -23,6 +23,7 @@ import {
   Meteors,
 } from "./magic-ui";
 import { marketingFaqs } from "./marketing-data";
+import { ScrollReveal } from "./scroll-reveal";
 
 const shell = "mx-auto w-full max-w-[1180px] px-5 sm:px-8";
 const prompts = [
@@ -516,20 +517,22 @@ function MatchMetric({
 export function TrustStrip() {
   return (
     <section className="border-y border-black/6 bg-white py-7">
-      <div
-        className={`${shell} flex flex-col items-center justify-between gap-5 sm:flex-row`}
-      >
-        <span className="text-[10px] font-black text-[#7a8783]">
-          تمام مسیر کاریابی، در یک فضای یکپارچه
-        </span>
-        <div className="flex flex-wrap justify-center gap-7 text-[10px] font-black text-[#35423f]">
-          {["رزومه هوشمند", "تحلیل فرصت", "مدیریت اپلای", "تمرین مصاحبه"].map(
-            (x) => (
-              <span key={x}>• {x}</span>
-            ),
-          )}
+      <ScrollReveal>
+        <div
+          className={`${shell} flex flex-col items-center justify-between gap-5 sm:flex-row`}
+        >
+          <span className="text-[10px] font-black text-[#7a8783]">
+            تمام مسیر کاریابی، در یک فضای یکپارچه
+          </span>
+          <div className="flex flex-wrap justify-center gap-7 text-[10px] font-black text-[#35423f]">
+            {["رزومه هوشمند", "تحلیل فرصت", "مدیریت اپلای", "تمرین مصاحبه"].map(
+              (x) => (
+                <span key={x}>• {x}</span>
+              ),
+            )}
+          </div>
         </div>
-      </div>
+      </ScrollReveal>
     </section>
   );
 }
@@ -571,6 +574,7 @@ export function WorkflowSection() {
         aria-hidden="true"
         className="absolute -left-32 top-1/3 size-80 rounded-full bg-[#43c98a]/10 blur-3xl"
       />
+      <ScrollReveal>
       <div className={`${shell} relative`}>
         <SectionIntro
           eyebrow="از کشف فرصت تا اپلای"
@@ -602,6 +606,7 @@ export function WorkflowSection() {
           ))}
         </div>
       </div>
+      </ScrollReveal>
     </section>
   );
 }
@@ -819,6 +824,7 @@ function FeaturePreview({ index }: { index: number }) {
 export function FeaturesSection() {
   return (
     <section id="features" className="bg-[#fbfcf8] py-16 sm:py-32">
+      <ScrollReveal>
       <div className={shell}>
         <SectionIntro
           eyebrow="یک موتور هوشمند کاریابی"
@@ -850,6 +856,7 @@ export function FeaturesSection() {
           ))}
         </div>
       </div>
+      </ScrollReveal>
     </section>
   );
 }
@@ -857,6 +864,7 @@ export function FeaturesSection() {
 export function DemoSection() {
   return (
     <section id="demo" className="bg-white py-16 sm:py-32">
+      <ScrollReveal>
       <div className={`${shell} grid items-center gap-8 sm:gap-12 lg:grid-cols-2`}>
         <div>
           <SectionIntro
@@ -900,6 +908,7 @@ export function DemoSection() {
           </div>
         </div>
       </div>
+      </ScrollReveal>
     </section>
   );
 }
@@ -918,6 +927,7 @@ export function TemplatesSection() {
         aria-hidden="true"
         className="absolute -right-24 bottom-0 size-72 rounded-full bg-[#65d69c]/10 blur-3xl"
       />
+      <ScrollReveal>
       <div className={`${shell} relative`}>
         <SectionIntro
           eyebrow="فرصت‌هایی متناسب با تو"
@@ -926,6 +936,8 @@ export function TemplatesSection() {
           dark
         />
       </div>
+      </ScrollReveal>
+      <ScrollReveal delay={120}>
       <div className="relative mt-9 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] sm:mt-14">
         <Marquee reverse>
           {jobs.map(([title, meta, score]) => (
@@ -957,6 +969,7 @@ export function TemplatesSection() {
           ))}
         </Marquee>
       </div>
+      </ScrollReveal>
     </section>
   );
 }
@@ -1009,6 +1022,7 @@ const plans: Array<{
 export function PricingSection() {
   return (
     <section id="pricing" className="bg-[#fbfcf8] py-16 sm:py-24">
+      <ScrollReveal>
       <div className={shell}>
         <SectionIntro
           eyebrow="شفاف و ساده"
@@ -1104,6 +1118,7 @@ export function PricingSection() {
           ))}
         </div>
       </div>
+      </ScrollReveal>
     </section>
   );
 }
@@ -1129,6 +1144,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 export function FaqSection() {
   return (
     <section id="faq" className="bg-white py-16 sm:py-24">
+      <ScrollReveal>
       <div className={`${shell} grid gap-8 sm:gap-12 lg:grid-cols-[.8fr_1.2fr]`}>
         <SectionIntro
           eyebrow="سؤال‌های پرتکرار"
@@ -1141,12 +1157,14 @@ export function FaqSection() {
           ))}
         </div>
       </div>
+      </ScrollReveal>
     </section>
   );
 }
 export function FinalCta() {
   return (
     <section className="bg-white px-5 pb-16 sm:pb-24">
+      <ScrollReveal>
       <div className="relative mx-auto max-w-[1120px] overflow-hidden rounded-[26px] bg-[#0b3025] px-5 py-12 text-center shadow-[0_30px_80px_rgba(7,45,33,.2)] sm:rounded-[34px] sm:px-6 sm:py-16">
         <Image
           src="/images/team-collaboration-green.png"
@@ -1182,6 +1200,7 @@ export function FinalCta() {
           </Link>
         </div>
       </div>
+      </ScrollReveal>
     </section>
   );
 }

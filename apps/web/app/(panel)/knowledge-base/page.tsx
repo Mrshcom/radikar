@@ -15,6 +15,8 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleHelp,
   FileUp,
   FolderKanban,
@@ -2146,8 +2148,38 @@ function KnowledgeSectionTabs({
   activeSection: KnowledgeTabId;
   onChange: (section: KnowledgeTabId) => void;
 }) {
+  const tabsViewportRef = useRef<HTMLDivElement>(null);
+  const activeIndex = Math.max(
+    0,
+    knowledgeTabs.findIndex((tab) => tab.id === activeSection),
+  );
+
+  const moveTab = (delta: number) => {
+    const nextIndex = Math.min(
+      Math.max(activeIndex + delta, 0),
+      knowledgeTabs.length - 1,
+    );
+    const nextTab = knowledgeTabs[nextIndex];
+    if (!nextTab) return;
+    onChange(nextTab.id);
+  };
+
+  useEffect(() => {
+    const viewport = tabsViewportRef.current;
+    const activeTab = document.getElementById(
+      `knowledge-tab-${activeSection}`,
+    );
+    if (!viewport || !activeTab || window.innerWidth >= 1100) return;
+
+    activeTab.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [activeSection]);
+
   return (
-    <aside className="min-w-0 rounded-[18px] border border-[#dce7e1] bg-white p-2 shadow-[0_12px_36px_rgba(27,55,50,.055)] min-[1100px]:sticky min-[1100px]:top-4">
+    <aside className="min-w-0 rounded-[18px] border border-[#dce7e1] bg-white p-2 shadow-[0_12px_36px_rgba(27,55,50,.055)] max-[1099px]:shadow-none min-[1100px]:sticky min-[1100px]:top-4">
       <header className="hidden px-3 pb-3 pt-2 min-[1100px]:block">
         <strong className="text-[11px] text-[#19312f]">
           بخش‌های پایگاه دانش
@@ -2156,23 +2188,34 @@ function KnowledgeSectionTabs({
           برای تکمیل اطلاعات بین بخش‌ها جابه‌جا شو.
         </p>
       </header>
-      <div
-        aria-label="بخش‌های پایگاه دانش"
-        aria-orientation="vertical"
-        className="flex gap-2 overflow-x-auto pb-1 min-[1100px]:grid min-[1100px]:overflow-visible min-[1100px]:pb-0"
-        role="tablist"
-      >
-        {knowledgeTabs.map((tab, index) => {
-          const active = activeSection === tab.id;
-          const Icon = tab.icon;
-          return (
-            <button
+      <div className="relative min-[1100px]:block">
+        <button
+          aria-label="بخش قبلی"
+          className="absolute right-0 top-1/2 z-10 grid size-9 -translate-y-1/2 place-items-center border-0 bg-transparent text-[#0f7b62] disabled:cursor-not-allowed disabled:opacity-35 min-[1100px]:hidden"
+          disabled={activeIndex <= 0}
+          onClick={() => moveTab(-1)}
+          type="button"
+        >
+          <ChevronRight size={20} />
+        </button>
+        <div
+          aria-label="بخش‌های پایگاه دانش"
+          aria-orientation="vertical"
+          className="flex min-w-0 snap-x snap-mandatory gap-2 overflow-x-hidden px-[12%] pb-1 [mask-image:linear-gradient(to_right,transparent_0%,black_13%,black_87%,transparent_100%)] [scrollbar-width:none] [-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_13%,black_87%,transparent_100%)] [&::-webkit-scrollbar]:hidden min-[1100px]:grid min-[1100px]:overflow-visible min-[1100px]:px-0 min-[1100px]:pb-0 min-[1100px]:[mask-image:none] min-[1100px]:[-webkit-mask-image:none]"
+          ref={tabsViewportRef}
+          role="tablist"
+        >
+          {knowledgeTabs.map((tab, index) => {
+            const active = activeSection === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
               aria-controls={`knowledge-panel-${tab.id}`}
               aria-selected={active}
               className={cn(
-                "relative flex min-w-[210px] items-center gap-3 rounded-[14px] p-3 text-right transition-[background-color,color,box-shadow,transform] duration-200 min-[1100px]:min-w-0",
+                "relative flex min-w-[76%] snap-center items-center gap-3 rounded-[14px] p-3 text-right transition-[background-color,color,box-shadow,transform] duration-200 min-[1100px]:min-w-0",
                 active
-                  ? "bg-[#0f7b62] text-white shadow-[0_9px_24px_rgba(15,123,98,.24)] min-[1100px]:after:absolute min-[1100px]:after:top-1/2 min-[1100px]:after:-left-2 min-[1100px]:after:size-4 min-[1100px]:after:-translate-y-1/2 min-[1100px]:after:rotate-45 min-[1100px]:after:bg-[#0f7b62] min-[1100px]:after:content-['']"
+                  ? "bg-[#0f7b62] text-white shadow-[0_9px_24px_rgba(15,123,98,.24)] max-[1099px]:shadow-none min-[1100px]:after:absolute min-[1100px]:after:top-1/2 min-[1100px]:after:-left-2 min-[1100px]:after:size-4 min-[1100px]:after:-translate-y-1/2 min-[1100px]:after:rotate-45 min-[1100px]:after:bg-[#0f7b62] min-[1100px]:after:content-['']"
                   : "text-[#435b57] hover:bg-[#edf7f2] hover:text-[#0f7b62]",
               )}
               id={`knowledge-tab-${tab.id}`}
@@ -2230,9 +2273,19 @@ function KnowledgeSectionTabs({
               >
                 {formatPersianNumber(index + 1)}
               </span>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
+        <button
+          aria-label="بخش بعدی"
+          className="absolute left-0 top-1/2 z-10 grid size-9 -translate-y-1/2 place-items-center border-0 bg-transparent text-[#0f7b62] disabled:cursor-not-allowed disabled:opacity-35 min-[1100px]:hidden"
+          disabled={activeIndex >= knowledgeTabs.length - 1}
+          onClick={() => moveTab(1)}
+          type="button"
+        >
+          <ChevronLeft size={20} />
+        </button>
       </div>
     </aside>
   );

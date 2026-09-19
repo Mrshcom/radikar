@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -22,6 +23,7 @@ import {
   FileText,
   LayoutDashboard,
   LoaderCircle,
+  Menu,
   MessageSquareText,
   Pencil,
   Plus,
@@ -161,6 +163,8 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const notify = useToast();
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuMounted, setMobileMenuMounted] = useState(false);
   const [dialog, setDialog] = useState<"search" | "profiles" | null>(null);
   const [profiles, setProfiles] = useState<AppProfileRecord[]>([]);
   const [activeProfileId, setActiveProfileIdState] = useState("");
@@ -174,6 +178,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const noticeRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuCloseTimerRef = useRef<number | null>(null);
   const userRole = user?.role;
   const isManagement = userRole === "admin" || userRole === "superadmin";
   const isSuperadmin = userRole === "superadmin";
@@ -183,6 +188,30 @@ function PanelShellContent({ children }: { children: ReactNode }) {
     () => menuItems.filter((item) => userRole && item.roles.includes(userRole)),
     [userRole],
   );
+  const mobilePrimaryMenuItems = useMemo(() => {
+    const preferredHrefs = isManagement
+      ? [
+          "/admin",
+          "/admin/users",
+          "/admin/memberships",
+          "/admin/orders",
+          "/admin/payments",
+          "/admin/records",
+          "/admin/model-usage",
+        ]
+      : [
+          "/dashboard",
+          "/jobs",
+          "/match",
+          "/resumes",
+          "/applications",
+        ];
+
+    return preferredHrefs
+      .map((href) => visibleMenuItems.find((item) => item.href === href))
+      .filter((item): item is MenuItem => Boolean(item))
+      .slice(0, 5);
+  }, [isManagement, visibleMenuItems]);
   const title = useMemo(
     () =>
       pageTitles[pathname] ??
@@ -195,6 +224,26 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const unreadAdminEvents = (adminEvents.data?.items ?? []).filter(
     (event) => !seenAdminEventIds.has(event.id),
   );
+
+  const openMobileMenu = useCallback(() => {
+    if (mobileMenuCloseTimerRef.current !== null) {
+      window.clearTimeout(mobileMenuCloseTimerRef.current);
+      mobileMenuCloseTimerRef.current = null;
+    }
+    setMobileMenuMounted(true);
+    window.requestAnimationFrame(() => setMobileMenuOpen(true));
+  }, []);
+
+  const closeMobileMenu = useCallback(() => {
+    setMobileMenuOpen(false);
+    if (mobileMenuCloseTimerRef.current !== null) {
+      window.clearTimeout(mobileMenuCloseTimerRef.current);
+    }
+    mobileMenuCloseTimerRef.current = window.setTimeout(() => {
+      setMobileMenuMounted(false);
+      mobileMenuCloseTimerRef.current = null;
+    }, 300);
+  }, []);
 
   useEffect(() => {
     if (userRole !== "user") return;
@@ -250,6 +299,29 @@ function PanelShellContent({ children }: { children: ReactNode }) {
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, [userMenuOpen]);
+
+  useEffect(() => {
+    if (!mobileMenuMounted) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeMobileMenu();
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [closeMobileMenu, mobileMenuMounted]);
+
+  useEffect(
+    () => () => {
+      if (mobileMenuCloseTimerRef.current !== null) {
+        window.clearTimeout(mobileMenuCloseTimerRef.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (isManagement) return;
@@ -510,6 +582,20 @@ function PanelShellContent({ children }: { children: ReactNode }) {
         <main className="ms-[248px] min-w-0 w-[calc(100%-248px)] max-[820px]:ms-0 max-[820px]:w-full">
           <header className="sticky top-0 z-12 flex h-[70px] items-center border-b border-[rgba(226,231,225,.85)] bg-[rgba(246,247,242,.9)] px-[clamp(24px,4vw,60px)] backdrop-blur-[14px] max-[820px]:h-[62px] max-[820px]:px-[18px]">
             <div className="hidden items-center gap-2 max-[820px]:flex">
+              <button
+                aria-controls="mobile-panel-menu"
+                aria-expanded={mobileMenuOpen}
+                aria-label="بازکردن منوی اصلی"
+                className="grid size-9 place-items-center rounded-[10px] border border-[#dce6e0] bg-white text-[#31534c]"
+                onClick={() => {
+                  setNoticeOpen(false);
+                  setUserMenuOpen(false);
+                  openMobileMenu();
+                }}
+                type="button"
+              >
+                <Menu size={20} />
+              </button>
               <span className="grid size-8 place-items-center rounded-[10px_10px_10px_4px] border border-[#cfe9df] bg-[#ecf8f3]">
                 <Image
                   className="size-[28px]"
@@ -675,18 +761,134 @@ function PanelShellContent({ children }: { children: ReactNode }) {
             {children}
           </div>
         </main>
+        {mobileMenuMounted && <div
+          aria-hidden={!mobileMenuOpen}
+          className={cn(
+            "fixed inset-0 z-50 hidden max-[820px]:block",
+            mobileMenuOpen ? "pointer-events-auto" : "pointer-events-none",
+          )}
+          inert={!mobileMenuOpen}
+        >
+          <button
+            aria-label="بستن منوی اصلی"
+            className={cn(
+              "absolute inset-0 border-0 bg-[#102d27]/45 backdrop-blur-[2px] transition-opacity duration-300",
+              mobileMenuOpen ? "opacity-100" : "opacity-0",
+            )}
+            onClick={closeMobileMenu}
+            tabIndex={mobileMenuOpen ? 0 : -1}
+            type="button"
+          />
+          <aside
+            aria-label="منوی کامل پنل"
+            aria-modal="true"
+            className={cn(
+              "absolute inset-y-0 right-0 flex w-[min(86vw,340px)] flex-col border-l border-[#e1e9e4] bg-white px-4 pb-[max(18px,env(safe-area-inset-bottom))] pt-5 shadow-[-18px_0_50px_rgba(18,51,43,.18)] transition-transform duration-300 ease-out",
+              mobileMenuOpen ? "translate-x-0" : "translate-x-full",
+            )}
+            id="mobile-panel-menu"
+            role="dialog"
+          >
+            <div className="flex items-center gap-3 border-b border-[#e9eeea] pb-4">
+              <span className="grid size-10 place-items-center rounded-[12px_12px_12px_5px] border border-[#cfe9df] bg-[#ecf8f3]">
+                <Image
+                  alt="لوگوی رادیکار"
+                  className="size-8"
+                  height={32}
+                  src="/radikar-logo.png"
+                  width={32}
+                />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <strong className="text-[16px] text-[#19312f]">رادیکار</strong>
+                <small className="mt-0.5 text-[9px] text-[#93a09d]">
+                  منوی کامل پنل
+                </small>
+              </span>
+              <button
+                aria-label="بستن منو"
+                className="grid size-9 place-items-center rounded-[10px] border border-[#e1e7e3] bg-[#f8faf8] text-[#526762]"
+                onClick={closeMobileMenu}
+                type="button"
+              >
+                <X size={19} />
+              </button>
+            </div>
+
+            <nav
+              aria-label="همه بخش‌های پنل"
+              className="mt-4 grid min-h-0 flex-1 content-start gap-1.5 overflow-y-auto overscroll-contain pb-4"
+            >
+              {visibleMenuItems.map((item) => {
+                const Icon = item.icon;
+                const active = pathname === item.href;
+                return (
+                  <Link
+                    className={cn(
+                      "relative flex min-h-12 items-center gap-3 rounded-[12px] px-3 text-[11px] no-underline transition-colors",
+                      active
+                        ? "bg-[#e6f4ee] font-bold text-[#0c7058]"
+                        : "text-[#61736f] hover:bg-[#f3f7f4] hover:text-[#19312f]",
+                    )}
+                    href={item.href}
+                    key={item.href}
+                    onClick={closeMobileMenu}
+                  >
+                    <span
+                      className={cn(
+                        "grid size-9 shrink-0 place-items-center rounded-[10px]",
+                        active ? "bg-[#0f7b62] text-white" : "bg-[#edf3ef]",
+                      )}
+                    >
+                      <Icon size={18} />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                    {item.href === "/jobs" && jobs.length > 0 && (
+                      <em className="grid min-h-6 min-w-6 place-items-center rounded-full bg-[#0f7b62] px-1.5 text-[8px] not-italic text-white">
+                        {jobs.length.toLocaleString("fa-IR")}
+                      </em>
+                    )}
+                    <ChevronLeft size={15} className="shrink-0 opacity-50" />
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {!isManagement && (
+              <button
+                className="flex min-h-12 w-full items-center gap-3 rounded-[12px] border border-[#e1e8e3] bg-[#f8faf8] px-3 text-right text-[10px] text-[#526762]"
+                onClick={() => {
+                  closeMobileMenu();
+                  setDialog("profiles");
+                }}
+                type="button"
+              >
+                <UserRound size={18} />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <strong className="truncate">
+                    {activeWorkspace?.workspaceName || "فضای کاری شخصی"}
+                  </strong>
+                  <small className="mt-0.5 text-[8px] text-[#95a09d]">
+                    مدیریت فضاهای کاری
+                  </small>
+                </span>
+                <ChevronLeft size={15} />
+              </button>
+            )}
+          </aside>
+        </div>}
         <nav
-          className="fixed inset-x-0 bottom-0 z-30 hidden min-h-[66px] overflow-x-auto border-t border-[#e7ebe6] bg-white/96 px-[7px] pb-2 pt-[7px] backdrop-blur-xl max-[820px]:flex"
+          className="fixed inset-x-0 bottom-0 z-30 hidden min-h-[66px] overflow-hidden border-t border-[#e7ebe6] bg-white/96 px-[7px] pb-[max(8px,env(safe-area-inset-bottom))] pt-[7px] backdrop-blur-xl max-[820px]:flex"
           aria-label="منوی موبایل"
         >
-          {visibleMenuItems.map((item) => {
+          {mobilePrimaryMenuItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 className={cn(
-                  "flex min-w-[72px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[9px] border-0 text-[8px] no-underline",
+                  "flex min-w-0 flex-1 flex-col items-center justify-center gap-[3px] rounded-[9px] border-0 px-1 text-[8px] no-underline",
                   active
                     ? "bg-[#edf6f1] text-[#0f7b62]"
                     : "bg-transparent text-[#8a9794]",

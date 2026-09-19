@@ -1,8 +1,24 @@
 "use client";
 
 import { AlertCircle, Inbox, LoaderCircle, RotateCcw } from "lucide-react";
-import type { ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
+
+const mobileTableMediaQuery = "(max-width: 680px)";
+
+function subscribeToMobileTableViewport(onChange: () => void) {
+  const mediaQuery = window.matchMedia(mobileTableMediaQuery);
+  mediaQuery.addEventListener("change", onChange);
+  return () => mediaQuery.removeEventListener("change", onChange);
+}
+
+function getMobileTableViewportSnapshot(): boolean | null {
+  return window.matchMedia(mobileTableMediaQuery).matches;
+}
+
+function getMobileTableViewportServerSnapshot(): boolean | null {
+  return null;
+}
 
 export type DataTableColumn<T> = {
   key: string;
@@ -37,6 +53,41 @@ export function DataTableSkeleton<T>({
         </tr>
       ))}
     </tbody>
+  );
+}
+
+function DataTableCardSkeleton<T>({
+  columns,
+  rows = 5,
+}: {
+  columns: DataTableColumn<T>[];
+  rows?: number;
+}) {
+  return (
+    <div aria-label="در حال بارگذاری فهرست" className="grid gap-3 p-3">
+      {Array.from({ length: rows }, (_, rowIndex) => (
+        <div className="overflow-hidden rounded-[14px] border border-[#e3e9e3] bg-white" key={rowIndex}>
+          {columns.map((column, columnIndex) => (
+            <div
+              className={cn(
+                "flex min-h-11 items-center justify-between gap-4 px-4 py-3",
+                columnIndex > 0 && "border-t border-[#edf1ee]",
+                columnIndex === 0 && "bg-[#f8faf8]",
+              )}
+              key={column.key}
+            >
+              <span className="h-2.5 w-16 animate-pulse rounded-full bg-[#e1e9e5]" />
+              <span
+                className={cn(
+                  "h-3 animate-pulse rounded-full bg-[#e7eeea]",
+                  column.skeletonClassName ?? (columnIndex === 0 ? "w-28" : "w-20"),
+                )}
+              />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -117,6 +168,11 @@ export function DataTable<T>({
   onRetry?: () => void;
   footer?: ReactNode;
 }) {
+  const mobile = useSyncExternalStore(
+    subscribeToMobileTableViewport,
+    getMobileTableViewportSnapshot,
+    getMobileTableViewportServerSnapshot,
+  );
   const empty = !loading && rows.length === 0;
   const failed = !loading && Boolean(error);
   return (
@@ -125,6 +181,40 @@ export function DataTable<T>({
         <DataTableErrorState error={error} retrying={retrying} onRetry={onRetry} />
       ) : empty ? (
         <DataTableEmptyState filtered={filtered} />
+      ) : mobile === null ? (
+        <div aria-hidden="true" className="min-h-24" />
+      ) : mobile ? (
+        loading ? (
+          <DataTableCardSkeleton columns={columns} rows={skeletonRows} />
+        ) : (
+          <div className="grid gap-3 p-3" role="list">
+            {rows.map((row) => (
+              <article
+                className="overflow-hidden rounded-[14px] border border-[#e1e8e3] bg-white shadow-[0_7px_20px_rgba(27,63,54,.045)]"
+                key={getRowKey(row)}
+                role="listitem"
+              >
+                <dl className="m-0">
+                  {columns.map((column) => (
+                    <div
+                      className={cn(
+                        "flex min-h-11 items-center justify-between gap-4 px-4 py-3",
+                        column.key !== columns[0]?.key && "border-t border-[#edf1ee]",
+                        column.key === columns[0]?.key && "bg-[#f8faf8]",
+                      )}
+                      key={column.key}
+                    >
+                      <dt className="w-24 shrink-0 text-[9px] font-bold text-[#7a8985]">{column.title}</dt>
+                      <dd className={cn("m-0 min-w-0 flex-1 text-left text-[10px] text-[#2b4540]", column.className)}>
+                        {column.render(row)}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </article>
+            ))}
+          </div>
+        )
       ) : (
         <div className="overflow-x-auto">
           <table className={cn("w-full border-collapse text-right text-[10px]", minWidthClassName)}>

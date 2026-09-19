@@ -68,6 +68,6 @@ jobs:
              cd /home/sport724/mampel/radikar; \
              docker compose --env-file deploy/.env.production -f compose.production.yml build; \
              docker compose --env-file deploy/.env.production -f compose.production.yml up -d --force-recreate --wait --wait-timeout 180; \
-             test "$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/ready)" = 200; \
-             test "$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:5000/)" = 200; \
+             test "$(curl -k -sS -o /dev/null -w "%{http_code}" --resolve radikar.ir:443:127.0.0.1 https://radikar.ir/ready)" = 200; \
+             test "$(curl -k -sS -o /dev/null -w "%{http_code}" --resolve radikar.ir:443:127.0.0.1 https://radikar.ir/)" = 200; \
              docker compose --env-file deploy/.env.production -f compose.production.yml ps'
