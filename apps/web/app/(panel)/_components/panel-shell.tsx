@@ -870,9 +870,16 @@ function PanelShellContent({ children }: { children: ReactNode }) {
           </aside>
         </div>}
         <nav
-          className="fixed inset-x-0 bottom-0 z-30 hidden min-h-[66px] overflow-visible border-t border-[#e7ebe6] bg-white/96 px-[7px] pb-[max(8px,env(safe-area-inset-bottom))] pt-[7px] backdrop-blur-xl max-[820px]:flex"
+          className="fixed inset-x-4 bottom-[max(12px,env(safe-area-inset-bottom))] z-30 hidden h-16 grid-cols-5 overflow-visible max-[820px]:grid"
           aria-label="منوی موبایل"
         >
+          <div aria-hidden="true" dir="ltr" className="pointer-events-none absolute inset-0 flex">
+            <span className="h-full flex-1 rounded-l-[22px] bg-white" />
+            <svg className="h-16 w-[104px] flex-none fill-white" viewBox="0 0 104 64">
+              <path d="M0 0 C14 0 15 7 21 20 C27 34 37 40 52 40 C67 40 77 34 83 20 C89 7 90 0 104 0 V64 H0 Z" />
+            </svg>
+            <span className="h-full flex-1 rounded-r-[22px] bg-white" />
+          </div>
           {mobilePrimaryMenuItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href;
@@ -882,16 +889,27 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 key={item.href}
                 className={cn(
                   "flex min-w-0 flex-1 flex-col items-center justify-center gap-[3px] rounded-[9px] border-0 px-1 text-[8px] no-underline",
+                  "relative z-10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0f7b62]",
                   dashboardItem
-                    ? "relative z-10 -translate-y-4 size-14 flex-none rounded-full bg-[#0f7b62] text-white after:absolute after:-bottom-4 after:left-1/2 after:size-1.5 after:-translate-x-1/2 after:rounded-full after:bg-[#0f7b62] after:content-['']"
+                    ? "-translate-y-6 size-14 justify-self-center rounded-full bg-[#0f7b62] text-white"
                     : active
-                    ? "bg-[#edf6f1] text-[#0f7b62]"
-                    : "bg-transparent text-[#8a9794]",
+                    ? "bg-transparent pb-2 text-[#0f7b62]"
+                    : "bg-transparent pb-2 text-[#b7c1bd]",
                 )}
                 href={item.href}
+                aria-label={item.label}
+                aria-current={active ? "page" : undefined}
               >
                 <Icon size={dashboardItem ? 23 : 19} />
-                <span className={dashboardItem ? "hidden" : undefined}>{item.label.split(" ")[0]}</span>
+                {active && (
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "absolute left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-[#0f7b62]",
+                      dashboardItem ? "-bottom-6" : "bottom-2",
+                    )}
+                  />
+                )}
               </Link>
             );
           })}

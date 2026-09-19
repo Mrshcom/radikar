@@ -291,11 +291,14 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
     try {
       current = { ...getAnalyzeProviderSettings(), dollarRateRials: 0 };
     } catch {
-      current = { provider: "freeDeepseekAPI", model: "deepseek-chat", configured: false, dollarRateRials: 0 };
+      current = { provider: "gapgpt", model: "gapgpt-qwen-3.6", configured: false, dollarRateRials: 0 };
     }
     if (database) {
       const [saved] = await database.select().from(aiSettings).where(eq(aiSettings.id, aiSettingsId)).limit(1);
-      if (saved) setAnalyzeProvider(saved.provider as ProviderName, saved.model);
+      if (saved) {
+        setAnalyzeProvider(saved.provider as ProviderName, saved.model);
+        current = { ...getAnalyzeProviderSettings(), dollarRateRials: 0 };
+      }
     }
     return {
       current: { ...current, dollarRateRials: Number((await database?.select({ dollarRateRials: aiSettings.dollarRateRials }).from(aiSettings).where(eq(aiSettings.id, aiSettingsId)).limit(1))?.[0]?.dollarRateRials ?? 0) },
