@@ -1,12 +1,14 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
-import { Providers } from "../providers";
+import { Providers } from "@/app/providers";
+import { getServerAuthUser } from "@/lib/server-auth";
 
-export const metadata: Metadata = {
-  title: "ورود به حساب کاربری",
-  robots: { index: false, follow: false, nocache: true },
-};
+export default async function LoginLayout({ children }: { children: ReactNode }) {
+  const user = await getServerAuthUser();
 
-export default function LoginLayout({ children }: { children: ReactNode }) {
+  if (user) {
+    redirect(user.role === "user" ? "/dashboard" : "/admin");
+  }
+
   return <Providers>{children}</Providers>;
 }

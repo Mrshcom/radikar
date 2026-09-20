@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { ApiError, apiRequest } from "@/lib/api-client";
+import { PageLoader } from "./page-loader";
 
 export type UserRole = "user" | "admin" | "superadmin";
 export type CurrentUser = {
@@ -49,11 +50,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     (isManagement && !isManagementPath) ||
     (user.role === "user" && pathname.startsWith("/admin"))
   ) {
-    return (
-      <main className="grid min-h-screen place-items-center bg-[#f6f7f2] text-[13px] text-[#687a76]">
-        در حال بررسی نشست کاربری...
-      </main>
-    );
+    return <PageLoader />;
   }
   return children;
 }

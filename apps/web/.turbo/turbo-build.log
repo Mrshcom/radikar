@@ -4,24 +4,24 @@
 
 ▲ Next.js 16.3.3 (Turbopack)
 - Environments: .env.local
-✓ Running next.config.ts took 52ms
+✓ Running next.config.ts took 43ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 1628ms
+✓ Compiled successfully in 1542ms
   Running TypeScript ...
-  Finished TypeScript in 4.3s ...
+  Finished TypeScript in 3.3s ...
   Collecting page data using 7 workers ...
   Generating static pages using 7 workers (0/37) ...
   Generating static pages using 7 workers (9/37) 
   Generating static pages using 7 workers (18/37) 
   Generating static pages using 7 workers (27/37) 
-✓ Generating static pages using 7 workers (37/37) in 864ms
+✓ Generating static pages using 7 workers (37/37) in 483ms
   Finalizing page optimization ...
 
-Route (app)
-┌ ○ /
+Route (app)                Revalidate  Expire
+┌ ○ /                              1h      1y
 ├ ○ /_not-found
-├ ○ /about
+├ ○ /about                         1h      1y
 ├ ○ /account
 ├ ○ /admin
 ├ ○ /admin/memberships
@@ -31,30 +31,30 @@ Route (app)
 ├ ○ /admin/records
 ├ ○ /admin/settings
 ├ ○ /admin/users
-├ ○ /ai-resume-builder
+├ ○ /ai-resume-builder             1h      1y
 ├ ƒ /api/[...path]
-├ ○ /application-tracker
+├ ○ /application-tracker           1h      1y
 ├ ○ /applications
 ├ ○ /billing/result
-├ ○ /contact
+├ ○ /contact                       1h      1y
 ├ ○ /dashboard
-├ ○ /guides
+├ ○ /guides                        1h      1y
 ├ ○ /interview
-├ ○ /interview-practice
+├ ○ /interview-practice            1h      1y
 ├ ○ /jobs
 ├ ○ /knowledge-base
-├ ○ /login
+├ ƒ /login
 ├ ○ /manifest.webmanifest
 ├ ○ /match
 ├ ○ /orders
-├ ○ /privacy
-├ ○ /resume-builder
-├ ○ /resume-job-match
+├ ○ /privacy                       1h      1y
+├ ○ /resume-builder                1h      1y
+├ ○ /resume-job-match              1h      1y
 ├ ○ /resumes
 ├ ○ /robots.txt
 ├ ○ /settings
 ├ ○ /sitemap.xml
-├ ○ /terms
+├ ○ /terms                         1h      1y
 ├ ○ /upgrade
 └ ƒ /v1/[...path]
 

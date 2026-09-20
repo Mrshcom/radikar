@@ -17,8 +17,14 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-    shortcut: "/favicon.svg",
+    icon: [
+      {
+        url: "/apple-touch-icon.png",
+        type: "image/png",
+        sizes: "180x180",
+      },
+    ],
+    shortcut: "/apple-touch-icon.png",
     apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.webmanifest",

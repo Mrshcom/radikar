@@ -9,6 +9,7 @@ import {
   Clock3,
   ExternalLink,
   Eye,
+  LoaderCircle,
   MapPin,
   Sparkles,
   Target,
@@ -168,10 +169,12 @@ export function JobDetailsModal({
 export function JobCard({
   job,
   saved = false,
+  saving = false,
   onSave,
 }: {
   job: JobCardData;
   saved?: boolean;
+  saving?: boolean;
   onSave?: () => void;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -210,7 +213,7 @@ export function JobCard({
             <span className="inline-flex min-h-7 items-center gap-1.5 rounded-lg bg-[#edf7f2] px-2.5 text-[8px] font-extrabold text-[#0b7b5e]">
               <Target size={13} /> {formatPersianNumber(job.match)}٪ تطابق
             </span>
-            {onSave && (
+    {onSave && (
               <button
                 className={cn(
                   "grid size-8 place-items-center rounded-lg border border-transparent bg-transparent transition-colors duration-200 hover:border-[#dce8e2] hover:bg-[#f5f8f6]",
@@ -219,12 +222,10 @@ export function JobCard({
                     : "text-[#879793] hover:text-[#0f7b62]",
                 )}
                 onClick={onSave}
+                disabled={saving}
                 aria-label={saved ? "حذف از ذخیره‌ها" : "ذخیره فرصت"}
               >
-                <Bookmark
-                  className={saved ? "fill-current" : undefined}
-                  size={17}
-                />
+                {saving ? <LoaderCircle className="animate-spin" size={17} /> : <Bookmark className={saved ? "fill-current" : undefined} size={17} />}
               </button>
             )}
           </div>

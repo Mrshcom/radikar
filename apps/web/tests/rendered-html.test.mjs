@@ -698,6 +698,10 @@ test("resume import retries empty LLM responses with a stable JSON model", async
     /مدل پاسخی برای استخراج اطلاعات نداد\. لطفاً دوباره تلاش کن\./,
   );
   assert.match(importRoute, /model: "deepseek-chat"/);
+  assert.match(importRoute, /knowledgeImportTimeoutMs = 60_000/);
+  assert.match(importRoute, /maxAttempts: 3/);
+  assert.match(importRoute, /retryDelayMs: 500/);
+  assert.match(importRoute, /timeoutMs: knowledgeImportTimeoutMs/);
   assert.match(importRoute, /"skills":\s*\[string\]/);
   assert.match(importRoute, /serializeResumeSkills\(extracted\.skills\)/);
   assert.match(importRoute, /"languageName":\s*string/);

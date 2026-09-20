@@ -31,6 +31,7 @@ import {
   X,
 } from "lucide-react";
 import { DeleteConfirmModal, SectionTitle } from "../_components/ui";
+import { ImageEditorModal } from "./image-editor-modal";
 import { useToast } from "@/app/_components/toast";
 import { useModelTasks } from "../_components/model-task-provider";
 import {
@@ -57,7 +58,6 @@ import { skillSuggestions } from "@/lib/skill-suggestions";
 import { cn } from "@/lib/cn";
 import { formatPersianNumber } from "@/lib/fa-number";
 import { sanitizeLtrField } from "@/lib/ltr-field";
-import { readProfileImage } from "@/lib/image-file";
 import {
   calculateKnowledgeCompletion,
   isSeededKnowledgeSampleProject,
@@ -606,6 +606,7 @@ export default function KnowledgeBasePage() {
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoEditorFile, setPhotoEditorFile] = useState<File | null>(null);
   const completionDetailsRef = useRef<HTMLDivElement>(null);
   const resume = useMemo<ResumeData>(() => {
     const experience = form.experiences[0];
@@ -1123,21 +1124,17 @@ export default function KnowledgeBasePage() {
     }
   };
 
-  const updateProfilePhoto = async (file: File) => {
-    try {
-      const photoUrl = await readProfileImage(file);
-      setForm((current) => ({
-        ...current,
-        resumeData: { ...current.resumeData, photoUrl },
-      }));
-    } catch (error) {
-      notify(
-        error instanceof Error ? error.message : "انتخاب تصویر ناموفق بود.",
-        "error",
-      );
-    } finally {
-      if (photoInputRef.current) photoInputRef.current.value = "";
+  const updateProfilePhoto = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      notify("فایل انتخاب‌شده باید تصویر باشد.", "error");
+      return;
     }
+    if (file.size > 5 * 1024 * 1024) {
+      notify("حجم تصویر نباید بیشتر از ۵ مگابایت باشد.", "error");
+      return;
+    }
+    setPhotoEditorFile(file);
+    if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
   const save = async () => {
@@ -2039,7 +2036,7 @@ export default function KnowledgeBasePage() {
           disabled={saving || importBusy}
           onClick={() => void save()}
         >
-          <Save size={16} /> ذخیره پروفایل مسیر شغلی
+          {saving ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />} ذخیره پروفایل مسیر شغلی
         </button>
       </div>
       {pendingDelete && (
@@ -2049,6 +2046,20 @@ export default function KnowledgeBasePage() {
           onConfirm={() => {
             pendingDelete.action();
             setPendingDelete(null);
+          }}
+        />
+      )}
+      {photoEditorFile && (
+        <ImageEditorModal
+          file={photoEditorFile}
+          onCancel={() => setPhotoEditorFile(null)}
+          onConfirm={(photoUrl) => {
+            setForm((current) => ({
+              ...current,
+              resumeData: { ...current.resumeData, photoUrl },
+            }));
+            setPhotoEditorFile(null);
+            notify("تصویر پروفایل آماده شد؛ برای ثبت نهایی ذخیره کن.");
           }}
         />
       )}

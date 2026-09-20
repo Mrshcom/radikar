@@ -32,9 +32,6 @@ services:
       - "3162"
     extra_hosts:
       - "host.docker.internal:host-gateway"
-      # Keep provider egress stable when the provider DNS returns an
-      # intermittently unreachable edge address.
-      - "api.gapgpt.app:185.143.233.238"
     depends_on:
       postgres:
         condition: service_healthy

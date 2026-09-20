@@ -64,10 +64,37 @@ export type ChatJsonOptions = {
   emptyResponseFallbackModels?: string[];
   emptyResponseMessage?: string;
   maxAttempts?: number;
+  retryDelayMs?: number;
   timeoutMs?: number;
 };
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 60_000;
+const TRANSIENT_CONNECTION_CODES = new Set([
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "ETIMEDOUT",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_SOCKET",
+]);
+
+function isTransientConnectionError(error: unknown) {
+  if (!(error instanceof Error) || error.name === "AbortError") return false;
+  const cause = error.cause;
+  const code =
+    cause && typeof cause === "object" && "code" in cause
+      ? String(cause.code)
+      : "";
+  return (
+    TRANSIENT_CONNECTION_CODES.has(code) ||
+    /connect timeout|fetch failed|network request failed|socket disconnected/i.test(
+      error.message,
+    )
+  );
+}
 
 function estimatedTokens(value: string) {
   return value ? Math.max(1, Math.ceil(Array.from(value).length / 4)) : 0;
@@ -325,6 +352,7 @@ export async function chatJson<T>(
     1_000,
     Math.round(options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS),
   );
+  const retryDelayMs = Math.max(0, Math.round(options.retryDelayMs ?? 0));
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const fallbackModels = options.emptyResponseFallbackModels?.filter(Boolean) ?? [];
     const model =
@@ -384,6 +412,13 @@ export async function chatJson<T>(
         throw new Error(
           "زمان پاسخ‌گویی مدل بیش از حد مجاز شد. لطفاً دوباره تلاش کن.",
         );
+      }
+      if (attempt < maxAttempts && isTransientConnectionError(error)) {
+        if (retryDelayMs)
+          await new Promise((resolve) =>
+            setTimeout(resolve, retryDelayMs * attempt),
+          );
+        continue;
       }
       throw error;
     }

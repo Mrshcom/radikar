@@ -142,7 +142,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {toast && (
         <div
           className={cn(
-            "fixed bottom-6 left-6 z-100 flex min-h-12 max-w-[min(380px,calc(100vw-32px))] items-center gap-[9px] rounded-xl border px-[15px] py-3 text-[12px] font-semibold shadow-[0_15px_45px_rgba(22,63,55,.16)] print:hidden max-[820px]:bottom-20 max-[820px]:left-4",
+            "fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-100 flex min-h-12 w-[calc(100vw-32px)] max-w-[380px] -translate-x-1/2 items-center gap-[9px] rounded-xl border px-[15px] py-3 text-[12px] font-semibold shadow-[0_15px_45px_rgba(22,63,55,.16)] print:hidden",
             toast.variant === "error"
               ? "border-[#efc9c5] bg-[#fff1ef] text-[#a13f37]"
               : toast.variant === "info"

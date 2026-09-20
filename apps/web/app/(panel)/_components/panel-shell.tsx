@@ -172,6 +172,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [editingWorkspaceId, setEditingWorkspaceId] = useState("");
   const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
+  const [savingWorkspaceId, setSavingWorkspaceId] = useState("");
   const [pendingWorkspaceDelete, setPendingWorkspaceDelete] =
     useState<AppProfileRecord | null>(null);
   const [armedWorkspaceDeleteId, setArmedWorkspaceDeleteId] = useState("");
@@ -342,6 +343,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
     const workspace = profiles.find((item) => item.id === editingWorkspaceId);
     if (!workspace) return;
     const now = new Date().toISOString();
+    setSavingWorkspaceId(workspace.id);
     try {
       const updatedWorkspace = { ...workspace, workspaceName, updatedAt: now };
       await appProfileStore.put(updatedWorkspace);
@@ -355,6 +357,8 @@ function PanelShellContent({ children }: { children: ReactNode }) {
       notify("نام فضای کاری تغییر کرد.");
     } catch {
       notify("ویرایش نام فضای کاری ناموفق بود.", "error");
+    } finally {
+      setSavingWorkspaceId("");
     }
   };
 
@@ -870,15 +874,21 @@ function PanelShellContent({ children }: { children: ReactNode }) {
           </aside>
         </div>}
         <nav
-          className="fixed inset-x-4 bottom-[max(12px,env(safe-area-inset-bottom))] z-30 hidden h-16 grid-cols-5 overflow-visible max-[820px]:grid"
+          className="fixed inset-x-0 bottom-0 z-30 hidden h-16 grid-cols-5 overflow-visible max-[820px]:grid"
           aria-label="منوی موبایل"
         >
           <div aria-hidden="true" dir="ltr" className="pointer-events-none absolute inset-0 flex">
-            <span className="h-full flex-1 rounded-l-[22px] bg-white" />
+            <span className="h-full flex-1 rounded-l-[22px] border-t border-[#e1ebe5] bg-white" />
             <svg className="h-16 w-[104px] flex-none fill-white" viewBox="0 0 104 64">
               <path d="M0 0 C14 0 15 7 21 20 C27 34 37 40 52 40 C67 40 77 34 83 20 C89 7 90 0 104 0 V64 H0 Z" />
+              <path
+                d="M0 0 C14 0 15 7 21 20 C27 34 37 40 52 40 C67 40 77 34 83 20 C89 7 90 0 104 0"
+                fill="none"
+                stroke="#e1ebe5"
+                strokeWidth="1.2"
+              />
             </svg>
-            <span className="h-full flex-1 rounded-r-[22px] bg-white" />
+            <span className="h-full flex-1 rounded-r-[22px] border-t border-[#e1ebe5] bg-white" />
           </div>
           {mobilePrimaryMenuItems.map((item) => {
             const Icon = item.icon;
@@ -993,9 +1003,10 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                         <button
                           className={primaryButtonClass}
                           type="button"
+                          disabled={savingWorkspaceId === item.id}
                           onClick={() => void saveWorkspaceName()}
                         >
-                          ذخیره
+                          {savingWorkspaceId === item.id && <LoaderCircle className="animate-spin" size={14} />} ذخیره
                         </button>
                       </>
                     ) : (

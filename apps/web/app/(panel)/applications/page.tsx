@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Clock3,
   GripVertical,
+  LoaderCircle,
   Plus,
   Target,
   Trash2,
@@ -62,6 +63,7 @@ export default function ApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [addingApplication, setAddingApplication] = useState(false);
   const [newRole, setNewRole] = useState("");
   const [newCompany, setNewCompany] = useState("");
   const [draggingId, setDraggingId] = useState<string>();
@@ -196,6 +198,7 @@ export default function ApplicationsPage() {
       createdAt: now,
       updatedAt: now,
     };
+    setAddingApplication(true);
     try {
       await applicationStore.put(application);
       setApplications((current) => [application, ...current]);
@@ -205,6 +208,8 @@ export default function ApplicationsPage() {
       notify("اپلای جدید ذخیره شد");
     } catch {
       notify("ذخیره اپلای جدید ناموفق بود.", "error");
+    } finally {
+      setAddingApplication(false);
     }
   };
 
@@ -519,9 +524,9 @@ export default function ApplicationsPage() {
               <button
                 className={primaryButton}
                 onClick={() => void addApplication()}
-                disabled={!newRole.trim() || !newCompany.trim()}
+                disabled={addingApplication || !newRole.trim() || !newCompany.trim()}
               >
-                افزودن به برد
+                {addingApplication && <LoaderCircle className="animate-spin" size={15} />} افزودن به برد
               </button>
             </div>
           </div>

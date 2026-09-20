@@ -15,6 +15,17 @@
   }
 }
 
+@keyframes page-loader-fill {
+  0%,
+  100% {
+    width: 0;
+  }
+  45%,
+  55% {
+    width: 100%;
+  }
+}
+
 @keyframes marquee {
   from {
     transform: translateX(0);

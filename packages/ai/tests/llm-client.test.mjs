@@ -228,6 +228,52 @@ test("chatJson bounds retries and attaches a request timeout", async () => {
   }
 });
 
+test("chatJson retries a transient provider connection failure", async () => {
+  const originalFetch = globalThis.fetch;
+  const usageEvents = [];
+  let callCount = 0;
+  globalThis.fetch = async () => {
+    callCount += 1;
+    if (callCount === 1) {
+      throw new TypeError("fetch failed", {
+        cause: { code: "UND_ERR_CONNECT_TIMEOUT" },
+      });
+    }
+    return new Response(
+      JSON.stringify({ choices: [{ message: { content: '{"ok":true}' } }] }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+  };
+
+  try {
+    const result = await chatJson(
+      {
+        provider: "gapgpt",
+        model: "gapgpt-qwen-3.6",
+        apiKey: "test-key",
+        baseUrl: "https://api.gapgpt.app/v1",
+        inputPricePerMillionUsd: 0.25,
+        outputPricePerMillionUsd: 2,
+      },
+      [{ role: "user", content: "Return JSON." }],
+      {
+        maxAttempts: 2,
+        retryDelayMs: 1,
+        onUsage: (event) => usageEvents.push(event),
+      },
+    );
+    assert.deepEqual(result, { ok: true });
+    assert.equal(callCount, 2);
+    assert.equal(usageEvents.length, 2);
+    assert.equal(usageEvents[0].successful, false);
+    assert.equal(usageEvents[0].attempt, 1);
+    assert.equal(usageEvents[1].successful, true);
+    assert.equal(usageEvents[1].attempt, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("chatJson forwards caller cancellation to the provider request", async () => {
   const originalFetch = globalThis.fetch;
   const controller = new AbortController();
