@@ -18,7 +18,7 @@ import { SectionTitle } from "../_components/ui";
 import {
   FeedbackSkeleton,
   InterviewSkeleton,
-} from "../_components/loading-skeletons";
+} from "../_components/skeletons";
 import { useToast } from "@/app/_components/toast";
 import { useModelTasks } from "../_components/model-task-provider";
 import {

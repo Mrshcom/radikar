@@ -25,7 +25,7 @@ import {
 import {
   GenerationShimmer,
   MatchAnalysisSkeleton,
-} from "../_components/loading-skeletons";
+} from "../_components/skeletons";
 import { useToast } from "@/app/_components/toast";
 import {
   isModelTaskCanceledError,

@@ -31,6 +31,10 @@ import {
   X,
 } from "lucide-react";
 import { DeleteConfirmModal, SectionTitle } from "../_components/ui";
+import {
+  KnowledgeCardsSkeleton,
+  KnowledgePageSkeleton,
+} from "../_components/skeletons";
 import { ImageEditorModal } from "./image-editor-modal";
 import { useToast } from "@/app/_components/toast";
 import { useModelTasks } from "../_components/model-task-provider";
@@ -2067,91 +2071,6 @@ export default function KnowledgeBasePage() {
   );
 }
 
-function KnowledgeCardsSkeleton() {
-  return (
-    <div
-      className="grid gap-4"
-      aria-label="در حال استخراج اطلاعات رزومه"
-      aria-busy="true"
-    >
-      {[7, 4, 1, 1, 5].map((fieldCount, cardIndex) => (
-        <section
-          className="rounded-[18px] border border-[#e7ebe6] bg-white p-5 shadow-[0_12px_36px_rgba(27,55,50,.045)]"
-          key={cardIndex}
-        >
-          <header className="mb-5 flex items-center gap-3">
-            <span className="size-10 animate-pulse rounded-xl bg-[#e8eeea]" />
-            <div className="grid flex-1 gap-2">
-              <i className="h-3 w-32 animate-pulse rounded bg-[#e8eeea]" />
-              <i className="h-2 w-56 max-w-full animate-pulse rounded bg-[#eef2ef]" />
-            </div>
-            {cardIndex === 2 || cardIndex === 3 ? (
-              <i className="h-8 w-24 animate-pulse rounded-lg bg-[#e8eeea]" />
-            ) : null}
-          </header>
-          <div className={repeatGrid}>
-            {Array.from({ length: fieldCount }, (_, fieldIndex) => {
-              const multiline =
-                (cardIndex === 0 && fieldIndex === fieldCount - 1) ||
-                (cardIndex === 4 && fieldIndex >= 3);
-              const fullWidth = multiline || cardIndex === 2 || cardIndex === 3;
-              return (
-                <div
-                  className={cn("grid gap-1.5", fullWidth && "col-span-full")}
-                  key={fieldIndex}
-                >
-                  <i className="h-2 w-16 animate-pulse rounded bg-[#e8eeea]" />
-                  <b
-                    className={cn(
-                      "h-[42px] animate-pulse rounded-[10px] bg-[#eef2ef]",
-                      multiline && "h-24",
-                    )}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      ))}
-    </div>
-  );
-}
-
-function KnowledgePageSkeleton() {
-  return (
-    <div role="status" aria-label="در حال خواندن پایگاه دانش">
-      <div className="mb-8 flex items-start justify-between gap-5">
-        <div className="min-w-0 flex-1">
-          <i className="mb-3 block h-2.5 w-40 animate-pulse rounded bg-[#e8eeea]" />
-          <i className="block h-8 w-56 animate-pulse rounded-lg bg-[#e5eae6]" />
-          <i className="mt-3 block h-3 w-[min(620px,95%)] animate-pulse rounded bg-[#eef2ef]" />
-        </div>
-      </div>
-      <div className="mb-4 flex min-h-[84px] items-center gap-4 rounded-[18px] border border-[#dcebe5] bg-[#f2f8f5] p-5">
-        <i className="size-11 animate-pulse rounded-xl bg-white" />
-        <div className="min-w-0 flex-1">
-          <i className="block h-3 w-32 animate-pulse rounded bg-[#dfe9e4]" />
-          <i className="mt-2 block h-2 w-56 max-w-full animate-pulse rounded bg-[#e5ede9]" />
-        </div>
-        <i className="h-8 w-48 animate-pulse rounded-lg bg-white" />
-      </div>
-      <div className="mb-4 flex min-h-[86px] items-center gap-3 rounded-[17px] border border-[#dce7e1] bg-white p-4 shadow-[0_12px_36px_rgba(27,55,50,.055)]">
-        <i className="size-11 animate-pulse rounded-xl bg-[#e3f2ec]" />
-        <div className="min-w-0 flex-1">
-          <i className="block h-3 w-40 animate-pulse rounded bg-[#e5eae6]" />
-          <i className="mt-2 block h-2 w-3/4 animate-pulse rounded bg-[#eef2ef]" />
-        </div>
-        <i className="h-10 w-32 animate-pulse rounded-[10px] bg-[#e8eeea]" />
-      </div>
-      <KnowledgeCardsSkeleton />
-      <div className="mt-4 flex min-h-[68px] items-center justify-between rounded-[15px] border border-[#d8e6df] bg-white p-3.5 shadow-[0_14px_40px_rgba(25,49,47,.12)]">
-        <i className="h-2.5 w-64 max-w-1/2 animate-pulse rounded bg-[#e8eeea]" />
-        <i className="h-10 w-36 animate-pulse rounded-[10px] bg-[#dfe9e4]" />
-      </div>
-    </div>
-  );
-}
-
 function KnowledgeSectionTabs({
   activeSection,
   onChange,
@@ -2224,9 +2143,9 @@ function KnowledgeSectionTabs({
               aria-controls={`knowledge-panel-${tab.id}`}
               aria-selected={active}
               className={cn(
-                "relative flex min-w-[76%] snap-center items-center gap-3 rounded-[14px] p-3 text-right transition-[background-color,color,box-shadow,transform] duration-200 min-[1100px]:min-w-0",
+                "relative isolate flex min-w-[76%] snap-center items-center gap-3 rounded-[14px] p-3 text-right transition-colors duration-300 ease-out min-[1100px]:min-w-0",
                 active
-                  ? "bg-[#0f7b62] text-white shadow-[0_9px_24px_rgba(15,123,98,.24)] max-[1099px]:shadow-none min-[1100px]:after:absolute min-[1100px]:after:top-1/2 min-[1100px]:after:-left-2 min-[1100px]:after:size-4 min-[1100px]:after:-translate-y-1/2 min-[1100px]:after:rotate-45 min-[1100px]:after:bg-[#0f7b62] min-[1100px]:after:content-['']"
+                  ? "text-white"
                   : "text-[#435b57] hover:bg-[#edf7f2] hover:text-[#0f7b62]",
               )}
               id={`knowledge-tab-${tab.id}`}
@@ -2257,6 +2176,18 @@ function KnowledgeSectionTabs({
               role="tab"
               type="button"
             >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "pointer-events-none absolute inset-y-0 left-0 right-0 -z-10 origin-right transition-[opacity,transform,filter] duration-300 ease-out motion-reduce:transition-none min-[1100px]:-left-2",
+                  active
+                    ? "translate-x-0 scale-100 opacity-100 min-[1100px]:drop-shadow-[0_9px_12px_rgba(15,123,98,.2)]"
+                    : "translate-x-1 scale-[.985] opacity-0",
+                )}
+              >
+                <span className="absolute inset-y-0 left-0 right-0 rounded-[14px] bg-[#0f7b62] min-[1100px]:left-2" />
+                <span className="absolute left-0 top-1/2 hidden size-4 -translate-y-1/2 rotate-45 bg-[#0f7b62] min-[1100px]:block" />
+              </span>
               <span
                 className={cn(
                   "grid size-10 shrink-0 place-items-center rounded-xl",

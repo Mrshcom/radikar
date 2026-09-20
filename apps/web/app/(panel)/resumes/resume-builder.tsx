@@ -20,7 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { DeleteConfirmModal, Modal } from "../_components/ui";
-import { ResumePreviewSkeleton } from "../_components/loading-skeletons";
+import { ResumePreviewSkeleton } from "../_components/skeletons";
 import { ResumeDocument } from "./resume-document";
 import { ScaledResumePreview } from "./scaled-resume-preview";
 import {

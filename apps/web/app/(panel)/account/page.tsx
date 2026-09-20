@@ -16,8 +16,8 @@ import { apiRequest } from "@/lib/api-client";
 import { useMembership } from "@/lib/billing";
 import {
   MembershipSummary,
-  MembershipSummarySkeleton,
 } from "../_components/membership-summary";
+import { MembershipSummarySkeleton } from "../_components/skeletons";
 
 const schema = z.object({
   fullName: z.string().trim().min(2, "نام باید حداقل دو حرف باشد.").max(100),

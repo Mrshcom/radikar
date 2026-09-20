@@ -116,7 +116,3 @@ export function MembershipSummary({
     </section>
   );
 }
-
-export function MembershipSummarySkeleton() {
-  return <div className="h-[390px] animate-pulse rounded-[20px] border border-[#e6ebe7] bg-[#f3f6f3]" aria-label="در حال دریافت وضعیت پلن" />;
-}

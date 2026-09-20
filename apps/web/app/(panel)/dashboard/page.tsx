@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { CircularProgress } from "../_components/circular-progress";
 import { JobCard } from "../_components/job-card";
-import { DashboardSkeleton } from "../_components/loading-skeletons";
+import { DashboardSkeleton } from "../_components/skeletons";
 import { SectionTitle } from "../_components/ui";
 import {
   emptyState,

@@ -273,12 +273,13 @@ test("superadmins stay out of user and membership management lists", async () =>
 });
 
 test("all project data tables share controls, loading skeleton, zero state and pagination", async () => {
-  const [controls, dataTable, pagination, pageSizePreference, paginationSearchParams, queryBuilder, billing, upgradePage, ...pages] = await Promise.all([
+  const [controls, dataTable, tableSkeletons, pagination, pageSizePreference, paginationSearchParams, queryBuilder, billing, upgradePage, ...pages] = await Promise.all([
     readFile(
       new URL("app/(panel)/_components/table-controls.tsx", projectRoot),
       "utf8",
     ),
     readFile(new URL("app/(panel)/_components/data-table.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/_components/skeletons/table-skeletons.tsx", projectRoot), "utf8"),
     readFile(new URL("app/(panel)/_components/table-pagination.tsx", projectRoot), "utf8"),
     readFile(new URL("lib/table-page-size.ts", projectRoot), "utf8"),
     readFile(new URL("lib/table-pagination-search-params.ts", projectRoot), "utf8"),
@@ -293,11 +294,12 @@ test("all project data tables share controls, loading skeleton, zero state and p
 
   assert.match(controls, /zodResolver\(searchSchema\)/);
   assert.match(controls, /فیلتر پیشرفته/);
-  assert.match(dataTable, /export function DataTableSkeleton/);
+  assert.match(dataTable, /DataTableSkeleton/);
+  assert.match(tableSkeletons, /export function DataTableSkeleton/);
   assert.match(dataTable, /export function DataTableErrorState/);
   assert.match(dataTable, /خطا در دریافت اطلاعات/);
   assert.match(dataTable, /تلاش مجدد/);
-  assert.match(dataTable, /animate-pulse/);
+  assert.match(tableSkeletons, /animate-pulse/);
   assert.match(dataTable, /هنوز اطلاعاتی ثبت نشده است/);
   assert.match(pagination, /تعداد ردیف/);
   assert.match(pagination, /\? "rounded-full bg-\[#0f7b62\] text-white"/);
@@ -753,10 +755,7 @@ test("resume picker exposes seventeen selectable layouts including the supplied 
 test("resumes page shows a matching skeleton while saved data is loading", async () => {
   const [resumesPage, skeletons] = await Promise.all([
     readFile(new URL("app/(panel)/resumes/page.tsx", projectRoot), "utf8"),
-    readFile(
-      new URL("app/(panel)/_components/loading-skeletons.tsx", projectRoot),
-      "utf8",
-    ),
+    readFile(new URL("app/(panel)/_components/skeletons/page-skeletons.tsx", projectRoot), "utf8"),
   ]);
 
   assert.match(resumesPage, /const \[loading, setLoading\] = useState\(true\)/);

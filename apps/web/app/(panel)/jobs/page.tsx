@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { JobCard } from "../_components/job-card";
 import { JalaliDatePicker } from "../_components/jalali-date-picker";
-import { JobCardsSkeleton } from "../_components/loading-skeletons";
+import { JobCardsSkeleton } from "../_components/skeletons";
 import { SectionTitle } from "../_components/ui";
 import { useToast } from "@/app/_components/toast";
 import { RangeSlider } from "@/app/_components/range-slider";

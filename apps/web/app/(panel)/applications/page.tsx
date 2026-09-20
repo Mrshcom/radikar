@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { DeleteConfirmModal, Modal, SectionTitle } from "../_components/ui";
 import { JobDetailsModal, JobLogo } from "../_components/job-card";
-import { ApplicationsSkeleton } from "../_components/loading-skeletons";
+import { ApplicationsSkeleton } from "../_components/skeletons";
 import { useToast } from "@/app/_components/toast";
 import {
   applicationStore,
