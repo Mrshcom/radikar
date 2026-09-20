@@ -24,6 +24,7 @@ import {
 } from "./magic-ui";
 import { marketingFaqs } from "./marketing-data";
 import { ScrollReveal } from "./scroll-reveal";
+import { MarketingAuthLink } from "./marketing-auth-link";
 
 const shell = "mx-auto w-full max-w-[1180px] px-5 sm:px-8";
 const prompts = [
@@ -62,18 +63,22 @@ export function MarketingHeader() {
           <Link href="/#pricing">تعرفه‌ها</Link>
         </nav>
         <div className="flex items-center gap-2">
-          <Link
-            href="/login"
+          <MarketingAuthLink
+            hideWhenAuthenticated
             className="ml-3 hidden text-[13px] font-bold text-[#586762] sm:block"
           >
             ورود
-          </Link>
-          <Link
-            href="/login"
+          </MarketingAuthLink>
+          <MarketingAuthLink
             className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[#4da980]/35 bg-[linear-gradient(135deg,#1d7657,#0e513c)] px-5 text-[13px] font-black text-white shadow-[0_10px_28px_rgba(15,91,66,.2)]"
+            authenticatedChildren={
+              <>
+                داشبورد کاربری <ArrowLeft size={14} />
+              </>
+            }
           >
             شروع رایگان <ArrowLeft size={14} />
-          </Link>
+          </MarketingAuthLink>
         </div>
       </div>
     </header>
@@ -136,12 +141,11 @@ export function HeroSection() {
           آماده‌ات می‌کند.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link
-            href="/login"
+          <MarketingAuthLink
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border border-[#4da980]/40 bg-[linear-gradient(135deg,#1d7a59_0%,#0f5b42_55%,#0b4433_100%)] px-7 text-sm font-black text-white shadow-[0_18px_48px_rgba(15,91,66,.22)]"
           >
             شروع کاریابی هوشمند <ArrowLeft size={16} />
-          </Link>
+          </MarketingAuthLink>
           <a
             href="#product"
             className="inline-flex min-h-12 items-center gap-2 rounded-full border border-black/10 bg-white/75 px-6 text-xs font-black text-[#34413e] backdrop-blur-sm"
@@ -872,12 +876,11 @@ export function DemoSection() {
             title="قبل از اپلای بدان چقدر با این شغل تناسب داری"
             text="رادیکار پروفایل تو را با نیازهای واقعی آگهی مقایسه می‌کند، شکاف‌ها را توضیح می‌دهد و برای همان موقعیت رزومه هدفمند پیشنهاد می‌کند."
           />
-          <Link
-            href="/login"
+          <MarketingAuthLink
             className="mt-7 inline-flex min-h-12 items-center gap-2 rounded-full bg-[#176b4e] px-6 text-xs font-black text-white"
           >
             تطبیق با یک فرصت <ArrowLeft size={15} />
-          </Link>
+          </MarketingAuthLink>
         </div>
         <div className="relative rounded-[24px] border border-[#d8e6dd] bg-[#f3f8f5] p-4 shadow-[0_24px_70px_rgba(20,80,55,.1)] sm:rounded-[30px] sm:p-6">
           <BorderBeam />
@@ -941,8 +944,7 @@ export function TemplatesSection() {
       <div className="relative mt-9 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] sm:mt-14">
         <Marquee reverse>
           {jobs.map(([title, meta, score]) => (
-            <Link
-              href="/login"
+            <MarketingAuthLink
               key={title}
               className="w-[270px] shrink-0 rounded-[22px] border border-white/12 bg-white/[.065] p-4 shadow-[0_18px_50px_rgba(2,18,13,.18)] backdrop-blur-sm transition hover:border-[#a9efc9]/45 hover:bg-white/[.095] sm:w-[300px] sm:rounded-[24px] sm:p-5"
             >
@@ -965,7 +967,7 @@ export function TemplatesSection() {
                 </span>
                 <ArrowLeft size={14} className="text-[#a9efc9]" />
               </div>
-            </Link>
+            </MarketingAuthLink>
           ))}
         </Marquee>
       </div>
@@ -1103,8 +1105,7 @@ export function PricingSection() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  href="/login"
+                <MarketingAuthLink
                   className={`mt-5 flex min-h-11 items-center justify-center rounded-full border text-xs font-black sm:mt-8 sm:min-h-14 sm:text-sm ${
                     plan.featured
                       ? "border-white/80 bg-white text-[#087b5b] shadow-[0_12px_30px_rgba(2,29,20,.18)] hover:bg-[#dff8ea]"
@@ -1112,7 +1113,7 @@ export function PricingSection() {
                   }`}
                 >
                   انتخاب پلن {plan.name}
-                </Link>
+                </MarketingAuthLink>
               </div>
             </article>
           ))}
@@ -1192,12 +1193,11 @@ export function FinalCta() {
           <p className="mt-4 text-xs text-white/70">
             با ساخت پروفایل حرفه‌ای، پیشنهاد شغل و اولین تحلیل تطابق را شروع کن.
           </p>
-          <Link
-            href="/login"
+          <MarketingAuthLink
             className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full border border-[#9ce8c2]/40 bg-[#b9f2d3] px-6 text-xs font-black text-[#0b3c2d] shadow-[0_14px_34px_rgba(2,24,17,.28)] sm:mt-7 sm:min-h-12 sm:px-7"
           >
             پیداکردن فرصت‌های من <ArrowLeft size={15} />
-          </Link>
+          </MarketingAuthLink>
         </div>
       </div>
       </ScrollReveal>
@@ -1257,13 +1257,12 @@ export function MarketingFooter() {
               فرصت‌های شغلی متناسب را پیدا کن، میزان تطابقت را بسنج و برای هر
               موقعیت یک رزومه هدفمند و آماده ارسال داشته باش.
             </p>
-            <Link
-              href="/login"
+            <MarketingAuthLink
               className="relative mt-6 inline-flex min-h-11 items-center gap-2 overflow-hidden rounded-full border border-[#96e6bc]/25 bg-white/10 px-5 text-[12px] font-black text-white backdrop-blur-sm"
             >
               ساخت مسیر شغلی من
               <ArrowLeft size={14} />
-            </Link>
+            </MarketingAuthLink>
           </div>
 
           {footerLinks.map((group) => (

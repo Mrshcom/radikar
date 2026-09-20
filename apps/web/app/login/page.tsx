@@ -67,6 +67,7 @@ export default function LoginPage() {
   });
   const otpInputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const queryClient = useQueryClient();
+
   const requestOtp = useMutation({
     mutationFn: (phone: string) =>
       apiRequest<{ challengeId: string; expiresInSeconds: number; developmentCode?: string }>(

@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  LoaderCircle,
   Save,
   UserRound,
 } from "lucide-react";
@@ -74,7 +75,7 @@ export default function AccountPage() {
             <p className="m-0 text-[9px] leading-6 text-[#87938f]">شماره همراه شناسه یکتای ورود است و امکان تغییر آن وجود ندارد.</p>
           </div>
         </div>
-        <button className="inline-flex min-h-11 w-fit items-center gap-2 rounded-[11px] border-0 bg-[#0f7b62] px-5 text-[11px] font-bold text-white disabled:opacity-40" disabled={update.isPending} type="submit"><Save size={16} /> ذخیره تغییرات</button>
+        <button className="inline-flex min-h-11 w-fit items-center gap-2 rounded-[11px] border-0 bg-[#0f7b62] px-5 text-[11px] font-bold text-white disabled:opacity-40" disabled={update.isPending} type="submit">{update.isPending ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />} ذخیره تغییرات</button>
       </form>
     </div>
   );

@@ -18,6 +18,7 @@ const maxTextLength = 24_000;
 const maxPdfPages = 30;
 const maxEmbeddedLinks = 50;
 const maxImportOutputTokens = 4_096;
+const knowledgeImportTimeoutMs = 60_000;
 
 const resumeImportShape = `{
   "resumeData": {
@@ -358,8 +359,9 @@ export function registerKnowledgeImportRoute(
         ],
         {
           maxOutputTokens: maxImportOutputTokens,
-          maxAttempts: 1,
-          timeoutMs: 20_000,
+          maxAttempts: 3,
+          retryDelayMs: 500,
+          timeoutMs: knowledgeImportTimeoutMs,
           ...(importConfig.provider === "freeDeepseekAPI"
             ? { emptyResponseFallbackModels: ["deepseek-reasoner"] }
             : {}),

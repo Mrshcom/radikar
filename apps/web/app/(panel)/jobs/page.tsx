@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQueryStates } from "nuqs";
 import {
   CalendarRange,
+  LoaderCircle,
   RotateCcw,
   Search,
   SlidersHorizontal,
@@ -14,6 +15,7 @@ import { JalaliDatePicker } from "../_components/jalali-date-picker";
 import { JobCardsSkeleton } from "../_components/loading-skeletons";
 import { SectionTitle } from "../_components/ui";
 import { useToast } from "@/app/_components/toast";
+import { RangeSlider } from "@/app/_components/range-slider";
 import { applicationStore, jobStore } from "@/lib/data/stores";
 import type { ApplicationRecord, JobRecord } from "@/lib/data/models";
 import { formatPersianNumber } from "@/lib/fa-number";
@@ -53,6 +55,7 @@ export default function JobsPage() {
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [savingJobId, setSavingJobId] = useState("");
 
   const loadJobs = async () => {
     setLoading(true);
@@ -130,6 +133,7 @@ export default function JobsPage() {
   };
 
   const toggleSave = async (job: JobRecord) => {
+    setSavingJobId(job.id);
     try {
       const updated = {
         ...job,
@@ -143,6 +147,8 @@ export default function JobsPage() {
       notify(updated.saved ? "فرصت شغلی ذخیره شد" : "فرصت از ذخیره‌ها حذف شد");
     } catch {
       notify("تغییر وضعیت ذخیره فرصت شغلی ناموفق بود.", "error");
+    } finally {
+      setSavingJobId("");
     }
   };
 
@@ -233,24 +239,17 @@ export default function JobsPage() {
                 </label>
               </div>
             </fieldset>
-            <label className="grid w-full max-w-[260px] gap-2 text-[9px] font-semibold text-[#536562]">
-              <span className="flex items-center justify-between gap-3">
-                حداقل تطابق
-                <strong className="rounded-md bg-[#edf7f2] px-2 py-1 text-[9px] text-[#0f7b62]">
-                  {formatPersianNumber(minMatch)}٪
-                </strong>
-              </span>
-              <input
-                className="h-4 w-full cursor-pointer appearance-none bg-transparent accent-[#0f7b62] outline-none ring-0 [-webkit-tap-highlight-color:transparent] focus:appearance-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 [&::-moz-focus-outer]:border-0 [&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-[#0f7b62] [&::-moz-range-thumb]:outline-none [&::-moz-range-track]:h-2 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:border [&::-moz-range-track]:border-[#e2eee9] [&::-moz-range-track]:bg-[#f6faf8] [&::-webkit-slider-runnable-track]:h-2 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:border [&::-webkit-slider-runnable-track]:border-[#e2eee9] [&::-webkit-slider-runnable-track]:bg-[#f6faf8] [&::-webkit-slider-thumb]:-mt-[5px] [&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-0 [&::-webkit-slider-thumb]:bg-[#0f7b62] [&::-webkit-slider-thumb]:outline-none focus-visible:[&::-moz-range-thumb]:border-2 focus-visible:[&::-moz-range-thumb]:border-[#b7ddd0] focus-visible:[&::-webkit-slider-thumb]:border-2 focus-visible:[&::-webkit-slider-thumb]:border-[#b7ddd0]"
-                type="range"
-                min="0"
-                max="95"
+            <div className="grid w-full max-w-[280px] gap-2 text-[9px] font-semibold text-[#536562]">
+              <span>حداقل تطابق</span>
+              <RangeSlider
                 value={minMatch}
-                onChange={(event) =>
-                  void setUrlFilters({ minMatch: Number(event.target.value) })
-                }
+                min={0}
+                max={95}
+                onChange={(value) => void setUrlFilters({ minMatch: value })}
+                label="حداقل تطابق"
+                valueFormatter={(value) => `${formatPersianNumber(value)}٪`}
               />
-            </label>
+            </div>
           </div>
         </div>
       )}
@@ -290,6 +289,7 @@ export default function JobsPage() {
               key={job.id}
               job={job}
               saved={job.saved}
+              saving={savingJobId === job.id}
               onSave={() => void toggleSave(job)}
             />
           ))}

@@ -6,6 +6,7 @@ import {
   MarketingFooter,
   MarketingHeader,
 } from "./_components/marketing-sections";
+import { Providers } from "../providers";
 
 export const metadata: Metadata = createPageMetadata({
   title: siteConfig.title,
@@ -14,6 +15,9 @@ export const metadata: Metadata = createPageMetadata({
 });
 
 metadata.title = { absolute: siteConfig.title };
+
+// Keep public HTML fresh enough for content and metadata changes to reach crawlers.
+export const revalidate = 3600;
 
 const organizationSchema = {
   "@context": "https://schema.org",
@@ -38,12 +42,14 @@ const websiteSchema = {
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#f7f8f3] text-[#19312f]">
-      <JsonLd data={organizationSchema} />
-      <JsonLd data={websiteSchema} />
-      <MarketingHeader />
-      <main>{children}</main>
-      <MarketingFooter />
-    </div>
+    <Providers>
+      <div className="min-h-screen overflow-x-hidden bg-[#f7f8f3] text-[#19312f]">
+        <JsonLd data={organizationSchema} />
+        <JsonLd data={websiteSchema} />
+        <MarketingHeader />
+        <main>{children}</main>
+        <MarketingFooter />
+      </div>
+    </Providers>
   );
 }

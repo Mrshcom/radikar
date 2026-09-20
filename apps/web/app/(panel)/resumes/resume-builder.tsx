@@ -13,6 +13,7 @@ import {
   BriefcaseBusiness,
   GraduationCap,
   ImagePlus,
+  LoaderCircle,
   Plus,
   ScanSearch,
   Sparkles,
@@ -515,7 +516,7 @@ export function ResumeBuilder({
             disabled={saving}
             onClick={() => void saveResume()}
           >
-            <Save size={16} /> {saving ? "در حال ذخیره..." : "ذخیره رزومه"}
+            {saving ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />} {saving ? "در حال ذخیره..." : "ذخیره رزومه"}
           </button>
           {hasBeenSaved && (
             <button
@@ -550,7 +551,7 @@ export function ResumeBuilder({
         </div>
         <div className="col-span-full hidden items-center justify-end gap-2 pt-2 [grid-area:actions] max-[820px]:flex">
           <button className={`${secondaryButton} w-fit px-3 text-[9px]`} type="button" disabled={generationBusy} onClick={() => setModelOverwriteConfirmOpen(true)}><Sparkles size={14} /> تکمیل با AI</button>
-          <button className={`${primaryButton} w-fit px-3 text-[9px]`} type="button" disabled={saving} onClick={() => void saveResume()}><Save size={14} /> {saving ? "در حال ذخیره..." : "ذخیره رزومه"}</button>
+          <button className={`${primaryButton} w-fit px-3 text-[9px]`} type="button" disabled={saving} onClick={() => void saveResume()}>{saving ? <LoaderCircle className="animate-spin" size={14} /> : <Save size={14} />} {saving ? "در حال ذخیره..." : "ذخیره رزومه"}</button>
         </div>
         <aside className={cn("flex min-h-0 min-w-0 flex-col overflow-hidden [grid-area:form]", mobileView === "form" ? "max-[820px]:flex" : "max-[820px]:hidden")}>
           <div
@@ -1418,7 +1419,7 @@ export function ResumeBuilder({
                 disabled={saving}
                 onClick={() => void saveResume()}
               >
-                <Save size={16} /> {saving ? "در حال ذخیره..." : "ذخیره رزومه"}
+                {saving ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />} {saving ? "در حال ذخیره..." : "ذخیره رزومه"}
               </button>
             )}
           </div>

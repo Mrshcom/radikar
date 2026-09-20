@@ -36,7 +36,6 @@ const aiSettingsSchema = z.object({
 const gapGptModels = [
   ["gapgpt-qwen-3.6", 0.25, 2],
   ["gapgpt-qwen-3.6-thinking", 0.25, 2],
-  ["gapgpt-qwen-3.8", 0.25, 2],
   ["gpt-5.6-sol", 2.5, 15],
   ["gpt-5.6-luna", 0.2, 1.2],
   ["gpt-5.6-terra", 2, 12],

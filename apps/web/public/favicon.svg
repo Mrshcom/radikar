@@ -1,3 +1,5 @@
-<svg width="32" height="32" viewBox="0 0 1254 1254" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <image href="/radikar-logo.png" width="1254" height="1254" preserveAspectRatio="xMidYMid meet" />
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path fill="#153D34" d="M49 42c0-7 4-13 10-17l32-19c7-4 15 1 15 9v47c0 7-4 13-10 17L64 78c-7 4-15-1-15-9V42Z"/>
+  <path fill="#00C982" d="M131 42c0-7-4-13-10-17L89 6c-7-4-15 1-15 9v47c0 7 4 13 10 17l32 19c7 4 15-1 15-9V42Z"/>
+  <path fill="#00C982" d="M74 69c0-7 4-13 10-17l12-7v39c0 7-4 13-10 17l-12 7V69Z"/>
 </svg>
