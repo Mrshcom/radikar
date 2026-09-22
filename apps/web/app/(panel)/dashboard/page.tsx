@@ -44,6 +44,7 @@ import type {
 } from "@/lib/data/models";
 import { hasResumeContent } from "../resumes/resume-data";
 import { formatPersianNumber } from "@/lib/fa-number";
+import { PersianDateTime } from "@/lib/date-time-display";
 import { apiRequest } from "@/lib/api-client";
 import { prioritizeSavedJobs } from "@/lib/job-order";
 
@@ -80,13 +81,6 @@ const barHeightClass = (value: number) => {
   if (value <= 80) return "h-4/5";
   return "h-full";
 };
-
-function formatDate(date: string) {
-  return new Intl.DateTimeFormat("fa-IR", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(date));
-}
 
 function dashboardTitle(fullName: string) {
   const firstName = fullName.trim().split(/\s+/)[0];
@@ -539,7 +533,7 @@ export default function DashboardPage() {
                     {stage.label}
                   </span>
                   <span className="text-[8px] text-[#929e9b]">
-                    {formatDate(item.updatedAt)}
+                    <PersianDateTime value={item.updatedAt} />
                   </span>
                   <button
                     className="grid place-items-center bg-transparent p-[5px] text-[#9ba5a3]"

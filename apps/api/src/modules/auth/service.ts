@@ -7,7 +7,8 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { normalizeDigits } from "@radikar/validators";
-import { and, count, desc, eq, gt, ilike, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
+import type { UpdateAdminAliasInput } from "@radikar/validators";
+import { and, asc, count, desc, eq, gt, ilike, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import {
   authSessions,
   dataRecords,
@@ -112,18 +113,22 @@ export class AuthService {
     });
 
     if (this.options.otpWebhookUrl) {
-      const response = await fetch(this.options.otpWebhookUrl, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          ...(this.options.otpWebhookToken
-            ? { authorization: `Bearer ${this.options.otpWebhookToken}` }
-            : {}),
-        },
-        body: JSON.stringify({ phone, code, purpose: "login" }),
-        signal: AbortSignal.timeout(8_000),
-      });
-      if (!response.ok) throw new AuthError(502, "ارسال پیامک ورود ناموفق بود.");
+      try {
+        const response = await fetch(this.options.otpWebhookUrl, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            ...(this.options.otpWebhookToken
+              ? { authorization: `Bearer ${this.options.otpWebhookToken}` }
+              : {}),
+          },
+          body: JSON.stringify({ phone, code, purpose: "login" }),
+          signal: AbortSignal.timeout(8_000),
+        });
+        if (!response.ok) throw new Error("OTP webhook rejected the request");
+      } catch {
+        throw new AuthError(502, "ارسال پیامک ورود ناموفق بود.");
+      }
     }
 
     return {
@@ -417,6 +422,8 @@ export class AuthService {
     pageSize = 20,
     role?: UserRole,
     status?: UserStatus,
+    sortBy?: string,
+    sortDirection: "asc" | "desc" = "desc",
   ) {
     const term = `%${search.trim()}%`;
     const filter = and(
@@ -427,12 +434,15 @@ export class AuthService {
       role ? eq(users.role, role) : undefined,
       status ? eq(users.status, status) : undefined,
     );
+    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone})` : sortBy === "alias" ? users.adminAlias : sortBy === "role" ? users.role : sortBy === "status" ? users.status : sortBy === "records" ? sql`count(${dataRecords.id})` : sortBy === "login" ? users.lastLoginAt : users.createdAt;
+    const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [rows, totals] = await Promise.all([
       this.database
         .select({
           id: users.id,
           phone: users.phone,
           fullName: users.fullName,
+          adminAlias: users.adminAlias,
           role: users.role,
           status: users.status,
           createdAt: users.createdAt,
@@ -443,7 +453,7 @@ export class AuthService {
         .leftJoin(dataRecords, eq(dataRecords.ownerUserId, users.id))
         .where(filter)
         .groupBy(users.id)
-        .orderBy(desc(users.createdAt))
+        .orderBy(order)
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       this.database.select({ total: count() }).from(users).where(filter),
@@ -451,7 +461,7 @@ export class AuthService {
     return { items: rows, total: totals[0]?.total ?? 0, page, pageSize };
   }
 
-  async listAllRecords(page = 1, pageSize = 20, search = "", collection?: string) {
+  async listAllRecords(page = 1, pageSize = 20, search = "", collection?: string, sortBy?: string, sortDirection: "asc" | "desc" = "desc") {
     const term = `%${search.trim()}%`;
     const filter = and(
       search.trim()
@@ -463,6 +473,8 @@ export class AuthService {
         : undefined,
       collection ? eq(dataRecords.collection, collection) : undefined,
     );
+    const sortColumn = sortBy === "collection" ? dataRecords.collection : sortBy === "id" ? dataRecords.id : sortBy === "owner" ? users.phone : sortBy === "workspace" ? dataRecords.profileId : dataRecords.updatedAt;
+    const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [rows, totals] = await Promise.all([
       this.database
         .select({
@@ -476,7 +488,7 @@ export class AuthService {
         .from(dataRecords)
         .leftJoin(users, eq(dataRecords.ownerUserId, users.id))
         .where(filter)
-        .orderBy(desc(dataRecords.updatedAt))
+        .orderBy(order)
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       this.database
@@ -497,6 +509,16 @@ export class AuthService {
       .where(eq(dataRecords.ownerUserId, userId))
       .groupBy(dataRecords.collection);
     return { ...toAuthUser(user), records };
+  }
+
+  async updateAdminAlias(userId: string, input: UpdateAdminAliasInput) {
+    const [updated] = await this.database
+      .update(users)
+      .set({ adminAlias: input.adminAlias?.trim() || null, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning({ id: users.id, adminAlias: users.adminAlias });
+    if (!updated) throw new AuthError(404, "کاربر پیدا نشد.");
+    return updated;
   }
 
   async updateUser(

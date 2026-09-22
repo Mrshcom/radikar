@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { normalizeDigits } from "@radikar/validators";
+import { updateAdminAliasSchema } from "@radikar/validators";
 import { z } from "zod";
 import { AuthError, AuthService } from "./service";
 import { can, type AuthUser, type Permission, type SessionIdentity } from "./types";
@@ -23,9 +24,13 @@ const userListSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(200).default(20),
   role: optionalQueryValue(z.enum(["user", "admin", "superadmin"])),
   status: optionalQueryValue(z.enum(["active", "suspended"])),
+  sortBy: optionalQueryValue(z.string().max(40)),
+  sortDirection: optionalQueryValue(z.enum(["asc", "desc"])),
 });
 const recordListSchema = userListSchema.pick({ search: true, page: true, pageSize: true }).extend({
   collection: optionalQueryValue(z.string().max(50)),
+  sortBy: optionalQueryValue(z.string().max(40)),
+  sortDirection: optionalQueryValue(z.enum(["asc", "desc"])),
 });
 const userParamsSchema = z.object({ id: z.uuid() });
 const eventListSchema = z.object({
@@ -153,13 +158,13 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
   app.get("/api/admin/users", async (request, reply) => {
     if (!requirePermission(request, reply, "users:read:any")) return;
     const query = userListSchema.parse(request.query);
-    return authService.listUsers(query.search, query.page, query.pageSize, query.role, query.status);
+    return authService.listUsers(query.search, query.page, query.pageSize, query.role, query.status, query.sortBy, query.sortDirection);
   });
 
   app.get("/api/admin/records", async (request, reply) => {
     if (!requirePermission(request, reply, "reports:read:any")) return;
     const query = recordListSchema.parse(request.query);
-    return authService.listAllRecords(query.page, query.pageSize, query.search, query.collection);
+    return authService.listAllRecords(query.page, query.pageSize, query.search, query.collection, query.sortBy, query.sortDirection);
   });
 
   app.get<{ Params: { id: string } }>("/api/admin/users/:id", async (request, reply) => {
@@ -188,6 +193,12 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
       }
     }
     return authService.updateUser(userId, input, request.auth!.user.id);
+  });
+
+  app.patch<{ Params: { id: string } }>("/api/admin/users/:id/alias", async (request, reply) => {
+    if (!requirePermission(request, reply, "users:read:any")) return;
+    const userId = userParamsSchema.parse(request.params).id;
+    return (authService as AuthService).updateAdminAlias(userId, updateAdminAliasSchema.parse(request.body));
   });
 }
 

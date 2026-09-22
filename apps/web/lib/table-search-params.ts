@@ -18,6 +18,8 @@ function boundedString(maxLength: number) {
 
 export const tableSearchParser = boundedString(100).withDefault("");
 export const tableOptionalFilterParser = boundedString(100).withDefault("");
+export const tableSortByParser = boundedString(40).withDefault("");
+export const tableSortDirectionParser = parseAsStringLiteral(["", "asc", "desc"] as const).withDefault("");
 
 export function createTableFilterParser<const Value extends string>(
   values: readonly Value[],

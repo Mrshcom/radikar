@@ -9,15 +9,15 @@ import { useForm } from "react-hook-form";
 import { normalizeDigits } from "@radikar/validators";
 import { z } from "zod";
 import { useAuth } from "@/app/_components/auth";
-import { DataTable, type DataTableColumn } from "../../_components/data-table";
+import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
 import { useToast } from "@/app/_components/toast";
 import { MembershipSummary } from "../../_components/membership-summary";
 import { MembershipSummarySkeleton } from "../../_components/skeletons";
 import { ConfirmActionModal, Modal } from "../../_components/ui";
 import { apiRequest } from "@/lib/api-client";
+import { PersianDateTime } from "@/lib/date-time-display";
 import { buildQueryString } from "@/lib/build-query-string";
 import {
-  billingKeys,
   useAdminMembership,
   usePlans,
   type AdminMembershipEvent,
@@ -30,6 +30,8 @@ import {
   tableOptionalFilterParser,
   tableQueryStateOptions,
   tableSearchParser,
+  tableSortByParser,
+  tableSortDirectionParser,
 } from "@/lib/table-search-params";
 import {
   AdminFilterSelect,
@@ -44,7 +46,7 @@ type MembershipUser = {
 };
 type Response = { items: MembershipUser[]; total: number; page: number; pageSize: number };
 type PendingMembershipAction = {
-  kind: "membership" | "status";
+  kind: "membership";
   title: string;
   description: string;
   confirmLabel: string;
@@ -52,7 +54,6 @@ type PendingMembershipAction = {
   tone?: "primary" | "danger";
   path?: string;
   body?: unknown;
-  user?: MembershipUser;
 };
 const grantSchema = z.object({ planId: z.string().min(1) });
 function localizedNumber<T extends z.ZodType>(schema: T) {
@@ -85,7 +86,8 @@ const membershipFilterParsers = {
   search: tableSearchParser,
   planId: tableOptionalFilterParser,
   membershipStatus: createTableFilterParser(["active", "expired", "canceled"]),
-  userStatus: createTableFilterParser(["active", "suspended"]),
+  sortBy: tableSortByParser,
+  sortDirection: tableSortDirectionParser,
 };
 
 function detailString(event: AdminMembershipEvent, key: string) {
@@ -132,19 +134,19 @@ export default function MembershipsAdminPage() {
   const notify = useToast();
   const queryClient = useQueryClient();
   const plans = usePlans();
-  const [{ search, planId, membershipStatus, userStatus }, setFilters] =
+  const [{ search, planId, membershipStatus, sortBy, sortDirection }, setFilters] =
     useQueryStates(membershipFilterParsers, {
       ...tableQueryStateOptions,
       urlKeys: {
         search: "q",
         planId: "plan",
         membershipStatus: "membership",
-        userStatus: "account",
       },
     });
   const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } =
     useUrlTablePagination();
   const [selected, setSelected] = useState<MembershipUser | null>(null);
+  const sort: SortState = sortBy && (sortDirection === "asc" || sortDirection === "desc") ? { key: sortBy, direction: sortDirection } : null;
   const [detailsUser, setDetailsUser] = useState<MembershipUser | null>(null);
   const [detailsTab, setDetailsTab] = useState<"usage" | "logs">("usage");
   const [pendingAction, setPendingAction] = useState<PendingMembershipAction | null>(null);
@@ -154,8 +156,8 @@ export default function MembershipsAdminPage() {
   const cancelForm = useForm({ resolver: zodResolver(cancelSchema), defaultValues: { reason: "" } });
   const memberDetails = useAdminMembership(detailsUser?.user.id);
   const users = useQuery({
-    queryKey: ["admin", "memberships", search, planId, membershipStatus, userStatus, page, pageSize],
-    queryFn: () => apiRequest<Response>(`/api/admin/memberships?${buildQueryString({ search, planId, membershipStatus, userStatus, page, pageSize })}`),
+    queryKey: ["admin", "memberships", search, planId, membershipStatus, page, pageSize, sortBy, sortDirection],
+    queryFn: () => apiRequest<Response>(`/api/admin/memberships?${buildQueryString({ search, planId, membershipStatus, page, pageSize, sortBy, sortDirection })}`),
     enabled: user?.role !== "user",
     staleTime: 15_000,
     placeholderData: keepPreviousData,
@@ -174,25 +176,6 @@ export default function MembershipsAdminPage() {
     },
     onError: (error) => notify(error instanceof Error ? error.message : "ثبت تغییر ناموفق بود.", "error"),
   });
-  const changeStatus = useMutation({
-    mutationFn: ({ item }: { item: MembershipUser; successMessage: string }) =>
-      apiRequest(`/api/admin/users/${item.user.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          status: item.user.status === "active" ? "suspended" : "active",
-        }),
-      }),
-    onSuccess: async (_, variables) => {
-      notify(variables.successMessage);
-      setPendingAction(null);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["admin", "memberships"] }),
-        queryClient.invalidateQueries({ queryKey: billingKeys.adminMembership(variables.item.user.id) }),
-      ]);
-    },
-    onError: (error) =>
-      notify(error instanceof Error ? error.message : "تغییر وضعیت ناموفق بود.", "error"),
-  });
   if (user?.role === "user") return <p className="rounded-xl bg-[#fff1ef] p-5 text-[11px] text-[#a13f37]">اجازه دسترسی به این بخش را نداری.</p>;
   const endpoint = (actionName: string) => `/api/admin/users/${selected!.user.id}/membership/${actionName}`;
   const columns: DataTableColumn<MembershipUser>[] = [
@@ -200,9 +183,9 @@ export default function MembershipsAdminPage() {
     { key: "plan", title: "پلن", render: (item) => item.plan?.name || "ثبت‌نشده" },
     { key: "account", title: "وضعیت حساب", render: (item) => item.user.status === "active" ? "فعال" : "تعلیق‌شده" },
     { key: "membership", title: "وضعیت عضویت", render: (item) => item.membership?.status === "active" ? "فعال" : item.membership?.status === "canceled" ? "لغوشده" : "منقضی" },
-    { key: "expiry", title: "انقضا", render: (item) => item.membership?.expiresAt ? new Date(item.membership.expiresAt).toLocaleDateString("fa-IR") : "—" },
+    { key: "expiry", title: "انقضا", className: "whitespace-nowrap", render: (item) => item.membership?.expiresAt ? <PersianDateTime value={item.membership.expiresAt} /> : "—" },
     { key: "ai", title: "اعتبار AI", render: (item) => item.membership?.aiCreditsRemaining?.toLocaleString("fa-IR") ?? "—" },
-    { key: "manage", title: "مدیریت", render: (item) => { const suspending = item.user.status === "active"; return <div className="flex flex-wrap gap-2"><button className="inline-flex items-center gap-1.5 rounded-lg border border-[#b9d9cc] bg-[#f4faf7] px-3 py-2 text-[9px] font-bold text-[#0f705a]" type="button" onClick={() => { setDetailsUser(item); setDetailsTab("usage"); }}><Info size={14} /> اطلاعات تکمیلی</button><button className="rounded-lg border border-[#dfe5df] bg-white px-3 py-2 text-[9px] font-bold" type="button" onClick={() => setSelected(item)}>ویرایش</button><button className="rounded-lg border border-[#e6d5d1] bg-white px-3 py-2 text-[9px] font-bold text-[#9b4a42]" type="button" disabled={changeStatus.isPending || item.user.id === user?.id} onClick={() => setPendingAction({ kind: "status", user: item, title: suspending ? "تأیید تعلیق کاربر" : "تأیید فعال‌سازی کاربر", description: `${item.user.fullName || item.user.phone} ${suspending ? "تعلیق" : "دوباره فعال"} شود؟`, confirmLabel: suspending ? "تعلیق کاربر" : "فعال‌سازی کاربر", successMessage: suspending ? "حساب کاربر با موفقیت تعلیق شد." : "حساب کاربر با موفقیت فعال شد.", tone: suspending ? "danger" : "primary" })}>{suspending ? "تعلیق" : "فعال‌سازی"}</button></div>; } },
+    { key: "manage", title: "مدیریت", sortable: false, render: (item) => <div className="flex flex-wrap gap-2"><button className="inline-flex items-center gap-1.5 rounded-lg border border-[#b9d9cc] bg-[#f4faf7] px-3 py-2 text-[9px] font-bold text-[#0f705a]" type="button" onClick={() => { setDetailsUser(item); setDetailsTab("usage"); }}><Info size={14} /> اطلاعات تکمیلی</button><button className="rounded-lg border border-[#dfe5df] bg-white px-3 py-2 text-[9px] font-bold" type="button" onClick={() => setSelected(item)}>ویرایش</button></div> },
   ];
   return (
     <div className="grid gap-6">
@@ -211,15 +194,14 @@ export default function MembershipsAdminPage() {
         <AdminTableToolbar
           search={search}
           searchPlaceholder="نام یا شماره همراه"
-          activeFilterCount={Number(Boolean(planId)) + Number(Boolean(membershipStatus)) + Number(Boolean(userStatus))}
+          activeFilterCount={Number(Boolean(planId)) + Number(Boolean(membershipStatus))}
           onSearch={(value) => { void setFilters({ search: value }); setPage(1); }}
-          onResetFilters={() => { void setFilters({ planId: "", membershipStatus: "", userStatus: "" }); setPage(1); }}
+          onResetFilters={() => { void setFilters({ planId: "", membershipStatus: "" }); setPage(1); }}
         >
           <AdminFilterSelect label="پلن" value={planId} onChange={(value) => { void setFilters({ planId: value }); setPage(1); }} options={[{ value: "", label: "همه پلن‌ها" }, ...(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))]} />
           <AdminFilterSelect label="وضعیت عضویت" value={membershipStatus} onChange={(value) => { void setFilters({ membershipStatus: value as typeof membershipStatus }); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "expired", label: "منقضی" }, { value: "canceled", label: "لغوشده" }]} />
-          <AdminFilterSelect label="وضعیت حساب" value={userStatus} onChange={(value) => { void setFilters({ userStatus: value as typeof userStatus }); setPage(1); }} options={[{ value: "", label: "همه وضعیت‌ها" }, { value: "active", label: "فعال" }, { value: "suspended", label: "تعلیق‌شده" }]} />
         </AdminTableToolbar>
-        <DataTable columns={columns} rows={users.data?.items ?? []} getRowKey={(item) => item.user.id} loading={users.isLoading} error={users.error} retrying={users.isFetching} onRetry={() => void users.refetch()} filtered={Boolean(search || planId || membershipStatus || userStatus)} minWidthClassName="min-w-[850px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={users.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
+        <DataTable columns={columns} rows={users.data?.items ?? []} getRowKey={(item) => item.user.id} loading={users.isLoading} error={users.error} retrying={users.isFetching} onRetry={() => void users.refetch()} filtered={Boolean(search || planId || membershipStatus)} sort={sort} onSortChange={(next) => { void setFilters({ sortBy: next?.key ?? "", sortDirection: next?.direction ?? "" }); setPage(1); }} minWidthClassName="min-w-[850px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={users.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
       </section>
       {selected && (
         <Modal
@@ -276,7 +258,7 @@ export default function MembershipsAdminPage() {
                       <strong className="shrink-0 whitespace-nowrap text-[11px] text-[#244039]">{content.title}</strong>
                       <p className="m-0 line-clamp-2 min-w-[14rem] flex-1 text-[10px] leading-5 text-[#61726e]" title={content.description}>{content.description}</p>
                       <small className="shrink-0 whitespace-nowrap text-[9px] text-[#87938f]">انجام‌دهنده: {event.actor?.fullName || event.actor?.phone || "مدیر حذف‌شده"}{event.actor?.role === "superadmin" ? " (سوپرادمین)" : event.actor?.role === "admin" ? " (ادمین)" : ""}</small>
-                      <time className="shrink-0 whitespace-nowrap text-[9px] text-[#82908d]" dateTime={event.createdAt}>{new Intl.DateTimeFormat("fa-IR", { dateStyle: "medium", timeStyle: "short" }).format(new Date(event.createdAt))}</time>
+                      <time className="shrink-0 whitespace-nowrap text-[9px] text-[#82908d]" dateTime={event.createdAt}><PersianDateTime value={event.createdAt} /></time>
                     </article>
                   );
                 })}
@@ -291,16 +273,9 @@ export default function MembershipsAdminPage() {
           description={pendingAction.description}
           confirmLabel={pendingAction.confirmLabel}
           tone={pendingAction.tone}
-          pending={action.isPending || changeStatus.isPending}
+          pending={action.isPending}
           onCancel={() => setPendingAction(null)}
           onConfirm={() => {
-            if (pendingAction.kind === "status" && pendingAction.user) {
-              changeStatus.mutate({
-                item: pendingAction.user,
-                successMessage: pendingAction.successMessage,
-              });
-              return;
-            }
             if (pendingAction.path) {
               action.mutate({ path: pendingAction.path, body: pendingAction.body, successMessage: pendingAction.successMessage });
             }

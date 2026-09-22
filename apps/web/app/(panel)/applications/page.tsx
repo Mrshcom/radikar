@@ -26,18 +26,12 @@ import type {
   JobRecord,
 } from "@/lib/data/models";
 import { formatPersianNumber } from "@/lib/fa-number";
+import { PersianDateTime } from "@/lib/date-time-display";
 import {
   applicationPipelineStages,
   moveApplicationToStage,
   synchronizeJobsWithApplicationBoard,
 } from "@/lib/application-board";
-
-function formatUpdateTime(date: string) {
-  return new Intl.DateTimeFormat("fa-IR", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(date));
-}
 
 async function readApplicationBoard() {
   const [jobs, storedApplications] = await Promise.all([
@@ -462,7 +456,7 @@ export default function ApplicationsPage() {
                 <footer className="mt-3 flex items-center justify-between gap-2 border-t border-[#edf0ec] pt-2 text-[8px] text-[#9aa5a2]">
                   <span className="flex min-w-0 items-center gap-1">
                     <Clock3 size={13} /> آخرین تغییر{" "}
-                    {formatUpdateTime(application.updatedAt)}
+                    <PersianDateTime value={application.updatedAt} />
                   </span>
                   {application.stage === "saved" && (
                     <button

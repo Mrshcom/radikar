@@ -3,15 +3,18 @@
 import Link from "next/link";
 import { ReceiptText } from "lucide-react";
 import { useQueryStates } from "nuqs";
-import { DataTable, type DataTableColumn } from "../_components/data-table";
+import { DataTable, type DataTableColumn, type SortState } from "../_components/data-table";
 import { TableFilterSelect, TableToolbar } from "../_components/table-controls";
 import { TablePagination } from "../_components/table-pagination";
 import { formatTomans, useOrders, type Order, type Plan } from "@/lib/billing";
+import { PersianDateTime } from "@/lib/date-time-display";
 import { useUrlTablePagination } from "@/lib/table-page-size";
 import {
   createTableFilterParser,
   tableQueryStateOptions,
   tableSearchParser,
+  tableSortByParser,
+  tableSortDirectionParser,
 } from "@/lib/table-search-params";
 
 const statusLabel = { pending: "در انتظار پرداخت", paid: "پرداخت‌شده", failed: "ناموفق", canceled: "لغوشده", refunded: "بازگشت وجه" } as const;
@@ -22,23 +25,26 @@ const statusOptions = [
 const orderFilterParsers = {
   search: tableSearchParser,
   status: createTableFilterParser(Object.keys(statusLabel)),
+  sortBy: tableSortByParser,
+  sortDirection: tableSortDirectionParser,
 };
 
 export default function OrdersPage() {
-  const [{ search, status }, setFilters] = useQueryStates(orderFilterParsers, {
+  const [{ search, status, sortBy, sortDirection }, setFilters] = useQueryStates(orderFilterParsers, {
     ...tableQueryStateOptions,
     urlKeys: { search: "q" },
   });
   const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } =
     useUrlTablePagination();
-  const orders = useOrders(page, pageSize, search, status);
+  const sort: SortState = sortBy && (sortDirection === "asc" || sortDirection === "desc") ? { key: sortBy, direction: sortDirection } : null;
+  const orders = useOrders(page, pageSize, search, status, sortBy, sortDirection);
   type OrderRow = { order: Order; plan: Plan };
   const columns: DataTableColumn<OrderRow>[] = [
     { key: "number", title: "شماره سفارش", className: "font-bold", render: ({ order }) => <span dir="ltr">{order.orderNumber}</span> },
     { key: "plan", title: "پلن", render: ({ plan }) => plan.name },
     { key: "amount", title: "مبلغ", render: ({ order }) => `${formatTomans(order.amountRials)} تومان` },
     { key: "status", title: "وضعیت", render: ({ order }) => statusLabel[order.status] },
-    { key: "date", title: "تاریخ", className: "text-[#71817e]", render: ({ order }) => new Date(order.createdAt).toLocaleDateString("fa-IR") },
+    { key: "date", title: "تاریخ و ساعت", className: "text-[#71817e] whitespace-nowrap", render: ({ order }) => <PersianDateTime value={order.createdAt} /> },
     { key: "tracking", title: "کد پیگیری", render: ({ order }) => <span dir="ltr">{order.refId || "—"}</span> },
   ];
   return (
@@ -65,7 +71,7 @@ export default function OrdersPage() {
             onChange={(value) => { void setFilters({ status: value as typeof status }); setPage(1); }}
           />
         </TableToolbar>
-        <DataTable columns={columns} rows={orders.data?.items ?? []} getRowKey={({ order }) => order.id} loading={orders.isLoading} error={orders.error} retrying={orders.isFetching} onRetry={() => void orders.refetch()} filtered={Boolean(search || status)} minWidthClassName="min-w-[720px]" footer={<TablePagination page={page} pageSize={pageSize} total={orders.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
+        <DataTable columns={columns} rows={orders.data?.items ?? []} getRowKey={({ order }) => order.id} loading={orders.isLoading} error={orders.error} retrying={orders.isFetching} onRetry={() => void orders.refetch()} filtered={Boolean(search || status)} sort={sort} onSortChange={(next) => { void setFilters({ sortBy: next?.key ?? "", sortDirection: next?.direction ?? "" }); setPage(1); }} minWidthClassName="min-w-[720px]" footer={<TablePagination page={page} pageSize={pageSize} total={orders.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
       </section>
     </div>
   );

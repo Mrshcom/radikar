@@ -166,12 +166,14 @@ export function useAdminModelUsage(
   page = 1,
   pageSize = 20,
   provider = "",
+  sortBy = "",
+  sortDirection = "",
 ) {
   return useQuery({
-    queryKey: [...adminModelUsageQueryKey, days, page, pageSize, provider],
+    queryKey: [...adminModelUsageQueryKey, days, page, pageSize, provider, sortBy, sortDirection],
     queryFn: () =>
       apiRequest<AdminModelUsageStats>(
-        `/api/admin/model-usage?${buildQueryString({ days, page, pageSize, provider })}`,
+        `/api/admin/model-usage?${buildQueryString({ days, page, pageSize, provider, sortBy, sortDirection })}`,
       ),
     enabled,
     staleTime: 30_000,

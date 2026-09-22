@@ -95,8 +95,8 @@ export const billingKeys = {
   plans: ["billing", "plans"] as const,
   membership: ["billing", "membership"] as const,
   adminMembership: (userId: string) => ["admin", "membership-details", userId] as const,
-  orders: (page: number, pageSize: number, search: string, status: string) =>
-    ["billing", "orders", page, pageSize, search, status] as const,
+  orders: (page: number, pageSize: number, search: string, status: string, sortBy = "", sortDirection = "") =>
+    ["billing", "orders", page, pageSize, search, status, sortBy, sortDirection] as const,
 };
 
 export function usePlans() {
@@ -124,11 +124,11 @@ export function useAdminMembership(userId?: string) {
   });
 }
 
-export function useOrders(page = 1, pageSize = 20, search = "", status = "") {
+export function useOrders(page = 1, pageSize = 20, search = "", status = "", sortBy = "", sortDirection = "") {
   return useQuery({
-    queryKey: billingKeys.orders(page, pageSize, search, status),
+    queryKey: billingKeys.orders(page, pageSize, search, status, sortBy, sortDirection),
     queryFn: () => apiRequest<OrdersResponse>(
-      `/api/billing/orders?${buildQueryString({ page, pageSize, search, status })}`,
+      `/api/billing/orders?${buildQueryString({ page, pageSize, search, status, sortBy, sortDirection })}`,
     ),
     staleTime: 15_000,
     placeholderData: keepPreviousData,

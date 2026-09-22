@@ -386,6 +386,14 @@ export function registerKnowledgeImportRoute(
         }),
         text,
       );
+      if (
+        !normalized.resumeData.fullName &&
+        !normalized.resumeData.summary &&
+        !normalized.experiences.length &&
+        !normalized.projects.length &&
+        !normalized.skills
+      )
+        throw new Error("خروجی مدل برای استخراج رزومه کامل نیست.");
       return applyEmbeddedLinkFallbacks(normalized, extractedFile.links);
     } catch (error) {
       request.log.error({ err: error }, "Knowledge resume import failed");

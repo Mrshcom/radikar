@@ -64,6 +64,20 @@
       "when": 1788712000000,
       "tag": "0008_add_dollar_rate",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788713000000,
+      "tag": "0009_seed_null_owner_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788714000000,
+      "tag": "0010_admin_alias",
+      "breakpoints": true
     }
   ]
 }

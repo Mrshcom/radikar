@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Crown, LoaderCircle, ReceiptText, ShieldCheck, Sparkles } from "lucide-react";
 import { ApiError } from "@/lib/api-client";
+import { PersianDateTime } from "@/lib/date-time-display";
 import {
   formatLimit,
   formatTomans,
@@ -51,7 +52,7 @@ export default function UpgradePage() {
       {membership.data && (
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[#cfe5db] bg-[#edf7f2] px-5 py-4 text-[11px] text-[#315f54]">
           <span>پلن فعلی: <strong>{membership.data.plan.name}</strong></span>
-          <span>اعتبار تا: <strong>{new Date(membership.data.expiresAt).toLocaleDateString("fa-IR")}</strong></span>
+          <span>اعتبار تا: <strong><PersianDateTime value={membership.data.expiresAt} /></strong></span>
         </section>
       )}
 

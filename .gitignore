@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,6 +13,11 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
+**/playwright-report/
+**/test-results/
+**/e2e/.auth/
 
 # next.js
 **/.next/

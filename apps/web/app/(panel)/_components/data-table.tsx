@@ -1,7 +1,7 @@
 "use client";
 
-import { AlertCircle, Inbox, LoaderCircle, RotateCcw } from "lucide-react";
-import { useSyncExternalStore, type ReactNode } from "react";
+import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, Inbox, LoaderCircle, RotateCcw } from "lucide-react";
+import { isValidElement, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { DataTableCardSkeleton, DataTableSkeleton } from "./skeletons/table-skeletons";
 
@@ -28,7 +28,43 @@ export type DataTableColumn<T> = {
   className?: string;
   headerClassName?: string;
   skeletonClassName?: string;
+  sortable?: boolean;
 };
+
+export type SortDirection = "asc" | "desc";
+export type SortState = { key: string; direction: SortDirection } | null;
+
+function textFromNode(node: ReactNode): string {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textFromNode).join(" ");
+  if (isValidElement(node)) {
+    const props = node.props as { children?: ReactNode; value?: string | number };
+    return props.children != null ? textFromNode(props.children) : props.value == null ? "" : String(props.value);
+  }
+  return "";
+}
+
+function normalizeSortText(value: string) {
+  return value
+    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .trim();
+}
+
+function compareSortValues(left: string, right: string) {
+  const normalizedLeft = normalizeSortText(left);
+  const normalizedRight = normalizeSortText(right);
+  if (!normalizedLeft && !normalizedRight) return 0;
+  if (!normalizedLeft) return 1;
+  if (!normalizedRight) return -1;
+  const leftNumber = Number(normalizedLeft.replace(/[^\d.-]/g, ""));
+  const rightNumber = Number(normalizedRight.replace(/[^\d.-]/g, ""));
+  if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber) && /\d/.test(normalizedLeft) && /\d/.test(normalizedRight)) {
+    return leftNumber - rightNumber;
+  }
+  return normalizedLeft.localeCompare(normalizedRight, "fa", { numeric: true, sensitivity: "base" });
+}
 
 export function DataTableEmptyState({ filtered = false }: { filtered?: boolean }) {
   return (
@@ -94,6 +130,8 @@ export function DataTable<T>({
   retrying = false,
   onRetry,
   footer,
+  sort: controlledSort,
+  onSortChange,
 }: {
   columns: DataTableColumn<T>[];
   rows: T[];
@@ -106,12 +144,39 @@ export function DataTable<T>({
   retrying?: boolean;
   onRetry?: () => void;
   footer?: ReactNode;
+  sort?: SortState;
+  onSortChange?: (sort: SortState) => void;
 }) {
   const mobile = useSyncExternalStore(
     subscribeToMobileTableViewport,
     getMobileTableViewportSnapshot,
     getMobileTableViewportServerSnapshot,
   );
+  const [localSort, setLocalSort] = useState<SortState>(null);
+  const isControlled = onSortChange !== undefined;
+  const sort = isControlled ? controlledSort ?? null : localSort;
+  const sortedRows = useMemo(() => {
+    if (isControlled || !sort) return rows;
+    const column = columns.find((item) => item.key === sort.key);
+    if (!column || column.sortable === false) return rows;
+    return rows
+      .map((row, index) => ({ row, index, value: textFromNode(column.render(row)) }))
+      .sort((left, right) => {
+        const comparison = compareSortValues(left.value, right.value);
+        return comparison === 0 ? left.index - right.index : sort.direction === "asc" ? comparison : -comparison;
+      })
+      .map(({ row }) => row);
+  }, [columns, isControlled, rows, sort]);
+  const cycleSort = (key: string) => {
+    const nextSort = (current: SortState): SortState => {
+      if (!current || current.key !== key) return { key, direction: "asc" };
+      if (current.direction === "asc") return { key, direction: "desc" };
+      return null;
+    };
+    if (isControlled) onSortChange?.(nextSort(sort));
+    else setLocalSort(nextSort);
+  };
+  const sortableColumns = columns.filter((column) => column.sortable !== false);
   const empty = !loading && rows.length === 0;
   const failed = !loading && Boolean(error);
   return (
@@ -126,8 +191,23 @@ export function DataTable<T>({
         loading ? (
           <DataTableCardSkeleton columns={columns} rows={skeletonRows} />
         ) : (
-          <div className="grid gap-3 p-3" role="list">
-            {rows.map((row) => (
+          <div>
+            {sortableColumns.length > 0 && <div className="flex items-center gap-2 border-b border-[#edf1ee] bg-[#f7f9f6] p-3 text-[10px]">
+              <label className="flex flex-1 items-center gap-2 font-bold text-[#71817e]">مرتب‌سازی
+                <select className="min-w-0 flex-1 rounded-[8px] border border-[#dfe5df] bg-white px-2 py-2 font-normal text-[#2b4540]" value={sort?.key ?? ""} onChange={(event) => {
+                  const nextSort = event.target.value ? { key: event.target.value, direction: "asc" as const } : null;
+                  if (isControlled) onSortChange?.(nextSort); else setLocalSort(nextSort);
+                }}>
+                  <option value="">بدون مرتب‌سازی</option>
+                  {sortableColumns.map((column) => <option key={column.key} value={column.key}>{column.title}</option>)}
+                </select>
+              </label>
+              {sort && <button className="grid size-8 place-items-center rounded-[8px] border border-[#dfe5df] bg-white text-[#526461]" type="button" onClick={() => cycleSort(sort.key)} aria-label={sort.direction === "asc" ? "مرتب‌سازی نزولی" : "غیرفعال کردن مرتب‌سازی"}>
+                {sort.direction === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+              </button>}
+            </div>}
+            <div className="grid gap-3 p-3" role="list">
+              {sortedRows.map((row) => (
               <article
                 className="overflow-hidden rounded-[14px] border border-[#e1e8e3] bg-white shadow-[0_7px_20px_rgba(27,63,54,.045)]"
                 key={getRowKey(row)}
@@ -150,7 +230,8 @@ export function DataTable<T>({
                   ))}
                 </dl>
               </article>
-            ))}
+              ))}
+            </div>
           </div>
         )
       ) : (
@@ -158,18 +239,22 @@ export function DataTable<T>({
           <table className={cn("w-full border-collapse text-right text-[10px]", minWidthClassName)}>
             <thead className="bg-[#f7f9f6] text-[#71817e]">
               <tr>
-                {columns.map((column) => (
-                  <th className={cn("px-4 py-3 font-extrabold", column.headerClassName)} key={column.key}>
-                    {column.title}
+                {columns.map((column) => {
+                  const isSorted = sort?.key === column.key;
+                  return <th aria-sort={isSorted ? (sort.direction === "asc" ? "ascending" : "descending") : "none"} className={cn("px-4 py-3 font-extrabold", column.headerClassName)} key={column.key}>
+                    {column.sortable === false ? column.title : <button className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 font-inherit text-inherit" type="button" onClick={() => cycleSort(column.key)} title={`مرتب‌سازی ${column.title}`}>
+                      {column.title}
+                      {isSorted ? (sort.direction === "asc" ? <ArrowUp size={13} /> : <ArrowDown size={13} />) : <ArrowUpDown className="opacity-45" size={13} />}
+                    </button>}
                   </th>
-                ))}
+                })}
               </tr>
             </thead>
             {loading ? (
               <DataTableSkeleton columns={columns} rows={skeletonRows} />
             ) : (
               <tbody>
-                {rows.map((row) => (
+                {sortedRows.map((row) => (
                   <tr className="border-t border-[#edf0ec] transition-colors hover:bg-[#fbfcfa]" key={getRowKey(row)}>
                     {columns.map((column) => (
                       <td className={cn("px-4 py-4", column.className)} key={column.key}>

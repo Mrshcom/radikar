@@ -4,9 +4,10 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ReceiptText } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { useAuth } from "@/app/_components/auth";
-import { DataTable, type DataTableColumn } from "../../_components/data-table";
+import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
 import { apiRequest } from "@/lib/api-client";
 import { buildQueryString } from "@/lib/build-query-string";
+import { PersianDateTime } from "@/lib/date-time-display";
 import { formatTomans, usePlans, type Order, type Plan } from "@/lib/billing";
 import { useUrlTablePagination } from "@/lib/table-page-size";
 import {
@@ -14,6 +15,8 @@ import {
   tableOptionalFilterParser,
   tableQueryStateOptions,
   tableSearchParser,
+  tableSortByParser,
+  tableSortDirectionParser,
 } from "@/lib/table-search-params";
 import {
   AdminFilterSelect,
@@ -38,21 +41,24 @@ const orderFilterParsers = {
   search: tableSearchParser,
   status: createTableFilterParser(statusOptions.slice(1).map((item) => item.value)),
   planId: tableOptionalFilterParser,
+  sortBy: tableSortByParser,
+  sortDirection: tableSortDirectionParser,
 };
 
 export default function AdminOrdersPage() {
   const { user } = useAuth();
   const plans = usePlans();
-  const [{ search, status, planId }, setFilters] = useQueryStates(
+  const [{ search, status, planId, sortBy, sortDirection }, setFilters] = useQueryStates(
     orderFilterParsers,
     { ...tableQueryStateOptions, urlKeys: { search: "q", planId: "plan" } },
   );
   const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } =
     useUrlTablePagination();
+  const sort: SortState = sortBy && (sortDirection === "asc" || sortDirection === "desc") ? { key: sortBy, direction: sortDirection } : null;
   const query = useQuery({
-    queryKey: ["admin", "orders", page, pageSize, search, status, planId],
+    queryKey: ["admin", "orders", page, pageSize, search, status, planId, sortBy, sortDirection],
     queryFn: () => apiRequest<Response>(
-      `/api/admin/orders?${buildQueryString({ page, pageSize, search, status, planId })}`,
+      `/api/admin/orders?${buildQueryString({ page, pageSize, search, status, planId, sortBy, sortDirection })}`,
     ),
     enabled: user?.role !== "user",
     staleTime: 15_000,
@@ -66,7 +72,7 @@ export default function AdminOrdersPage() {
     { key: "plan", title: "پلن", render: ({ plan }) => plan.name },
     { key: "amount", title: "مبلغ", render: ({ order }) => `${formatTomans(order.amountRials)} تومان` },
     { key: "status", title: "وضعیت", render: ({ order }) => statusOptions.find((item) => item.value === order.status)?.label ?? order.status },
-    { key: "date", title: "تاریخ", render: ({ order }) => new Date(order.createdAt).toLocaleDateString("fa-IR") },
+    { key: "date", title: "تاریخ و ساعت", render: ({ order }) => <PersianDateTime value={order.createdAt} /> },
     { key: "tracking", title: "پیگیری", render: ({ order }) => <span dir="ltr">{order.refId || "—"}</span> },
   ];
   return (
@@ -77,7 +83,7 @@ export default function AdminOrdersPage() {
           <AdminFilterSelect label="وضعیت سفارش" value={status} options={statusOptions} onChange={(value) => { void setFilters({ status: value }); setPage(1); }} />
           <AdminFilterSelect label="پلن" value={planId} options={[{ value: "", label: "همه پلن‌ها" }, ...(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))]} onChange={(value) => { void setFilters({ planId: value }); setPage(1); }} />
         </AdminTableToolbar>
-        <DataTable columns={columns} rows={query.data?.items ?? []} getRowKey={({ order }) => order.id} loading={query.isLoading} error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} filtered={filtered} minWidthClassName="min-w-[850px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={query.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
+        <DataTable columns={columns} rows={query.data?.items ?? []} getRowKey={({ order }) => order.id} loading={query.isLoading} error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} filtered={filtered} sort={sort} onSortChange={(next) => { void setFilters({ sortBy: next?.key ?? "", sortDirection: next?.direction ?? "" }); setPage(1); }} minWidthClassName="min-w-[850px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={query.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
       </section>
     </div>
   );

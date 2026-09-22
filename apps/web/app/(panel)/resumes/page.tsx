@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { DeleteConfirmModal, Modal, SectionTitle } from "../_components/ui";
 import { useToast } from "@/app/_components/toast";
+import { PersianDateTime } from "@/lib/date-time-display";
 import { ResumesSkeleton } from "../_components/skeletons";
 import { ResumeBuilder } from "./resume-builder";
 import { ScaledResumePreview } from "./scaled-resume-preview";
@@ -538,9 +539,7 @@ export default function ResumesPage() {
                       <small className="flex min-w-0 items-center gap-1 truncate text-[7px] text-[#8b9895]">
                         <CalendarDays className="shrink-0" size={12} />
                         <span className="truncate">
-                          {new Intl.DateTimeFormat("fa-IR", {
-                            dateStyle: "medium",
-                          }).format(new Date(resume.updatedAt))}
+                          <PersianDateTime value={resume.updatedAt} />
                         </span>
                       </small>
                       <div className="flex shrink-0 items-center gap-1">

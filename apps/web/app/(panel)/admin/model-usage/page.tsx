@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { useAuth } from "@/app/_components/auth";
-import { DataTable, type DataTableColumn } from "../../_components/data-table";
+import { PersianDateTime } from "@/lib/date-time-display";
+import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
 import { AdminTablePagination } from "../_components/admin-table-controls";
 import {
   useAdminAiSettings,
@@ -24,12 +25,16 @@ import {
   createTableFilterParser,
   modelUsageDaysParser,
   tableQueryStateOptions,
+  tableSortByParser,
+  tableSortDirectionParser,
 } from "@/lib/table-search-params";
 
 type RecentModelRequest = AdminModelUsageStats["recentRequests"]["items"][number];
 const modelUsageFilterParsers = {
   days: modelUsageDaysParser,
   provider: createTableFilterParser(["freeDeepseekAPI", "gapgpt"] as const),
+  sortBy: tableSortByParser,
+  sortDirection: tableSortDirectionParser,
 };
 
 const operationLabels: Record<string, string> = {
@@ -60,12 +65,7 @@ function percent(value: number) {
 }
 
 function dateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("fa-IR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
+  return <PersianDateTime value={value} />;
 }
 
 function downloadCsv(data: AdminModelUsageStats) {
@@ -93,13 +93,14 @@ function downloadCsv(data: AdminModelUsageStats) {
 
 export default function AdminModelUsagePage() {
   const { user } = useAuth();
-  const [{ days, provider }, setFilters] = useQueryStates(
+  const [{ days, provider, sortBy, sortDirection }, setFilters] = useQueryStates(
     modelUsageFilterParsers,
     tableQueryStateOptions,
   );
   const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } =
     useUrlTablePagination();
-  const query = useAdminModelUsage(user?.role === "superadmin", days, page, pageSize, provider);
+  const sort: SortState = sortBy && (sortDirection === "asc" || sortDirection === "desc") ? { key: sortBy, direction: sortDirection } : null;
+  const query = useAdminModelUsage(user?.role === "superadmin", days, page, pageSize, provider, sortBy, sortDirection);
   const aiSettings = useAdminAiSettings(user?.role === "superadmin");
 
   if (user?.role !== "superadmin") return null;
@@ -246,6 +247,8 @@ export default function AdminModelUsagePage() {
               error={query.error}
               retrying={query.isFetching}
               onRetry={() => void query.refetch()}
+              sort={sort}
+              onSortChange={(next) => { void setFilters({ sortBy: next?.key ?? "", sortDirection: next?.direction ?? "" }); setPage(1); }}
               minWidthClassName="min-w-[900px]"
               footer={(
                 <AdminTablePagination

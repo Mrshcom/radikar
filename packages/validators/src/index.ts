@@ -1,4 +1,10 @@
 import { z } from "zod";
+export {
+  adminUserEditSchema,
+  updateAdminAliasSchema,
+  type AdminUserEditInput,
+  type UpdateAdminAliasInput,
+} from "./admin";
 import {
   dataCollections,
   type DataCollection,

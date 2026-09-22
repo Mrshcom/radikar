@@ -1,5 +1,6 @@
 import { dataRecords, plans } from "./schema";
 import { createDatabase } from "./client";
+import { and, eq, isNull, sql } from "drizzle-orm";
 
 const databaseUrl =
   process.env.DATABASE_URL ??
@@ -68,9 +69,7 @@ try {
       },
     });
 
-  await database.db
-    .insert(dataRecords)
-    .values([
+  const initialRecords = [
       {
         collection: "appProfiles",
         id: "profile-default",
@@ -95,8 +94,26 @@ try {
         createdAt: now,
         updatedAt: now,
       },
-    ])
-    .onConflictDoNothing();
+    ];
+  // `NULL` values do not conflict in a normal Postgres unique index. Serialize
+  // this small global seed section so parallel deploy/CI processes are safe too.
+  await database.db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(783241)`);
+    for (const record of initialRecords) {
+      const [existing] = await tx
+        .select({ id: dataRecords.id })
+        .from(dataRecords)
+        .where(
+          and(
+            eq(dataRecords.collection, record.collection),
+            eq(dataRecords.id, record.id),
+            isNull(dataRecords.ownerUserId),
+          ),
+        )
+        .limit(1);
+      if (!existing) await tx.insert(dataRecords).values(record);
+    }
+  });
   console.info("Database seed completed.");
 } finally {
   await database.close();

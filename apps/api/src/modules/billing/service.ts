@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { and, count, desc, eq, gt, gte, ilike, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, gte, ilike, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
 import type { ModelUsageEvent } from "@radikar/ai";
 import {
   membershipEvents,
@@ -306,19 +306,23 @@ export class BillingService {
     pageSize = 20,
     search = "",
     status?: typeof orders.$inferSelect.status,
+    sortBy?: string,
+    sortDirection: "asc" | "desc" = "desc",
   ) {
     const filter = and(
       eq(orders.userId, userId),
       search.trim() ? ilike(orders.orderNumber, `%${search.trim()}%`) : undefined,
       status ? eq(orders.status, status) : undefined,
     );
+    const sortColumn = sortBy === "number" ? orders.orderNumber : sortBy === "plan" ? plans.name : sortBy === "amount" ? orders.amountRials : sortBy === "status" ? orders.status : sortBy === "tracking" ? orders.refId : orders.createdAt;
+    const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [items, totalRows] = await Promise.all([
       this.database
         .select({ order: orders, plan: plans })
         .from(orders)
         .innerJoin(plans, eq(orders.planId, plans.id))
         .where(filter)
-        .orderBy(desc(orders.createdAt))
+        .orderBy(order)
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       this.database.select({ total: count() }).from(orders).where(filter),
@@ -561,6 +565,8 @@ export class BillingService {
     pageSize = 20,
     status?: typeof orders.$inferSelect.status,
     planId?: string,
+    sortBy?: string,
+    sortDirection: "asc" | "desc" = "desc",
   ) {
     const filter = and(
       search.trim()
@@ -573,6 +579,8 @@ export class BillingService {
       status ? eq(orders.status, status) : undefined,
       planId ? eq(orders.planId, planId) : undefined,
     );
+    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone})` : sortBy === "plan" ? plans.name : sortBy === "amount" ? orders.amountRials : sortBy === "status" ? orders.status : sortBy === "tracking" ? orders.refId : sortBy === "order" ? orders.orderNumber : orders.createdAt;
+    const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [items, totals] = await Promise.all([
       this.database
         .select({ order: orders, plan: plans, user: users })
@@ -580,7 +588,7 @@ export class BillingService {
         .innerJoin(plans, eq(orders.planId, plans.id))
         .innerJoin(users, eq(orders.userId, users.id))
         .where(filter)
-        .orderBy(desc(orders.createdAt))
+        .orderBy(order)
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       this.database
@@ -646,7 +654,7 @@ export class BillingService {
       .onConflictDoNothing({ target: modelUsageEvents.requestId });
   }
 
-  async getModelUsageStats(days = 30, page = 1, pageSize = 20, provider?: string) {
+  async getModelUsageStats(days = 30, page = 1, pageSize = 20, provider?: string, sortBy?: string, sortDirection: "asc" | "desc" = "desc") {
     const since = new Date(Date.now() - days * 86_400_000);
     const filter = and(
       gte(modelUsageEvents.createdAt, since),
@@ -661,6 +669,8 @@ export class BillingService {
       totalTokens: sql<number>`coalesce(sum(${modelUsageEvents.totalTokens}), 0)`,
       estimatedCostMicros: sql<number>`coalesce(sum(${modelUsageEvents.estimatedCostMicros}), 0)`,
     };
+    const recentSortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone})` : sortBy === "operation" ? modelUsageEvents.operation : sortBy === "model" ? modelUsageEvents.model : sortBy === "tokens" ? modelUsageEvents.totalTokens : sortBy === "cost" ? modelUsageEvents.estimatedCostMicros : sortBy === "status" ? modelUsageEvents.successful : modelUsageEvents.createdAt;
+    const recentOrder = sortDirection === "asc" ? asc(recentSortColumn) : desc(recentSortColumn);
     const [totalsRows, todayRows, byModelRows, byOperationRows, dailyRows, recentRows] =
       await Promise.all([
         this.database
@@ -730,7 +740,7 @@ export class BillingService {
           .from(modelUsageEvents)
           .innerJoin(users, eq(users.id, modelUsageEvents.userId))
           .where(filter)
-          .orderBy(desc(modelUsageEvents.createdAt))
+          .orderBy(recentOrder)
           .limit(pageSize)
           .offset((page - 1) * pageSize),
       ]);
@@ -778,6 +788,8 @@ export class BillingService {
     pageSize = 20,
     search = "",
     status?: typeof payments.$inferSelect.status,
+    sortBy?: string,
+    sortDirection: "asc" | "desc" = "desc",
   ) {
     const filter = and(
       search.trim()
@@ -790,6 +802,8 @@ export class BillingService {
         : undefined,
       status ? eq(payments.status, status) : undefined,
     );
+    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone})` : sortBy === "amount" ? payments.amountRials : sortBy === "status" ? payments.status : sortBy === "authority" ? payments.authority : sortBy === "reference" ? payments.refId : sortBy === "card" ? payments.cardPan : payments.createdAt;
+    const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [items, totals] = await Promise.all([
       this.database
         .select({ payment: payments, order: orders, user: users })
@@ -797,7 +811,7 @@ export class BillingService {
         .innerJoin(orders, eq(payments.orderId, orders.id))
         .innerJoin(users, eq(orders.userId, users.id))
         .where(filter)
-        .orderBy(desc(payments.createdAt))
+        .orderBy(order)
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       this.database
@@ -817,6 +831,8 @@ export class BillingService {
     planId?: string,
     membershipStatus?: typeof userMemberships.$inferSelect.status,
     userStatus?: typeof users.$inferSelect.status,
+    sortBy?: string,
+    sortDirection: "asc" | "desc" = "desc",
   ) {
     const filter = and(
       ne(users.role, "superadmin"),
@@ -830,6 +846,8 @@ export class BillingService {
       membershipStatus ? eq(userMemberships.status, membershipStatus) : undefined,
       userStatus ? eq(users.status, userStatus) : undefined,
     );
+    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone})` : sortBy === "plan" ? plans.name : sortBy === "account" ? users.status : sortBy === "membership" ? userMemberships.status : sortBy === "expiry" ? userMemberships.expiresAt : sortBy === "ai" ? userMemberships.aiCreditsRemaining : users.createdAt;
+    const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [items, totals] = await Promise.all([
       this.database
         .select({ user: users, membership: userMemberships, plan: plans })
@@ -837,7 +855,7 @@ export class BillingService {
         .leftJoin(userMemberships, eq(userMemberships.userId, users.id))
         .leftJoin(plans, eq(userMemberships.planId, plans.id))
         .where(filter)
-        .orderBy(desc(users.createdAt))
+        .orderBy(order)
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       this.database

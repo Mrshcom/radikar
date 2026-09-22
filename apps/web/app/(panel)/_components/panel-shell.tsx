@@ -66,6 +66,7 @@ import {
 import { useAuth, useLogout, type UserRole } from "@/app/_components/auth";
 import { useToast } from "@/app/_components/toast";
 import { useAdminEvents, type AdminEvent } from "@/lib/admin-stats";
+import { PersianDateTime } from "@/lib/date-time-display";
 
 type MenuItem = {
   href: string;
@@ -138,12 +139,7 @@ function adminEventMessage(event: AdminEvent) {
 }
 
 function adminEventTime(value: string) {
-  const date = new Date(value);
-  const today = new Date();
-  const sameDay = date.toLocaleDateString("fa-IR") === today.toLocaleDateString("fa-IR");
-  return sameDay
-    ? `امروز، ${date.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}`
-    : date.toLocaleString("fa-IR", { dateStyle: "short", timeStyle: "short" });
+  return <PersianDateTime value={value} />;
 }
 
 export function PanelShell({ children }: { children: ReactNode }) {

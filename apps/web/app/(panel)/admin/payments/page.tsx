@@ -4,15 +4,18 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { CreditCard } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { useAuth } from "@/app/_components/auth";
-import { DataTable, type DataTableColumn } from "../../_components/data-table";
+import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
 import { apiRequest } from "@/lib/api-client";
 import { buildQueryString } from "@/lib/build-query-string";
 import { formatTomans, type Order } from "@/lib/billing";
+import { PersianDateTime } from "@/lib/date-time-display";
 import { useUrlTablePagination } from "@/lib/table-page-size";
 import {
   createTableFilterParser,
   tableQueryStateOptions,
   tableSearchParser,
+  tableSortByParser,
+  tableSortDirectionParser,
 } from "@/lib/table-search-params";
 import { AdminFilterSelect, AdminTablePagination, AdminTableToolbar } from "../_components/admin-table-controls";
 
@@ -22,19 +25,22 @@ const statusOptions = [{ value: "", label: "همه وضعیت‌ها" }, { value
 const paymentFilterParsers = {
   search: tableSearchParser,
   status: createTableFilterParser(statusOptions.slice(1).map((item) => item.value)),
+  sortBy: tableSortByParser,
+  sortDirection: tableSortDirectionParser,
 };
 
 export default function AdminPaymentsPage() {
   const { user } = useAuth();
-  const [{ search, status }, setFilters] = useQueryStates(paymentFilterParsers, {
+  const [{ search, status, sortBy, sortDirection }, setFilters] = useQueryStates(paymentFilterParsers, {
     ...tableQueryStateOptions,
     urlKeys: { search: "q" },
   });
   const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } =
     useUrlTablePagination();
+  const sort: SortState = sortBy && (sortDirection === "asc" || sortDirection === "desc") ? { key: sortBy, direction: sortDirection } : null;
   const query = useQuery({
-    queryKey: ["admin", "payments", page, pageSize, search, status],
-    queryFn: () => apiRequest<Response>(`/api/admin/payments?${buildQueryString({ page, pageSize, search, status })}`),
+    queryKey: ["admin", "payments", page, pageSize, search, status, sortBy, sortDirection],
+    queryFn: () => apiRequest<Response>(`/api/admin/payments?${buildQueryString({ page, pageSize, search, status, sortBy, sortDirection })}`),
     enabled: user?.role !== "user", staleTime: 15_000, placeholderData: keepPreviousData,
   });
   if (user?.role === "user") return null;
@@ -46,10 +52,10 @@ export default function AdminPaymentsPage() {
     { key: "authority", title: "Authority", className: "max-w-[190px] truncate", render: ({ payment }) => <span dir="ltr">{payment.authority}</span> },
     { key: "reference", title: "کد مرجع", render: ({ payment }) => <span dir="ltr">{payment.refId || "—"}</span> },
     { key: "card", title: "کارت", render: ({ payment }) => <span dir="ltr">{payment.cardPan || "—"}</span> },
-    { key: "date", title: "تاریخ", render: ({ payment }) => new Date(payment.createdAt).toLocaleDateString("fa-IR") },
+    { key: "date", title: "تاریخ و ساعت", className: "whitespace-nowrap", render: ({ payment }) => <PersianDateTime value={payment.createdAt} /> },
   ];
   return <div className="grid gap-6"><header><span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]"><CreditCard size={18} /> امور مالی</span><h1 className="mb-0 mt-3 text-[25px] font-black">واریزی‌ها و تراکنش‌های درگاه</h1></header><section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
     <AdminTableToolbar search={search} searchPlaceholder="نام، شماره، Authority یا کد مرجع" activeFilterCount={status ? 1 : 0} onSearch={(value) => { void setFilters({ search: value }); setPage(1); }} onResetFilters={() => { void setFilters({ status: "" }); setPage(1); }}><AdminFilterSelect label="وضعیت تراکنش" value={status} options={statusOptions} onChange={(value) => { void setFilters({ status: value }); setPage(1); }} /></AdminTableToolbar>
-    <DataTable columns={columns} rows={query.data?.items ?? []} getRowKey={({ payment }) => payment.id} loading={query.isLoading} error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} filtered={filtered} minWidthClassName="min-w-[900px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={query.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
+    <DataTable columns={columns} rows={query.data?.items ?? []} getRowKey={({ payment }) => payment.id} loading={query.isLoading} error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} filtered={filtered} sort={sort} onSortChange={(next) => { void setFilters({ sortBy: next?.key ?? "", sortDirection: next?.direction ?? "" }); setPage(1); }} minWidthClassName="min-w-[900px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={query.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
   </section></div>;
 }

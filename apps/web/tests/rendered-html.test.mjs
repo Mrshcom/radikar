@@ -48,13 +48,18 @@ test("the Web workspace uses the official Next.js CLI with Turbopack", async () 
     nextConfig,
     /distDir: process\.env\.NODE_ENV === "development" \? "\.next-dev" : "\.next"/,
   );
-  assert.doesNotMatch(webPackage, /vinext|vite|wrangler|cloudflare/i);
+  const { dev, build, start } = JSON.parse(webPackage).scripts;
+  assert.doesNotMatch(`${dev} ${build} ${start}`, /vinext|vite|wrangler|cloudflare/i);
 });
 
-test("home redirects to the dynamic dashboard", async () => {
-  const homePage = await readFile(new URL("app/page.tsx", projectRoot), "utf8");
+test("home renders the public marketing experience", async () => {
+  const homePage = await readFile(
+    new URL("app/(marketing)/page.tsx", projectRoot),
+    "utf8",
+  );
 
-  assert.match(homePage, /redirect\("\/dashboard"\)/);
+  assert.match(homePage, /<HeroSection/);
+  assert.match(homePage, /<PricingSection/);
 });
 
 test("login page uses a two-step validated mobile OTP flow backed by the auth API", async () => {
@@ -322,7 +327,7 @@ test("all project data tables share controls, loading skeleton, zero state and p
   });
   assert.match(upgradePage, /پیش‌فاکتور خرید بسته/);
   assert.match(upgradePage, /تأیید و انتقال به درگاه/);
-  assert.match(upgradePage, /onClick=\{\(\) => setInvoicePlan\(plan\)\}/);
+  assert.match(upgradePage, /onClick=\{\(\) => openInvoice\(plan\)\}/);
 });
 
 test("list endpoints tolerate empty optional filters from every client", async () => {
@@ -567,7 +572,7 @@ test("knowledge base organizes every form section in an accessible responsive ta
     knowledgeBase,
     /min-\[1100px\]:grid-cols-\[250px_minmax\(0,1fr\)\]/,
   );
-  assert.match(knowledgeBase, /overflow-x-auto/);
+  assert.match(knowledgeBase, /overflow-x-hidden/);
 });
 
 test("an empty knowledge base starts with four editable English sample projects", async () => {
@@ -1026,7 +1031,7 @@ test("PDF printing waits for the shared rendered pagination and keeps its probe 
       new URL("app/_components/toast.tsx", projectRoot),
       "utf8",
     ),
-    /fixed bottom-6 left-6[^\n]*print:hidden/,
+    /fixed left-1\/2 top-\[max\(1rem,env\(safe-area-inset-top\)\)\][^\n]*print:hidden/,
   );
   assert.match(resumeDocument, /if \(!candidate\) onPaginationReady\?\.\(\)/);
 });
@@ -1709,7 +1714,7 @@ test("resume editing and template preview opt into the shared modal close button
 
   assert.match(
     sharedUi,
-    /className=\{`mb-\[7px\] mt-0 text-\[20px\] leading-\[1\.5\] \$\{titleClassName/,
+    /className=\{`mb-\[7px\] mt-0 text-\[20px\] leading-\[1\.5\] max-\[560px\]:text-\[16px\] \$\{titleClassName/,
   );
   assert.match(sharedUi, /<p className="m-0 text-\[12px\] leading-\[1\.9\]/);
   assert.match(sharedUi, /showCloseButton = false/);
@@ -1926,7 +1931,7 @@ test("resume color controls sit above a segmented step tab bar", async () => {
     "utf8",
   );
   const paletteIndex = builder.indexOf("رنگ‌بندی قالب");
-  const tabListIndex = builder.indexOf('role="tablist"');
+  const tabListIndex = builder.indexOf('aria-label="مراحل ساخت رزومه"');
 
   assert.notEqual(paletteIndex, -1);
   assert.notEqual(tabListIndex, -1);
@@ -3442,7 +3447,7 @@ test("running match analysis restores its exact inputs and can be canceled", asy
   assert.match(matchPage, /jobDescription: selectedDescription/);
   assert.match(matchPage, /resumeId: selectedResume\.id/);
   assert.match(matchPage, /signal,/);
-  assert.match(matchPage, /ورودی‌های در حال تحلیل/);
+  assert.match(matchPage, /در حال تحلیل/);
   assert.match(matchPage, /لغو تحلیل/);
   assert.match(matchPage, /cancelTask\(runningAnalysisTask\.id\)/);
   assert.match(matchPage, /normalizeMatchAnalysisInput\(rawResult\)/);

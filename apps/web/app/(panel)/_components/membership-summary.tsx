@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { Membership } from "@/lib/billing";
+import { PersianDateTime } from "@/lib/date-time-display";
 
 type UsageKey = keyof Membership["usage"];
 
@@ -26,10 +27,6 @@ const usageItems: Array<{
   { key: "match", label: "تطبیق شغلی", description: "تحلیل رزومه با فرصت شغلی", icon: Target },
   { key: "interview", label: "مصاحبه آزمایشی", description: "جلسه‌های تمرین مصاحبه", icon: MessagesSquare },
 ];
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("fa-IR", { dateStyle: "long" }).format(new Date(value));
-}
 
 function remainingDays(expiresAt: string) {
   return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000));
@@ -103,7 +100,7 @@ export function MembershipSummary({
           <CalendarDays className="text-[#178066]" size={19} />
           <span>
             <strong className="block text-[12px] text-[#27453e]">{remainingDays(membership.expiresAt).toLocaleString("fa-IR")} روز باقی‌مانده</strong>
-            <small className="mt-1 block text-[8px] text-[#82908c]">اعتبار تا {formatDate(membership.expiresAt)}</small>
+          <small className="mt-1 block text-[8px] text-[#82908c]">اعتبار تا <PersianDateTime value={membership.expiresAt} /></small>
           </span>
         </div>
         {showUpgradeAction && (

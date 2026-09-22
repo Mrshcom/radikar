@@ -4,18 +4,18 @@
 
 ▲ Next.js 16.3.3 (Turbopack)
 - Environments: .env.local
-✓ Running next.config.ts took 43ms
+✓ Running next.config.ts took 90ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 1461ms
+✓ Compiled successfully in 1432ms
   Running TypeScript ...
-  Finished TypeScript in 2.8s ...
+  Finished TypeScript in 2.6s ...
   Collecting page data using 7 workers ...
   Generating static pages using 7 workers (0/37) ...
   Generating static pages using 7 workers (9/37) 
   Generating static pages using 7 workers (18/37) 
   Generating static pages using 7 workers (27/37) 
-✓ Generating static pages using 7 workers (37/37) in 439ms
+✓ Generating static pages using 7 workers (37/37) in 468ms
   Finalizing page optimization ...
 
 Route (app)                Revalidate  Expire
@@ -61,3 +61,4 @@ Route (app)                Revalidate  Expire
 
 ○  (Static)   prerendered as static content
 ƒ  (Dynamic)  server-rendered on demand
+

@@ -58,6 +58,8 @@ export const users = pgTable(
     id: uuid("id").primaryKey(),
     phone: text("phone").notNull(),
     fullName: text("full_name"),
+    // Internal label for super-admins; never returned by user-facing profile APIs.
+    adminAlias: text("admin_alias"),
     role: text("role", { enum: ["user", "admin", "superadmin"] })
       .notNull()
       .default("user"),
