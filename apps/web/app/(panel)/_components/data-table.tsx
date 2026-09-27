@@ -220,8 +220,8 @@ export function DataTable<T>({
                       )}
                       key={column.key}
                     >
-                      <dt className="w-24 shrink-0 text-[9px] font-bold text-[#7a8985]">{column.title}</dt>
-                      <dd className={cn("m-0 min-w-0 flex-1 text-left text-[10px] text-[#2b4540]", column.className)}>
+                      <dt className="w-24 shrink-0 text-[10px] font-bold text-[#7a8985]">{column.title}</dt>
+                      <dd className={cn("m-0 min-w-0 flex-1 text-left text-[11px] text-[#2b4540]", column.className)}>
                         {column.render(row)}
                       </dd>
                     </div>
@@ -234,7 +234,7 @@ export function DataTable<T>({
         )
       ) : (
         <div className="overflow-x-auto">
-          <table className={cn("w-full border-collapse text-right text-[10px]", minWidthClassName)}>
+          <table className={cn("w-full border-collapse text-right text-[11px]", minWidthClassName)}>
             <thead className="bg-[#f7f9f6] text-[#71817e]">
               <tr>
                 {columns.map((column) => {

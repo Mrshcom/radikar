@@ -27,3 +27,18 @@ export function formatGroupedNumericText(value: string) {
     return `${Number(integer).toLocaleString("en-US")}${fraction ? `.${fraction}` : ""}`;
   });
 }
+
+export function formatDollarMicrosToTomans(micros: number, dollarRateRials?: number | null) {
+  if (!dollarRateRials) return "نرخ دلار تنظیم نشده است";
+  return `${((micros / 1_000_000) * dollarRateRials).toLocaleString("fa-IR", { maximumFractionDigits: 3 })} تومان`;
+}
+
+export function formatDollarTextToTomans(value: string, dollarRateRials?: number | null) {
+  if (!dollarRateRials) return "نرخ دلار تنظیم نشده است";
+  return value.replace(/(?:USD\s*)?\$?\s*(\d[\d,]*(?:\.\d+)?)/gi, (_, amount: string) => {
+    const number = Number(amount.replace(/,/g, ""));
+    return Number.isFinite(number)
+      ? `${(number * dollarRateRials).toLocaleString("fa-IR", { maximumFractionDigits: 3 })} تومان`
+      : amount;
+  });
+}

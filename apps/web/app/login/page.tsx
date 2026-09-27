@@ -117,8 +117,9 @@ export default function LoginPage() {
 
   const startGoogleLogin = () => {
     const next = new URLSearchParams(window.location.search).get("next");
-    const query = next ? `?next=${encodeURIComponent(next)}` : "";
-    window.location.assign(apiUrl(`/api/auth/google/start${query}`));
+    const referralCode = new URLSearchParams(window.location.search).get("ref") || window.localStorage.getItem("radikar_referral_code") || "";
+    const query = new URLSearchParams({ ...(next ? { next } : {}), ...(referralCode ? { ref: referralCode } : {}) }).toString();
+    window.location.assign(apiUrl(`/api/auth/google/start${query ? `?${query}` : ""}`));
   };
 
   const requestOtp = useMutation({
@@ -129,7 +130,7 @@ export default function LoginPage() {
       ),
   });
   const verifyOtpMutation = useMutation({
-    mutationFn: (input: { phone: string; challengeId: string; code: string }) =>
+    mutationFn: (input: { phone: string; challengeId: string; code: string; referralCode?: string }) =>
       apiRequest<{ user: CurrentUser; expiresAt: string }>("/api/auth/verify-otp", {
         method: "POST",
         body: JSON.stringify(input),
@@ -160,9 +161,11 @@ export default function LoginPage() {
         phone: submittedPhone,
         challengeId,
         code: otp,
+        referralCode: new URLSearchParams(window.location.search).get("ref") || window.localStorage.getItem("radikar_referral_code") || undefined,
       });
       queryClient.clear();
       queryClient.setQueryData(authQueryKey, { user: result.user });
+      window.localStorage.removeItem("radikar_referral_code");
       notify("با موفقیت وارد حساب کاربری شدی.");
       router.replace(result.user.role === "user" ? "/dashboard" : "/admin");
     } catch (error) {
@@ -350,7 +353,7 @@ export default function LoginPage() {
                 >
                   {Array.from({ length: 6 }, (_, index) => (
                     <input
-                      className="h-12 min-w-0 rounded-[12px] border border-[#d9dfda] bg-white text-center text-[20px] font-bold text-[#233936] outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/12 sm:h-14 sm:rounded-[14px] sm:text-[21px]"
+                      className="h-12 min-w-0 rounded-[12px] border border-[#d9dfda] bg-white !text-center text-[20px] font-bold text-[#233936] outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/12 sm:h-14 sm:rounded-[14px] sm:text-[21px]"
                       ref={(element) => {
                         otpInputRefs.current[index] = element;
                       }}

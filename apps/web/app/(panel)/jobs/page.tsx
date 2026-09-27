@@ -315,7 +315,7 @@ export default function JobsPage() {
         />
       </div>
       {filtersOpen && (
-        <div className="mt-3 rounded-xl border border-[#e1e7e3] bg-white p-4">
+        <div className="mt-3 rounded-xl border-0 bg-white p-4">
           <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#edf1ee] pb-3">
             <div className="flex items-center gap-2 text-[10px] font-bold text-[#304943]">
               <SlidersHorizontal size={16} className="text-[#0f7b62]" />

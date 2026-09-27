@@ -94,13 +94,17 @@ test("AuthService resolves, refreshes and revokes real PostgreSQL sessions", { t
     assert.equal(await auth.resolveSession("missing"), null);
 
     const challenge = await auth.requestOtp("09120000001");
-    const verified = await auth.verifyOtp(challenge.challengeId, "09120000001", challenge.developmentCode!);
+    const verified = await auth.verifyOtp(challenge.challengeId, "09120000001", challenge.developmentCode!, "203.0.113.10");
     assert.equal(verified.user.role, "superadmin");
     assert.equal((await sql`select count(*)::int as count from user_memberships where user_id = ${verified.user.id}`)[0].count, 1);
 
     const resolved = await auth.resolveSession(verified.sessionToken);
     assert.equal(resolved?.user.id, verified.user.id);
     assert.equal(resolved?.sessionId.length, 36);
+    const activeSessions = await auth.listUserSessions(verified.user.id, resolved!.sessionId);
+    assert.equal(activeSessions[0].status, "active");
+    assert.equal(activeSessions[0].current, true);
+    assert.equal(activeSessions[0].loginIp, "203.0.113.10");
 
     await sql`update auth_sessions set last_seen_at = now() - interval '6 minutes' where id = ${resolved!.sessionId}`;
     const staleLastSeenAt = (await sql<{ last_seen_at: Date }[]>`select last_seen_at from auth_sessions where id = ${resolved!.sessionId}`)[0].last_seen_at;
@@ -108,8 +112,11 @@ test("AuthService resolves, refreshes and revokes real PostgreSQL sessions", { t
     const refreshedLastSeenAt = (await sql<{ last_seen_at: Date }[]>`select last_seen_at from auth_sessions where id = ${resolved!.sessionId}`)[0].last_seen_at;
     assert.ok(refreshedLastSeenAt > staleLastSeenAt);
 
-    await auth.revokeSession(resolved!.sessionId);
+    await auth.revokeSession(resolved!.sessionId, "203.0.113.11");
     assert.equal(await auth.resolveSession(verified.sessionToken), null);
+    const endedSessions = await auth.listUserSessions(verified.user.id, resolved!.sessionId);
+    assert.equal(endedSessions[0].status, "logged_out");
+    assert.equal(endedSessions[0].logoutIp, "203.0.113.11");
 
     const activeChallenge = await auth.requestOtp("09120000002");
     const activeUser = await auth.verifyOtp(activeChallenge.challengeId, "09120000002", activeChallenge.developmentCode!);

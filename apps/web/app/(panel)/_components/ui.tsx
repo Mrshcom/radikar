@@ -40,7 +40,7 @@ export function Modal({
       onMouseDown={onClose}
     >
       <section
-        className={`${document ? "w-[min(804px,calc(100vw-32px))] max-w-[804px] pb-0" : wide ? "w-[min(1440px,calc(100vw-32px))] max-w-[1440px] pb-0" : "w-[min(520px,100%)]"} max-h-[calc(100dvh-40px)] cursor-default overflow-y-auto overscroll-contain rounded-[19px] border border-white/65 bg-white p-[22px] text-[12px] shadow-[0_26px_80px_rgba(10,38,33,.25)] [-webkit-overflow-scrolling:touch] max-[560px]:max-h-[calc(100dvh-20px)] max-[560px]:rounded-[15px] max-[560px]:p-[17px]`}
+        className={`${document ? "w-[min(804px,calc(100vw-32px))] max-w-[804px]" : wide ? "w-[min(1440px,calc(100vw-32px))] max-w-[1440px]" : "w-[min(520px,100%)]"} max-h-[calc(100dvh-40px)] cursor-default overflow-y-auto overscroll-contain rounded-[19px] border border-white/65 bg-white p-[22px] pb-8 text-[12px] shadow-[0_26px_80px_rgba(10,38,33,.25)] [-webkit-overflow-scrolling:touch] max-[560px]:max-h-[calc(100dvh-20px)] max-[560px]:rounded-[15px] max-[560px]:p-[17px] max-[560px]:pb-6`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -118,6 +118,7 @@ export function ConfirmActionModal({
   tone = "primary",
   showCloseButton = true,
   pending = false,
+  children,
   onCancel,
   onConfirm,
 }: {
@@ -128,6 +129,7 @@ export function ConfirmActionModal({
   tone?: "primary" | "danger";
   showCloseButton?: boolean;
   pending?: boolean;
+  children?: ReactNode;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -138,6 +140,7 @@ export function ConfirmActionModal({
       onClose={() => !pending && onCancel()}
       showCloseButton={showCloseButton}
     >
+      {children ? <div className="mt-5">{children}</div> : null}
       <div className="mt-5 flex flex-wrap justify-end gap-2">
         <button
           className="inline-flex min-h-10 items-center justify-center rounded-[10px] border border-[#dfe5df] bg-white px-4 text-[12px] font-bold text-[#526461] hover:bg-[#f7f9f7] disabled:opacity-50"

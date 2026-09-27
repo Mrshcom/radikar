@@ -15,6 +15,7 @@ import { useAuth } from "@/app/_components/auth";
 import { SearchableSelect } from "@/app/_components/searchable-select";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
+import { CurrencyTooltip } from "../../_components/currency-tooltip";
 import { AdminTablePagination } from "../_components/admin-table-controls";
 import {
   useAdminAiSettings,
@@ -117,7 +118,7 @@ export default function AdminModelUsagePage() {
     { label: "توکن ورودی", value: number(totals?.inputTokens), icon: Download },
     { label: "توکن خروجی", value: number(totals?.outputTokens), icon: Bot },
     { label: "مجموع توکن", value: number(totals?.totalTokens), icon: Gauge },
-    { label: "هزینه برآوردی", value: usd(totals?.estimatedCostMicros), icon: CircleDollarSign, ltr: true, tooltip: aiSettings.data?.current.dollarRateRials ? `${((totals?.estimatedCostMicros ?? 0) / 1_000_000 * aiSettings.data.current.dollarRateRials).toLocaleString("fa-IR", { maximumFractionDigits: 3 })} تومان` : "نرخ دلار تنظیم نشده است" },
+    { label: "هزینه برآوردی", value: usd(totals?.estimatedCostMicros), icon: CircleDollarSign, ltr: true },
     { label: "نرخ موفقیت", value: percent(successRate), icon: Activity },
     { label: "میانگین زمان پاسخ", value: `${number(totals?.averageDurationMs)} ms`, icon: Clock3, ltr: true },
   ];
@@ -129,14 +130,14 @@ export default function AdminModelUsagePage() {
       render: (row) => (
         <span className="whitespace-nowrap" title={`${userDisplayName(row.user)} — ${userIdentifier(row.user)}`}>
           {userDisplayName(row.user)}
-          {row.user.fullName ? <small className="mr-1 text-[8px] font-normal text-[#8b9895]">{userIdentifier(row.user)}</small> : null}
+          {row.user.fullName ? <small className="mr-1 text-[9px] font-normal text-[#8b9895]">{userIdentifier(row.user)}</small> : null}
         </span>
       ),
     },
     { key: "operation", title: "عملیات", render: (row) => operationLabels[row.operation] ?? row.operation },
-    { key: "model", title: "مدل / Provider", render: (row) => <span className="inline-flex flex-col gap-0.5" dir="ltr" title={`${row.provider} / ${row.model}`}><strong>{row.model}</strong><small className="text-[8px] font-normal text-[#8b9895]">{row.provider}</small></span> },
+    { key: "model", title: "مدل / Provider", render: (row) => <span className="inline-flex flex-col gap-0.5" dir="ltr" title={`${row.provider} / ${row.model}`}><strong>{row.model}</strong><small className="text-[9px] font-normal text-[#8b9895]">{row.provider}</small></span> },
     { key: "tokens", title: "توکن", className: "whitespace-nowrap", render: (row) => `${number(row.totalTokens)} توکن` },
-    { key: "cost", title: "هزینه", className: "font-bold text-[#0f7b62]", render: (row) => <span dir="ltr">{usd(row.estimatedCostMicros)}</span> },
+    { key: "cost", title: "هزینه", className: "font-bold text-[#0f7b62]", render: (row) => <CurrencyTooltip amount={row.estimatedCostMicros} dollarRateRials={aiSettings.data?.current.dollarRateRials} className="inline-flex"><span dir="ltr">{usd(row.estimatedCostMicros)}</span></CurrencyTooltip> },
     {
       key: "status",
       title: "وضعیت",
@@ -150,26 +151,23 @@ export default function AdminModelUsagePage() {
     <div className="grid gap-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]">
-            <Bot size={18} /> پایش مصرف هوش مصنوعی
-          </span>
-          <h1 className="mb-0 mt-3 text-[25px] font-black text-[#19312f]">
-            درخواست‌ها، توکن‌ها و هزینه مدل‌ها
+          <h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]">
+            <Bot size={22} /> مصرف و هزینه مدل‌ها
           </h1>
           <p className="mb-0 mt-2 text-[10px] leading-7 text-[#7c8b88]">
             هر تماس واقعی با سرویس مدل، شامل تلاش‌های مجدد و درخواست‌های ناموفق، در این گزارش ثبت می‌شود.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="grid gap-1 text-[9px] font-bold text-[#7c8b88]">
+          <label className="grid gap-1 text-[10px] font-bold text-[#7c8b88]">
             بازه گزارش
             <SearchableSelect ariaLabel="بازه گزارش" className="min-w-28" options={[7, 30, 90].map((value) => ({ value: String(value), label: `${number(value)} روز` }))} value={String(days)} onChange={(value) => { void setFilters({ days: Number(value) as typeof days }); setPage(1); }} />
           </label>
-          <label className="grid gap-1 text-[9px] font-bold text-[#7c8b88]">
+          <label className="grid gap-1 text-[10px] font-bold text-[#7c8b88]">
             Provider
             <SearchableSelect ariaLabel="Provider" className="min-w-40" options={[{ value: "", label: "همه Providerها" }, { value: "freeDeepseekAPI", label: "DeepSeek Local" }, { value: "gapgpt", label: "GapGPT" }]} value={provider} onChange={(value) => { void setFilters({ provider: String(value) as typeof provider }); setPage(1); }} />
           </label>
-          <label className="grid gap-1 text-[9px] font-bold text-[#7c8b88]">
+          <label className="grid gap-1 text-[10px] font-bold text-[#7c8b88]">
             خروجی
             <button
               className="flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#dfe7e2] bg-white px-4 text-[10px] font-bold text-[#536762] disabled:opacity-50"
@@ -193,18 +191,22 @@ export default function AdminModelUsagePage() {
       ) : (
         <>
           <section className="grid grid-cols-4 gap-4 max-[1180px]:grid-cols-3 max-[900px]:grid-cols-2 max-[520px]:grid-cols-1">
-            {cards.map(({ label, value, icon: Icon, ltr, tooltip }) => (
-              <article className="group relative flex items-center gap-3 rounded-[15px] border border-[#e3e9e3] bg-white p-4 shadow-[0_8px_24px_rgba(30,61,53,.05)]" key={label}>
+            {cards.map(({ label, value, icon: Icon, ltr }) => (
+              <CurrencyTooltip
+                as="article"
+                className="flex items-center gap-3 rounded-[15px] border border-[#e3e9e3] bg-white p-4 shadow-[0_8px_24px_rgba(30,61,53,.05)]"
+                currency={label === "هزینه برآوردی" ? "USD" : null}
+                amount={totals?.estimatedCostMicros ?? 0}
+                dollarRateRials={aiSettings.data?.current.dollarRateRials}
+                contentClassName="max-w-none leading-5"
+                key={label}
+              >
                 <span className="grid size-10 shrink-0 place-items-center rounded-[11px] bg-[#eaf5f0] text-[#0f7b62]"><Icon size={18} /></span>
                 <div className="min-w-0">
                   <small className="block text-[9px] font-semibold text-[#81908d]">{label}</small>
                   <strong className="mt-1 block truncate text-[18px] font-black text-[#19312f]" dir={ltr ? "ltr" : undefined}>{query.isLoading ? "…" : value}</strong>
                 </div>
-                {tooltip ? <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max max-w-none -translate-x-1/2 whitespace-nowrap rounded-xl border border-[#28594d] bg-[#19312f] px-3 py-2 text-center text-[10px] leading-5 text-white opacity-0 shadow-[0_10px_30px_rgba(25,49,47,.2)] transition-opacity group-hover:opacity-100">
-                  <span className="font-bold text-[#b9ead6]">معادل تومان:</span>{" "}
-                  {tooltip}
-                </div> : null}
-              </article>
+              </CurrencyTooltip>
             ))}
           </section>
 
@@ -215,6 +217,7 @@ export default function AdminModelUsagePage() {
           <div className="grid grid-cols-2 items-start gap-5 max-[900px]:grid-cols-1">
             <UsageTable
               title="تفکیک بر اساس مدل"
+              dollarRateRials={aiSettings.data?.current.dollarRateRials}
               rows={(query.data?.byModel ?? []).map((item) => ({
                 key: `${item.provider}/${item.model}`,
                 label: item.model,
@@ -224,6 +227,7 @@ export default function AdminModelUsagePage() {
             />
             <UsageTable
               title="تفکیک بر اساس عملیات"
+              dollarRateRials={aiSettings.data?.current.dollarRateRials}
               rows={(query.data?.byOperation ?? []).map((item) => ({
                 key: item.operation,
                 label: operationLabels[item.operation] ?? item.operation,
@@ -266,9 +270,11 @@ export default function AdminModelUsagePage() {
 
 function UsageTable({
   title,
+  dollarRateRials,
   rows,
 }: {
   title: string;
+  dollarRateRials?: number | null;
   rows: Array<{
     key: string;
     label: string;
@@ -283,7 +289,7 @@ function UsageTable({
       <h2 className="m-0 border-b border-[#edf1ee] px-5 py-4 text-[13px] font-extrabold text-[#19312f]">{title}</h2>
       {rows.length ? (
         <div className="grid gap-3 p-3 min-[681px]:block min-[681px]:divide-y min-[681px]:divide-[#edf1ee] min-[681px]:p-0">
-          <div className="hidden grid-cols-[1.4fr_.8fr_1fr_.7fr] items-center gap-2 bg-[#f8faf8] px-5 py-2 text-[8px] font-bold text-[#84918e] min-[681px]:grid">
+          <div className="hidden grid-cols-[1.4fr_.8fr_1fr_.7fr] items-center gap-2 bg-[#f8faf8] px-5 py-2 text-[9px] font-bold text-[#84918e] min-[681px]:grid">
             <span>مدل / عملیات</span>
             <span className="text-center">درخواست</span>
             <span className="text-center">توکن</span>
@@ -292,20 +298,20 @@ function UsageTable({
           {rows.map((row) => (
             <article className="grid grid-cols-2 items-center gap-3 rounded-[14px] border border-[#e1e8e3] bg-white p-4 shadow-[0_7px_20px_rgba(27,63,54,.045)] min-[681px]:grid-cols-[1.4fr_.8fr_1fr_.7fr] min-[681px]:gap-2 min-[681px]:rounded-none min-[681px]:border-0 min-[681px]:px-5 min-[681px]:py-3 min-[681px]:shadow-none" key={row.key}>
               <div className="col-span-2 flex min-w-0 items-baseline gap-2 min-[681px]:col-span-1">
-                <strong className="min-w-0 truncate text-[10px] text-[#253d39]">{row.label}</strong>
-                <small className="min-w-0 truncate text-[8px] text-[#8b9895]" dir="ltr">{row.detail}</small>
+                <strong className="min-w-0 truncate text-[11px] text-[#253d39]">{row.label}</strong>
+                <small className="min-w-0 truncate text-[9px] text-[#8b9895]" dir="ltr">{row.detail}</small>
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-[#edf1ee] pt-3 min-[681px]:block min-[681px]:border-0 min-[681px]:pt-0 min-[681px]:text-center">
-                <small className="text-[8px] font-bold text-[#84918e] min-[681px]:hidden">درخواست</small>
-                <span className="whitespace-nowrap text-[9px] text-[#63736f]">{number(row.requests)} درخواست</span>
+                <small className="text-[9px] font-bold text-[#84918e] min-[681px]:hidden">درخواست</small>
+                <span className="whitespace-nowrap text-[10px] text-[#63736f]">{number(row.requests)} درخواست</span>
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-[#edf1ee] pt-3 min-[681px]:block min-[681px]:border-0 min-[681px]:pt-0 min-[681px]:text-center">
-                <small className="text-[8px] font-bold text-[#84918e] min-[681px]:hidden">توکن</small>
-                <span className="whitespace-nowrap text-[9px] text-[#63736f]">{number(row.totalTokens)} توکن</span>
+                <small className="text-[9px] font-bold text-[#84918e] min-[681px]:hidden">توکن</small>
+                <span className="whitespace-nowrap text-[10px] text-[#63736f]">{number(row.totalTokens)} توکن</span>
               </div>
               <div className="col-span-2 flex items-center justify-between gap-2 border-t border-[#edf1ee] pt-3 min-[681px]:col-span-1 min-[681px]:block min-[681px]:border-0 min-[681px]:pt-0 min-[681px]:text-left">
-                <small className="text-[8px] font-bold text-[#84918e] min-[681px]:hidden">هزینه</small>
-                <strong className="whitespace-nowrap text-[10px] text-[#0f7b62]" dir="ltr">{usd(row.estimatedCostMicros)}</strong>
+                <small className="text-[9px] font-bold text-[#84918e] min-[681px]:hidden">هزینه</small>
+                <CurrencyTooltip amount={row.estimatedCostMicros} dollarRateRials={dollarRateRials} className="inline-flex"><strong className="whitespace-nowrap text-[11px] text-[#0f7b62]" dir="ltr">{usd(row.estimatedCostMicros)}</strong></CurrencyTooltip>
               </div>
             </article>
           ))}

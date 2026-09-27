@@ -113,6 +113,20 @@
       "when": 1790794800000,
       "tag": "0015_google_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790881200000,
+      "tag": "0016_auth_session_ips",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790967600000,
+      "tag": "0017_referrals",
+      "breakpoints": true
     }
   ]
 }

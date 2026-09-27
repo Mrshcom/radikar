@@ -25,6 +25,7 @@ function createApp({ google = false } = {}) {
     updateUser: async (...args) => { calls.push({ name: "updateUser", args }); return user; },
     updateProfile: async (...args) => { calls.push({ name: "updateProfile", args }); return { ...user, fullName: "نام جدید" }; },
     updatePreferences: async (...args) => { calls.push({ name: "updatePreferences", args }); return { ...user, tablePageSize: 50 }; },
+    listUserSessions: async (...args) => { calls.push({ name: "listUserSessions", args }); return []; },
     ...(google ? {
       isGoogleLoginEnabled: () => true,
       beginGoogleLogin: async (...args: Parameters<NonNullable<AuthServicePort["beginGoogleLogin"]>>) => {
@@ -50,7 +51,7 @@ test("auth request and verify routes normalize input, set a cookie and expose th
   const verified = await app.inject({ method: "POST", url: "/api/auth/verify-otp", payload: { phone: "09120000000", challengeId: "11111111-1111-4111-8111-111111111111", code: "۱۲۳۴۵۶" } });
   assert.equal(verified.statusCode, 200);
   assert.match(String(verified.headers["set-cookie"]), /radikar_session=user/);
-  assert.deepEqual(calls.find((call) => call.name === "verifyOtp")?.args, ["11111111-1111-4111-8111-111111111111", "09120000000", "123456"]);
+  assert.deepEqual(calls.find((call) => call.name === "verifyOtp")?.args, ["11111111-1111-4111-8111-111111111111", "09120000000", "123456", "127.0.0.1"]);
   const me = await app.inject({ method: "GET", url: "/api/auth/me", cookies: { radikar_session: "user" } });
   assert.equal(me.statusCode, 200);
   assert.equal(me.json().user.id, user.id);
@@ -78,7 +79,7 @@ test("Google provider, start and callback routes preserve state and create a ses
   assert.match(String(callback.headers["set-cookie"]), /radikar_session=google-session/);
   assert.deepEqual(
     calls.find((call) => call.name === "completeGoogleLogin")?.args,
-    ["authorization-code", "google-state", "google-state"],
+    ["authorization-code", "google-state", "google-state", "127.0.0.1"],
   );
   await app.close();
 });
@@ -88,6 +89,9 @@ test("account preferences, admin filters and permission boundaries are enforced"
   const prefs = await app.inject({ method: "PATCH", url: "/api/account/preferences", cookies: { radikar_session: "user" }, payload: { tablePageSize: 50 } });
   assert.equal(prefs.statusCode, 200);
   assert.deepEqual(calls.find((call) => call.name === "updatePreferences")?.args, [user.id, { tablePageSize: 50 }]);
+  const sessions = await app.inject({ method: "GET", url: "/api/account/sessions", cookies: { radikar_session: "user" } });
+  assert.equal(sessions.statusCode, 200);
+  assert.deepEqual(calls.find((call) => call.name === "listUserSessions")?.args, [user.id, "session-user"]);
   const users = await app.inject({ method: "GET", url: "/api/admin/users?search=ali&page=2&pageSize=10&role=user&status=active", cookies: { radikar_session: "superadmin" } });
   assert.equal(users.statusCode, 200);
   assert.deepEqual(calls.find((call) => call.name === "listUsers")?.args, ["ali", 2, 10, "user", "active"]);

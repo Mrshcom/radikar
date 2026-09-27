@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { DeleteConfirmModal, Modal } from "../_components/ui";
 import { SearchableSelect } from "@/app/_components/searchable-select";
+import { Checkbox } from "@/app/_components/checkbox";
 import { ResumePreviewSkeleton } from "../_components/skeletons";
 import { ResumeDocument } from "./resume-document";
 import { ScaledResumePreview } from "./scaled-resume-preview";
@@ -909,9 +910,8 @@ export function ResumeBuilder({
                       ))}
                     </div>
                     <label className="!flex items-center gap-2">
-                      <input
+                      <Checkbox
                         className="!size-4 !min-h-0 !w-4"
-                        type="checkbox"
                         checked={experience.isCurrent}
                         onChange={(event) =>
                           replaceExperiences(
@@ -1133,9 +1133,8 @@ export function ResumeBuilder({
                       ))}
                     </div>
                     <label className="!flex items-center gap-2">
-                      <input
+                      <Checkbox
                         className="!size-4 !min-h-0 !w-4"
-                        type="checkbox"
                         checked={project.isCurrent}
                         onChange={(event) =>
                           replaceProjects(
@@ -1301,9 +1300,8 @@ export function ResumeBuilder({
                       ))}
                     </div>
                     <label className="!flex items-center gap-2">
-                      <input
-                        className="!size-4 !min-h-0 !w-4"
-                        type="checkbox"
+                          <Checkbox
+                            className="!size-4 !min-h-0 !w-4"
                         checked={education.isCurrent}
                         onChange={(event) =>
                           replaceEducations(

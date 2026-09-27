@@ -5,6 +5,7 @@ import {
   BadgeDollarSign,
   CircleDollarSign,
   FileText,
+  LayoutDashboard,
   ReceiptText,
   UserCheck,
   UserPlus,
@@ -37,7 +38,7 @@ export default function AdminPage() {
   if (user.role === "admin") {
     return (
       <section className="rounded-[18px] border border-[#d8e7df] bg-white p-7">
-        <h1 className="m-0 text-[23px] font-black text-[#19312f]">مدیریت عملیات سامانه</h1>
+        <h1 className="m-0 flex items-center gap-2 text-[23px] font-black text-[#19312f]"><LayoutDashboard size={22} /> داشبورد مدیریتی</h1>
         <p className="mb-0 mt-3 text-[11px] leading-8 text-[#748582]">
           مدیریت عضویت و اعتبار کاربران، سفارش‌ها و تراکنش‌ها از منوی کناری در دسترس است.
           گزارش‌های کلان سامانه و مدیریت نقش‌ها فقط برای سوپرادمین نمایش داده می‌شود.
@@ -72,8 +73,7 @@ export default function AdminPage() {
   return (
     <div className="grid gap-6">
       <header>
-        <p className="m-0 text-[11px] font-bold text-[#0f7b62]">نمای لحظه‌ای کسب‌وکار</p>
-        <h1 className="mb-0 mt-2 text-[25px] font-black text-[#19312f]">داشبورد مدیریتی سامانه</h1>
+        <h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]"><LayoutDashboard size={22} /> داشبورد مدیریتی</h1>
         <p className="mb-0 mt-2 text-[11px] leading-7 text-[#7c8b88]">
           وضعیت کاربران، تولید رزومه و فروش سامانه بر اساس روز جاری به وقت تهران نمایش داده می‌شود.
         </p>

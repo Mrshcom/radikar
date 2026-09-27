@@ -62,7 +62,7 @@ export function TableToolbar({
           <Search size={18} className="shrink-0 text-[#84918e] min-[1024px]:size-4" />
           <input
             {...register("search")}
-            className="h-full min-w-0 flex-1 border-0 bg-transparent text-[11px] outline-none min-[1024px]:text-[10px]"
+            className="h-full min-w-0 flex-1 border-0 bg-transparent text-[11px] outline-none"
             maxLength={100}
             placeholder={searchPlaceholder}
           />
@@ -117,7 +117,7 @@ export function TableFilterSelect({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="grid gap-1.5 text-[8px] font-bold text-[#74837f]">
+    <label className="grid gap-1.5 text-[9px] font-bold text-[#74837f]">
       {label}
       <SearchableSelect options={options} value={value} onChange={(next) => onChange(String(next))} placeholder="همه" />
     </label>

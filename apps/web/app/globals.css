@@ -18,12 +18,25 @@ input::placeholder,
 textarea::placeholder {
   direction: rtl !important;
   text-align: right !important;
+  font-weight: 400 !important;
 }
 
 input[type="number"],
 input[inputmode="numeric"] {
   direction: ltr;
   text-align: left;
+  color: #405753;
+  font-weight: 400;
+}
+
+input[type="number"] {
+  appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
 }
 
 input[type="number"]::placeholder,

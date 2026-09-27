@@ -108,6 +108,7 @@ export const oauthLoginAttempts = pgTable(
     nonce: text("nonce").notNull(),
     codeVerifier: text("code_verifier").notNull(),
     nextPath: text("next_path").notNull().default("/dashboard"),
+    referralCode: text("referral_code"),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     consumedAt: timestamp("consumed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
@@ -143,11 +144,85 @@ export const authSessions = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull(),
+    loginIp: text("login_ip"),
+    logoutIp: text("logout_ip"),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
   },
   (table) => [
     uniqueIndex("auth_sessions_token_unique").on(table.tokenHash),
     index("auth_sessions_user_idx").on(table.userId, table.expiresAt),
+  ],
+);
+
+export const referralSettings = pgTable("referral_settings", {
+  id: text("id").primaryKey(),
+  isActive: boolean("is_active").notNull().default(true),
+  referrerPoints: integer("referrer_points").notNull().default(100),
+  referredPoints: integer("referred_points").notNull().default(50),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+});
+
+export const referralCodes = pgTable(
+  "referral_codes",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("referral_codes_user_unique").on(table.userId),
+    uniqueIndex("referral_codes_code_unique").on(table.code),
+  ],
+);
+
+export const referralVisits = pgTable(
+  "referral_visits",
+  {
+    id: uuid("id").primaryKey(),
+    referralCodeId: uuid("referral_code_id").notNull().references(() => referralCodes.id, { onDelete: "cascade" }),
+    ip: text("ip"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("referral_visits_code_created_idx").on(table.referralCodeId, table.createdAt)],
+);
+
+export const referrals = pgTable(
+  "referrals",
+  {
+    id: uuid("id").primaryKey(),
+    referralCodeId: uuid("referral_code_id").notNull().references(() => referralCodes.id, { onDelete: "restrict" }),
+    referrerUserId: uuid("referrer_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    referredUserId: uuid("referred_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["pending", "confirmed", "rejected"] }).notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("referrals_referred_user_unique").on(table.referredUserId),
+    index("referrals_referrer_created_idx").on(table.referrerUserId, table.createdAt),
+    index("referrals_status_created_idx").on(table.status, table.createdAt),
+  ],
+);
+
+export const referralPointEvents = pgTable(
+  "referral_point_events",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    referralId: uuid("referral_id").references(() => referrals.id, { onDelete: "cascade" }),
+    type: text("type", { enum: ["referrer_signup", "referred_signup", "admin_adjustment"] }).notNull(),
+    status: text("status", { enum: ["pending", "confirmed", "revoked"] }).notNull().default("pending"),
+    points: integer("points").notNull(),
+    description: text("description").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("referral_point_events_referral_user_type_unique").on(table.referralId, table.userId, table.type),
+    index("referral_point_events_user_created_idx").on(table.userId, table.createdAt),
   ],
 );
 

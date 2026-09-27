@@ -45,6 +45,7 @@ import {
   FilePlus2,
   Activity,
   Bot,
+  Gift,
 } from "lucide-react";
 import {
   appProfileStore,
@@ -92,6 +93,7 @@ const menuItems: MenuItem[] = [
   { href: "/admin/records", label: "داده‌های سامانه", icon: Database, roles: ["superadmin"] },
   { href: "/admin/model-usage", label: "مصرف و هزینه مدل‌ها", icon: Bot, roles: ["superadmin"] },
   { href: "/admin/job-pool", label: "گزارش Job Pool", icon: BriefcaseBusiness, roles: ["superadmin"] },
+  { href: "/admin/referrals", label: "ریفرال و دعوت", icon: Gift, roles: ["superadmin"] },
   { href: "/admin/settings", label: "تنظیمات", icon: Settings, roles: ["superadmin"] },
 ];
 
@@ -101,6 +103,7 @@ const pageTitles: Record<string, string> = {
   "/orders": "سفارش‌ها",
   "/upgrade": "خرید و ارتقای بسته",
   "/billing/result": "نتیجه پرداخت",
+  "/referrals": "دعوت دوستان",
   "/admin/memberships": "کاربران و عضویت‌ها",
   "/admin/users": "کاربران و دسترسی‌ها",
   "/admin/orders": "سفارش‌های سامانه",
@@ -108,6 +111,7 @@ const pageTitles: Record<string, string> = {
   "/admin/records": "داده‌های سامانه",
   "/admin/model-usage": "مصرف و هزینه مدل‌ها",
   "/admin/job-pool": "گزارش Job Pool",
+  "/admin/referrals": "ریفرال و دعوت",
   "/admin/settings": "تنظیمات",
 };
 
@@ -703,15 +707,16 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 <button
                   aria-expanded={userMenuOpen}
                   aria-label="منوی حساب کاربری"
-                  className="flex h-[38px] min-w-0 items-center gap-2 rounded-[11px] border border-[#e4e8e3] bg-white px-1.5 pe-2.5 text-[#526762]"
+                  className="flex h-10 min-w-0 items-center gap-2 rounded-[11px] border border-[#e4e8e3] bg-white px-2 text-[#526762] shadow-none transition-colors hover:border-[#cfdad4] hover:bg-[#edf6f1]"
                   onClick={() => {
                     setNoticeOpen(false);
                     setUserMenuOpen((value) => !value);
                   }}
                   type="button"
                 >
-                  <span className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-[#c98465] text-[9px] font-bold text-white">
+                  <span className="relative grid size-8 shrink-0 place-items-center rounded-[10px] bg-[#0f7b62] text-[10px] font-bold text-white">
                     {initials(user ? userDisplayName(user) : "")}
+                    <span aria-hidden="true" className="absolute -bottom-0.5 -left-0.5 size-2.5 rounded-full bg-[#36b77d] ring-2 ring-white" />
                   </span>
                   <span className="max-w-[110px] truncate text-[9px] font-bold max-[820px]:hidden">
                     {user ? userDisplayName(user) : "حساب کاربری"}
@@ -720,12 +725,21 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 </button>
                 {userMenuOpen && (
                   <div className="absolute left-0 top-[46px] z-40 w-[270px] overflow-hidden rounded-[16px] border border-[#dfe6e1] bg-white p-2 shadow-[0_18px_50px_rgba(25,57,50,.18)]">
+                    <div className="mb-1 flex items-center gap-3 rounded-[12px] bg-gradient-to-l from-[#edf8f3] to-[#fbfcfa] px-3 py-3">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#176b59] text-[11px] font-black text-white ring-2 ring-[#c9e7da]">{initials(user ? userDisplayName(user) : "")}</span>
+                      <div className="min-w-0">
+                        <strong className="block truncate text-[11px] text-[#19312f]">{user ? userDisplayName(user) : "حساب کاربری"}</strong>
+                        {user && <small className="mt-0.5 block truncate text-[9px] text-[#7b8b86]" dir="ltr">{userIdentifier(user)}</small>}
+                      </div>
+                      <span aria-hidden="true" className="mr-auto size-2 rounded-full bg-[#25a56f] shadow-[0_0_0_3px_#d8f0e4]" />
+                    </div>
                     {(isManagement
-                      ? [{ href: "/settings", label: "تنظیمات و امنیت", icon: Settings }]
+                      ? [{ href: "/settings", label: "امنیت", icon: Settings }]
                       : [
                           { href: "/account", label: "حساب کاربری", icon: UserRound },
                           { href: "/settings", label: "تنظیمات", icon: Settings },
                           { href: "/orders", label: "سفارش‌ها", icon: ReceiptText },
+                          { href: "/referrals", label: "دعوت دوستان", icon: Gift },
                           { href: "/upgrade", label: "خرید و ارتقای بسته", icon: CreditCard },
                         ]
                     ).map(({ href, label, icon: Icon }) => (

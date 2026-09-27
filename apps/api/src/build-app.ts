@@ -105,6 +105,8 @@ export function buildApp({
       "/api/auth/providers",
       "/api/auth/google/start",
       "/api/auth/google/callback",
+      "/api/referrals/visits",
+      "/api/referrals/leaderboard",
       "/api/billing/callback",
     ]);
     if (request.method === "OPTIONS" || publicPaths.has(request.url.split("?")[0])) return;

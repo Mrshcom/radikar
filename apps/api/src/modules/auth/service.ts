@@ -11,7 +11,7 @@ import {
 import type { JsonWebKey as NodeJsonWebKey } from "node:crypto";
 import { normalizeDigits } from "@radikar/validators";
 import type { UpdateAdminAliasInput } from "@radikar/validators";
-import { and, asc, count, desc, eq, gt, ilike, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, ilike, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 import {
   authSessions,
   dataRecords,
@@ -20,6 +20,11 @@ import {
   otpChallenges,
   orders,
   plans,
+  referralCodes,
+  referralPointEvents,
+  referralSettings,
+  referrals,
+  referralVisits,
   userMemberships,
   userIdentities,
   users,
@@ -61,6 +66,39 @@ export type GoogleLoginStart = {
 
 export type GoogleLoginResult = VerifyOtpResult & { nextPath: string };
 
+export type AccountSession = {
+  id: string;
+  current: boolean;
+  status: "active" | "logged_out" | "expired";
+  loginIp: string | null;
+  logoutIp: string | null;
+  createdAt: string;
+  lastSeenAt: string;
+  expiresAt: string;
+  endedAt: string | null;
+};
+
+export type ReferralDashboard = {
+  code: string;
+  visits: number;
+  pendingReferrals: number;
+  confirmedReferrals: number;
+  confirmedPoints: number;
+  events: Array<{
+    id: string;
+    points: number;
+    status: "pending" | "confirmed" | "revoked";
+    description: string;
+    createdAt: string;
+  }>;
+};
+
+export type ReferralSettings = {
+  isActive: boolean;
+  referrerPoints: number;
+  referredPoints: number;
+};
+
 type GoogleIdTokenClaims = {
   iss?: string;
   aud?: string;
@@ -94,6 +132,11 @@ function safeNextPath(value?: string) {
     !/[\r\n]/.test(value)
     ? value
     : "/dashboard";
+}
+
+function normalizeReferralCode(value?: string) {
+  const code = value?.trim().toLocaleUpperCase("en");
+  return code && /^R[A-Z0-9]{8}$/.test(code) ? code : undefined;
 }
 
 function decodeJwtPart<T>(value: string): T {
@@ -219,7 +262,205 @@ export class AuthService {
     return { googleClientId, googleClientSecret, googleRedirectUri };
   }
 
-  private async createSession(userRow: typeof users.$inferSelect, now = new Date()) {
+  private async getReferralSettingsRow() {
+    const now = new Date();
+    await this.database
+      .insert(referralSettings)
+      .values({ id: "default", updatedAt: now })
+      .onConflictDoNothing();
+    const [settings] = await this.database
+      .select()
+      .from(referralSettings)
+      .where(eq(referralSettings.id, "default"))
+      .limit(1);
+    if (!settings) throw new Error("Referral settings are unavailable");
+    return settings;
+  }
+
+  private async ensureReferralCode(userId: string) {
+    const [existing] = await this.database
+      .select()
+      .from(referralCodes)
+      .where(eq(referralCodes.userId, userId))
+      .limit(1);
+    if (existing) return existing;
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const now = new Date();
+      const code = `R${randomBytes(4).toString("hex").toUpperCase()}`;
+      const [created] = await this.database
+        .insert(referralCodes)
+        .values({ id: randomUUID(), userId, code, createdAt: now, updatedAt: now })
+        .onConflictDoNothing()
+        .returning();
+      if (created) return created;
+      const [resolved] = await this.database
+        .select()
+        .from(referralCodes)
+        .where(eq(referralCodes.userId, userId))
+        .limit(1);
+      if (resolved) return resolved;
+    }
+    throw new Error("Could not create referral code");
+  }
+
+  async getReferralDashboard(userId: string): Promise<ReferralDashboard> {
+    const code = await this.ensureReferralCode(userId);
+    const [visitCounts, referralRows, pointRows] = await Promise.all([
+      this.database.select({ value: count() }).from(referralVisits).where(eq(referralVisits.referralCodeId, code.id)),
+      this.database.select().from(referrals).where(eq(referrals.referrerUserId, userId)).orderBy(desc(referrals.createdAt)),
+      this.database.select().from(referralPointEvents).where(eq(referralPointEvents.userId, userId)).orderBy(desc(referralPointEvents.createdAt)).limit(30),
+    ]);
+    return {
+      code: code.code,
+      visits: Number(visitCounts[0]?.value ?? 0),
+      pendingReferrals: referralRows.filter((item) => item.status === "pending").length,
+      confirmedReferrals: referralRows.filter((item) => item.status === "confirmed").length,
+      confirmedPoints: pointRows.filter((item) => item.status === "confirmed").reduce((total, item) => total + item.points, 0),
+      events: pointRows.map((item) => ({
+        id: item.id,
+        points: item.points,
+        status: item.status,
+        description: item.description,
+        createdAt: item.createdAt.toISOString(),
+      })),
+    };
+  }
+
+  async getReferralLeaderboard() {
+    const rows = await this.database
+      .select({ userId: referrals.referrerUserId, fullName: users.fullName })
+      .from(referrals)
+      .innerJoin(users, eq(users.id, referrals.referrerUserId))
+      .where(eq(referrals.status, "confirmed"));
+    const totals = new Map<string, { fullName: string | null; referrals: number }>();
+    for (const row of rows) {
+      const current = totals.get(row.userId) ?? { fullName: row.fullName, referrals: 0 };
+      current.referrals += 1;
+      totals.set(row.userId, current);
+    }
+    return [...totals.entries()]
+      .map(([userId, item]) => ({ userId, displayName: item.fullName || "کاربر رادیکار", referrals: item.referrals }))
+      .sort((left, right) => right.referrals - left.referrals)
+      .slice(0, 10);
+  }
+
+  async getAdminReferralReport(page: number, pageSize: number) {
+    const [totalRows, rows] = await Promise.all([
+      this.database.select({ value: count() }).from(referrals),
+      this.database.select().from(referrals).orderBy(desc(referrals.createdAt)).limit(pageSize).offset((page - 1) * pageSize),
+    ]);
+    const userIds = [...new Set(rows.flatMap((item) => [item.referrerUserId, item.referredUserId]))];
+    const userRows = userIds.length
+      ? await this.database.select({ id: users.id, fullName: users.fullName, phone: users.phone, email: users.email }).from(users).where(inArray(users.id, userIds))
+      : [];
+    const userMap = new Map(userRows.map((user) => [user.id, user]));
+    return {
+      total: Number(totalRows[0]?.value ?? 0), page, pageSize,
+      items: rows.map((item) => ({
+        id: item.id,
+        status: item.status,
+        createdAt: item.createdAt.toISOString(),
+        confirmedAt: item.confirmedAt?.toISOString() ?? null,
+        referrer: userMap.get(item.referrerUserId) ?? { id: item.referrerUserId, fullName: null, phone: null, email: null },
+        referred: userMap.get(item.referredUserId) ?? { id: item.referredUserId, fullName: null, phone: null, email: null },
+      })),
+    };
+  }
+
+  async recordReferralVisit(rawCode: string, ip?: string, userAgent?: string) {
+    const code = normalizeReferralCode(rawCode);
+    if (!code) return;
+    const [referralCode] = await this.database
+      .select()
+      .from(referralCodes)
+      .where(and(eq(referralCodes.code, code), eq(referralCodes.isActive, true)))
+      .limit(1);
+    if (!referralCode) return;
+    await this.database.insert(referralVisits).values({
+      id: randomUUID(),
+      referralCodeId: referralCode.id,
+      ip: ip || null,
+      userAgent: userAgent?.slice(0, 500) || null,
+      createdAt: new Date(),
+    });
+  }
+
+  private async applyReferralForNewUser(userId: string, rawCode?: string) {
+    const code = normalizeReferralCode(rawCode);
+    if (!code) return;
+    const settings = await this.getReferralSettingsRow();
+    if (!settings.isActive) return;
+    const [referralCode] = await this.database
+      .select()
+      .from(referralCodes)
+      .where(and(eq(referralCodes.code, code), eq(referralCodes.isActive, true)))
+      .limit(1);
+    if (!referralCode || referralCode.userId === userId) return;
+
+    const now = new Date();
+    const [referral] = await this.database
+      .insert(referrals)
+      .values({
+        id: randomUUID(),
+        referralCodeId: referralCode.id,
+        referrerUserId: referralCode.userId,
+        referredUserId: userId,
+        status: "confirmed",
+        createdAt: now,
+        confirmedAt: now,
+      })
+      .onConflictDoNothing()
+      .returning();
+    if (!referral) return;
+    await this.database.insert(referralPointEvents).values([
+      {
+        id: randomUUID(), userId: referralCode.userId, referralId: referral.id,
+        type: "referrer_signup", status: "confirmed", points: settings.referrerPoints,
+        description: "امتیاز دعوت موفق", createdAt: now,
+      },
+      {
+        id: randomUUID(), userId, referralId: referral.id,
+        type: "referred_signup", status: "confirmed", points: settings.referredPoints,
+        description: "امتیاز عضویت با دعوت", createdAt: now,
+      },
+    ]);
+  }
+
+  async getReferralSettings(): Promise<ReferralSettings> {
+    const settings = await this.getReferralSettingsRow();
+    return { isActive: settings.isActive, referrerPoints: settings.referrerPoints, referredPoints: settings.referredPoints };
+  }
+
+  async updateReferralSettings(input: ReferralSettings) {
+    await this.getReferralSettingsRow();
+    const [settings] = await this.database
+      .update(referralSettings)
+      .set({ ...input, updatedAt: new Date() })
+      .where(eq(referralSettings.id, "default"))
+      .returning();
+    return settings ?? this.getReferralSettings();
+  }
+
+  async adjustReferralPoints(userId: string, points: number, description: string) {
+    const event = {
+      id: randomUUID(),
+      userId,
+      type: "admin_adjustment" as const,
+      status: "confirmed" as const,
+      points,
+      description,
+      createdAt: new Date(),
+    };
+    await this.database.insert(referralPointEvents).values(event);
+    return event;
+  }
+
+  private async createSession(
+    userRow: typeof users.$inferSelect,
+    now = new Date(),
+    loginIp?: string,
+  ) {
     const sessionToken = randomBytes(32).toString("base64url");
     const sessionExpiresAt = new Date(
       now.getTime() + this.options.sessionTtlDays * 86_400_000,
@@ -231,6 +472,7 @@ export class AuthService {
       expiresAt: sessionExpiresAt,
       createdAt: now,
       lastSeenAt: now,
+      loginIp: loginIp || null,
     });
     return {
       user: toAuthUser(userRow),
@@ -239,7 +481,7 @@ export class AuthService {
     } satisfies VerifyOtpResult;
   }
 
-  async beginGoogleLogin(nextPath?: string): Promise<GoogleLoginStart> {
+  async beginGoogleLogin(nextPath?: string, referralCode?: string): Promise<GoogleLoginStart> {
     const { googleClientId, googleRedirectUri } = this.requireGoogleOptions();
     const state = randomBytes(32).toString("base64url");
     const nonce = randomBytes(32).toString("base64url");
@@ -258,6 +500,7 @@ export class AuthService {
       nonce,
       codeVerifier,
       nextPath: safeNextPath(nextPath),
+      referralCode: normalizeReferralCode(referralCode) || null,
       expiresAt: new Date(now.getTime() + 10 * 60_000),
       createdAt: now,
     });
@@ -282,6 +525,7 @@ export class AuthService {
     code: string,
     state: string,
     cookieState?: string,
+    loginIp?: string,
   ): Promise<GoogleLoginResult> {
     const { googleClientId, googleClientSecret, googleRedirectUri } =
       this.requireGoogleOptions();
@@ -342,7 +586,7 @@ export class AuthService {
     const email = claims.email.trim().toLocaleLowerCase("en");
     const displayName = claims.name?.trim().slice(0, 100) || null;
 
-    const { userRow, isFirstUser } = await this.database.transaction(async (tx) => {
+    const { userRow, isFirstUser, isNewUser } = await this.database.transaction(async (tx) => {
       // Serializes simultaneous callbacks for the same Google account and prevents
       // duplicate local users when two login tabs finish at nearly the same time.
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`google:${claims.sub}`}))`);
@@ -376,7 +620,7 @@ export class AuthService {
           .update(userIdentities)
           .set({ email, emailVerified: true, lastLoginAt: now, updatedAt: now })
           .where(eq(userIdentities.id, existingIdentity.identity.id));
-        return { userRow: updatedUser, isFirstUser: false };
+        return { userRow: updatedUser, isFirstUser: false, isNewUser: false };
       }
 
       const [{ value: usersCount }] = await tx.select({ value: count() }).from(users);
@@ -404,10 +648,11 @@ export class AuthService {
         updatedAt: now,
         lastLoginAt: now,
       });
-      return { userRow: newUser, isFirstUser: usersCount === 0 };
+      return { userRow: newUser, isFirstUser: usersCount === 0, isNewUser: true };
     });
 
     await this.options.grantSignupMembership?.(userRow.id);
+    if (isNewUser) await this.applyReferralForNewUser(userRow.id, attempt.referralCode ?? undefined);
     if (isFirstUser) {
       await this.database
         .update(dataRecords)
@@ -415,7 +660,7 @@ export class AuthService {
         .where(isNull(dataRecords.ownerUserId));
     }
     return {
-      ...(await this.createSession(userRow, now)),
+      ...(await this.createSession(userRow, now, loginIp)),
       nextPath: attempt.nextPath,
     };
   }
@@ -468,7 +713,13 @@ export class AuthService {
     };
   }
 
-  async verifyOtp(challengeId: string, rawPhone: string, code: string): Promise<VerifyOtpResult> {
+  async verifyOtp(
+    challengeId: string,
+    rawPhone: string,
+    code: string,
+    loginIp?: string,
+    referralCode?: string,
+  ): Promise<VerifyOtpResult> {
     const phone = normalizePhone(rawPhone);
     const [challenge] = await this.database
       .select()
@@ -515,6 +766,7 @@ export class AuthService {
           .returning();
     if (userRow.status !== "active") throw new AuthError(403, "حساب کاربری شما غیرفعال است.");
     await this.options.grantSignupMembership?.(userRow.id);
+    if (!existingUser) await this.applyReferralForNewUser(userRow.id, referralCode);
 
     await this.database
       .update(otpChallenges)
@@ -527,7 +779,7 @@ export class AuthService {
         .where(isNull(dataRecords.ownerUserId));
     }
 
-    return this.createSession(userRow, now);
+    return this.createSession(userRow, now, loginIp);
   }
 
   async resolveSession(token?: string): Promise<SessionIdentity | null> {
@@ -555,11 +807,54 @@ export class AuthService {
     return { user: toAuthUser(row.user), sessionId: row.session.id };
   }
 
-  async revokeSession(sessionId: string) {
+  async revokeSession(sessionId: string, logoutIp?: string) {
     await this.database
       .update(authSessions)
-      .set({ revokedAt: new Date() })
+      .set({ revokedAt: new Date(), logoutIp: logoutIp || null })
       .where(eq(authSessions.id, sessionId));
+  }
+
+  async revokeUserSession(userId: string, sessionId: string, logoutIp?: string) {
+    await this.database
+      .update(authSessions)
+      .set({ revokedAt: new Date(), logoutIp: logoutIp || null })
+      .where(
+        and(
+          eq(authSessions.id, sessionId),
+          eq(authSessions.userId, userId),
+          isNull(authSessions.revokedAt),
+        ),
+      );
+  }
+
+  async listUserSessions(userId: string, currentSessionId: string): Promise<AccountSession[]> {
+    const now = new Date();
+    const rows = await this.database
+      .select()
+      .from(authSessions)
+      .where(eq(authSessions.userId, userId))
+      .orderBy(desc(authSessions.createdAt))
+      .limit(100);
+
+    return rows.map((session) => {
+      const active = session.revokedAt == null && session.expiresAt > now;
+      const status: AccountSession["status"] = active
+        ? "active"
+        : session.revokedAt
+          ? "logged_out"
+          : "expired";
+      return {
+        id: session.id,
+        current: session.id === currentSessionId,
+        status,
+        loginIp: session.loginIp,
+        logoutIp: session.logoutIp,
+        createdAt: session.createdAt.toISOString(),
+        lastSeenAt: session.lastSeenAt.toISOString(),
+        expiresAt: session.expiresAt.toISOString(),
+        endedAt: session.revokedAt?.toISOString() ?? (active ? null : session.expiresAt.toISOString()),
+      };
+    });
   }
 
   async getStats() {

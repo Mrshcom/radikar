@@ -73,12 +73,12 @@ export default function AdminOrdersPage() {
     { key: "plan", title: "پلن", render: ({ plan }) => plan.name },
     { key: "amount", title: "مبلغ", render: ({ order }) => `${formatTomans(order.amountRials)} تومان` },
     { key: "status", title: "وضعیت", render: ({ order }) => statusOptions.find((item) => item.value === order.status)?.label ?? order.status },
-    { key: "date", title: "تاریخ و ساعت", render: ({ order }) => <PersianDateTime value={order.createdAt} /> },
+    { key: "date", title: "تاریخ و ساعت", className: "whitespace-nowrap", render: ({ order }) => <PersianDateTime value={order.createdAt} /> },
     { key: "tracking", title: "پیگیری", render: ({ order }) => <span dir="ltr">{order.refId || "—"}</span> },
   ];
   return (
     <div className="grid gap-6">
-      <header><span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]"><ReceiptText size={18} /> مدیریت فروش</span><h1 className="mb-0 mt-3 text-[25px] font-black">سفارش‌ها و پیگیری وضعیت</h1></header>
+      <header><h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]"><ReceiptText size={22} /> سفارش‌های سامانه</h1></header>
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
         <AdminTableToolbar search={search} searchPlaceholder="شماره سفارش، نام، شماره یا ایمیل" activeFilterCount={[status, planId].filter(Boolean).length} onSearch={(value) => { void setFilters({ search: value }); setPage(1); }} onResetFilters={() => { void setFilters({ status: "", planId: "" }); setPage(1); }}>
           <AdminFilterSelect label="وضعیت سفارش" value={status} options={statusOptions} onChange={(value) => { void setFilters({ status: value }); setPage(1); }} />

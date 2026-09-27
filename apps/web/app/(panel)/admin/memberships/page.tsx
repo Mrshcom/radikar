@@ -188,17 +188,17 @@ export default function MembershipsAdminPage() {
   if (user?.role === "user") return <p className="rounded-xl bg-[#fff1ef] p-5 text-[11px] text-[#a13f37]">اجازه دسترسی به این بخش را نداری.</p>;
   const endpoint = (actionName: string) => `/api/admin/users/${selected!.user.id}/membership/${actionName}`;
   const columns: DataTableColumn<MembershipUser>[] = [
-    { key: "user", title: "کاربر", skeletonClassName: "w-32", render: (item) => <><strong className="block text-[11px]">{userDisplayName(item.user)}</strong><span dir="ltr" className="mt-1 block text-[#899592]">{userIdentifier(item.user)}</span></> },
+    { key: "user", title: "کاربر", skeletonClassName: "w-32", render: (item) => <><strong className="block text-[12px]">{userDisplayName(item.user)}</strong><span dir="ltr" className="mt-1 block text-[#899592]">{userIdentifier(item.user)}</span></> },
     { key: "plan", title: "پلن", render: (item) => item.plan?.name || "ثبت‌نشده" },
     { key: "account", title: "وضعیت حساب", render: (item) => item.user.status === "active" ? "فعال" : "تعلیق‌شده" },
     { key: "membership", title: "وضعیت عضویت", render: (item) => item.membership?.status === "active" ? "فعال" : item.membership?.status === "canceled" ? "لغوشده" : "منقضی" },
     { key: "expiry", title: "انقضا", className: "whitespace-nowrap", render: (item) => item.membership?.expiresAt ? <PersianDateTime value={item.membership.expiresAt} /> : "—" },
     { key: "ai", title: "اعتبار AI", render: (item) => item.membership?.aiCreditsRemaining?.toLocaleString("fa-IR") ?? "—" },
-    { key: "manage", title: "عملیات", sortable: false, render: (item) => <div className="flex flex-wrap gap-2"><button aria-label={`اطلاعات تکمیلی ${userDisplayName(item.user)}`} className="inline-grid size-8 place-items-center rounded-lg border border-[#b9d9cc] bg-[#f4faf7] text-[#0f705a] transition hover:bg-[#e5f4ed]" title="اطلاعات تکمیلی" type="button" onClick={() => { setDetailsUser(item); setDetailsTab("usage"); }}><Info size={14} /></button><button aria-label={`ویرایش ${userDisplayName(item.user)}`} className="inline-grid size-8 place-items-center rounded-lg border border-[#dfe5df] bg-white text-[#526461] transition hover:border-[#a8cdbd] hover:text-[#0f7b62]" title="ویرایش" type="button" onClick={() => setSelected(item)}><Pencil size={14} /></button></div> },
+    { key: "manage", title: "عملیات", sortable: false, render: (item) => <div className="flex flex-wrap gap-2"><button aria-label={`اطلاعات تکمیلی ${userDisplayName(item.user)}`} className="inline-grid size-8 place-items-center rounded-lg border border-[#dfe5df] bg-white text-[#526461] transition hover:border-[#a8cdbd] hover:text-[#0f7b62]" title="اطلاعات تکمیلی" type="button" onClick={() => { setDetailsUser(item); setDetailsTab("usage"); }}><Info size={14} /></button><button aria-label={`ویرایش ${userDisplayName(item.user)}`} className="inline-grid size-8 place-items-center rounded-lg border border-[#dfe5df] bg-white text-[#526461] transition hover:border-[#a8cdbd] hover:text-[#0f7b62]" title="ویرایش" type="button" onClick={() => setSelected(item)}><Pencil size={14} /></button></div> },
   ];
   return (
     <div className="grid gap-6">
-      <header><span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]"><UserCog size={18} /> مدیریت کاربران و عضویت</span><h1 className="mb-0 mt-3 text-[25px] font-black">عضویت و اعتبار کاربران</h1></header>
+      <header><h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]"><UserCog size={22} /> عضویت و اعتبار</h1></header>
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
         <AdminTableToolbar
           search={search}

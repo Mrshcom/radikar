@@ -15,9 +15,21 @@ const requestOtpSchema = z.object({ phone: z.string().min(1).max(32) });
 const verifyOtpSchema = requestOtpSchema.extend({
   challengeId: z.uuid(),
   code: z.string().transform(normalizeDigits).pipe(z.string().regex(/^\d{6}$/)),
+  referralCode: z.string().max(20).optional(),
 });
 const googleStartSchema = z.object({
   next: z.string().max(500).optional(),
+  ref: z.string().max(20).optional(),
+});
+const referralVisitSchema = z.object({ code: z.string().min(1).max(20) });
+const referralSettingsSchema = z.object({
+  isActive: z.boolean(),
+  referrerPoints: z.number().int().min(0).max(10_000),
+  referredPoints: z.number().int().min(0).max(10_000),
+});
+const referralAdjustmentSchema = z.object({
+  points: z.number().int().min(-10_000).max(10_000).refine((value) => value !== 0),
+  description: z.string().trim().min(3).max(200),
 });
 const googleCallbackSchema = z.object({
   code: z.string().min(1).optional(),
@@ -92,6 +104,15 @@ export type AuthServicePort = Pick<
       | "isGoogleLoginEnabled"
       | "beginGoogleLogin"
       | "completeGoogleLogin"
+      | "listUserSessions"
+      | "revokeUserSession"
+      | "getReferralDashboard"
+      | "getReferralLeaderboard"
+      | "getAdminReferralReport"
+      | "recordReferralVisit"
+      | "getReferralSettings"
+      | "updateReferralSettings"
+      | "adjustReferralPoints"
     >
   >;
 
@@ -133,7 +154,7 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
 
   app.post("/api/auth/verify-otp", async (request, reply) => {
     const input = verifyOtpSchema.parse(request.body);
-    const result = await authService.verifyOtp(input.challengeId, input.phone, input.code);
+    const result = await authService.verifyOtp(input.challengeId, input.phone, input.code, request.ip, input.referralCode);
     reply.setCookie(options.sessionCookieName, result.sessionToken, cookieOptions(options));
     return { user: result.user, expiresAt: result.sessionExpiresAt.toISOString() };
   });
@@ -148,7 +169,7 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
     }
     try {
       const input = googleStartSchema.parse(request.query);
-      const result = await authService.beginGoogleLogin(input.next);
+      const result = await authService.beginGoogleLogin(input.next, input.ref);
       reply.setCookie(googleStateCookieName, result.state, {
         path: "/",
         httpOnly: true,
@@ -173,6 +194,7 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
         input.code,
         input.state,
         request.cookies[googleStateCookieName],
+        request.ip,
       );
       reply.clearCookie(googleStateCookieName, { path: "/" });
       reply.setCookie(options.sessionCookieName, result.sessionToken, cookieOptions(options));
@@ -189,6 +211,21 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
     return { user: request.auth.user };
   });
 
+  app.post("/api/referrals/visits", async (request, reply) => {
+    const { code } = referralVisitSchema.parse(request.body);
+    await authService.recordReferralVisit?.(code, request.ip, request.headers["user-agent"]);
+    return reply.code(204).send();
+  });
+
+  app.get("/api/referrals/leaderboard", async () => ({
+    items: await authService.getReferralLeaderboard?.() ?? [],
+  }));
+
+  app.get("/api/referrals/me", async (request, reply) => {
+    if (!request.auth) return reply.code(401).send({ error: "نشست فعال نیست.", requestId: request.id });
+    return { referral: await authService.getReferralDashboard?.(request.auth.user.id) };
+  });
+
   app.patch("/api/account", async (request) => {
     const input = updateProfileSchema.parse(request.body);
     return { user: await authService.updateProfile(request.auth!.user.id, input) };
@@ -202,8 +239,32 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
     return { user: await authService.updatePreferences(request.auth.user.id, input) };
   });
 
+  app.get("/api/account/sessions", async (request, reply) => {
+    if (!request.auth) {
+      return reply.code(401).send({ error: "نشست فعال نیست.", requestId: request.id });
+    }
+    return {
+      sessions: await authService.listUserSessions?.(
+        request.auth.user.id,
+        request.auth.sessionId,
+      ) ?? [],
+    };
+  });
+
+  app.post("/api/account/sessions/:id/revoke", async (request, reply) => {
+    if (!request.auth) {
+      return reply.code(401).send({ error: "نشست فعال نیست.", requestId: request.id });
+    }
+    const { id } = userParamsSchema.parse(request.params);
+    if (id === request.auth.sessionId) {
+      return reply.code(400).send({ error: "برای خروج از نشست فعلی از گزینه خروج استفاده کن.", requestId: request.id });
+    }
+    await authService.revokeUserSession?.(request.auth.user.id, id, request.ip);
+    return reply.code(204).send();
+  });
+
   app.post("/api/auth/logout", async (request, reply) => {
-    if (request.auth) await authService.revokeSession(request.auth.sessionId);
+    if (request.auth) await authService.revokeSession(request.auth.sessionId, request.ip);
     reply.clearCookie(options.sessionCookieName, { path: "/" });
     return reply.code(204).send();
   });
@@ -211,6 +272,30 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
   app.get("/api/admin/stats", async (request, reply) => {
     if (!requirePermission(request, reply, "reports:read:any")) return;
     return authService.getStats();
+  });
+
+  app.get("/api/admin/referrals/settings", async (request, reply) => {
+    if (!requirePermission(request, reply, "reports:read:any")) return;
+    return { settings: await authService.getReferralSettings?.() };
+  });
+
+  app.get("/api/admin/referrals", async (request, reply) => {
+    if (!requirePermission(request, reply, "reports:read:any")) return;
+    const { page, pageSize } = userListSchema.pick({ page: true, pageSize: true }).parse(request.query);
+    return await authService.getAdminReferralReport?.(page, pageSize) ?? { items: [], total: 0, page, pageSize };
+  });
+
+  app.patch("/api/admin/referrals/settings", async (request, reply) => {
+    if (!requirePermission(request, reply, "reports:read:any")) return;
+    const input = referralSettingsSchema.parse(request.body);
+    return { settings: await authService.updateReferralSettings?.(input) };
+  });
+
+  app.post("/api/admin/referrals/users/:id/adjust", async (request, reply) => {
+    if (!requirePermission(request, reply, "reports:read:any")) return;
+    const { id } = userParamsSchema.parse(request.params);
+    const input = referralAdjustmentSchema.parse(request.body);
+    return { event: await authService.adjustReferralPoints?.(id, input.points, input.description) };
   });
 
   app.get("/api/admin/events", async (request, reply) => {

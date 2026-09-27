@@ -48,7 +48,7 @@ export function RangeSlider({
   return (
     <div className={cn("flex w-full items-center gap-3", className)} dir="ltr">
       <button
-        className="grid size-8 shrink-0 place-items-center rounded-full border border-[#dce9e3] bg-[#f4f9f6] text-[#667a74] transition-colors hover:border-[#b9d8ca] hover:text-[#0f7b62] disabled:cursor-not-allowed disabled:opacity-40"
+        className="grid size-8 shrink-0 place-items-center rounded-full border-0 bg-[#f4f9f6] text-[#667a74] transition-colors hover:bg-[#eaf6f0] hover:text-[#0f7b62] disabled:cursor-not-allowed disabled:opacity-40"
         type="button"
         onClick={() => updateValue(boundedValue - step)}
         disabled={disabled || boundedValue <= min}
@@ -58,17 +58,17 @@ export function RangeSlider({
       </button>
 
       <div className="relative h-12 min-w-0 flex-1">
-        <div className="pointer-events-none absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 overflow-hidden rounded-full border border-[#c9ddd4] bg-[#f3f8f5]">
+        <div className="pointer-events-none absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 overflow-hidden rounded-full bg-[#f3f8f5]">
           <span
             className="block h-full rounded-full bg-[#27a17f]"
             style={{ width: `${progress}%` }}
           />
         </div>
         <div
-          className="pointer-events-none absolute top-1/2 z-[1] size-5 -translate-y-1/2 rounded-full border-[3px] border-white bg-[#0f7b62] shadow-[0_2px_8px_rgba(15,123,98,.28)]"
+          className="pointer-events-none absolute top-1/2 z-[1] size-5 -translate-y-1/2 rounded-full bg-[#0f7b62]"
           style={{ left: `calc(${progress}% - 10px)` }}
         >
-          <span className="absolute bottom-[calc(100%+8px)] left-1/2 min-w-11 -translate-x-1/2 whitespace-nowrap rounded-[7px] bg-[#19312f] px-2 py-1 text-center text-[9px] font-bold leading-4 text-white shadow-[0_5px_14px_rgba(25,49,47,.2)]">
+          <span className="absolute bottom-[calc(100%+8px)] left-1/2 min-w-11 -translate-x-1/2 whitespace-nowrap rounded-[7px] bg-[#19312f] px-2 py-1 text-center text-[9px] font-bold leading-4 text-white">
             {formattedValue}
             <span className="absolute left-1/2 top-full size-2 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-[#19312f]" />
           </span>
@@ -88,7 +88,7 @@ export function RangeSlider({
       </div>
 
       <button
-        className="grid size-8 shrink-0 place-items-center rounded-full border border-[#b9d8ca] bg-[#eaf6f0] text-[#0f7b62] transition-colors hover:bg-[#dff1e8] disabled:cursor-not-allowed disabled:opacity-40"
+        className="grid size-8 shrink-0 place-items-center rounded-full border-0 bg-[#eaf6f0] text-[#0f7b62] transition-colors hover:bg-[#dff1e8] disabled:cursor-not-allowed disabled:opacity-40"
         type="button"
         onClick={() => updateValue(boundedValue + step)}
         disabled={disabled || boundedValue >= max}

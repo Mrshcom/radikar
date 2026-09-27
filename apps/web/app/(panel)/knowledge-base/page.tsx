@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { DeleteConfirmModal, SectionTitle } from "../_components/ui";
 import { SearchableSelect } from "@/app/_components/searchable-select";
+import { Checkbox } from "@/app/_components/checkbox";
 import {
   KnowledgeCardsSkeleton,
   KnowledgePageSkeleton,
@@ -1724,9 +1725,8 @@ export default function KnowledgeBasePage() {
                           }
                         />
                         <label className="flex h-[42px] self-end cursor-pointer items-center gap-2 text-[10px] font-normal transition-colors hover:text-[#0f7b62]">
-                          <input
+                          <Checkbox
                             className="size-4 accent-[#0f7b62]"
-                            type="checkbox"
                             checked={experience.isCurrent}
                             onChange={(event) =>
                               setForm((current) => ({
@@ -1855,9 +1855,8 @@ export default function KnowledgeBasePage() {
                     placeholder={project.isCurrent ? "Present" : "مثلاً 2025/11"}
                   />
                   <label className="flex h-[42px] self-end cursor-pointer items-center gap-2 text-[10px] font-normal transition-colors hover:text-[#0f7b62]">
-                    <input
-                      className="size-4 accent-[#0f7b62]"
-                      type="checkbox"
+                        <Checkbox
+                        className="size-4 accent-[#0f7b62]"
                       checked={project.isCurrent}
                       onChange={(event) =>
                         setForm((current) => ({
@@ -2003,9 +2002,8 @@ export default function KnowledgeBasePage() {
                     }
                   />
                   <label className="flex h-[42px] self-end cursor-pointer items-center gap-2 text-[10px] font-normal transition-colors hover:text-[#0f7b62]">
-                    <input
-                      className="size-4 accent-[#0f7b62]"
-                      type="checkbox"
+                        <Checkbox
+                        className="size-4 accent-[#0f7b62]"
                       checked={qualification.isCurrent}
                       onChange={(event) =>
                         setForm((current) => ({

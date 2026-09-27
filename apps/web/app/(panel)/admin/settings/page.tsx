@@ -6,7 +6,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { useAuth } from "@/app/_components/auth";
+import { Checkbox } from "@/app/_components/checkbox";
 import { SearchableSelect } from "@/app/_components/searchable-select";
+import { TextField } from "@/app/_components/text-field";
 import { useToast } from "@/app/_components/toast";
 import { formatGroupedNumber, normalizeNumericInput } from "@/lib/fa-number";
 import {
@@ -17,6 +19,7 @@ import {
   useRunAdminJobPoolSync,
 } from "@/lib/admin-stats";
 import { SettingsSkeleton } from "../../_components/skeletons";
+import { ConfirmActionModal } from "../../_components/ui";
 
 const schema = z.object({
   provider: z.enum(["freeDeepseekAPI", "gapgpt"]),
@@ -64,6 +67,7 @@ export default function AdminSettingsPage() {
   const notify = useToast();
   const isSuperadmin = user?.role === "superadmin";
   const [tab, setTab] = useState<"models" | "currency" | "jobPool">("models");
+  const [syncConfirmOpen, setSyncConfirmOpen] = useState(false);
   const settings = useAdminAiSettings(isSuperadmin);
   const update = useUpdateAdminAiSettings();
   const jobPool = useAdminJobPoolSettings(isSuperadmin);
@@ -78,7 +82,6 @@ export default function AdminSettingsPage() {
     defaultValues: { enabled: false, dailyLimit: 500, intervalHours: 24, publishedAt: "r86400", locations: defaultJobPoolLocations.join("\n") },
   });
   const provider = useWatch({ control: form.control, name: "provider" });
-  const modelSearch = useWatch({ control: form.control, name: "search" });
   const selectedModel = useWatch({ control: form.control, name: "model" });
   const dollarRateRials = useWatch({ control: form.control, name: "dollarRateRials" });
   const jobPoolLocationsValue = useWatch({ control: jobPoolForm.control, name: "locations" });
@@ -86,9 +89,8 @@ export default function AdminSettingsPage() {
   const selectedJobPoolLocations = useMemo(() => splitJobPoolLocations(jobPoolLocationsValue), [jobPoolLocationsValue]);
   const gapGptModels = useMemo(
     () =>
-      (settings.data?.providers.find((item) => item.id === "gapgpt")?.models ?? [])
-        .filter((item) => item.id.toLowerCase().includes(modelSearch.trim().toLowerCase())),
-    [modelSearch, settings.data],
+      settings.data?.providers.find((item) => item.id === "gapgpt")?.models ?? [],
+    [settings.data],
   );
 
   useEffect(() => {
@@ -148,15 +150,14 @@ export default function AdminSettingsPage() {
   return (
     <div className="mx-auto grid w-full max-w-3xl gap-6">
       <header>
-        <span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]"><Settings2 size={18} /> تنظیمات سوپرادمین</span>
-        <h1 className="mb-0 mt-3 text-[26px] font-black text-[#19312f]">تنظیمات</h1>
+        <h1 className="mb-0 flex items-center gap-2 text-[26px] font-black text-[#19312f]"><Settings2 size={22} /> تنظیمات</h1>
         <p className="mb-0 mt-2 text-[10px] leading-7 text-[#7c8b88]">Provider انتخاب‌شده برای تحلیل تطابق و عملیات تحلیلی همه کاربران استفاده می‌شود.</p>
       </header>
 
       <div className="flex gap-2 border-b border-[#e3e9e3]">
         <button type="button" onClick={() => setTab("models")} className={`border-b-2 px-4 py-3 text-[10px] font-bold ${tab === "models" ? "border-[#0f7b62] text-[#0f7b62]" : "border-transparent text-[#7c8b88]"}`}><Bot size={14} className="ml-1 inline" /> مدل‌های تحلیلی</button>
-        <button type="button" onClick={() => setTab("currency")} className={`border-b-2 px-4 py-3 text-[10px] font-bold ${tab === "currency" ? "border-[#0f7b62] text-[#0f7b62]" : "border-transparent text-[#7c8b88]"}`}><DollarSign size={14} className="ml-1 inline" /> نرخ دلار</button>
         <button type="button" onClick={() => setTab("jobPool")} className={`border-b-2 px-4 py-3 text-[10px] font-bold ${tab === "jobPool" ? "border-[#0f7b62] text-[#0f7b62]" : "border-transparent text-[#7c8b88]"}`}><BriefcaseBusiness size={14} className="ml-1 inline" /> Job Pool</button>
+        <button type="button" onClick={() => setTab("currency")} className={`border-b-2 px-4 py-3 text-[10px] font-bold ${tab === "currency" ? "border-[#0f7b62] text-[#0f7b62]" : "border-transparent text-[#7c8b88]"}`}><DollarSign size={14} className="ml-1 inline" /> نرخ دلار</button>
       </div>
 
       <form className="grid gap-5 rounded-[20px] border border-[#e3e9e3] bg-white p-6" onSubmit={tab === "jobPool" ? submitJobPool : submit}>
@@ -167,7 +168,7 @@ export default function AdminSettingsPage() {
           </div>
           <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-[#e3e9e3] bg-[#fbfcfa] p-4 text-[10px] font-bold text-[#304943]">
             فعال‌سازی Job Pool
-            <input className="size-5 accent-[#0f7b62]" type="checkbox" {...jobPoolForm.register("enabled")} />
+            <Checkbox {...jobPoolForm.register("enabled")} />
           </label>
           <div className="grid gap-2 text-[10px] font-bold text-[#536562]">
             <label htmlFor="job-pool-location">موقعیت‌های جست‌وجو</label>
@@ -177,11 +178,11 @@ export default function AdminSettingsPage() {
             {jobPoolForm.formState.errors.locations && <small className="font-normal text-[#c44d4d]">{jobPoolForm.formState.errors.locations.message}</small>}
           </div>
           <div className="grid gap-4 min-[700px]:grid-cols-2">
-            <label className="grid gap-2 text-[10px] font-bold text-[#536562]">حداکثر نتیجه روزانه<input className="rounded-[10px] border border-[#dfe5df] bg-[#fbfcfa] px-3 py-3 text-[12px] outline-0 focus:border-[#9bc8b8]" type="number" min="150" max="500" {...jobPoolForm.register("dailyLimit", { valueAsNumber: true })} /><small className="font-normal text-[#899793]">بین ۱۵۰ تا ۵۰۰ نتیجه</small></label>
-            <label className="grid gap-2 text-[10px] font-bold text-[#536562]">فاصله اجرای Worker (ساعت)<input className="rounded-[10px] border border-[#dfe5df] bg-[#fbfcfa] px-3 py-3 text-[12px] outline-0 focus:border-[#9bc8b8]" type="number" min="1" max="24" {...jobPoolForm.register("intervalHours", { valueAsNumber: true })} /><small className="font-normal text-[#899793]">حداکثر هر ۲۴ ساعت یک اجرا</small></label>
+            <label className="grid gap-2 text-[10px] font-bold text-[#536562]">حداکثر نتیجه روزانه<TextField type="number" min="150" max="500" {...jobPoolForm.register("dailyLimit", { valueAsNumber: true })} /><small className="font-normal text-[#899793]">بین ۱۵۰ تا ۵۰۰ نتیجه</small></label>
+            <label className="grid gap-2 text-[10px] font-bold text-[#536562]">فاصله اجرای Worker (ساعت)<TextField type="number" min="1" max="24" {...jobPoolForm.register("intervalHours", { valueAsNumber: true })} /><small className="font-normal text-[#899793]">حداکثر هر ۲۴ ساعت یک اجرا</small></label>
           </div>
           <label className="grid gap-2 text-[10px] font-bold text-[#536562]">بازه انتشار آگهی<SearchableSelect options={[{ value: "r86400", label: "۲۴ ساعت گذشته" }, { value: "r604800", label: "۷ روز گذشته" }, { value: "r2592000", label: "۳۰ روز گذشته" }]} value={publishedAt} onChange={(value) => jobPoolForm.setValue("publishedAt", String(value) as JobPoolFormValues["publishedAt"], { shouldDirty: true, shouldValidate: true })} /></label>
-          {jobPool.data && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#f4f8f5] px-4 py-3 text-[9px] leading-6 text-[#667773]"><span>{jobPool.data.activeJobCount.toLocaleString("fa-IR")} آگهی فعال · {jobPool.data.activeSegmentCount.toLocaleString("fa-IR")} دسته فعال</span><button className="inline-flex min-h-9 items-center justify-center gap-2 rounded-[9px] border border-[#8bc7b2] bg-white px-3 text-[9px] font-bold text-[#0f7b62] disabled:cursor-not-allowed disabled:opacity-50" disabled={!jobPool.data.settings.enabled || !jobPool.data.settings.locations.length || runJobPool.isPending} onClick={() => void syncJobPool()} type="button">{runJobPool.isPending && <LoaderCircle className="animate-spin" size={13} />} دریافت دستی آگهی‌ها</button><small className="basis-full text-[11px] text-[#7b8d88]">اجرای دستی فاصله زمانی Worker را نادیده می‌گیرد، اما سقف نتیجه هر اجرا حفظ می‌شود.</small></div>}
+          {jobPool.data && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#f4f8f5] px-4 py-3 text-[9px] leading-6 text-[#667773]"><span>{jobPool.data.activeJobCount.toLocaleString("fa-IR")} آگهی فعال · {jobPool.data.activeSegmentCount.toLocaleString("fa-IR")} دسته فعال</span><button className="inline-flex min-h-9 items-center justify-center gap-2 rounded-[9px] border border-[#78bda5] bg-white px-3 text-[10px] font-extrabold text-[#0b6f58] disabled:cursor-not-allowed disabled:opacity-50" disabled={runJobPool.isPending} onClick={() => setSyncConfirmOpen(true)} type="button">{runJobPool.isPending && <LoaderCircle className="animate-spin" size={13} />} دریافت دستی آگهی‌ها</button><small className="basis-full text-[11px] text-[#7b8d88]">اجرای دستی فاصله زمانی Worker را نادیده می‌گیرد، اما سقف نتیجه هر اجرا حفظ می‌شود.</small></div>}
         </div> : tab === "models" ? <div className="grid gap-3">
           <h2 className="m-0 flex items-center gap-2 text-[13px] font-extrabold text-[#19312f]"><Bot size={17} className="text-[#0f7b62]" /> Provider تحلیل</h2>
           <div className="grid grid-cols-2 gap-3 max-[560px]:grid-cols-1">
@@ -197,25 +198,24 @@ export default function AdminSettingsPage() {
           </div>
         </div> : <div className="grid gap-3">
           <h2 className="m-0 flex items-center gap-2 text-[13px] font-extrabold text-[#19312f]"><DollarSign size={17} className="text-[#0f7b62]" /> نرخ روز دلار</h2>
-          <label className="flex items-center gap-3 text-[10px] font-bold text-[#536562]">قیمت هر دلار به تومان<input type="text" inputMode="numeric" dir="ltr" className="min-w-0 flex-1 rounded-[10px] border border-[#dfe5df] bg-[#fbfcfa] px-3 py-3 text-left text-[12px] outline-0 focus:border-[#9bc8b8]" value={formatGroupedNumber(dollarRateRials)} onChange={(event) => { const value = Number(normalizeNumericInput(event.target.value)); form.setValue("dollarRateRials", Number.isFinite(value) ? value : 0, { shouldDirty: true, shouldValidate: true }); }} /></label>
+          <label className="flex items-center gap-3 whitespace-nowrap text-[10px] font-bold text-[#536562]">قیمت هر دلار به تومان<TextField type="text" inputMode="numeric" dir="ltr" className="text-left" value={formatGroupedNumber(dollarRateRials)} onChange={(event) => { const value = Number(normalizeNumericInput(event.target.value)); form.setValue("dollarRateRials", Number.isFinite(value) ? value : 0, { shouldDirty: true, shouldValidate: true }); }} /></label>
           <small className="font-normal text-[#899793]">این نرخ برای نمایش معادل تومانی هزینه‌های برآوردی استفاده می‌شود.</small>
         </div>}
 
         {tab === "models" && provider === "gapgpt" && (
           <div className="grid gap-2 text-[10px] font-bold text-[#536562]">
             <label className="grid gap-2">
-              جست‌وجوی مدل GapGPT
-              <input className="placeholder-ltr w-full rounded-[10px] border border-[#dfe5df] bg-[#fbfcfa] px-3 py-3 text-[11px] outline-0 focus:border-[#9bc8b8]" placeholder="مثلاً qwen یا gpt" {...form.register("search")} dir="ltr" />
+              مدل GapGPT
+              <SearchableSelect
+                searchable
+                options={gapGptModels.map((item) => ({ value: item.id, label: item.id }))}
+                value={selectedModel}
+                onChange={(value) => form.setValue("model", String(value), { shouldDirty: true, shouldValidate: true })}
+                placeholder="مدل را جست‌وجو و انتخاب کن"
+                searchPlaceholder="جست‌وجوی مدل..."
+                emptyLabel="مدلی با این جست‌وجو پیدا نشد."
+              />
             </label>
-            <input type="hidden" {...form.register("model")} />
-            <div className="grid max-h-64 gap-2 overflow-y-auto rounded-xl border border-[#e3e9e3] bg-[#fbfcfa] p-2">
-              {gapGptModels.length ? gapGptModels.map((item) => (
-                <button className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-right ${selectedModel === item.id ? "border-[#83bfab] bg-[#edf7f2]" : "border-transparent bg-white hover:border-[#dcebe4]"}`} key={item.id} onClick={() => form.setValue("model", item.id, { shouldDirty: true })} type="button">
-                  <bdi dir="ltr" className="text-[10px] text-[#19312f]">{item.id}</bdi>
-                  <small className="shrink-0 text-[8px] font-normal text-[#899793]" dir="ltr">${item.inputPrice}/M ورودی · ${item.outputPrice}/M خروجی</small>
-                </button>
-              )) : <p className="m-0 px-2 py-4 text-center text-[9px] font-normal text-[#899793]">مدلی با این جست‌وجو پیدا نشد.</p>}
-            </div>
             <small className="font-normal leading-6 text-[#899793]">مدل انتخاب‌شده: <bdi dir="ltr">{selectedModel}</bdi> — کلید API و Base URL فقط در API نگهداری می‌شوند.</small>
           </div>
         )}
@@ -225,6 +225,7 @@ export default function AdminSettingsPage() {
           <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border-0 bg-[#0f7b62] px-5 text-[10px] font-bold text-white disabled:opacity-50" disabled={tab === "jobPool" ? updateJobPool.isPending || jobPool.isLoading : update.isPending || settings.isLoading} type="submit">{(tab === "jobPool" ? updateJobPool.isPending : update.isPending) && <LoaderCircle className="animate-spin" size={15} />} ذخیره تنظیمات</button>
         </div>
       </form>
+      {syncConfirmOpen && <ConfirmActionModal title="تأیید دریافت دستی آگهی‌ها" description="دریافت آگهی‌ها با تنظیمات فعلی Job Pool اجرا شود؟" confirmLabel="شروع دریافت" confirmIcon={<BriefcaseBusiness size={15} />} pending={runJobPool.isPending} onCancel={() => setSyncConfirmOpen(false)} onConfirm={() => { setSyncConfirmOpen(false); void syncJobPool(); }} />}
     </div>
   );
 }

@@ -151,20 +151,19 @@ export default function AdminUsersPage() {
 
   if (user?.role !== "superadmin") return null;
   const columns: DataTableColumn<AdminUser>[] = [
-    { key: "user", title: "کاربر", skeletonClassName: "w-32", render: (item) => <><strong className="block text-[11px]">{userDisplayName(item)}</strong><span className="mt-1 block text-[#899592]" dir="ltr">{userIdentifier(item)}</span></> },
+    { key: "user", title: "کاربر", skeletonClassName: "w-32", render: (item) => <><strong className="block text-[12px]">{userDisplayName(item)}</strong><span className="mt-1 block text-[#899592]" dir="ltr">{userIdentifier(item)}</span></> },
     { key: "alias", title: "نام مستعار داخلی", render: (item) => item.adminAlias ? <span className="font-bold text-[#8a6822]">{item.adminAlias}</span> : <span className="text-[#899592]">ثبت نشده</span> },
     { key: "role", title: "نقش", render: (item) => <span className="font-bold text-[#526461]">{roleLabels[item.role]}</span> },
     { key: "status", title: "وضعیت", render: (item) => <span className={item.status === "active" ? "text-[#14705a]" : "text-[#b14848]"}>{item.status === "active" ? "فعال" : "تعلیق‌شده"}</span> },
     { key: "records", title: "رکوردها", render: (item) => Number(item.recordsCount).toLocaleString("fa-IR") },
-    { key: "created", title: "تاریخ عضویت", render: (item) => <PersianDateTime value={item.createdAt} /> },
-    { key: "login", title: "آخرین ورود", render: (item) => item.lastLoginAt ? <PersianDateTime value={item.lastLoginAt} /> : "—" },
+    { key: "created", title: "تاریخ عضویت", className: "whitespace-nowrap", render: (item) => <PersianDateTime value={item.createdAt} /> },
+    { key: "login", title: "آخرین ورود", className: "whitespace-nowrap", render: (item) => item.lastLoginAt ? <PersianDateTime value={item.lastLoginAt} /> : "—" },
     { key: "manage", title: "عملیات", sortable: false, render: (item) => <button aria-label={`ویرایش ${userDisplayName(item)}`} className="inline-grid size-8 place-items-center rounded-[8px] border border-[#dfe5df] bg-white text-[#526461] transition hover:border-[#a8cdbd] hover:text-[#0f7b62] disabled:opacity-40" title="ویرایش" type="button" disabled={updateUser.isPending} onClick={() => { updateUser.reset(); setEditUser(item); }}><Pencil size={14} /></button> },
   ];
   return (
     <div className="grid gap-6">
       <header>
-        <span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]"><Users size={18} /> مدیریت کاربران</span>
-        <h1 className="mb-0 mt-3 text-[25px] font-black">کاربران و سطح دسترسی</h1>
+        <h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]"><Users size={22} /> کاربران و دسترسی‌ها</h1>
       </header>
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
         <AdminTableToolbar

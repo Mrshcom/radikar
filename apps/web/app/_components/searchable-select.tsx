@@ -148,17 +148,17 @@ export function SearchableSelect({
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={ariaLabel}
-        className="flex min-h-10 w-full items-center gap-2 rounded-[10px] border border-[#dfe6e0] bg-white px-3 py-2 text-right text-[10px] text-[#405753] outline-none transition hover:border-[#a8cdbd] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex min-h-10 w-full items-center gap-2 rounded-[10px] border border-[#dfe6e0] bg-white px-3 py-2 text-right text-[11px] !font-normal text-[#405753] outline-none transition hover:border-[#a8cdbd] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={disabled}
         ref={triggerRef}
         onClick={() => { setOpen((current) => !current); setQuery(""); }}
         onKeyDown={onKeyDown}
         type="button"
       >
-        <span className="min-w-0 flex-1 truncate">
+        <span className={cn("min-w-0 flex-1", multiple && "flex max-h-7 flex-wrap items-center gap-1 overflow-hidden")}>
           {selectedOptions.length ? (
-            multiple ? `${selectedOptions.length.toLocaleString("fa-IR")} مورد انتخاب شده` : selectedOptions[0].label
-          ) : <span className="text-[#91a09b]">{placeholder}</span>}
+            multiple ? selectedOptions.map((option) => <span className="max-w-full truncate rounded-md bg-[#eaf5f0] px-2 py-0.5 text-[11px] !font-normal text-[#0f705a]" key={option.value}>{option.label}</span>) : <span className="truncate !font-normal">{selectedOptions[0].label}</span>
+          ) : <span className="!font-normal text-[#91a09b]">{placeholder}</span>}
         </span>
         <ChevronDown className={cn("shrink-0 text-[#6f817b] transition-transform", open && "rotate-180")} size={15} />
       </button>
@@ -178,7 +178,7 @@ export function SearchableSelect({
             <input
               aria-controls={listboxId}
               aria-label={searchPlaceholder}
-              className="h-9 min-w-0 flex-1 bg-transparent text-[10px] outline-none placeholder:text-[#9aa7a3]"
+              className="h-9 min-w-0 flex-1 bg-transparent text-[11px] outline-none placeholder:text-[#9aa7a3]"
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); }}
               placeholder={searchPlaceholder}
@@ -193,7 +193,7 @@ export function SearchableSelect({
               return (
                 <button
                   aria-selected={selected}
-                  className={cn("flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 text-right text-[10px] transition hover:bg-[#edf7f2]", selected && "bg-[#edf7f2] font-bold text-[#0f7b62]", option.disabled && "cursor-not-allowed opacity-40")}
+                  className={cn("flex min-h-9 w-full items-center gap-2 rounded-lg px-2.5 text-right text-[11px] transition hover:bg-[#edf7f2]", selected && "bg-[#edf7f2] text-[#0f7b62]", option.disabled && "cursor-not-allowed opacity-40")}
                   disabled={option.disabled}
                   key={option.value}
                   onClick={() => selectOption(option)}
