@@ -20,6 +20,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { DeleteConfirmModal, Modal } from "../_components/ui";
+import { SearchableSelect } from "@/app/_components/searchable-select";
 import { ResumePreviewSkeleton } from "../_components/skeletons";
 import { ResumeDocument } from "./resume-document";
 import { ScaledResumePreview } from "./scaled-resume-preview";
@@ -100,6 +101,12 @@ type EditableLanguage = {
   id: string;
   name: string;
   proficiency: string;
+};
+
+type AtsMatchSummary = {
+  estimatedKeywordCoverage: number | null;
+  strongMatches: string[];
+  keywordGaps: string[];
 };
 
 const proficiencyOptions = [
@@ -233,25 +240,19 @@ function ResumeLanguageEditor({
           </label>
           <label>
             سطح تسلط
-            <select
-              className="min-h-[42px] w-full rounded-[10px] border border-[#dfe5df] bg-[#fbfcfa] px-3 text-[11px] outline-none focus:border-[#79b8a5] focus:ring-3 focus:ring-[#e5f2ed]"
+            <SearchableSelect
+              options={proficiencyOptions}
               value={language.proficiency}
-              onChange={(event) =>
+              onChange={(value) =>
                 commit(
                   items.map((item) =>
                     item.id === language.id
-                      ? { ...item, proficiency: event.target.value }
+                      ? { ...item, proficiency: String(value) }
                       : item,
                   ),
                 )
               }
-            >
-              {proficiencyOptions.map((option) => (
-                <option value={option.value} key={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            />
           </label>
           <button
             className="mt-auto grid size-[42px] place-items-center rounded-[10px] border border-[#eccfc9] bg-[#fff5f2] text-[#b65e52] disabled:opacity-40"
@@ -294,6 +295,7 @@ export function ResumeBuilder({
   const [generating, setGenerating] = useState(false);
   const generationBusy = generating || isRunning("resume-generate");
   const [modelError, setModelError] = useState("");
+  const [atsMatchSummary, setAtsMatchSummary] = useState<AtsMatchSummary | null>(null);
   const [modelOverwriteConfirmOpen, setModelOverwriteConfirmOpen] =
     useState(false);
   const [photoError, setPhotoError] = useState("");
@@ -457,6 +459,7 @@ export function ResumeBuilder({
     setGenerationLanguagePickerOpen(false);
     setGenerating(true);
     setModelError("");
+    setAtsMatchSummary(null);
     try {
       await runModelTask({
         key: "resume-generate",
@@ -471,12 +474,14 @@ export function ResumeBuilder({
           const result = await apiRequest<{
             resume?: unknown;
             error?: string;
+            atsMatchSummary?: AtsMatchSummary;
           }>("/api/resume/generate", {
             method: "POST",
             body: JSON.stringify({ resume: data, knowledge, language }),
           });
           if (!result.resume)
             throw new Error(result.error || "مدل رزومه‌ساز پاسخ نداد.");
+          setAtsMatchSummary(result.atsMatchSummary ?? null);
           const safeResume = normalizeResumeDataInput(result.resume);
           await onDataMerge(safeResume);
           return safeResume;
@@ -642,6 +647,16 @@ export function ResumeBuilder({
                 {modelError}
               </div>
             )}
+            {atsMatchSummary && (
+              <section className="mb-3 grid gap-2 rounded-lg border border-[#cfe6db] bg-[#f3faf6] px-3 py-2 text-[8px] text-[#526d65]" aria-label="خلاصه تطبیق ATS">
+                <strong className="text-[9px] text-[#0f705a]">خلاصه ATS</strong>
+                <span>
+                  پوشش کلیدواژه‌ها: {atsMatchSummary.estimatedKeywordCoverage === null ? "بدون شرح شغل" : `${atsMatchSummary.estimatedKeywordCoverage}٪`}
+                </span>
+                {atsMatchSummary.strongMatches.length > 0 && <span>نقاط قوت: {atsMatchSummary.strongMatches.join("، ")}</span>}
+                {atsMatchSummary.keywordGaps.length > 0 && <span>شکاف‌های کلیدواژه‌ای: {atsMatchSummary.keywordGaps.join("، ")}</span>}
+              </section>
+            )}
 
             <div className={`${fieldArea} min-h-[345px]`} key={step}>
             {step === 0 && (
@@ -734,7 +749,7 @@ export function ResumeBuilder({
                   <label>
                     ایمیل
                     <input
-                      className="!text-left placeholder:!text-left"
+                      className="!text-left placeholder-ltr"
                       dir="ltr"
                       data-direction="ltr"
                       type="email"
@@ -745,7 +760,7 @@ export function ResumeBuilder({
                   <label>
                     شماره تماس
                     <input
-                      className="!text-left placeholder:!text-left"
+                      className="!text-left placeholder-ltr"
                       dir="ltr"
                       data-direction="ltr"
                       type="tel"
@@ -762,7 +777,7 @@ export function ResumeBuilder({
                   <label>
                     وب‌سایت یا لینکدین
                     <input
-                      className="!text-left placeholder:!text-left"
+                      className="!text-left placeholder-ltr"
                       dir="ltr"
                       data-direction="ltr"
                       inputMode="url"
@@ -869,7 +884,7 @@ export function ResumeBuilder({
                         <label key={field}>
                           {label}
                           <input
-                            className="!text-left placeholder:!text-left"
+                            className="!text-left placeholder-ltr"
                             dir="ltr"
                             disabled={
                               field === "endDate" && experience.isCurrent
@@ -1068,7 +1083,7 @@ export function ResumeBuilder({
                       <label>
                         لینک پروژه
                         <input
-                          className="!text-left placeholder:!text-left"
+                          className="!text-left placeholder-ltr"
                           dir="ltr"
                           inputMode="url"
                           value={project.url}
@@ -1095,7 +1110,7 @@ export function ResumeBuilder({
                         <label key={field}>
                           {label}
                           <input
-                            className="!text-left placeholder:!text-left"
+                            className="!text-left placeholder-ltr"
                             dir="ltr"
                             disabled={field === "endDate" && project.isCurrent}
                             value={project[field]}
@@ -1261,7 +1276,7 @@ export function ResumeBuilder({
                         <label key={field}>
                           {label}
                           <input
-                            className="!text-left placeholder:!text-left"
+                            className="!text-left placeholder-ltr"
                             dir="ltr"
                             disabled={
                               field === "endDate" && education.isCurrent

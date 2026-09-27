@@ -56,7 +56,8 @@ export const users = pgTable(
   "users",
   {
     id: uuid("id").primaryKey(),
-    phone: text("phone").notNull(),
+    phone: text("phone"),
+    email: text("email"),
     fullName: text("full_name"),
     // Internal label for super-admins; never returned by user-facing profile APIs.
     adminAlias: text("admin_alias"),
@@ -72,6 +73,49 @@ export const users = pgTable(
     tablePageSize: integer("table_page_size").notNull().default(20),
   },
   (table) => [uniqueIndex("users_phone_unique").on(table.phone)],
+);
+
+export const userIdentities = pgTable(
+  "user_identities",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider", { enum: ["google"] }).notNull(),
+    providerSubject: text("provider_subject").notNull(),
+    email: text("email"),
+    emailVerified: boolean("email_verified").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("user_identities_provider_subject_unique").on(
+      table.provider,
+      table.providerSubject,
+    ),
+    index("user_identities_user_idx").on(table.userId),
+  ],
+);
+
+export const oauthLoginAttempts = pgTable(
+  "oauth_login_attempts",
+  {
+    id: uuid("id").primaryKey(),
+    provider: text("provider", { enum: ["google"] }).notNull(),
+    stateHash: text("state_hash").notNull(),
+    nonce: text("nonce").notNull(),
+    codeVerifier: text("code_verifier").notNull(),
+    nextPath: text("next_path").notNull().default("/dashboard"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("oauth_login_attempts_state_unique").on(table.stateHash),
+    index("oauth_login_attempts_expiry_idx").on(table.expiresAt),
+  ],
 );
 
 export const otpChallenges = pgTable(
@@ -359,5 +403,83 @@ export const modelUsageEvents = pgTable(
       table.operation,
       table.createdAt,
     ),
+  ],
+);
+
+export const jobPoolSegments = pgTable(
+  "job_pool_segments",
+  {
+    id: text("id").primaryKey(),
+    label: text("label").notNull(),
+    keyword: text("keyword").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("job_pool_segments_active_sort_idx").on(table.isActive, table.sortOrder)],
+);
+
+export const jobPoolSettings = pgTable("job_pool_settings", {
+  id: text("id").primaryKey(),
+  enabled: boolean("enabled").notNull().default(false),
+  dailyLimit: integer("daily_limit").notNull().default(500),
+  intervalHours: integer("interval_hours").notNull().default(24),
+  publishedAt: text("published_at").notNull().default("r86400"),
+  locations: jsonb("locations").$type<string[]>().notNull().default([]),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+});
+
+export const jobPoolRuns = pgTable(
+  "job_pool_runs",
+  {
+    id: uuid("id").primaryKey(),
+    source: text("source").notNull(),
+    status: text("status", { enum: ["running", "completed", "failed"] }).notNull(),
+    requestedLimit: integer("requested_limit").notNull(),
+    searchCount: integer("search_count").notNull().default(0),
+    receivedCount: integer("received_count").notNull().default(0),
+    insertedCount: integer("inserted_count").notNull().default(0),
+    updatedCount: integer("updated_count").notNull().default(0),
+    estimatedCostUsdMicros: integer("estimated_cost_usd_micros").notNull().default(0),
+    errorMessage: text("error_message"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => [index("job_pool_runs_source_started_idx").on(table.source, table.startedAt)],
+);
+
+export const jobListings = pgTable(
+  "job_listings",
+  {
+    id: uuid("id").primaryKey(),
+    source: text("source").notNull(),
+    externalId: text("external_id").notNull(),
+    canonicalUrl: text("canonical_url").notNull(),
+    fingerprint: text("fingerprint").notNull(),
+    title: text("title").notNull(),
+    companyName: text("company_name").notNull(),
+    location: text("location"),
+    workplaceType: text("workplace_type"),
+    employmentType: text("employment_type"),
+    seniority: text("seniority"),
+    salaryText: text("salary_text"),
+    salaryMin: integer("salary_min"),
+    salaryMax: integer("salary_max"),
+    salaryCurrency: text("salary_currency"),
+    description: text("description"),
+    skills: jsonb("skills").$type<string[]>().notNull().default([]),
+    postedAt: timestamp("posted_at", { withTimezone: true }),
+    discoveredAt: timestamp("discovered_at", { withTimezone: true }).notNull(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    isActive: boolean("is_active").notNull().default(true),
+    rawPayload: jsonb("raw_payload").$type<Record<string, unknown>>().notNull(),
+  },
+  (table) => [
+    uniqueIndex("job_listings_source_external_unique").on(table.source, table.externalId),
+    uniqueIndex("job_listings_source_fingerprint_unique").on(table.source, table.fingerprint),
+    index("job_listings_active_posted_idx").on(table.isActive, table.postedAt),
+    index("job_listings_title_idx").on(table.title),
   ],
 );

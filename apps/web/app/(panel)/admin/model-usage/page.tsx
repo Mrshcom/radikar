@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { useAuth } from "@/app/_components/auth";
+import { SearchableSelect } from "@/app/_components/searchable-select";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
 import { AdminTablePagination } from "../_components/admin-table-controls";
@@ -21,6 +22,7 @@ import {
   type AdminModelUsageStats,
 } from "@/lib/admin-stats";
 import { useUrlTablePagination } from "@/lib/table-page-size";
+import { userDisplayName, userIdentifier } from "@/lib/user-identity";
 import {
   createTableFilterParser,
   modelUsageDaysParser,
@@ -125,9 +127,9 @@ export default function AdminModelUsagePage() {
       title: "حساب کاربری",
       className: "font-bold text-[#253d39]",
       render: (row) => (
-        <span className="whitespace-nowrap" title={`${row.user.fullName || "کاربر بدون نام"} — ${row.user.phone}`}>
-          {row.user.fullName || row.user.phone}
-          {row.user.fullName ? <small className="mr-1 text-[8px] font-normal text-[#8b9895]">{row.user.phone}</small> : null}
+        <span className="whitespace-nowrap" title={`${userDisplayName(row.user)} — ${userIdentifier(row.user)}`}>
+          {userDisplayName(row.user)}
+          {row.user.fullName ? <small className="mr-1 text-[8px] font-normal text-[#8b9895]">{userIdentifier(row.user)}</small> : null}
         </span>
       ),
     },
@@ -161,17 +163,11 @@ export default function AdminModelUsagePage() {
         <div className="flex flex-wrap items-center gap-2">
           <label className="grid gap-1 text-[9px] font-bold text-[#7c8b88]">
             بازه گزارش
-            <select aria-label="بازه گزارش" className="h-10 min-w-28 rounded-[10px] border border-[#dfe7e2] bg-white px-3 text-[10px] font-bold text-[#536762] outline-none focus:border-[#0f7b62]" value={days} onChange={(event) => { void setFilters({ days: Number(event.target.value) as typeof days }); setPage(1); }}>
-              {[7, 30, 90].map((value) => <option key={value} value={value}>{number(value)} روز</option>)}
-            </select>
+            <SearchableSelect ariaLabel="بازه گزارش" className="min-w-28" options={[7, 30, 90].map((value) => ({ value: String(value), label: `${number(value)} روز` }))} value={String(days)} onChange={(value) => { void setFilters({ days: Number(value) as typeof days }); setPage(1); }} />
           </label>
           <label className="grid gap-1 text-[9px] font-bold text-[#7c8b88]">
             Provider
-            <select aria-label="Provider" className="h-10 min-w-40 rounded-[10px] border border-[#dfe7e2] bg-white px-3 text-[10px] font-bold text-[#536762] outline-none focus:border-[#0f7b62]" value={provider} onChange={(event) => { void setFilters({ provider: event.target.value as typeof provider }); setPage(1); }}>
-              <option value="">همه Providerها</option>
-              <option value="freeDeepseekAPI">DeepSeek Local</option>
-              <option value="gapgpt">GapGPT</option>
-            </select>
+            <SearchableSelect ariaLabel="Provider" className="min-w-40" options={[{ value: "", label: "همه Providerها" }, { value: "freeDeepseekAPI", label: "DeepSeek Local" }, { value: "gapgpt", label: "GapGPT" }]} value={provider} onChange={(value) => { void setFilters({ provider: String(value) as typeof provider }); setPage(1); }} />
           </label>
           <label className="grid gap-1 text-[9px] font-bold text-[#7c8b88]">
             خروجی
@@ -204,7 +200,7 @@ export default function AdminModelUsagePage() {
                   <small className="block text-[9px] font-semibold text-[#81908d]">{label}</small>
                   <strong className="mt-1 block truncate text-[18px] font-black text-[#19312f]" dir={ltr ? "ltr" : undefined}>{query.isLoading ? "…" : value}</strong>
                 </div>
-                {tooltip ? <div className="pointer-events-none absolute left-1/2 top-1/2 z-20 w-max max-w-none -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-xl border border-[#28594d] bg-[#19312f] px-3 py-2 text-center text-[10px] leading-5 text-white opacity-0 shadow-[0_10px_30px_rgba(25,49,47,.2)] transition-opacity group-hover:opacity-100">
+                {tooltip ? <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max max-w-none -translate-x-1/2 whitespace-nowrap rounded-xl border border-[#28594d] bg-[#19312f] px-3 py-2 text-center text-[10px] leading-5 text-white opacity-0 shadow-[0_10px_30px_rgba(25,49,47,.2)] transition-opacity group-hover:opacity-100">
                   <span className="font-bold text-[#b9ead6]">معادل تومان:</span>{" "}
                   {tooltip}
                 </div> : null}

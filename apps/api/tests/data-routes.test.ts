@@ -50,6 +50,7 @@ class MemoryRecordRepository implements RecordRepository {
 }
 
 const testUser: AuthUser = {
+  email: null,
   id: "11111111-1111-4111-8111-111111111111",
   phone: "09120000000",
   fullName: "کاربر تست",

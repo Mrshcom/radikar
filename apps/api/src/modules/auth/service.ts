@@ -1,22 +1,27 @@
 import {
   createHash,
   createHmac,
+  createPublicKey,
   randomBytes,
   randomInt,
   randomUUID,
   timingSafeEqual,
+  verify as verifySignature,
 } from "node:crypto";
+import type { JsonWebKey as NodeJsonWebKey } from "node:crypto";
 import { normalizeDigits } from "@radikar/validators";
 import type { UpdateAdminAliasInput } from "@radikar/validators";
-import { and, asc, count, desc, eq, gt, ilike, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, ilike, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 import {
   authSessions,
   dataRecords,
   membershipEvents,
+  oauthLoginAttempts,
   otpChallenges,
   orders,
   plans,
   userMemberships,
+  userIdentities,
   users,
   type Database,
 } from "@radikar/database";
@@ -31,6 +36,9 @@ export type AuthServiceOptions = {
   exposeDevelopmentOtp: boolean;
   otpWebhookUrl?: string;
   otpWebhookToken?: string;
+  googleClientId?: string;
+  googleClientSecret?: string;
+  googleRedirectUri?: string;
   grantSignupMembership?: (userId: string) => Promise<void>;
 };
 
@@ -46,6 +54,29 @@ export type VerifyOtpResult = {
   sessionExpiresAt: Date;
 };
 
+export type GoogleLoginStart = {
+  authorizationUrl: string;
+  state: string;
+};
+
+export type GoogleLoginResult = VerifyOtpResult & { nextPath: string };
+
+type GoogleIdTokenClaims = {
+  iss?: string;
+  aud?: string;
+  sub?: string;
+  email?: string;
+  email_verified?: boolean;
+  name?: string;
+  nonce?: string;
+  exp?: number;
+  iat?: number;
+};
+
+type GoogleJwk = NodeJsonWebKey & { kid?: string; alg?: string; use?: string };
+
+let googleJwksCache: { expiresAt: number; keys: GoogleJwk[] } | undefined;
+
 function normalizePhone(value: string) {
   const digits = normalizeDigits(value.trim());
   if (!/^09\d{9}$/.test(digits)) throw new AuthError(400, "شماره همراه معتبر نیست.");
@@ -56,10 +87,92 @@ function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+function safeNextPath(value?: string) {
+  return value?.startsWith("/") &&
+    !value.startsWith("//") &&
+    !value.includes("\\") &&
+    !/[\r\n]/.test(value)
+    ? value
+    : "/dashboard";
+}
+
+function decodeJwtPart<T>(value: string): T {
+  try {
+    return JSON.parse(Buffer.from(value, "base64url").toString("utf8")) as T;
+  } catch {
+    throw new AuthError(400, "پاسخ هویتی Google معتبر نیست.");
+  }
+}
+
+async function getGoogleJwks(forceRefresh = false) {
+  if (!forceRefresh && googleJwksCache && googleJwksCache.expiresAt > Date.now()) {
+    return googleJwksCache.keys;
+  }
+  const response = await fetch("https://www.googleapis.com/oauth2/v3/certs", {
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!response.ok) throw new AuthError(502, "اعتبارسنجی ورود Google در دسترس نیست.");
+  const body = (await response.json()) as { keys?: GoogleJwk[] };
+  if (!Array.isArray(body.keys) || !body.keys.length) {
+    throw new AuthError(502, "کلیدهای اعتبارسنجی Google دریافت نشد.");
+  }
+  const maxAge = Number(response.headers.get("cache-control")?.match(/max-age=(\d+)/)?.[1] ?? 3600);
+  googleJwksCache = {
+    keys: body.keys,
+    expiresAt: Date.now() + Math.max(60, Math.min(maxAge, 86_400)) * 1_000,
+  };
+  return body.keys;
+}
+
+async function verifyGoogleIdToken(
+  idToken: string,
+  clientId: string,
+  expectedNonce: string,
+) {
+  const parts = idToken.split(".");
+  if (parts.length !== 3) throw new AuthError(400, "توکن هویتی Google معتبر نیست.");
+  const header = decodeJwtPart<{ alg?: string; kid?: string }>(parts[0]);
+  if (header.alg !== "RS256" || !header.kid) {
+    throw new AuthError(400, "الگوریتم توکن Google معتبر نیست.");
+  }
+  let key = (await getGoogleJwks()).find((item) => item.kid === header.kid);
+  if (!key) {
+    key = (await getGoogleJwks(true)).find((item) => item.kid === header.kid);
+  }
+  if (!key) {
+    throw new AuthError(400, "کلید امضای Google پیدا نشد؛ دوباره تلاش کن.");
+  }
+  const validSignature = verifySignature(
+    "RSA-SHA256",
+    Buffer.from(`${parts[0]}.${parts[1]}`),
+    createPublicKey({ key, format: "jwk" }),
+    Buffer.from(parts[2], "base64url"),
+  );
+  if (!validSignature) throw new AuthError(400, "امضای توکن Google معتبر نیست.");
+
+  const claims = decodeJwtPart<GoogleIdTokenClaims>(parts[1]);
+  const now = Math.floor(Date.now() / 1_000);
+  if (
+    !["https://accounts.google.com", "accounts.google.com"].includes(claims.iss ?? "") ||
+    claims.aud !== clientId ||
+    !claims.sub ||
+    !claims.email ||
+    claims.email_verified !== true ||
+    claims.nonce !== expectedNonce ||
+    !claims.exp ||
+    claims.exp < now - 60 ||
+    (claims.iat != null && claims.iat > now + 60)
+  ) {
+    throw new AuthError(400, "اطلاعات هویتی Google قابل تأیید نیست.");
+  }
+  return claims as Required<Pick<GoogleIdTokenClaims, "sub" | "email">> & GoogleIdTokenClaims;
+}
+
 function toAuthUser(row: typeof users.$inferSelect): AuthUser {
   return {
     id: row.id,
     phone: row.phone,
+    email: row.email,
     fullName: row.fullName,
     role: row.role as UserRole,
     status: row.status as UserStatus,
@@ -88,6 +201,223 @@ export class AuthService {
     return createHmac("sha256", this.options.secret)
       .update(`${challengeId}:${phone}:${code}`)
       .digest("hex");
+  }
+
+  isGoogleLoginEnabled() {
+    return Boolean(
+      this.options.googleClientId &&
+        this.options.googleClientSecret &&
+        this.options.googleRedirectUri,
+    );
+  }
+
+  private requireGoogleOptions() {
+    const { googleClientId, googleClientSecret, googleRedirectUri } = this.options;
+    if (!googleClientId || !googleClientSecret || !googleRedirectUri) {
+      throw new AuthError(503, "ورود با Google هنوز پیکربندی نشده است.");
+    }
+    return { googleClientId, googleClientSecret, googleRedirectUri };
+  }
+
+  private async createSession(userRow: typeof users.$inferSelect, now = new Date()) {
+    const sessionToken = randomBytes(32).toString("base64url");
+    const sessionExpiresAt = new Date(
+      now.getTime() + this.options.sessionTtlDays * 86_400_000,
+    );
+    await this.database.insert(authSessions).values({
+      id: randomUUID(),
+      userId: userRow.id,
+      tokenHash: tokenHash(sessionToken),
+      expiresAt: sessionExpiresAt,
+      createdAt: now,
+      lastSeenAt: now,
+    });
+    return {
+      user: toAuthUser(userRow),
+      sessionToken,
+      sessionExpiresAt,
+    } satisfies VerifyOtpResult;
+  }
+
+  async beginGoogleLogin(nextPath?: string): Promise<GoogleLoginStart> {
+    const { googleClientId, googleRedirectUri } = this.requireGoogleOptions();
+    const state = randomBytes(32).toString("base64url");
+    const nonce = randomBytes(32).toString("base64url");
+    const codeVerifier = randomBytes(64).toString("base64url");
+    const codeChallenge = createHash("sha256")
+      .update(codeVerifier)
+      .digest("base64url");
+    const now = new Date();
+    await this.database
+      .delete(oauthLoginAttempts)
+      .where(lt(oauthLoginAttempts.expiresAt, now));
+    await this.database.insert(oauthLoginAttempts).values({
+      id: randomUUID(),
+      provider: "google",
+      stateHash: tokenHash(state),
+      nonce,
+      codeVerifier,
+      nextPath: safeNextPath(nextPath),
+      expiresAt: new Date(now.getTime() + 10 * 60_000),
+      createdAt: now,
+    });
+    const params = new URLSearchParams({
+      client_id: googleClientId,
+      redirect_uri: googleRedirectUri,
+      response_type: "code",
+      scope: "openid email profile",
+      state,
+      nonce,
+      code_challenge: codeChallenge,
+      code_challenge_method: "S256",
+      prompt: "select_account",
+    });
+    return {
+      state,
+      authorizationUrl: `https://accounts.google.com/o/oauth2/v2/auth?${params}`,
+    };
+  }
+
+  async completeGoogleLogin(
+    code: string,
+    state: string,
+    cookieState?: string,
+  ): Promise<GoogleLoginResult> {
+    const { googleClientId, googleClientSecret, googleRedirectUri } =
+      this.requireGoogleOptions();
+    if (!cookieState) throw new AuthError(400, "نشست ورود Google پیدا نشد.");
+    const expectedState = Buffer.from(cookieState);
+    const receivedState = Buffer.from(state);
+    if (
+      expectedState.length !== receivedState.length ||
+      !timingSafeEqual(expectedState, receivedState)
+    ) {
+      throw new AuthError(400, "درخواست ورود Google معتبر نیست.");
+    }
+
+    const now = new Date();
+    const [attempt] = await this.database
+      .update(oauthLoginAttempts)
+      .set({ consumedAt: now })
+      .where(
+        and(
+          eq(oauthLoginAttempts.stateHash, tokenHash(state)),
+          eq(oauthLoginAttempts.provider, "google"),
+          isNull(oauthLoginAttempts.consumedAt),
+          gt(oauthLoginAttempts.expiresAt, now),
+        ),
+      )
+      .returning();
+    if (!attempt) throw new AuthError(400, "درخواست ورود Google منقضی یا استفاده شده است.");
+
+    let tokenResponse: Response;
+    try {
+      tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code,
+          client_id: googleClientId,
+          client_secret: googleClientSecret,
+          redirect_uri: googleRedirectUri,
+          grant_type: "authorization_code",
+          code_verifier: attempt.codeVerifier,
+        }),
+        signal: AbortSignal.timeout(8_000),
+      });
+    } catch {
+      throw new AuthError(502, "ارتباط با Google برقرار نشد؛ دوباره تلاش کن.");
+    }
+    const tokenBody = (await tokenResponse.json().catch(() => ({}))) as {
+      id_token?: string;
+    };
+    if (!tokenResponse.ok || !tokenBody.id_token) {
+      throw new AuthError(400, "تأیید ورود Google ناموفق بود.");
+    }
+    const claims = await verifyGoogleIdToken(
+      tokenBody.id_token,
+      googleClientId,
+      attempt.nonce,
+    );
+    const email = claims.email.trim().toLocaleLowerCase("en");
+    const displayName = claims.name?.trim().slice(0, 100) || null;
+
+    const { userRow, isFirstUser } = await this.database.transaction(async (tx) => {
+      // Serializes simultaneous callbacks for the same Google account and prevents
+      // duplicate local users when two login tabs finish at nearly the same time.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`google:${claims.sub}`}))`);
+      const [existingIdentity] = await tx
+        .select({ identity: userIdentities, user: users })
+        .from(userIdentities)
+        .innerJoin(users, eq(userIdentities.userId, users.id))
+        .where(
+          and(
+            eq(userIdentities.provider, "google"),
+            eq(userIdentities.providerSubject, claims.sub),
+          ),
+        )
+        .limit(1);
+
+      if (existingIdentity) {
+        if (existingIdentity.user.status !== "active") {
+          throw new AuthError(403, "حساب کاربری شما غیرفعال است.");
+        }
+        const [updatedUser] = await tx
+          .update(users)
+          .set({
+            email,
+            fullName: existingIdentity.user.fullName || displayName,
+            lastLoginAt: now,
+            updatedAt: now,
+          })
+          .where(eq(users.id, existingIdentity.user.id))
+          .returning();
+        await tx
+          .update(userIdentities)
+          .set({ email, emailVerified: true, lastLoginAt: now, updatedAt: now })
+          .where(eq(userIdentities.id, existingIdentity.identity.id));
+        return { userRow: updatedUser, isFirstUser: false };
+      }
+
+      const [{ value: usersCount }] = await tx.select({ value: count() }).from(users);
+      const [newUser] = await tx
+        .insert(users)
+        .values({
+          id: randomUUID(),
+          phone: null,
+          email,
+          fullName: displayName,
+          role: "user",
+          createdAt: now,
+          updatedAt: now,
+          lastLoginAt: now,
+        })
+        .returning();
+      await tx.insert(userIdentities).values({
+        id: randomUUID(),
+        userId: newUser.id,
+        provider: "google",
+        providerSubject: claims.sub,
+        email,
+        emailVerified: true,
+        createdAt: now,
+        updatedAt: now,
+        lastLoginAt: now,
+      });
+      return { userRow: newUser, isFirstUser: usersCount === 0 };
+    });
+
+    await this.options.grantSignupMembership?.(userRow.id);
+    if (isFirstUser) {
+      await this.database
+        .update(dataRecords)
+        .set({ ownerUserId: userRow.id })
+        .where(isNull(dataRecords.ownerUserId));
+    }
+    return {
+      ...(await this.createSession(userRow, now)),
+      nextPath: attempt.nextPath,
+    };
   }
 
   async requestOtp(rawPhone: string): Promise<RequestOtpResult> {
@@ -197,17 +527,7 @@ export class AuthService {
         .where(isNull(dataRecords.ownerUserId));
     }
 
-    const sessionToken = randomBytes(32).toString("base64url");
-    const sessionExpiresAt = new Date(now.getTime() + this.options.sessionTtlDays * 86_400_000);
-    await this.database.insert(authSessions).values({
-      id: randomUUID(),
-      userId: userRow.id,
-      tokenHash: tokenHash(sessionToken),
-      expiresAt: sessionExpiresAt,
-      createdAt: now,
-      lastSeenAt: now,
-    });
-    return { user: toAuthUser(userRow), sessionToken, sessionExpiresAt };
+    return this.createSession(userRow, now);
   }
 
   async resolveSession(token?: string): Promise<SessionIdentity | null> {
@@ -297,6 +617,7 @@ export class AuthService {
         .select({
           userId: users.id,
           phone: users.phone,
+          email: users.email,
           fullName: users.fullName,
           createdAt: users.createdAt,
         })
@@ -308,6 +629,7 @@ export class AuthService {
         .select({
           userId: users.id,
           phone: users.phone,
+          email: users.email,
           fullName: users.fullName,
           createdAt: users.lastLoginAt,
         })
@@ -326,6 +648,7 @@ export class AuthService {
           orderId: orders.id,
           userId: users.id,
           phone: users.phone,
+          email: users.email,
           fullName: users.fullName,
           planName: plans.name,
           amountRials: orders.amountRials,
@@ -349,6 +672,7 @@ export class AuthService {
           recordId: dataRecords.id,
           userId: users.id,
           phone: users.phone,
+          email: users.email,
           fullName: users.fullName,
           profileId: dataRecords.profileId,
           createdAt: dataRecords.createdAt,
@@ -370,7 +694,7 @@ export class AuthService {
         id: `signup:${row.userId}:${row.createdAt.toISOString()}`,
         type: "signup" as const,
         createdAt: row.createdAt.toISOString(),
-        user: { id: row.userId, phone: row.phone, fullName: row.fullName },
+        user: { id: row.userId, phone: row.phone, email: row.email, fullName: row.fullName },
         details: {},
       })),
       ...loginRows.flatMap((row) =>
@@ -379,7 +703,7 @@ export class AuthService {
               id: `login:${row.userId}:${row.createdAt.toISOString()}`,
               type: "login" as const,
               createdAt: row.createdAt.toISOString(),
-              user: { id: row.userId, phone: row.phone, fullName: row.fullName },
+              user: { id: row.userId, phone: row.phone, email: row.email, fullName: row.fullName },
               details: {},
             }]
           : [],
@@ -390,7 +714,7 @@ export class AuthService {
               id: `purchase:${row.orderId}`,
               type: "purchase" as const,
               createdAt: row.createdAt.toISOString(),
-              user: { id: row.userId, phone: row.phone, fullName: row.fullName },
+              user: { id: row.userId, phone: row.phone, email: row.email, fullName: row.fullName },
               details: {
                 orderId: row.orderId,
                 planName: row.planName,
@@ -404,7 +728,7 @@ export class AuthService {
         id: `resume:${row.recordId}:${row.createdAt.toISOString()}`,
         type: "resume" as const,
         createdAt: row.createdAt.toISOString(),
-        user: { id: row.userId, phone: row.phone, fullName: row.fullName },
+        user: { id: row.userId, phone: row.phone, email: row.email, fullName: row.fullName },
         details: { recordId: row.recordId, profileId: row.profileId },
       })),
     ];
@@ -429,18 +753,19 @@ export class AuthService {
     const filter = and(
       ne(users.role, "superadmin"),
       search.trim()
-        ? sql`${users.phone} ILIKE ${term} OR COALESCE(${users.fullName}, '') ILIKE ${term}`
+        ? sql`COALESCE(${users.phone}, '') ILIKE ${term} OR COALESCE(${users.email}, '') ILIKE ${term} OR COALESCE(${users.fullName}, '') ILIKE ${term}`
         : undefined,
       role ? eq(users.role, role) : undefined,
       status ? eq(users.status, status) : undefined,
     );
-    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone})` : sortBy === "alias" ? users.adminAlias : sortBy === "role" ? users.role : sortBy === "status" ? users.status : sortBy === "records" ? sql`count(${dataRecords.id})` : sortBy === "login" ? users.lastLoginAt : users.createdAt;
+    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})` : sortBy === "alias" ? users.adminAlias : sortBy === "role" ? users.role : sortBy === "status" ? users.status : sortBy === "records" ? sql`count(${dataRecords.id})` : sortBy === "login" ? users.lastLoginAt : users.createdAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [rows, totals] = await Promise.all([
       this.database
         .select({
           id: users.id,
           phone: users.phone,
+          email: users.email,
           fullName: users.fullName,
           adminAlias: users.adminAlias,
           role: users.role,
@@ -469,11 +794,12 @@ export class AuthService {
             ilike(dataRecords.id, term),
             ilike(dataRecords.profileId, term),
             ilike(users.phone, term),
+            ilike(users.email, term),
           )
         : undefined,
       collection ? eq(dataRecords.collection, collection) : undefined,
     );
-    const sortColumn = sortBy === "collection" ? dataRecords.collection : sortBy === "id" ? dataRecords.id : sortBy === "owner" ? users.phone : sortBy === "workspace" ? dataRecords.profileId : dataRecords.updatedAt;
+    const sortColumn = sortBy === "collection" ? dataRecords.collection : sortBy === "id" ? dataRecords.id : sortBy === "owner" ? sql`coalesce(${users.phone}, ${users.email})` : sortBy === "workspace" ? dataRecords.profileId : dataRecords.updatedAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [rows, totals] = await Promise.all([
       this.database
@@ -483,6 +809,7 @@ export class AuthService {
           profileId: dataRecords.profileId,
           ownerUserId: dataRecords.ownerUserId,
           ownerPhone: users.phone,
+          ownerEmail: users.email,
           updatedAt: dataRecords.updatedAt,
         })
         .from(dataRecords)

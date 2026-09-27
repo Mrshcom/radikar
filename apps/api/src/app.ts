@@ -9,6 +9,7 @@ import { BillingService } from "./modules/billing/service";
 import { setAnalyzeProvider } from "@radikar/ai";
 import { aiSettings } from "@radikar/database";
 import { eq } from "drizzle-orm";
+import { JobPoolService } from "./modules/job-pool/service";
 
 loadLocalEnvironment();
 const config = readConfig();
@@ -23,6 +24,17 @@ const billingService = new BillingService(database.db, {
   webAppUrl: config.WEB_APP_URL,
   zarinpalBaseUrl: config.ZARINPAL_BASE_URL,
   zarinpalMerchantId: config.ZARINPAL_MERCHANT_ID,
+});
+const jobPoolService = new JobPoolService(database.db, {
+  enabled: config.JOB_POOL_ENABLED,
+  apifyApiToken: config.APIFY_API_TOKEN,
+  actorId: config.APIFY_LINKEDIN_JOBS_ACTOR_ID,
+  dailyLimit: config.JOB_POOL_DAILY_LIMIT,
+  intervalHours: config.JOB_POOL_INTERVAL_HOURS,
+  locations: config.JOB_POOL_LOCATIONS.split(",").map((location) => location.trim()).filter(Boolean),
+  publishedAt: config.JOB_POOL_PUBLISHED_AT,
+  costPerThousandUsdMicros: config.JOB_POOL_COST_PER_1000_USD_MICROS,
+  actorStartCostUsdMicros: config.JOB_POOL_ACTOR_START_COST_USD_MICROS,
 });
 const app = buildApp({
   fastifyFactory: Fastify,
@@ -43,9 +55,15 @@ const app = buildApp({
       (config.NODE_ENV !== "production" || config.ALLOW_INSECURE_DEMO_OTP),
     otpWebhookUrl: config.OTP_WEBHOOK_URL,
     otpWebhookToken: config.OTP_WEBHOOK_TOKEN,
+    googleClientId: config.GOOGLE_CLIENT_ID,
+    googleClientSecret: config.GOOGLE_CLIENT_SECRET,
+    googleRedirectUri:
+      config.GOOGLE_OAUTH_REDIRECT_URI ??
+      `${config.WEB_APP_URL}/api/auth/google/callback`,
     grantSignupMembership: (userId) => billingService.ensureSignupMembership(userId),
   }),
   billingService,
+  jobPoolService,
   database: database.db,
       // The temporary demo mode is served over HTTP on the IP:5000 test port.
       // Use a regular cookie there; production/domain mode keeps the hardened
@@ -56,7 +74,10 @@ const app = buildApp({
           : "radikar_session",
       secureCookies: config.NODE_ENV === "production" && !config.ALLOW_INSECURE_DEMO_OTP,
   sessionTtlDays: config.SESSION_TTL_DAYS,
+  webAppUrl: config.WEB_APP_URL,
   maxUploadSizeBytes: config.MAX_UPLOAD_SIZE_MB * 1024 * 1024,
+  apifyApiToken: config.APIFY_API_TOKEN,
+  apifyLinkedInActorId: config.APIFY_LINKEDIN_ACTOR_ID,
 });
 
 async function shutdown(signal: string) {

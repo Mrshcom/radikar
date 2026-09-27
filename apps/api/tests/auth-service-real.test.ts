@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { generateKeyPairSync, randomUUID, sign } from "node:crypto";
 import test from "node:test";
 import { promisify } from "node:util";
 import { createDatabase } from "@radikar/database";
@@ -49,6 +49,34 @@ const billingOptions = {
   zarinpalBaseUrl: "http://gateway.test",
   zarinpalMerchantId: "merchant",
 };
+
+function encodeJwtPart(value: unknown) {
+  return Buffer.from(JSON.stringify(value)).toString("base64url");
+}
+
+function signedGoogleIdToken(input: {
+  clientId: string;
+  nonce: string;
+  privateKey: ReturnType<typeof generateKeyPairSync>["privateKey"];
+  kid: string;
+}) {
+  const now = Math.floor(Date.now() / 1_000);
+  const header = encodeJwtPart({ alg: "RS256", typ: "JWT", kid: input.kid });
+  const payload = encodeJwtPart({
+    iss: "https://accounts.google.com",
+    aud: input.clientId,
+    sub: "google-subject-123",
+    email: "Google.User@Example.com",
+    email_verified: true,
+    name: "کاربر گوگل",
+    nonce: input.nonce,
+    iat: now,
+    exp: now + 300,
+  });
+  const content = `${header}.${payload}`;
+  const signature = sign("RSA-SHA256", Buffer.from(content), input.privateKey).toString("base64url");
+  return `${content}.${signature}`;
+}
 
 test("AuthService resolves, refreshes and revokes real PostgreSQL sessions", { timeout: 60_000 }, async () => {
   await withDatabase(async ({ database, sql }) => {
@@ -138,6 +166,84 @@ test("AuthService creates users, memberships and sessions and reports OTP webhoo
       } finally {
         AbortSignal.timeout = originalTimeout;
       }
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
+test("AuthService verifies Google PKCE login, prevents replay and reuses provider identity", { timeout: 60_000 }, async () => {
+  await withDatabase(async ({ database, sql }) => {
+    const billing = new BillingService(database, billingOptions);
+    const clientId = "google-client-id.test";
+    const keyId = `google-test-${randomUUID()}`;
+    const { publicKey, privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+    const publicJwk = publicKey.export({ format: "jwk" });
+    const auth = new AuthService(database, {
+      secret: "auth-google-test",
+      otpTtlSeconds: 180,
+      sessionTtlDays: 30,
+      allowFirstUserSuperadmin: true,
+      exposeDevelopmentOtp: false,
+      googleClientId: clientId,
+      googleClientSecret: "google-client-secret",
+      googleRedirectUri: "http://web.test/api/auth/google/callback",
+      grantSignupMembership: (userId) => billing.ensureSignupMembership(userId),
+    });
+    const originalFetch = globalThis.fetch;
+    let activeIdToken = "";
+    let tokenRequests = 0;
+    try {
+      globalThis.fetch = async (input) => {
+        const url = String(input);
+        if (url === "https://oauth2.googleapis.com/token") {
+          tokenRequests += 1;
+          return Response.json({ id_token: activeIdToken });
+        }
+        if (url === "https://www.googleapis.com/oauth2/v3/certs") {
+          return Response.json({ keys: [{ ...publicJwk, kid: keyId, alg: "RS256", use: "sig" }] }, {
+            headers: { "cache-control": "public, max-age=60" },
+          });
+        }
+        throw new Error(`Unexpected fetch URL: ${url}`);
+      };
+
+      const firstStart = await auth.beginGoogleLogin("/jobs");
+      const firstAuthorizationUrl = new URL(firstStart.authorizationUrl);
+      activeIdToken = signedGoogleIdToken({
+        clientId,
+        nonce: firstAuthorizationUrl.searchParams.get("nonce")!,
+        privateKey,
+        kid: keyId,
+      });
+      assert.equal(firstAuthorizationUrl.searchParams.get("code_challenge_method"), "S256");
+      const firstLogin = await auth.completeGoogleLogin("first-code", firstStart.state, firstStart.state);
+      assert.equal(firstLogin.nextPath, "/jobs");
+      assert.equal(firstLogin.user.phone, null);
+      assert.equal(firstLogin.user.email, "google.user@example.com");
+      assert.equal(firstLogin.user.role, "user");
+      assert.equal((await sql`select count(*)::int as count from user_identities where user_id = ${firstLogin.user.id}`)[0].count, 1);
+      assert.equal((await sql`select count(*)::int as count from user_memberships where user_id = ${firstLogin.user.id}`)[0].count, 1);
+
+      await assert.rejects(
+        () => auth.completeGoogleLogin("replayed-code", firstStart.state, firstStart.state),
+        (error: unknown) => error instanceof AuthError && error.statusCode === 400,
+      );
+      assert.equal(tokenRequests, 1);
+
+      const secondStart = await auth.beginGoogleLogin("https://evil.example/redirect");
+      const secondAuthorizationUrl = new URL(secondStart.authorizationUrl);
+      activeIdToken = signedGoogleIdToken({
+        clientId,
+        nonce: secondAuthorizationUrl.searchParams.get("nonce")!,
+        privateKey,
+        kid: keyId,
+      });
+      const secondLogin = await auth.completeGoogleLogin("second-code", secondStart.state, secondStart.state);
+      assert.equal(secondLogin.user.id, firstLogin.user.id);
+      assert.equal(secondLogin.nextPath, "/dashboard");
+      assert.equal((await sql`select count(*)::int as count from users`)[0].count, 1);
+      assert.equal((await sql`select count(*)::int as count from auth_sessions where user_id = ${firstLogin.user.id}`)[0].count, 2);
     } finally {
       globalThis.fetch = originalFetch;
     }

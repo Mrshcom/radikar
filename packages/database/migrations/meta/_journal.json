@@ -78,6 +78,41 @@
       "when": 1788714000000,
       "tag": "0010_admin_alias",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790449200000,
+      "tag": "0011_central_job_pool",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790535600000,
+      "tag": "0012_job_pool_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790622000000,
+      "tag": "0013_job_pool_reporting",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790708400000,
+      "tag": "0014_job_pool_locations",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1790794800000,
+      "tag": "0015_google_identity",
+      "breakpoints": true
     }
   ]
 }

@@ -330,7 +330,7 @@ export class BillingService {
     return { items, total: totalRows[0]?.total ?? 0, page, pageSize };
   }
 
-  async createOrder(userId: string, phone: string, planId: string) {
+  async createOrder(userId: string, phone: string | null, planId: string) {
     const [plan] = await this.database
       .select()
       .from(plans)
@@ -370,7 +370,7 @@ export class BillingService {
         amountRials: plan.priceRials,
         callbackUrl: `${this.options.apiPublicUrl}/api/billing/callback`,
         description: `خرید پلن ${plan.name} - سفارش ${number}`,
-        mobile: phone,
+        mobile: phone ?? undefined,
       });
       await this.database.transaction(async (tx) => {
         await tx
@@ -573,13 +573,14 @@ export class BillingService {
         ? or(
             ilike(orders.orderNumber, `%${search.trim()}%`),
             ilike(users.phone, `%${search.trim()}%`),
+            ilike(users.email, `%${search.trim()}%`),
             ilike(users.fullName, `%${search.trim()}%`),
           )
         : undefined,
       status ? eq(orders.status, status) : undefined,
       planId ? eq(orders.planId, planId) : undefined,
     );
-    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone})` : sortBy === "plan" ? plans.name : sortBy === "amount" ? orders.amountRials : sortBy === "status" ? orders.status : sortBy === "tracking" ? orders.refId : sortBy === "order" ? orders.orderNumber : orders.createdAt;
+    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})` : sortBy === "plan" ? plans.name : sortBy === "amount" ? orders.amountRials : sortBy === "status" ? orders.status : sortBy === "tracking" ? orders.refId : sortBy === "order" ? orders.orderNumber : orders.createdAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [items, totals] = await Promise.all([
       this.database
@@ -669,7 +670,7 @@ export class BillingService {
       totalTokens: sql<number>`coalesce(sum(${modelUsageEvents.totalTokens}), 0)`,
       estimatedCostMicros: sql<number>`coalesce(sum(${modelUsageEvents.estimatedCostMicros}), 0)`,
     };
-    const recentSortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone})` : sortBy === "operation" ? modelUsageEvents.operation : sortBy === "model" ? modelUsageEvents.model : sortBy === "tokens" ? modelUsageEvents.totalTokens : sortBy === "cost" ? modelUsageEvents.estimatedCostMicros : sortBy === "status" ? modelUsageEvents.successful : modelUsageEvents.createdAt;
+    const recentSortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})` : sortBy === "operation" ? modelUsageEvents.operation : sortBy === "model" ? modelUsageEvents.model : sortBy === "tokens" ? modelUsageEvents.totalTokens : sortBy === "cost" ? modelUsageEvents.estimatedCostMicros : sortBy === "status" ? modelUsageEvents.successful : modelUsageEvents.createdAt;
     const recentOrder = sortDirection === "asc" ? asc(recentSortColumn) : desc(recentSortColumn);
     const [totalsRows, todayRows, byModelRows, byOperationRows, dailyRows, recentRows] =
       await Promise.all([
@@ -734,6 +735,7 @@ export class BillingService {
             createdAt: modelUsageEvents.createdAt,
             user: {
               phone: users.phone,
+              email: users.email,
               fullName: users.fullName,
             },
           })
@@ -795,6 +797,7 @@ export class BillingService {
       search.trim()
         ? or(
             ilike(users.phone, `%${search.trim()}%`),
+            ilike(users.email, `%${search.trim()}%`),
             ilike(users.fullName, `%${search.trim()}%`),
             ilike(payments.authority, `%${search.trim()}%`),
             ilike(payments.refId, `%${search.trim()}%`),
@@ -802,7 +805,7 @@ export class BillingService {
         : undefined,
       status ? eq(payments.status, status) : undefined,
     );
-    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone})` : sortBy === "amount" ? payments.amountRials : sortBy === "status" ? payments.status : sortBy === "authority" ? payments.authority : sortBy === "reference" ? payments.refId : sortBy === "card" ? payments.cardPan : payments.createdAt;
+    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})` : sortBy === "amount" ? payments.amountRials : sortBy === "status" ? payments.status : sortBy === "authority" ? payments.authority : sortBy === "reference" ? payments.refId : sortBy === "card" ? payments.cardPan : payments.createdAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [items, totals] = await Promise.all([
       this.database
@@ -839,6 +842,7 @@ export class BillingService {
       search.trim()
         ? or(
             ilike(users.phone, `%${search.trim()}%`),
+            ilike(users.email, `%${search.trim()}%`),
             ilike(users.fullName, `%${search.trim()}%`),
           )
         : undefined,
@@ -846,7 +850,7 @@ export class BillingService {
       membershipStatus ? eq(userMemberships.status, membershipStatus) : undefined,
       userStatus ? eq(users.status, userStatus) : undefined,
     );
-    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone})` : sortBy === "plan" ? plans.name : sortBy === "account" ? users.status : sortBy === "membership" ? userMemberships.status : sortBy === "expiry" ? userMemberships.expiresAt : sortBy === "ai" ? userMemberships.aiCreditsRemaining : users.createdAt;
+    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})` : sortBy === "plan" ? plans.name : sortBy === "account" ? users.status : sortBy === "membership" ? userMemberships.status : sortBy === "expiry" ? userMemberships.expiresAt : sortBy === "ai" ? userMemberships.aiCreditsRemaining : users.createdAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [items, totals] = await Promise.all([
       this.database
@@ -873,6 +877,7 @@ export class BillingService {
       .select({
         id: users.id,
         phone: users.phone,
+        email: users.email,
         fullName: users.fullName,
         status: users.status,
       })
@@ -904,6 +909,7 @@ export class BillingService {
             .select({
               id: users.id,
               phone: users.phone,
+              email: users.email,
               fullName: users.fullName,
               role: users.role,
             })
@@ -975,6 +981,53 @@ export class BillingService {
         actorUserId,
         type: "admin_grant",
         durationDays: plan.durationDays,
+        createdAt: now,
+      });
+    });
+    return this.getMembership(userId);
+  }
+
+  async adminReplacePlan(userId: string, planId: string, actorUserId: string) {
+    const [plan] = await this.database
+      .select()
+      .from(plans)
+      .where(and(eq(plans.id, planId), eq(plans.isActive, true)))
+      .limit(1);
+    if (!plan) throw new BillingError(404, "پلن پیدا نشد.");
+    await this.ensureSignupMembership(userId);
+    const [membership] = await this.database
+      .select()
+      .from(userMemberships)
+      .where(eq(userMemberships.userId, userId))
+      .limit(1);
+    if (!membership) throw new BillingError(404, "عضویت کاربر پیدا نشد.");
+
+    const now = new Date();
+    const active = membership.status === "active" && membership.expiresAt > now;
+    await this.database.transaction(async (tx) => {
+      await tx.update(userMemberships).set({
+        planId: plan.id,
+        status: "active",
+        startsAt: active ? membership.startsAt : now,
+        expiresAt: active ? membership.expiresAt : addDays(now, plan.durationDays),
+        resumesRemaining: plan.resumeLimit,
+        pdfDownloadsRemaining: plan.pdfDownloadLimit,
+        aiCreditsRemaining: plan.aiCredits,
+        matchCreditsRemaining: plan.matchCredits,
+        interviewCreditsRemaining: plan.interviewCredits,
+        canceledAt: null,
+        canceledByUserId: null,
+        cancelReason: null,
+        updatedAt: now,
+      }).where(eq(userMemberships.id, membership.id));
+      await tx.insert(membershipEvents).values({
+        id: randomUUID(),
+        userId,
+        membershipId: membership.id,
+        planId: plan.id,
+        actorUserId,
+        type: "admin_grant",
+        details: { mode: "replace", previousPlanId: membership.planId },
         createdAt: now,
       });
     });

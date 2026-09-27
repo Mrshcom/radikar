@@ -32,9 +32,8 @@ describe("TablePagination", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText("تعداد ردیف در هر صفحه"), {
-      target: { value: "50" },
-    });
+    fireEvent.click(screen.getByLabelText("تعداد ردیف در هر صفحه"));
+    fireEvent.click(screen.getByRole("option", { name: "۵۰" }));
     expect(onPageSizeChange).toHaveBeenCalledWith(50);
   });
 });

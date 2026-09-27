@@ -29,6 +29,8 @@ export default function AccountPage() {
   const queryClient = useQueryClient();
   const notify = useToast();
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { fullName: "" } });
+  const loginIdentifier = user?.phone || user?.email || "";
+  const loginMethod = user?.phone ? "شماره همراه" : "ایمیل Google";
 
   useEffect(() => form.reset({ fullName: user?.fullName ?? "" }), [form, user?.fullName]);
 
@@ -69,10 +71,10 @@ export default function AccountPage() {
           </label>
           <div className="grid gap-2">
             <label className="grid gap-2 text-[10px] font-bold">
-              شماره همراه
-              <input className="h-12 rounded-[11px] border border-[#e5e9e5] bg-[#f5f7f4] px-4 text-[12px] text-[#72817e]" dir="ltr" readOnly value={user?.phone ?? ""} />
+              {loginMethod}
+              <input className="h-12 rounded-[11px] border border-[#e5e9e5] bg-[#f5f7f4] px-4 text-[12px] text-[#72817e]" dir="ltr" readOnly value={loginIdentifier} />
             </label>
-            <p className="m-0 text-[9px] leading-6 text-[#87938f]">شماره همراه شناسه یکتای ورود است و امکان تغییر آن وجود ندارد.</p>
+            <p className="m-0 text-[9px] leading-6 text-[#87938f]">این شناسه از روش ورود تأییدشده حساب گرفته شده و در این بخش قابل تغییر نیست.</p>
           </div>
         </div>
         <button className="inline-flex min-h-11 w-fit items-center gap-2 rounded-[11px] border-0 bg-[#0f7b62] px-5 text-[11px] font-bold text-white disabled:opacity-40" disabled={update.isPending} type="submit">{update.isPending ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />} ذخیره تغییرات</button>

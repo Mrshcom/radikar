@@ -4,7 +4,8 @@ export type UserStatus = "active" | "suspended";
 
 export type AuthUser = {
   id: string;
-  phone: string;
+  phone: string | null;
+  email: string | null;
   fullName: string | null;
   role: UserRole;
   status: UserStatus;
@@ -23,7 +24,8 @@ export type Permission =
   | "orders:read:any"
   | "payments:read:any"
   | "memberships:manage:any"
-  | "ai-settings:manage:any";
+  | "ai-settings:manage:any"
+  | "job-pool:manage:any";
 
 const rolePermissions: Record<UserRole, ReadonlySet<Permission>> = {
   user: new Set(["own:data:read", "own:data:write"]),
@@ -39,6 +41,7 @@ const rolePermissions: Record<UserRole, ReadonlySet<Permission>> = {
     "payments:read:any",
     "memberships:manage:any",
     "ai-settings:manage:any",
+    "job-pool:manage:any",
   ]),
 };
 

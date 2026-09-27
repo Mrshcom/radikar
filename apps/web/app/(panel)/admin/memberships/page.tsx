@@ -2,13 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, Info, ShieldCheck, UserCog } from "lucide-react";
+import { ClipboardList, Info, Pencil, ShieldCheck, UserCog } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { normalizeDigits } from "@radikar/validators";
 import { z } from "zod";
 import { useAuth } from "@/app/_components/auth";
+import { SearchableSelect } from "@/app/_components/searchable-select";
 import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
 import { useToast } from "@/app/_components/toast";
 import { MembershipSummary } from "../../_components/membership-summary";
@@ -25,6 +26,7 @@ import {
   type Plan,
 } from "@/lib/billing";
 import { useUrlTablePagination } from "@/lib/table-page-size";
+import { userDisplayName, userIdentifier } from "@/lib/user-identity";
 import {
   createTableFilterParser,
   tableOptionalFilterParser,
@@ -40,7 +42,7 @@ import {
 } from "../_components/admin-table-controls";
 
 type MembershipUser = {
-  user: { id: string; phone: string; fullName: string | null; status: "active" | "suspended" };
+  user: { id: string; phone: string | null; email: string | null; fullName: string | null; status: "active" | "suspended" };
   membership: Omit<Membership, "plan"> | null;
   plan: Plan | null;
 };
@@ -102,7 +104,13 @@ function detailNumber(event: AdminMembershipEvent, key: string) {
 
 function eventContent(event: AdminMembershipEvent) {
   if (event.type === "admin_grant") {
-    return { title: "اعطای پلن", description: `پلن ${event.plan?.name || event.planId || "انتخاب‌شده"} برای کاربر فعال شد.` };
+    const replaced = detailString(event, "mode") === "replace";
+    return {
+      title: replaced ? "تعویض پلن" : "اعطای پلن",
+      description: replaced
+        ? `پلن کاربر بدون تمدید زمان به ${event.plan?.name || event.planId || "پلن انتخاب‌شده"} تغییر کرد.`
+        : `پلن ${event.plan?.name || event.planId || "انتخاب‌شده"} برای کاربر فعال شد.`,
+    };
   }
   if (event.type === "admin_extend") {
     return { title: "تمدید عضویت", description: `${(event.durationDays ?? 0).toLocaleString("fa-IR")} روز به مدت عضویت افزوده شد.` };
@@ -151,6 +159,7 @@ export default function MembershipsAdminPage() {
   const [detailsTab, setDetailsTab] = useState<"usage" | "logs">("usage");
   const [pendingAction, setPendingAction] = useState<PendingMembershipAction | null>(null);
   const grantForm = useForm({ resolver: zodResolver(grantSchema), defaultValues: { planId: "job-search" } });
+  const switchForm = useForm({ resolver: zodResolver(grantSchema), defaultValues: { planId: "job-search" } });
   const extendForm = useForm({ resolver: zodResolver(extendSchema), defaultValues: { days: 30 } });
   const creditForm = useForm({ resolver: zodResolver(creditSchema), defaultValues: { resource: "ai" as const, units: 10, reason: "" } });
   const cancelForm = useForm({ resolver: zodResolver(cancelSchema), defaultValues: { reason: "" } });
@@ -179,13 +188,13 @@ export default function MembershipsAdminPage() {
   if (user?.role === "user") return <p className="rounded-xl bg-[#fff1ef] p-5 text-[11px] text-[#a13f37]">اجازه دسترسی به این بخش را نداری.</p>;
   const endpoint = (actionName: string) => `/api/admin/users/${selected!.user.id}/membership/${actionName}`;
   const columns: DataTableColumn<MembershipUser>[] = [
-    { key: "user", title: "کاربر", skeletonClassName: "w-32", render: (item) => <><strong className="block text-[11px]">{item.user.fullName || "بدون نام"}</strong><span dir="ltr" className="mt-1 block text-[#899592]">{item.user.phone}</span></> },
+    { key: "user", title: "کاربر", skeletonClassName: "w-32", render: (item) => <><strong className="block text-[11px]">{userDisplayName(item.user)}</strong><span dir="ltr" className="mt-1 block text-[#899592]">{userIdentifier(item.user)}</span></> },
     { key: "plan", title: "پلن", render: (item) => item.plan?.name || "ثبت‌نشده" },
     { key: "account", title: "وضعیت حساب", render: (item) => item.user.status === "active" ? "فعال" : "تعلیق‌شده" },
     { key: "membership", title: "وضعیت عضویت", render: (item) => item.membership?.status === "active" ? "فعال" : item.membership?.status === "canceled" ? "لغوشده" : "منقضی" },
     { key: "expiry", title: "انقضا", className: "whitespace-nowrap", render: (item) => item.membership?.expiresAt ? <PersianDateTime value={item.membership.expiresAt} /> : "—" },
     { key: "ai", title: "اعتبار AI", render: (item) => item.membership?.aiCreditsRemaining?.toLocaleString("fa-IR") ?? "—" },
-    { key: "manage", title: "مدیریت", sortable: false, render: (item) => <div className="flex flex-wrap gap-2"><button className="inline-flex items-center gap-1.5 rounded-lg border border-[#b9d9cc] bg-[#f4faf7] px-3 py-2 text-[9px] font-bold text-[#0f705a]" type="button" onClick={() => { setDetailsUser(item); setDetailsTab("usage"); }}><Info size={14} /> اطلاعات تکمیلی</button><button className="rounded-lg border border-[#dfe5df] bg-white px-3 py-2 text-[9px] font-bold" type="button" onClick={() => setSelected(item)}>ویرایش</button></div> },
+    { key: "manage", title: "عملیات", sortable: false, render: (item) => <div className="flex flex-wrap gap-2"><button aria-label={`اطلاعات تکمیلی ${userDisplayName(item.user)}`} className="inline-grid size-8 place-items-center rounded-lg border border-[#b9d9cc] bg-[#f4faf7] text-[#0f705a] transition hover:bg-[#e5f4ed]" title="اطلاعات تکمیلی" type="button" onClick={() => { setDetailsUser(item); setDetailsTab("usage"); }}><Info size={14} /></button><button aria-label={`ویرایش ${userDisplayName(item.user)}`} className="inline-grid size-8 place-items-center rounded-lg border border-[#dfe5df] bg-white text-[#526461] transition hover:border-[#a8cdbd] hover:text-[#0f7b62]" title="ویرایش" type="button" onClick={() => setSelected(item)}><Pencil size={14} /></button></div> },
   ];
   return (
     <div className="grid gap-6">
@@ -193,7 +202,7 @@ export default function MembershipsAdminPage() {
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
         <AdminTableToolbar
           search={search}
-          searchPlaceholder="نام یا شماره همراه"
+          searchPlaceholder="نام، شماره همراه یا ایمیل"
           activeFilterCount={Number(Boolean(planId)) + Number(Boolean(membershipStatus))}
           onSearch={(value) => { void setFilters({ search: value }); setPage(1); }}
           onResetFilters={() => { void setFilters({ planId: "", membershipStatus: "" }); setPage(1); }}
@@ -205,24 +214,25 @@ export default function MembershipsAdminPage() {
       </section>
       {selected && (
         <Modal
-          title={`ویرایش عضویت ${selected.user.fullName || "کاربر"}`}
-          description={`${selected.user.phone} — پلن فعلی: ${selected.plan?.name || "بدون عضویت"}`}
+          title={`ویرایش عضویت ${userDisplayName(selected.user)}`}
+          description={`${userIdentifier(selected.user)} — پلن فعلی: ${selected.plan?.name || "بدون عضویت"}`}
           document
           showCloseButton
           onClose={() => setSelected(null)}
         >
           <div className="mt-5 grid grid-cols-2 gap-4 pb-[22px] max-[800px]:grid-cols-1 max-[560px]:pb-[17px]">
-            <form className="grid gap-3 rounded-xl bg-white p-4" onSubmit={grantForm.handleSubmit((body) => setPendingAction({ kind: "membership", path: endpoint("grant"), body, title: "تأیید اعطای پلن", description: `پلن انتخاب‌شده برای ${selected.user.fullName || selected.user.phone} فعال شود؟`, confirmLabel: "اعطا و فعال‌سازی", successMessage: "پلن کاربر با موفقیت فعال شد." }))}><strong className="text-[11px]">اعطای پلن</strong><select className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]" {...grantForm.register("planId")}>{(plans.data ?? []).map((plan) => <option value={plan.id} key={plan.id}>{plan.name}</option>)}</select><button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">اعطا و فعال‌سازی</button></form>
-            <form className="grid gap-3 rounded-xl bg-white p-4" onSubmit={extendForm.handleSubmit((body) => setPendingAction({ kind: "membership", path: endpoint("extend"), body, title: "تأیید تمدید عضویت", description: `${body.days.toLocaleString("fa-IR")} روز به عضویت ${selected.user.fullName || selected.user.phone} افزوده شود؟`, confirmLabel: "تأیید تمدید", successMessage: "مدت عضویت کاربر با موفقیت تمدید شد." }))}><strong className="text-[11px]">تمدید زمان عضویت</strong><input className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]" type="number" {...extendForm.register("days")} /><button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">افزودن روز</button></form>
-            <form className="grid gap-3 rounded-xl bg-white p-4" onSubmit={creditForm.handleSubmit((body) => setPendingAction({ kind: "membership", path: endpoint("credits"), body, title: "تأیید تغییر اعتبار", description: `اعتبار ${selected.user.fullName || selected.user.phone} به میزان ${body.units.toLocaleString("fa-IR")} واحد تغییر کند؟`, confirmLabel: "ثبت تغییر اعتبار", successMessage: "اعتبار کاربر با موفقیت به‌روزرسانی شد.", tone: body.units < 0 ? "danger" : "primary" }))}><strong className="text-[11px]">افزایش یا کاهش اعتبار</strong><div className="grid grid-cols-2 gap-2"><select className="h-10 rounded-lg border border-[#dfe5df] px-2 text-[10px]" {...creditForm.register("resource")}><option value="ai">هوش مصنوعی</option><option value="match">تطبیق</option><option value="interview">مصاحبه</option><option value="resume">رزومه</option><option value="pdf">PDF</option></select><input className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]" type="number" {...creditForm.register("units")} /></div><input className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]" placeholder="دلیل تغییر (اختیاری)" {...creditForm.register("reason")} /><button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">ثبت اعتبار</button></form>
-            <form className="grid gap-3 rounded-xl border border-[#efd8d4] bg-white p-4" onSubmit={cancelForm.handleSubmit((body) => setPendingAction({ kind: "membership", path: endpoint("cancel"), body, title: "تأیید لغو عضویت", description: `عضویت ${selected.user.fullName || selected.user.phone} لغو و تمام اعتبار باقی‌مانده حذف شود؟`, confirmLabel: "لغو فوری عضویت", successMessage: "عضویت کاربر با موفقیت لغو شد.", tone: "danger" }))}><strong className="text-[11px] text-[#a13f37]">لغو عضویت</strong><input className="h-10 rounded-lg border border-[#e8d5d1] px-3 text-[10px]" placeholder="دلیل لغو (اختیاری)" {...cancelForm.register("reason")} /><button className="rounded-lg bg-[#b14848] px-3 py-2 text-[10px] font-bold text-white">لغو فوری و حذف اعتبار باقی‌مانده</button></form>
+            <form className="grid gap-3 rounded-xl bg-white p-4" onSubmit={grantForm.handleSubmit((body) => setPendingAction({ kind: "membership", path: endpoint("grant"), body: { ...body, mode: "add" }, title: "تأیید اعطای پلن", description: `پلن انتخاب‌شده برای ${userDisplayName(selected.user)} فعال شود و مدت و اعتبار آن به عضویت فعلی افزوده شود؟`, confirmLabel: "اعطا و افزودن مدت", successMessage: "پلن جدید با موفقیت به عضویت کاربر افزوده شد." }))}><strong className="text-[11px]">اعطای پلن و افزودن مدت</strong><Controller control={grantForm.control} name="planId" render={({ field }) => <SearchableSelect options={(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))} value={field.value} onChange={(value) => field.onChange(String(value))} placeholder="انتخاب پلن" />} /><button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">اعطا و افزودن مدت</button></form>
+            <form className="grid gap-3 rounded-xl border border-[#dce9e2] bg-[#f8fcf9] p-4" onSubmit={switchForm.handleSubmit((body) => setPendingAction({ kind: "membership", path: endpoint("grant"), body: { ...body, mode: "replace" }, title: "تأیید تعویض پلن", description: `پلن ${userDisplayName(selected.user)} به پلن انتخاب‌شده تغییر کند؟ تاریخ انقضا تمدید نمی‌شود و سهمیه‌ها مطابق پلن جدید تنظیم می‌شوند.`, confirmLabel: "تعویض بدون تمدید", successMessage: "پلن کاربر بدون تمدید زمان تعویض شد." }))}><strong className="text-[11px] text-[#0f705a]">تعویض پلن بدون تمدید</strong><Controller control={switchForm.control} name="planId" render={({ field }) => <SearchableSelect options={(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))} value={field.value} onChange={(value) => field.onChange(String(value))} placeholder="انتخاب پلن" />} /><button className="rounded-lg border border-[#94c9b1] bg-white px-3 py-2 text-[10px] font-bold text-[#0f7b62]">اصلاح پلن</button></form>
+            <form className="grid gap-3 rounded-xl bg-white p-4" onSubmit={extendForm.handleSubmit((body) => setPendingAction({ kind: "membership", path: endpoint("extend"), body, title: "تأیید تمدید عضویت", description: `${body.days.toLocaleString("fa-IR")} روز به عضویت ${userDisplayName(selected.user)} افزوده شود؟`, confirmLabel: "تأیید تمدید", successMessage: "مدت عضویت کاربر با موفقیت تمدید شد." }))}><strong className="text-[11px]">تمدید زمان عضویت</strong><input className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]" type="number" {...extendForm.register("days")} /><button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">افزودن روز</button></form>
+            <form className="grid gap-3 rounded-xl bg-white p-4" onSubmit={creditForm.handleSubmit((body) => setPendingAction({ kind: "membership", path: endpoint("credits"), body, title: "تأیید تغییر اعتبار", description: `اعتبار ${userDisplayName(selected.user)} به میزان ${body.units.toLocaleString("fa-IR")} واحد تغییر کند؟`, confirmLabel: "ثبت تغییر اعتبار", successMessage: "اعتبار کاربر با موفقیت به‌روزرسانی شد.", tone: body.units < 0 ? "danger" : "primary" }))}><strong className="text-[11px]">افزایش یا کاهش اعتبار</strong><div className="grid grid-cols-2 gap-2"><Controller control={creditForm.control} name="resource" render={({ field }) => <SearchableSelect options={[{ value: "ai", label: "هوش مصنوعی" }, { value: "match", label: "تطبیق" }, { value: "interview", label: "مصاحبه" }, { value: "resume", label: "رزومه" }, { value: "pdf", label: "PDF" }]} value={field.value} onChange={(value) => field.onChange(String(value))} />} /><input className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]" type="number" {...creditForm.register("units")} /></div><input className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]" placeholder="دلیل تغییر (اختیاری)" {...creditForm.register("reason")} /><button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">ثبت اعتبار</button></form>
+            <form className="grid gap-3 rounded-xl border border-[#efd8d4] bg-white p-4" onSubmit={cancelForm.handleSubmit((body) => setPendingAction({ kind: "membership", path: endpoint("cancel"), body, title: "تأیید لغو عضویت", description: `عضویت ${userDisplayName(selected.user)} لغو و تمام اعتبار باقی‌مانده حذف شود؟`, confirmLabel: "لغو فوری عضویت", successMessage: "عضویت کاربر با موفقیت لغو شد.", tone: "danger" }))}><strong className="text-[11px] text-[#a13f37]">لغو عضویت</strong><input className="h-10 rounded-lg border border-[#e8d5d1] px-3 text-[10px]" placeholder="دلیل لغو (اختیاری)" {...cancelForm.register("reason")} /><button className="rounded-lg bg-[#b14848] px-3 py-2 text-[10px] font-bold text-white">لغو فوری و حذف اعتبار باقی‌مانده</button></form>
           </div>
         </Modal>
       )}
       {detailsUser && (
         <Modal
-          title={detailsUser.user.fullName || "کاربر بدون نام"}
-          description={detailsUser.user.phone}
+          title={userDisplayName(detailsUser.user)}
+          description={userIdentifier(detailsUser.user)}
           document
           showCloseButton
           onClose={() => setDetailsUser(null)}
@@ -257,7 +267,7 @@ export default function MembershipsAdminPage() {
                     <article className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[15px] border border-[#e1e8e3] bg-[#fbfcfb] px-4 py-3" key={event.id}>
                       <strong className="shrink-0 whitespace-nowrap text-[11px] text-[#244039]">{content.title}</strong>
                       <p className="m-0 line-clamp-2 min-w-[14rem] flex-1 text-[10px] leading-5 text-[#61726e]" title={content.description}>{content.description}</p>
-                      <small className="shrink-0 whitespace-nowrap text-[9px] text-[#87938f]">انجام‌دهنده: {event.actor?.fullName || event.actor?.phone || "مدیر حذف‌شده"}{event.actor?.role === "superadmin" ? " (سوپرادمین)" : event.actor?.role === "admin" ? " (ادمین)" : ""}</small>
+                      <small className="shrink-0 whitespace-nowrap text-[9px] text-[#87938f]">انجام‌دهنده: {event.actor ? userDisplayName(event.actor) : "مدیر حذف‌شده"}{event.actor?.role === "superadmin" ? " (سوپرادمین)" : event.actor?.role === "admin" ? " (ادمین)" : ""}</small>
                       <time className="shrink-0 whitespace-nowrap text-[9px] text-[#82908d]" dateTime={event.createdAt}><PersianDateTime value={event.createdAt} /></time>
                     </article>
                   );

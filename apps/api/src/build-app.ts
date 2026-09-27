@@ -10,6 +10,8 @@ import { registerAiRoutes } from "./modules/ai/routes";
 import type { RecordRepository } from "./modules/data/record-repository";
 import { registerHealthRoutes } from "./modules/health/routes";
 import { registerImportRoutes } from "./modules/imports/routes";
+import { registerJobPoolRoutes } from "./modules/job-pool/routes";
+import type { JobPoolService } from "./modules/job-pool/service";
 import { handleAuthError, registerAuthRoutes, type AuthServicePort } from "./modules/auth/routes";
 import { handleBillingError, registerBillingRoutes } from "./modules/billing/routes";
 import type { BillingService } from "./modules/billing/service";
@@ -25,9 +27,13 @@ type BuildAppOptions = {
   sessionCookieName: string;
   secureCookies: boolean;
   sessionTtlDays: number;
+  webAppUrl?: string;
   maxUploadSizeBytes?: number;
+  apifyApiToken?: string;
+  apifyLinkedInActorId?: string;
   billingService?: BillingService;
   database?: Database;
+  jobPoolService?: JobPoolService;
 };
 
 export function buildApp({
@@ -40,9 +46,13 @@ export function buildApp({
   sessionCookieName,
   secureCookies,
   sessionTtlDays,
+  webAppUrl = "http://localhost:3161",
   maxUploadSizeBytes = 8 * 1024 * 1024,
+  apifyApiToken,
+  apifyLinkedInActorId,
   billingService,
   database,
+  jobPoolService,
 }: BuildAppOptions) {
   const app = fastifyFactory({
     logger,
@@ -78,7 +88,13 @@ export function buildApp({
   });
 
   registerHealthRoutes(app, readinessCheck);
-  registerAuthRoutes(app, { authService, sessionCookieName, secureCookies, sessionTtlDays });
+  registerAuthRoutes(app, {
+    authService,
+    sessionCookieName,
+    secureCookies,
+    sessionTtlDays,
+    webAppUrl,
+  });
   app.addHook("preHandler", async (request, reply) => {
     const publicPaths = new Set([
       "/health",
@@ -86,6 +102,9 @@ export function buildApp({
       "/api/auth/request-otp",
       "/api/auth/verify-otp",
       "/api/auth/logout",
+      "/api/auth/providers",
+      "/api/auth/google/start",
+      "/api/auth/google/callback",
       "/api/billing/callback",
     ]);
     if (request.method === "OPTIONS" || publicPaths.has(request.url.split("?")[0])) return;
@@ -99,7 +118,11 @@ export function buildApp({
   registerDataRoutes(app, repository, billingService);
   if (billingService) registerBillingRoutes(app, billingService);
   registerAiRoutes(app, billingService, database);
-  registerImportRoutes(app, billingService, maxUploadSizeBytes);
+  registerImportRoutes(app, billingService, maxUploadSizeBytes, {
+    apiToken: apifyApiToken,
+    linkedInActorId: apifyLinkedInActorId,
+  });
+  if (jobPoolService) registerJobPoolRoutes(app, jobPoolService);
 
   app.setNotFoundHandler((request, reply) =>
     reply.code(404).send({

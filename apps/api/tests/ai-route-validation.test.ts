@@ -8,6 +8,7 @@ import type { RecordRepository } from "../src/modules/data/record-repository";
 
 const user: AuthUser = {
   id: "11111111-1111-4111-8111-111111111111", phone: "09120000000", fullName: "کاربر",
+  email: null,
   role: "user", status: "active", tablePageSize: 20, createdAt: "2026-01-01T00:00:00.000Z", lastLoginAt: null,
 };
 const identity: SessionIdentity = { user, sessionId: "session" };

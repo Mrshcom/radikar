@@ -9,6 +9,34 @@
     "Vazirmatn Variable", Vazirmatn, Tahoma, monospace;
 }
 
+button,
+[role="button"] {
+  cursor: pointer !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+input[type="number"],
+input[inputmode="numeric"] {
+  direction: ltr;
+  text-align: left;
+}
+
+input[type="number"]::placeholder,
+input[inputmode="numeric"]::placeholder {
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+.placeholder-ltr::placeholder {
+  direction: ltr !important;
+  text-align: left !important;
+}
+
 @keyframes shimmer {
   100% {
     transform: translateX(100%);

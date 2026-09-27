@@ -22,6 +22,7 @@ import {
   FolderKanban,
   GraduationCap,
   LoaderCircle,
+  Link2,
   Plus,
   Save,
   Settings2,
@@ -31,6 +32,7 @@ import {
   X,
 } from "lucide-react";
 import { DeleteConfirmModal, SectionTitle } from "../_components/ui";
+import { SearchableSelect } from "@/app/_components/searchable-select";
 import {
   KnowledgeCardsSkeleton,
   KnowledgePageSkeleton,
@@ -602,6 +604,8 @@ export default function KnowledgeBasePage() {
   const importBusy = importing || isRunning("knowledge-import");
   const [importError, setImportError] = useState("");
   const [importedFile, setImportedFile] = useState("");
+  const [linkedInUrl, setLinkedInUrl] = useState("");
+  const [linkedInImporting, setLinkedInImporting] = useState(false);
   const [openExperienceId, setOpenExperienceId] = useState<string | null>(null);
   const [showCompletionDetails, setShowCompletionDetails] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{
@@ -1128,6 +1132,33 @@ export default function KnowledgeBasePage() {
     }
   };
 
+  const importLinkedIn = async () => {
+    setLinkedInImporting(true);
+    setImportError("");
+    try {
+      const rawResult = await apiRequest<unknown>("/api/knowledge/import-linkedin", {
+        method: "POST",
+        body: JSON.stringify({ url: linkedInUrl.trim() }),
+      });
+      const result = normalizeResumeImportPayload(rawResult);
+      const merged = mergeImportedKnowledge(form, result);
+      const profileId = await getActiveProfileId();
+      const existing = await knowledgeProfileStore.get(profileId);
+      const now = new Date().toISOString();
+      await knowledgeProfileStore.put({ id: profileId, ...merged, resumeData: resumeDataFromKnowledge(merged), createdAt: existing?.createdAt || createdAt || now, updatedAt: now });
+      setForm(merged);
+      setLinkedInUrl("");
+      scheduleFieldDirectionRefresh();
+      notify("اطلاعات پروفایل LinkedIn استخراج و در فیلدها درج شد؛ موارد را بازبینی و ذخیره کن.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "استخراج اطلاعات LinkedIn ناموفق بود.";
+      setImportError(message);
+      notify(message, "error");
+    } finally {
+      setLinkedInImporting(false);
+    }
+  };
+
   const updateProfilePhoto = (file: File) => {
     if (!file.type.startsWith("image/")) {
       notify("فایل انتخاب‌شده باید تصویر باشد.", "error");
@@ -1340,6 +1371,15 @@ export default function KnowledgeBasePage() {
           <FileUp size={16} />
           {importBusy ? "در حال استخراج..." : "انتخاب فایل رزومه"}
         </button>
+      </section>
+
+      <section className="mb-4 grid gap-3 rounded-[17px] border border-[#dce7e1] bg-white p-4 shadow-[0_12px_36px_rgba(27,55,50,.055)]">
+        <div className="flex items-center gap-2 text-[#0f7b62]"><Link2 size={20} /><h2 className="m-0 text-[11px] text-[#19312f]">تکمیل خودکار با پروفایل LinkedIn</h2></div>
+        <p className="m-0 text-[10px] leading-[1.8] text-[#758582]">فقط لینک عمومی پروفایل خودت را وارد کن. اطلاعات با Apify استخراج می‌شود؛ ورود به LinkedIn یا ارسال کوکی انجام نمی‌شود.</p>
+        <div className="flex flex-col gap-2 min-[700px]:flex-row">
+        <input className={`${control} flex-1 placeholder-ltr`} dir="ltr" type="url" value={linkedInUrl} onChange={(event) => setLinkedInUrl(event.target.value)} placeholder="https://www.linkedin.com/in/username" />
+          <button className={secondaryButton} type="button" disabled={linkedInImporting || importBusy || !linkedInUrl.trim()} onClick={() => void importLinkedIn()}>{linkedInImporting ? <LoaderCircle className="animate-spin" size={16} /> : <Link2 size={16} />}{linkedInImporting ? "در حال استخراج..." : "استخراج از LinkedIn"}</button>
+        </div>
       </section>
 
       {importBusy ? (
@@ -1795,7 +1835,8 @@ export default function KnowledgeBasePage() {
                     label="لینک پروژه"
                     value={project.url}
                     onChange={setProjectField(project.id, "url")}
-                    placeholder="github.com/user/project"
+                  placeholderDirection="ltr"
+                  placeholder="github.com/user/project"
                   />
                   <Field
                     ltrOnly
@@ -1810,6 +1851,7 @@ export default function KnowledgeBasePage() {
                     value={project.endDate}
                     disabled={project.isCurrent}
                     onChange={setProjectField(project.id, "endDate")}
+                    placeholderDirection={project.isCurrent ? "ltr" : "rtl"}
                     placeholder={project.isCurrent ? "Present" : "مثلاً 2025/11"}
                   />
                   <label className="flex h-[42px] self-end cursor-pointer items-center gap-2 text-[10px] font-normal transition-colors hover:text-[#0f7b62]">
@@ -2284,6 +2326,7 @@ type FieldProps = {
   placeholder?: string;
   disabled?: boolean;
   ltrOnly?: boolean;
+  placeholderDirection?: "rtl" | "ltr";
   onChange: (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
@@ -2298,6 +2341,7 @@ function Field({
   placeholder,
   disabled,
   ltrOnly = false,
+  placeholderDirection = "rtl",
   onChange,
 }: FieldProps) {
   return (
@@ -2314,6 +2358,7 @@ function Field({
             control,
             textareaSize === "large" ? "!min-h-44" : "!min-h-28",
             "resize-y p-3",
+            placeholderDirection === "ltr" && "placeholder-ltr",
           )}
           value={value}
           placeholder={placeholder}
@@ -2323,7 +2368,8 @@ function Field({
         <input
           className={cn(
             control,
-            ltrOnly && "!text-left placeholder:!text-left",
+            ltrOnly && "!text-left",
+            placeholderDirection === "ltr" && "placeholder-ltr",
           )}
           type={type}
           value={value}
@@ -2352,24 +2398,7 @@ function SelectField({
   return (
     <label className="grid min-w-0 gap-1.5 text-[10px] font-normal">
       {label}
-      <span className="relative block">
-        <select
-          className={`${control} appearance-none pr-3 pl-11`}
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-        >
-          {options.map((option) => (
-            <option value={option.value} key={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-[#60716e]"
-          size={16}
-          aria-hidden="true"
-        />
-      </span>
+      <SearchableSelect options={options} value={value} onChange={(next) => onChange(String(next))} />
     </label>
   );
 }

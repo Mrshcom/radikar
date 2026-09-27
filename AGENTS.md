@@ -3,6 +3,7 @@
 ## Project identity and change target
 
 - The canonical and only project name is `radikar` (Persian: `رادیکار`). Never use legacy spellings or names in source code, documentation, infrastructure, database names, Docker resources, generated artifacts, or paths.
+- The canonical local project root is `/Users/mampel/MyFiles/MyProjects/@Idea/radikar`. Always inspect, edit, run, and test this project from that path unless the user explicitly provides a different project root.
 - Apply every requested change to the local project by default. Never modify, sync, deploy, restart, or otherwise change the production server unless the user explicitly asks for a server-side change or deployment in that request.
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

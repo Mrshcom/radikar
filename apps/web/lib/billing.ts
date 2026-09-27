@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatGroupedNumber } from "@/lib/fa-number";
 import { apiRequest } from "./api-client";
 import { buildQueryString } from "./build-query-string";
 
@@ -55,7 +56,8 @@ export type AdminMembershipEvent = {
   createdAt: string;
   actor: {
     id: string;
-    phone: string;
+    phone: string | null;
+    email: string | null;
     fullName: string | null;
     role: "user" | "admin" | "superadmin";
   } | null;
@@ -64,7 +66,8 @@ export type AdminMembershipEvent = {
 export type AdminMembershipDetails = {
   user: {
     id: string;
-    phone: string;
+    phone: string | null;
+    email: string | null;
     fullName: string | null;
     status: "active" | "suspended";
   };
@@ -151,7 +154,7 @@ export function useCreateOrder() {
 }
 
 export function formatTomans(priceRials: number) {
-  return (priceRials / 10).toLocaleString("fa-IR");
+  return formatGroupedNumber(Math.round(priceRials / 10), "fa-IR");
 }
 
 export function formatLimit(value: number | null) {

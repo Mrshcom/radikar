@@ -16,6 +16,14 @@ const verifyOtpSchema = requestOtpSchema.extend({
   challengeId: z.uuid(),
   code: z.string().transform(normalizeDigits).pipe(z.string().regex(/^\d{6}$/)),
 });
+const googleStartSchema = z.object({
+  next: z.string().max(500).optional(),
+});
+const googleCallbackSchema = z.object({
+  code: z.string().min(1).optional(),
+  state: z.string().min(1).optional(),
+  error: z.string().max(100).optional(),
+});
 const optionalQueryValue = <T extends z.ZodType>(schema: T) =>
   z.preprocess((value) => value === "" ? undefined : value, schema.optional());
 const userListSchema = z.object({
@@ -60,6 +68,7 @@ export type AuthRouteOptions = {
   sessionCookieName: string;
   secureCookies: boolean;
   sessionTtlDays: number;
+  webAppUrl: string;
 };
 
 export type AuthServicePort = Pick<
@@ -76,7 +85,15 @@ export type AuthServicePort = Pick<
   | "updateUser"
   | "updateProfile"
   | "updatePreferences"
->;
+> &
+  Partial<
+    Pick<
+      AuthService,
+      | "isGoogleLoginEnabled"
+      | "beginGoogleLogin"
+      | "completeGoogleLogin"
+    >
+  >;
 
 function cookieOptions(options: AuthRouteOptions) {
   return {
@@ -102,6 +119,7 @@ export function requirePermission(request: FastifyRequest, reply: FastifyReply, 
 
 export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptions) {
   const { authService } = options;
+  const googleStateCookieName = `${options.sessionCookieName}_google_oauth`;
   app.decorateRequest("auth", null);
 
   app.addHook("onRequest", async (request) => {
@@ -118,6 +136,52 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
     const result = await authService.verifyOtp(input.challengeId, input.phone, input.code);
     reply.setCookie(options.sessionCookieName, result.sessionToken, cookieOptions(options));
     return { user: result.user, expiresAt: result.sessionExpiresAt.toISOString() };
+  });
+
+  app.get("/api/auth/providers", async () => ({
+    google: authService.isGoogleLoginEnabled?.() ?? false,
+  }));
+
+  app.get("/api/auth/google/start", async (request, reply) => {
+    if (!authService.beginGoogleLogin) {
+      return reply.redirect(`${options.webAppUrl}/login?authError=google_unavailable`);
+    }
+    try {
+      const input = googleStartSchema.parse(request.query);
+      const result = await authService.beginGoogleLogin(input.next);
+      reply.setCookie(googleStateCookieName, result.state, {
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        secure: options.secureCookies,
+        maxAge: 10 * 60,
+      });
+      return reply.redirect(result.authorizationUrl);
+    } catch {
+      return reply.redirect(`${options.webAppUrl}/login?authError=google_unavailable`);
+    }
+  });
+
+  app.get("/api/auth/google/callback", async (request, reply) => {
+    const input = googleCallbackSchema.parse(request.query);
+    if (input.error || !input.code || !input.state || !authService.completeGoogleLogin) {
+      reply.clearCookie(googleStateCookieName, { path: "/" });
+      return reply.redirect(`${options.webAppUrl}/login?authError=google_denied`);
+    }
+    try {
+      const result = await authService.completeGoogleLogin(
+        input.code,
+        input.state,
+        request.cookies[googleStateCookieName],
+      );
+      reply.clearCookie(googleStateCookieName, { path: "/" });
+      reply.setCookie(options.sessionCookieName, result.sessionToken, cookieOptions(options));
+      return reply.redirect(new URL(result.nextPath, options.webAppUrl).toString());
+    } catch (error) {
+      request.log.warn({ error }, "Google login callback failed");
+      reply.clearCookie(googleStateCookieName, { path: "/" });
+      return reply.redirect(`${options.webAppUrl}/login?authError=google_failed`);
+    }
   });
 
   app.get("/api/auth/me", async (request, reply) => {
@@ -158,13 +222,17 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
   app.get("/api/admin/users", async (request, reply) => {
     if (!requirePermission(request, reply, "users:read:any")) return;
     const query = userListSchema.parse(request.query);
-    return authService.listUsers(query.search, query.page, query.pageSize, query.role, query.status, query.sortBy, query.sortDirection);
+    return query.sortBy || query.sortDirection
+      ? authService.listUsers(query.search, query.page, query.pageSize, query.role, query.status, query.sortBy, query.sortDirection)
+      : authService.listUsers(query.search, query.page, query.pageSize, query.role, query.status);
   });
 
   app.get("/api/admin/records", async (request, reply) => {
     if (!requirePermission(request, reply, "reports:read:any")) return;
     const query = recordListSchema.parse(request.query);
-    return authService.listAllRecords(query.page, query.pageSize, query.search, query.collection, query.sortBy, query.sortDirection);
+    return query.sortBy || query.sortDirection
+      ? authService.listAllRecords(query.page, query.pageSize, query.search, query.collection, query.sortBy, query.sortDirection)
+      : authService.listAllRecords(query.page, query.pageSize, query.search, query.collection);
   });
 
   app.get<{ Params: { id: string } }>("/api/admin/users/:id", async (request, reply) => {

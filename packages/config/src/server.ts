@@ -41,13 +41,36 @@ const environmentSchema = z.object({
   ALLOW_FIRST_USER_SUPERADMIN: z.stringbool().default(false),
   EXPOSE_DEVELOPMENT_OTP: z.stringbool().default(true),
   ALLOW_INSECURE_DEMO_OTP: z.stringbool().default(false),
+  GOOGLE_CLIENT_ID: z.string().trim().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().trim().min(1).optional(),
+  GOOGLE_OAUTH_REDIRECT_URI: z.url().optional(),
   API_PUBLIC_URL: z.url().default("http://localhost:3162"),
   WEB_APP_URL: z.url().default("http://localhost:3161"),
   ZARINPAL_BASE_URL: z.url().default("https://sandbox.zarinpal.com"),
   ZARINPAL_MERCHANT_ID: z
     .uuid()
     .default("00000000-0000-4000-8000-000000000000"),
+  APIFY_API_TOKEN: z.string().trim().min(1).optional(),
+  APIFY_LINKEDIN_ACTOR_ID: z.string().trim().min(1).default("data-slayer~linkedin-profile-scraper"),
+  APIFY_LINKEDIN_JOBS_ACTOR_ID: z.string().trim().min(1).default("cheap_scraper~linkedin-job-scraper"),
+  JOB_POOL_ENABLED: z.stringbool().default(false),
+  JOB_POOL_DAILY_LIMIT: z.coerce.number().int().min(150).max(500).default(500),
+  JOB_POOL_INTERVAL_HOURS: z.coerce.number().int().min(1).max(24).default(24),
+  JOB_POOL_LOCATIONS: z.preprocess(
+    (value) => typeof value === "string" && !value.trim() ? undefined : value,
+    z.string().default("Germany,Netherlands"),
+  ),
+  JOB_POOL_PUBLISHED_AT: z.enum(["r86400", "r604800", "r2592000"]).default("r86400"),
+  JOB_POOL_COST_PER_1000_USD_MICROS: z.coerce.number().int().min(0).default(700_000),
+  JOB_POOL_ACTOR_START_COST_USD_MICROS: z.coerce.number().int().min(0).default(20_000),
 }).superRefine((config, context) => {
+  if (Boolean(config.GOOGLE_CLIENT_ID) !== Boolean(config.GOOGLE_CLIENT_SECRET)) {
+    context.addIssue({
+      code: "custom",
+      path: [config.GOOGLE_CLIENT_ID ? "GOOGLE_CLIENT_SECRET" : "GOOGLE_CLIENT_ID"],
+      message: "Google OAuth client id and secret must be configured together",
+    });
+  }
   if (config.NODE_ENV !== "production") return;
   if (config.AUTH_SECRET === "development-only-secret-change-before-production") {
     context.addIssue({ code: "custom", path: ["AUTH_SECRET"], message: "AUTH_SECRET must be changed in production" });

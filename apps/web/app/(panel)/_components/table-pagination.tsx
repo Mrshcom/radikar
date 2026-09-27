@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { tablePageSizes, type TablePageSize } from "@/lib/table-page-size";
 import { cn } from "@/lib/cn";
+import { SearchableSelect } from "@/app/_components/searchable-select";
 
 type PaginationItem = number | `ellipsis-${"start" | "end"}`;
 
@@ -13,20 +14,22 @@ function paginationItems(page: number, totalPages: number): PaginationItem[] {
   return [1, "ellipsis-start", page - 1, page, page + 1, "ellipsis-end", totalPages];
 }
 
-export function TablePagination({
+export function TablePagination<TPageSize extends number = TablePageSize>({
   page,
   pageSize,
   total,
   onPageChange,
   onPageSizeChange,
   pageSizeSaving = false,
+  pageSizes = tablePageSizes as unknown as readonly TPageSize[],
 }: {
   page: number;
-  pageSize: TablePageSize;
+  pageSize: TPageSize;
   total: number;
   onPageChange: (page: number) => void;
-  onPageSizeChange: (pageSize: TablePageSize) => void;
+  onPageSizeChange: (pageSize: TPageSize) => void;
   pageSizeSaving?: boolean;
+  pageSizes?: readonly TPageSize[];
 }) {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -36,17 +39,14 @@ export function TablePagination({
     <div className="flex min-h-[68px] items-center justify-between gap-5 border-t border-[#edf0ec] px-5 py-3 max-[700px]:gap-2 max-[700px]:px-4">
       <label className="flex items-center gap-2 whitespace-nowrap text-[9px] font-bold text-[#60736f]">
         <span className="max-[700px]:hidden">تعداد ردیف</span>
-        <select
-          aria-label="تعداد ردیف در هر صفحه"
-          className="h-9 min-w-[72px] rounded-[10px] border border-[#cfdcd6] bg-white px-3 text-[10px] font-extrabold text-[#245348] outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 disabled:opacity-60 max-[700px]:w-13 max-[700px]:min-w-0 max-[700px]:px-2"
+        <SearchableSelect
+          ariaLabel="تعداد ردیف در هر صفحه"
+          className="min-w-[88px]"
           disabled={pageSizeSaving}
-          onChange={(event) => onPageSizeChange(Number(event.target.value) as TablePageSize)}
-          value={pageSize}
-        >
-          {tablePageSizes.map((size) => (
-            <option key={size} value={size}>{size.toLocaleString("fa-IR")}</option>
-          ))}
-        </select>
+          options={pageSizes.map((size) => ({ value: String(size), label: size.toLocaleString("fa-IR") }))}
+          onChange={(value) => onPageSizeChange(Number(value) as TPageSize)}
+          value={String(pageSize)}
+        />
         {pageSizeSaving && <span className="text-[8px] font-medium text-[#84918e]">در حال ذخیره…</span>}
       </label>
 

@@ -107,7 +107,7 @@ function isMatchAnalysisTaskContext(
 
 const PERSIAN_SCRIPT_PATTERN = /\p{Script=Arabic}/u;
 
-export function getJobTextDirection(text: string): "rtl" | "ltr" {
+function getJobTextDirection(text: string): "rtl" | "ltr" {
   return PERSIAN_SCRIPT_PATTERN.test(text) ? "rtl" : "ltr";
 }
 
@@ -689,7 +689,7 @@ export default function MatchPage() {
               <div className="flex h-[46px] items-center rounded-[11px] border border-[#dfe5df] bg-[#fbfcfa] px-3 text-[#8b9996] focus-within:border-[#79b8a5] focus-within:ring-3 focus-within:ring-[#e5f2ed]">
                 <Link2 size={18} />
                 <input
-                  className="h-full min-w-0 flex-1 border-0 bg-transparent px-2 !text-left text-[12px] text-[#19312f] outline-none placeholder:!text-left placeholder:text-[#8b9996]"
+                  className="placeholder-ltr h-full min-w-0 flex-1 border-0 bg-transparent px-2 !text-left text-[12px] text-[#19312f] outline-none placeholder:text-[#8b9996]"
                   id="job-url"
                   value={jobUrl}
                   onChange={(event) => {
@@ -703,7 +703,7 @@ export default function MatchPage() {
                   dir="ltr"
                   data-direction="ltr"
                   inputMode="url"
-                  placeholder="https://www.linkedin.com/jobs/view/..."
+                    placeholder="https://www.linkedin.com/jobs/view/..."
                 />
               </div>
               <p className="mx-0.5 mt-[9px] text-[10px] leading-[1.8] text-[#8c9996]">

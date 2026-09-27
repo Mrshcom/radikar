@@ -7,7 +7,7 @@ import type { AuthUser, SessionIdentity } from "../src/modules/auth/types";
 import type { BillingService } from "../src/modules/billing/service";
 import type { RecordRepository } from "../src/modules/data/record-repository";
 
-const user: AuthUser = { id: "11111111-1111-4111-8111-111111111111", phone: "09120000000", fullName: "کاربر", role: "user", status: "active", tablePageSize: 20, createdAt: "2026-01-01T00:00:00.000Z", lastLoginAt: null };
+const user: AuthUser = { id: "11111111-1111-4111-8111-111111111111", phone: "09120000000", email: null, fullName: "کاربر", role: "user", status: "active", tablePageSize: 20, createdAt: "2026-01-01T00:00:00.000Z", lastLoginAt: null };
 const admin: AuthUser = { ...user, id: "22222222-2222-4222-8222-222222222222", phone: "09121111111", role: "admin" };
 const superadmin: AuthUser = { ...user, id: "33333333-3333-4333-8333-333333333333", phone: "09122222222", role: "superadmin" };
 const identities: Record<string, SessionIdentity> = {

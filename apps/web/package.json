@@ -12,7 +12,7 @@
     "test": "npm run test:unit && npm run test:rendered",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
-    "test:rendered": "node --test tests/*.test.mjs",
+    "test:rendered": "node --import tsx --test tests/*.test.mjs",
     "test:e2e": "node ../../scripts/ensure-e2e-services.mjs && playwright test",
     "test:e2e:ui": "node ../../scripts/ensure-e2e-services.mjs && playwright test --ui",
     "test:e2e:report": "playwright show-report"

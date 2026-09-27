@@ -18,7 +18,7 @@ describe("pure web helpers", () => {
     expect(formatTomans(125_000)).toContain("۱۲٬۵۰۰");
     expect(formatLimit(null)).toContain("نامحدود");
     expect(formatLimit(12)).toBe("۱۲");
-    expect(billingKeys.orders(2, 10, "RK", "paid")).toEqual(["billing", "orders", 2, 10, "RK", "paid"]);
+    expect(billingKeys.orders(2, 10, "RK", "paid")).toEqual(["billing", "orders", 2, 10, "RK", "paid", "", ""]);
   });
 
   it("validates job descriptions and resolves LinkedIn canonical URLs", () => {

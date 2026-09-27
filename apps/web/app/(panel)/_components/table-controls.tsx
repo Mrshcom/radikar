@@ -2,10 +2,11 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronDown, Filter, RotateCcw, Search } from "lucide-react";
-import { useState, type ReactNode } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { cn } from "@/lib/cn";
+import { SearchableSelect } from "@/app/_components/searchable-select";
 
 const searchSchema = z.object({ search: z.string().trim().max(100) });
 type SearchValues = z.infer<typeof searchSchema>;
@@ -28,11 +29,23 @@ export function TableToolbar({
   children,
 }: ToolbarProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const { register, handleSubmit, reset } = useForm<SearchValues>({
+  const { register, control, reset } = useForm<SearchValues>({
     resolver: zodResolver(searchSchema),
     defaultValues: { search },
     values: { search },
   });
+  const searchValue = useWatch({ control, name: "search" }) ?? "";
+  const onSearchRef = useRef(onSearch);
+  onSearchRef.current = onSearch;
+
+  useEffect(() => {
+    if (searchValue.trim() === search.trim()) return;
+    const timer = window.setTimeout(() => {
+      const parsed = searchSchema.safeParse({ search: searchValue });
+      if (parsed.success) onSearchRef.current(parsed.data.search);
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [search, searchValue]);
 
   const clearAll = () => {
     reset({ search: "" });
@@ -43,20 +56,17 @@ export function TableToolbar({
   return (
     <div className="border-b border-[#edf0ec] bg-[#fbfcfa]">
       <div className="flex items-center gap-2 p-4 max-[680px]:flex-col max-[680px]:items-stretch">
-        <form
+        <div
           className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-[11px] border border-[#dfe6e0] bg-white px-4 max-[680px]:w-full max-[680px]:flex-none min-[1024px]:h-10 min-[1024px]:min-w-[280px] min-[1024px]:px-3"
-          onSubmit={handleSubmit(({ search: value }) => onSearch(value))}
         >
           <Search size={18} className="shrink-0 text-[#84918e] min-[1024px]:size-4" />
           <input
             {...register("search")}
             className="h-full min-w-0 flex-1 border-0 bg-transparent text-[11px] outline-none min-[1024px]:text-[10px]"
+            maxLength={100}
             placeholder={searchPlaceholder}
           />
-          <button className="h-full shrink-0 border-0 bg-transparent text-[10px] font-bold text-[#0f7b62] min-[1024px]:text-[9px]" type="submit">
-            جست‌وجو
-          </button>
-        </form>
+        </div>
         <button
           aria-expanded={advancedOpen}
           className={cn(
@@ -109,15 +119,7 @@ export function TableFilterSelect({
   return (
     <label className="grid gap-1.5 text-[8px] font-bold text-[#74837f]">
       {label}
-      <select
-        className="h-10 rounded-[10px] border border-[#dfe6e0] bg-white px-3 text-[9px] text-[#405753] outline-none"
-        onChange={(event) => onChange(event.target.value)}
-        value={value}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>{option.label}</option>
-        ))}
-      </select>
+      <SearchableSelect options={options} value={value} onChange={(next) => onChange(String(next))} placeholder="همه" />
     </label>
   );
 }

@@ -4,6 +4,7 @@ import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, Inbox, LoaderCircle, Rota
 import { isValidElement, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { DataTableCardSkeleton, DataTableSkeleton } from "./skeletons/table-skeletons";
+import { SearchableSelect } from "@/app/_components/searchable-select";
 
 const mobileTableMediaQuery = "(max-width: 680px)";
 
@@ -194,13 +195,10 @@ export function DataTable<T>({
           <div>
             {sortableColumns.length > 0 && <div className="flex items-center gap-2 border-b border-[#edf1ee] bg-[#f7f9f6] p-3 text-[10px]">
               <label className="flex flex-1 items-center gap-2 font-bold text-[#71817e]">مرتب‌سازی
-                <select className="min-w-0 flex-1 rounded-[8px] border border-[#dfe5df] bg-white px-2 py-2 font-normal text-[#2b4540]" value={sort?.key ?? ""} onChange={(event) => {
-                  const nextSort = event.target.value ? { key: event.target.value, direction: "asc" as const } : null;
+                <SearchableSelect className="flex-1" options={[{ value: "", label: "بدون مرتب‌سازی" }, ...sortableColumns.map((column) => ({ value: column.key, label: column.title }))]} value={sort?.key ?? ""} onChange={(value) => {
+                  const nextSort = String(value) ? { key: String(value), direction: "asc" as const } : null;
                   if (isControlled) onSortChange?.(nextSort); else setLocalSort(nextSort);
-                }}>
-                  <option value="">بدون مرتب‌سازی</option>
-                  {sortableColumns.map((column) => <option key={column.key} value={column.key}>{column.title}</option>)}
-                </select>
+                }} />
               </label>
               {sort && <button className="grid size-8 place-items-center rounded-[8px] border border-[#dfe5df] bg-white text-[#526461]" type="button" onClick={() => cycleSort(sort.key)} aria-label={sort.direction === "asc" ? "مرتب‌سازی نزولی" : "غیرفعال کردن مرتب‌سازی"}>
                 {sort.direction === "asc" ? <ArrowUp size={14} /> : <ArrowDown size={14} />}

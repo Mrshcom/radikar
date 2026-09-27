@@ -17,7 +17,7 @@ import {
   Zap,
 } from "lucide-react";
 import { CircularProgress } from "../_components/circular-progress";
-import { JobCard } from "../_components/job-card";
+import { JobCard, JobLogo } from "../_components/job-card";
 import { DashboardSkeleton } from "../_components/skeletons";
 import { SectionTitle } from "../_components/ui";
 import {
@@ -47,6 +47,7 @@ import { formatPersianNumber } from "@/lib/fa-number";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { apiRequest } from "@/lib/api-client";
 import { prioritizeSavedJobs } from "@/lib/job-order";
+import { useJobPoolListings } from "@/lib/job-pool";
 
 type DashboardState = {
   snapshot: DashboardSnapshotRecord;
@@ -87,6 +88,46 @@ function dashboardTitle(fullName: string) {
   return firstName
     ? `سلام ${firstName}، آماده‌ی یک قدم تازه‌ای؟`
     : "سلام، آماده‌ی یک قدم تازه‌ای؟";
+}
+
+function JobPoolPreview() {
+  const listings = useJobPoolListings({ pageSize: 3 });
+
+  if (listings.isLoading || listings.isError || !listings.data?.items.length)
+    return null;
+
+  return (
+    <section className={`${panelSurface} mt-4 p-[21px]`}>
+      <div className="flex items-start justify-between gap-5">
+        <div>
+          <h3 className="m-0 mb-[5px] text-[13px]">پیشنهادهای امروز برای شما</h3>
+          <p className="m-0 text-[9px] text-[#99a4a1]">
+            {formatPersianNumber(listings.data.total)} آگهی فعال در Job Pool
+          </p>
+        </div>
+        <Link className="flex items-center gap-[3px] p-1.5 text-[10px] font-bold text-[#0f7b62] no-underline" href="/jobs">
+          همه فرصت‌ها <ChevronLeft size={16} />
+        </Link>
+      </div>
+      <div className="mt-3 grid grid-cols-1 gap-2.5 min-[700px]:grid-cols-3">
+        {listings.data.items.map((listing) => (
+          <Link
+            key={listing.id}
+            className="flex items-center gap-2.5 rounded-xl border border-[#e0e8e3] bg-[#fbfcfa] p-3 no-underline transition-colors hover:border-[#9ac8b8] hover:bg-white"
+            href="/jobs"
+          >
+            <JobLogo company={listing.companyName} logoUrl={listing.companyLogoUrl || undefined} variant="board" />
+            <span className="min-w-0">
+              <strong className="block truncate text-[10px] text-[#19312f]" dir="auto">{listing.title}</strong>
+              <span className="mt-1 block truncate text-[8px] text-[#71817d]" dir="auto">
+                {[listing.companyName, listing.location].filter(Boolean).join(" · ")}
+              </span>
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function ExpandableText({
@@ -602,6 +643,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+      <JobPoolPreview />
       <section className={`${panelSurface} mt-4 p-[21px]`}>
         <div className="flex items-start justify-between gap-5">
           <div>

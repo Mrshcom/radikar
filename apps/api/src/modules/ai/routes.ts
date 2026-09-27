@@ -24,6 +24,13 @@ import { requirePermission } from "../auth/routes";
 import type { ProviderName } from "@radikar/ai";
 import { eq } from "drizzle-orm";
 import { aiSettings, type Database } from "@radikar/database";
+import {
+  resumeGenerationSystemPrompt,
+  resumeGenerationUserPrompt,
+  resumeTailoringSystemPrompt,
+  resumeTailoringUserPrompt,
+  type ResumeOutputLanguage,
+} from "./resume-prompts";
 
 const aiSettingsId = "analysis-provider";
 
@@ -79,6 +86,12 @@ type DashboardData = {
   aiText: string;
 };
 
+type AtsMatchSummary = {
+  estimatedKeywordCoverage: number | null;
+  strongMatches: string[];
+  keywordGaps: string[];
+};
+
 const breakdownWeights = [0.3, 0.35, 0.25, 0.1] as const;
 
 function bodyOf(value: unknown) {
@@ -91,6 +104,17 @@ function textOf(value: unknown) {
 
 function stringArray(value: unknown) {
   return normalizeImportedTextArray(value);
+}
+
+function normalizeAtsMatchSummary(value: unknown): AtsMatchSummary {
+  const summary = asObject(value);
+  const coverage = Number(summary.estimatedKeywordCoverage);
+  return {
+    estimatedKeywordCoverage:
+      Number.isFinite(coverage) ? Math.min(100, Math.max(0, Math.round(coverage))) : null,
+    strongMatches: stringArray(summary.strongMatches).slice(0, 8),
+    keywordGaps: stringArray(summary.keywordGaps).slice(0, 8),
+  };
 }
 
 function clampScore(value: unknown) {
@@ -392,7 +416,7 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
       return reply.code(422).send({ error: validation.error });
     if (!hasResumeContent(resume))
       return reply.code(422).send({ error: "رزومه مبنا خالی است." });
-    const languageName = body.language === "en" ? "English" : "Persian";
+    const language = body.language === "en" ? "en" : "fa";
 
     const usage = { ai: 5 } satisfies UsageCosts;
     await consume(billing, request, usage, "match_tailor");
@@ -402,11 +426,11 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
         [
           {
             role: "system",
-            content: `You are a professional ${languageName} resume writer. Return valid JSON only. Tailor existing facts to the target job without inventing facts, employers, skills or achievements.`,
+            content: resumeTailoringSystemPrompt(language),
           },
           {
             role: "user",
-            content: `Base resume:\n${JSON.stringify(resume)}\nTarget job:\n${jobDescription}\nReturn only a concise rewrite patch in ${languageName}. Keep every supplied id exactly unchanged. Do not repeat contact details, dates, companies, titles, education or unchanged fields. JSON: {"summary":string,"skills":[string],"experiences":[{"id":string,"description":string}],"projects":[{"id":string,"description":string}]}`,
+            content: resumeTailoringUserPrompt(language, resume, jobDescription),
           },
         ],
         {
@@ -432,21 +456,28 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
       return reply
         .code(422)
         .send({ error: "ابتدا اطلاعات واقعی رزومه را وارد کن." });
-    const languageName = body.language === "en" ? "English" : "Persian";
+    const language: ResumeOutputLanguage = body.language === "en" ? "en" : "fa";
     const usage = { ai: 2 } satisfies UsageCosts;
     await consume(billing, request, usage, "resume_generate");
     try {
       const generated = await chatJson<JsonObject>(getWriteConfig(), [
         {
           role: "system",
-          content: `You are a professional ${languageName} resume writer. Return valid JSON only. Do not invent facts. Preserve contact fields and every experience, project and education id.`,
+          content: resumeGenerationSystemPrompt(language),
         },
         {
           role: "user",
-          content: `Current resume:\n${JSON.stringify(resume, null, 2)}\nKnowledge base:\n${JSON.stringify(asObject(body.knowledge), null, 2)}\nInstruction: ${textOf(body.instruction) || `Create an ATS-friendly resume in ${languageName}.`}\nKeep every record and return every resume field as JSON.`,
+          content: resumeGenerationUserPrompt(language, resume, asObject(body.knowledge), textOf(body.instruction)),
         },
       ], modelUsage(billing, request, "resume_generate"));
-      return { resume: preserveResumeArrays(resume, generated) };
+      const generatedResume = asObject(generated.resume);
+      return {
+        resume: preserveResumeArrays(
+          resume,
+          Object.keys(generatedResume).length ? generatedResume : generated,
+        ),
+        atsMatchSummary: normalizeAtsMatchSummary(generated.atsMatchSummary),
+      };
     } catch (error) {
       await refund(billing, request, usage, "resume_generate");
       return modelError(reply, error, "مدل رزومه‌ساز پاسخ نداد.");

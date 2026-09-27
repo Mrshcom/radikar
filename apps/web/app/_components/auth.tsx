@@ -9,7 +9,8 @@ import { PageLoader } from "./page-loader";
 export type UserRole = "user" | "admin" | "superadmin";
 export type CurrentUser = {
   id: string;
-  phone: string;
+  phone: string | null;
+  email: string | null;
   fullName: string | null;
   role: UserRole;
   status: "active" | "suspended";

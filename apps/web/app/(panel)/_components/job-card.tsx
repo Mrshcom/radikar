@@ -1,13 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import {
   Bookmark,
-  ChevronLeft,
   Clock3,
-  ExternalLink,
   Eye,
   LoaderCircle,
   MapPin,
@@ -16,6 +13,7 @@ import {
 } from "lucide-react";
 import type { Job } from "../_data/jobs";
 import { Modal } from "./ui";
+import { PanelLink } from "./panel-link";
 import { cn } from "@/lib/cn";
 import { formatPersianNumber, toPersianDigits } from "@/lib/fa-number";
 import { sanitizeRemoteImageSource } from "@radikar/validators";
@@ -144,14 +142,15 @@ export function JobDetailsModal({
           <h3 className="flex flex-wrap items-center m-0 text-[11px] text-[#19312f]">
             <span className="min-w-0 flex-1">متن کامل آگهی</span>
             {job.sourceUrl && (
-              <a
+              <PanelLink
                 className="inline-flex min-h-8 w-fit items-center gap-2 rounded-[8px] px-2 text-[9px] font-bold text-[#0f7b62] no-underline transition-colors duration-200 hover:bg-[#dfeee7]"
                 href={job.sourceUrl}
                 target="_blank"
                 rel="noreferrer"
+                external
               >
-                مشاهده منبع آگهی <ExternalLink size={15} />
-              </a>
+                مشاهده منبع آگهی
+              </PanelLink>
             )}
           </h3>
           <p
@@ -259,14 +258,14 @@ export function JobCard({
             >
               <Eye size={14} /> نمایش کامل آگهی
             </button>
-            <Link
+            <PanelLink
               className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[8px] font-bold text-[#0b795d] no-underline transition-colors duration-200 hover:bg-[#edf7f2]"
               href={
                 job.id ? `/match?job=${encodeURIComponent(job.id)}` : "/match"
               }
             >
-              تطبیق مجدد <ChevronLeft size={14} />
-            </Link>
+              تطبیق مجدد
+            </PanelLink>
           </div>
         </div>
       </article>

@@ -67,6 +67,7 @@ import { useAuth, useLogout, type UserRole } from "@/app/_components/auth";
 import { useToast } from "@/app/_components/toast";
 import { useAdminEvents, type AdminEvent } from "@/lib/admin-stats";
 import { PersianDateTime } from "@/lib/date-time-display";
+import { userDisplayName, userIdentifier } from "@/lib/user-identity";
 
 type MenuItem = {
   href: string;
@@ -90,6 +91,7 @@ const menuItems: MenuItem[] = [
   { href: "/admin/payments", label: "تراکنش‌ها و واریزی‌ها", icon: CreditCard, roles: ["admin", "superadmin"] },
   { href: "/admin/records", label: "داده‌های سامانه", icon: Database, roles: ["superadmin"] },
   { href: "/admin/model-usage", label: "مصرف و هزینه مدل‌ها", icon: Bot, roles: ["superadmin"] },
+  { href: "/admin/job-pool", label: "گزارش Job Pool", icon: BriefcaseBusiness, roles: ["superadmin"] },
   { href: "/admin/settings", label: "تنظیمات", icon: Settings, roles: ["superadmin"] },
 ];
 
@@ -105,6 +107,7 @@ const pageTitles: Record<string, string> = {
   "/admin/payments": "واریزی‌های سامانه",
   "/admin/records": "داده‌های سامانه",
   "/admin/model-usage": "مصرف و هزینه مدل‌ها",
+  "/admin/job-pool": "گزارش Job Pool",
   "/admin/settings": "تنظیمات",
 };
 
@@ -130,7 +133,7 @@ function adminEventHref(type: AdminEvent["type"]) {
 }
 
 function adminEventMessage(event: AdminEvent) {
-  const userName = event.user.fullName || event.user.phone;
+  const userName = userDisplayName(event.user);
   if (event.type === "signup") return `${userName} در سامانه ثبت‌نام کرد.`;
   if (event.type === "login") return `${userName} وارد سامانه شد.`;
   if (event.type === "resume") return `${userName} یک رزومه جدید ساخت.`;
@@ -667,7 +670,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                               <span className="min-w-0 flex-1">
                                 <strong className="block text-[9px] leading-6 text-[#334c48]">{adminEventMessage(event)}</strong>
                                 <small className="mt-0.5 block text-[7px] text-[#93a19e]">
-                                  <span dir="ltr">{event.user.phone}</span> · {adminEventTime(event.createdAt)}
+                                  <span dir="ltr">{userIdentifier(event.user)}</span> · {adminEventTime(event.createdAt)}
                                 </small>
                               </span>
                             </Link>
@@ -708,10 +711,10 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   type="button"
                 >
                   <span className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-[#c98465] text-[9px] font-bold text-white">
-                    {initials(user?.fullName || user?.phone || "")}
+                    {initials(user ? userDisplayName(user) : "")}
                   </span>
                   <span className="max-w-[110px] truncate text-[9px] font-bold max-[820px]:hidden">
-                    {user?.fullName || "حساب کاربری"}
+                    {user ? userDisplayName(user) : "حساب کاربری"}
                   </span>
                   <ChevronLeft className={`shrink-0 transition-transform max-[820px]:hidden ${userMenuOpen ? "-rotate-90" : ""}`} size={13} />
                 </button>

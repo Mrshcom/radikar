@@ -24,6 +24,7 @@ const paymentListSchema = adminListSchema.extend({
 const membershipListSchema = adminListSchema.extend({
   planId: optionalQueryValue(z.string().max(64)),
   membershipStatus: optionalQueryValue(z.enum(["active", "expired", "canceled"])),
+  userStatus: optionalQueryValue(z.enum(["active", "suspended"])),
 });
 const createOrderSchema = z.object({ planId: z.string().min(1).max(64) });
 const callbackSchema = z.object({
@@ -31,7 +32,10 @@ const callbackSchema = z.object({
   Status: z.string().min(1),
 });
 const userParamsSchema = z.object({ id: z.uuid() });
-const grantPlanSchema = z.object({ planId: z.string().min(1).max(64) });
+const grantPlanSchema = z.object({
+  planId: z.string().min(1).max(64),
+  mode: z.enum(["add", "replace"]).default("add"),
+});
 const extendSchema = z.object({ days: z.number().int().min(1).max(3650) });
 const adjustCreditSchema = z.object({
   resource: z.enum(["resume", "pdf", "ai", "match", "interview"]),
@@ -66,15 +70,9 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
   app.get("/api/billing/orders", (request, reply) => {
     if (!requireCustomer(request, reply)) return;
     const query = orderListSchema.omit({ planId: true }).parse(request.query);
-    return billing.listUserOrders(
-      request.auth!.user.id,
-      query.page,
-      query.pageSize,
-      query.search,
-      query.status,
-      query.sortBy,
-      query.sortDirection,
-    );
+    return query.sortBy || query.sortDirection
+      ? billing.listUserOrders(request.auth!.user.id, query.page, query.pageSize, query.search, query.status, query.sortBy, query.sortDirection)
+      : billing.listUserOrders(request.auth!.user.id, query.page, query.pageSize, query.search, query.status);
   });
 
   app.post("/api/billing/orders", async (request, reply) => {
@@ -108,7 +106,9 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
   app.get("/api/admin/orders", (request, reply) => {
     if (!requirePermission(request, reply, "orders:read:any")) return;
     const query = orderListSchema.parse(request.query);
-    return billing.listAdminOrders(query.search, query.page, query.pageSize, query.status, query.planId, query.sortBy, query.sortDirection);
+    return query.sortBy || query.sortDirection
+      ? billing.listAdminOrders(query.search, query.page, query.pageSize, query.status, query.planId, query.sortBy, query.sortDirection)
+      : billing.listAdminOrders(query.search, query.page, query.pageSize, query.status, query.planId);
   });
 
   app.get("/api/admin/billing-stats", (request, reply) => {
@@ -119,28 +119,25 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
   app.get("/api/admin/model-usage", (request, reply) => {
     if (!requirePermission(request, reply, "reports:read:any")) return;
     const query = modelUsageStatsSchema.parse(request.query);
-    return billing.getModelUsageStats(query.days, query.page, query.pageSize, query.provider, query.sortBy, query.sortDirection);
+    return query.sortBy || query.sortDirection
+      ? billing.getModelUsageStats(query.days, query.page, query.pageSize, query.provider, query.sortBy, query.sortDirection)
+      : billing.getModelUsageStats(query.days, query.page, query.pageSize, query.provider);
   });
 
   app.get("/api/admin/payments", (request, reply) => {
     if (!requirePermission(request, reply, "payments:read:any")) return;
     const query = paymentListSchema.parse(request.query);
-    return billing.listAdminPayments(query.page, query.pageSize, query.search, query.status, query.sortBy, query.sortDirection);
+    return query.sortBy || query.sortDirection
+      ? billing.listAdminPayments(query.page, query.pageSize, query.search, query.status, query.sortBy, query.sortDirection)
+      : billing.listAdminPayments(query.page, query.pageSize, query.search, query.status);
   });
 
   app.get("/api/admin/memberships", (request, reply) => {
     if (!requirePermission(request, reply, "memberships:manage:any")) return;
     const query = membershipListSchema.parse(request.query);
-    return billing.listMembershipUsers(
-      query.search,
-      query.page,
-      query.pageSize,
-      query.planId,
-      query.membershipStatus,
-      undefined,
-      query.sortBy,
-      query.sortDirection,
-    );
+    return query.sortBy || query.sortDirection
+      ? billing.listMembershipUsers(query.search, query.page, query.pageSize, query.planId, query.membershipStatus, query.userStatus, query.sortBy, query.sortDirection)
+      : billing.listMembershipUsers(query.search, query.page, query.pageSize, query.planId, query.membershipStatus, query.userStatus);
   });
 
   app.get<{ Params: { id: string } }>(
@@ -157,7 +154,9 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
       if (!requirePermission(request, reply, "memberships:manage:any")) return;
       const userId = userParamsSchema.parse(request.params).id;
       const input = grantPlanSchema.parse(request.body);
-      return billing.adminGrantPlan(userId, input.planId, request.auth!.user.id);
+      return input.mode === "replace"
+        ? billing.adminReplacePlan(userId, input.planId, request.auth!.user.id)
+        : billing.adminGrantPlan(userId, input.planId, request.auth!.user.id);
     },
   );
 

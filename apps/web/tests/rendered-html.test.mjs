@@ -273,7 +273,7 @@ test("superadmins stay out of user and membership management lists", async () =>
     billingService,
     /async getBillingStats[\s\S]*?\.innerJoin\(users, eq\(orders\.userId, users\.id\)\)[\s\S]*?\.where\(ne\(users\.role, "superadmin"\)\)/,
   );
-  assert.match(usersPage, /buildQueryString\(\{ search, role, status, page, pageSize \}\)/);
+  assert.match(usersPage, /buildQueryString\(\{ search, role, status, page, pageSize, sortBy, sortDirection \}\)/);
   assert.doesNotMatch(usersPage, /role=\$\{role\}&status=\$\{status\}/);
 });
 
@@ -314,7 +314,7 @@ test("all project data tables share controls, loading skeleton, zero state and p
   assert.match(pageSizePreference, /"\/api\/account\/preferences"/);
   assert.doesNotMatch(pageSizePreference, /localStorage/);
   assert.match(queryBuilder, /value === undefined \|\| value === null \|\| value === ""/);
-  assert.match(billing, /buildQueryString\(\{ page, pageSize, search, status \}\)/);
+  assert.match(billing, /buildQueryString\(\{ page, pageSize, search, status, sortBy, sortDirection \}\)/);
   pages.forEach((page, index) => {
     assert.match(page, /DataTable/);
     assert.match(page, /TableToolbar|AdminTableToolbar/);
@@ -459,9 +459,9 @@ test("model usage breakdowns and recent requests use the shared paginated table"
   assert.match(page, /<AdminTablePagination/);
   assert.match(page, /useUrlTablePagination\(\)/);
   assert.match(page, /useQueryStates\(/);
-  assert.match(billingClient, /buildQueryString\(\{ days, page, pageSize, provider \}\)/);
+  assert.match(billingClient, /buildQueryString\(\{ days, page, pageSize, provider, sortBy, sortDirection \}\)/);
   assert.match(billingClient, /placeholderData: keepPreviousData/);
-  assert.match(billingRoutes, /getModelUsageStats\(query\.days, query\.page, query\.pageSize, query\.provider\)/);
+  assert.match(billingRoutes, /getModelUsageStats\(query\.days, query\.page, query\.pageSize, query\.provider, query\.sortBy, query\.sortDirection\)/);
   assert.match(billingService, /recentRequests: \{[\s\S]*?items: recentRows/);
   assert.match(billingService, /\.limit\(pageSize\)[\s\S]*?\.offset\(\(page - 1\) \* pageSize\)/);
   assert.match(billingService, /innerJoin\(users, eq\(users\.id, modelUsageEvents\.userId\)\)/);
@@ -1663,7 +1663,7 @@ test("data-changing forms show contextual success toasts and account fields use 
   assert.match(login, /notify\("با موفقیت وارد حساب کاربری شدی\."\)/);
   assert.match(login, /notify\("کد ورود مجدداً ارسال شد\."\)/);
   for (const message of [
-    "پلن کاربر با موفقیت فعال شد.",
+    "پلن جدید با موفقیت به عضویت کاربر افزوده شد.",
     "مدت عضویت کاربر با موفقیت تمدید شد.",
     "اعتبار کاربر با موفقیت به‌روزرسانی شد.",
     "عضویت کاربر با موفقیت لغو شد.",

@@ -31,7 +31,7 @@ describe("admin stats hooks", () => {
     apiRequest.mockClear(); apiRequest.mockResolvedValueOnce({ users: { total: 2 } });
     await act(async () => { await failed.result.current.refetch(); });
     await waitFor(() => expect(failed.result.current.data).toEqual({ users: { total: 2 } }));
-    qc.setQueryData([...adminModelUsageQueryKey, 30, 1, 20, ""], { periodDays: 30, recentRequests: { items: [{ id: "old" }] } });
+    qc.setQueryData([...adminModelUsageQueryKey, 30, 1, 20, "", "", ""], { periodDays: 30, recentRequests: { items: [{ id: "old" }] } });
     apiRequest.mockImplementationOnce(() => new Promise(() => {}));
     const usage = renderHook(({ page }) => useAdminModelUsage(true, 30, page, 20), { initialProps: { page: 1 }, wrapper: wrap(qc) });
     usage.rerender({ page: 2 });
