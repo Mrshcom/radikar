@@ -46,6 +46,7 @@ import {
   Activity,
   Bot,
   Gift,
+  Coins,
 } from "lucide-react";
 import {
   appProfileStore,
@@ -69,6 +70,9 @@ import { useToast } from "@/app/_components/toast";
 import { useAdminEvents, type AdminEvent } from "@/lib/admin-stats";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { userDisplayName, userIdentifier } from "@/lib/user-identity";
+import { OnboardingLauncher, OnboardingProvider } from "./onboarding/onboarding-provider";
+import { useRadicoinWallet } from "@/lib/radicoins";
+import { RadicoinCoinIcon } from "./radicoin-coin-icon";
 
 type MenuItem = {
   href: string;
@@ -85,6 +89,7 @@ const menuItems: MenuItem[] = [
   { href: "/resumes", label: "رزومه‌های هدفمند", icon: FileText, roles: ["user"] },
   { href: "/applications", label: "پیگیری اپلای‌ها", icon: BarChart3, roles: ["user"] },
   { href: "/interview", label: "آمادگی مصاحبه", icon: MessageSquareText, roles: ["user"] },
+  { href: "/radicoins", label: "کیف پول رادیکوین", icon: Coins, roles: ["user"] },
   { href: "/admin", label: "داشبورد مدیریتی", icon: LayoutDashboard, roles: ["admin", "superadmin"] },
   { href: "/admin/users", label: "کاربران و دسترسی‌ها", icon: Users, roles: ["superadmin"] },
   { href: "/admin/memberships", label: "عضویت و اعتبار", icon: ShieldCheck, roles: ["admin", "superadmin"] },
@@ -94,6 +99,7 @@ const menuItems: MenuItem[] = [
   { href: "/admin/model-usage", label: "مصرف و هزینه مدل‌ها", icon: Bot, roles: ["superadmin"] },
   { href: "/admin/job-pool", label: "گزارش Job Pool", icon: BriefcaseBusiness, roles: ["superadmin"] },
   { href: "/admin/referrals", label: "ریفرال و دعوت", icon: Gift, roles: ["superadmin"] },
+  { href: "/admin/radicoins", label: "مدیریت رادیکوین", icon: Coins, roles: ["superadmin"] },
   { href: "/admin/settings", label: "تنظیمات", icon: Settings, roles: ["superadmin"] },
 ];
 
@@ -104,6 +110,7 @@ const pageTitles: Record<string, string> = {
   "/upgrade": "خرید و ارتقای بسته",
   "/billing/result": "نتیجه پرداخت",
   "/referrals": "دعوت دوستان",
+  "/radicoins": "کیف پول رادیکوین",
   "/admin/memberships": "کاربران و عضویت‌ها",
   "/admin/users": "کاربران و دسترسی‌ها",
   "/admin/orders": "سفارش‌های سامانه",
@@ -112,8 +119,19 @@ const pageTitles: Record<string, string> = {
   "/admin/model-usage": "مصرف و هزینه مدل‌ها",
   "/admin/job-pool": "گزارش Job Pool",
   "/admin/referrals": "ریفرال و دعوت",
+  "/admin/radicoins": "مدیریت رادیکوین",
   "/admin/settings": "تنظیمات",
 };
+
+function tourTarget(href: string) {
+  return ({
+    "/dashboard": "nav-dashboard",
+    "/knowledge-base": "nav-profile",
+    "/jobs": "nav-jobs",
+    "/match": "nav-match",
+    "/resumes": "nav-resumes",
+  } as Record<string, string>)[href];
+}
 
 const primaryButtonClass =
   "inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border-0 bg-[#0f7b62] px-[15px] text-[11px] font-bold text-white no-underline shadow-[0_7px_17px_rgba(15,123,98,.17)] disabled:cursor-not-allowed disabled:opacity-45";
@@ -152,7 +170,9 @@ function adminEventTime(value: string) {
 export function PanelShell({ children }: { children: ReactNode }) {
   return (
     <ModelTaskProvider>
-      <PanelShellContent>{children}</PanelShellContent>
+      <OnboardingProvider>
+        <PanelShellContent>{children}</PanelShellContent>
+      </OnboardingProvider>
     </ModelTaskProvider>
   );
 }
@@ -184,6 +204,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuCloseTimerRef = useRef<number | null>(null);
   const userRole = user?.role;
+  const radicoinWallet = useRadicoinWallet(userRole === "user");
   const isManagement = userRole === "admin" || userRole === "superadmin";
   const isSuperadmin = userRole === "superadmin";
   const adminEvents = useAdminEvents(isSuperadmin);
@@ -466,6 +487,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                       : "bg-transparent text-[#697a77]",
                   )}
                   href={item.href}
+                  data-tour={tourTarget(item.href)}
                 >
                   <Icon size={19} />
                   <span>{item.label}</span>
@@ -613,14 +635,13 @@ function PanelShellContent({ children }: { children: ReactNode }) {
             </span>
             <div className="mr-auto flex items-center gap-[10px]">
               {!isManagement && <button
-                className="flex h-[38px] w-[210px] items-center gap-2 rounded-[11px] border border-[#e4e8e3] bg-white/85 px-[11px] text-[11px] text-[#8a9693] max-[820px]:hidden"
+                aria-label="جست‌وجوی سریع"
+                className="grid size-[38px] place-items-center rounded-[11px] border border-[#e4e8e3] bg-white text-[#60716e] max-[820px]:hidden"
                 onClick={() => setDialog("search")}
+                title="جست‌وجوی سریع (⌘ K)"
+                type="button"
               >
                 <Search size={18} />
-                <span>جست‌وجو...</span>
-                <kbd className="mr-auto rounded-[5px] border border-[#e1e5e0] bg-[#f7f8f5] px-1.5 py-0.5 font-[inherit] text-[#a5aeac]">
-                  ⌘ K
-                </kbd>
               </button>}
               {(userRole === "user" || isSuperadmin) && (
                 <div className="relative" ref={noticeRef}>
@@ -707,7 +728,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 <button
                   aria-expanded={userMenuOpen}
                   aria-label="منوی حساب کاربری"
-                  className="flex h-10 min-w-0 items-center gap-2 rounded-[11px] border border-[#e4e8e3] bg-white px-2 text-[#526762] shadow-none transition-colors hover:border-[#cfdad4] hover:bg-[#edf6f1]"
+                  className="grid size-[38px] place-items-center rounded-[11px] border border-[#e4e8e3] bg-white text-[#526762] shadow-none transition-colors hover:border-[#cfdad4] hover:bg-[#edf6f1]"
                   onClick={() => {
                     setNoticeOpen(false);
                     setUserMenuOpen((value) => !value);
@@ -718,10 +739,6 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                     {initials(user ? userDisplayName(user) : "")}
                     <span aria-hidden="true" className="absolute -bottom-0.5 -left-0.5 size-2.5 rounded-full bg-[#36b77d] ring-2 ring-white" />
                   </span>
-                  <span className="max-w-[110px] truncate text-[9px] font-bold max-[820px]:hidden">
-                    {user ? userDisplayName(user) : "حساب کاربری"}
-                  </span>
-                  <ChevronLeft className={`shrink-0 transition-transform max-[820px]:hidden ${userMenuOpen ? "-rotate-90" : ""}`} size={13} />
                 </button>
                 {userMenuOpen && (
                   <div className="absolute left-0 top-[46px] z-40 w-[270px] overflow-hidden rounded-[16px] border border-[#dfe6e1] bg-white p-2 shadow-[0_18px_50px_rgba(25,57,50,.18)]">
@@ -733,6 +750,20 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                       </div>
                       <span aria-hidden="true" className="mr-auto size-2 rounded-full bg-[#25a56f] shadow-[0_0_0_3px_#d8f0e4]" />
                     </div>
+                    {userRole === "user" && (
+                      <Link
+                        className="mb-1 flex items-center gap-3 rounded-[12px] bg-gradient-to-l from-[#fff8df] to-[#fffdf7] px-3 py-2.5 text-[#5d4a18] no-underline transition hover:from-[#fff3c7] hover:to-[#fffaf0]"
+                        href="/radicoins"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <RadicoinCoinIcon className="size-11 drop-shadow-[0_5px_9px_rgba(199,145,20,.22)]" size={44} />
+                        <div className="min-w-0">
+                          <span className="block text-[9px] font-semibold text-[#8a7641]">موجودی رادیکوین</span>
+                          <strong className="mt-0.5 block text-[17px] font-black leading-none text-[#5d4a18]">{(radicoinWallet.data?.wallet?.availableCoins ?? 0).toLocaleString("fa-IR")} <small className="text-[8px] font-semibold text-[#9a8650]">سکه</small></strong>
+                        </div>
+                        <ChevronLeft className="mr-auto text-[#b3974b]" size={15} />
+                      </Link>
+                    )}
                     {(isManagement
                       ? [{ href: "/settings", label: "امنیت", icon: Settings }]
                       : [
@@ -842,6 +873,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                     href={item.href}
                     key={item.href}
                     onClick={closeMobileMenu}
+                    data-tour={tourTarget(item.href)}
                   >
                     <span
                       className={cn(
@@ -920,6 +952,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                     : "bg-transparent pb-2 text-[#b7c1bd]",
                 )}
                 href={item.href}
+                data-tour={tourTarget(item.href)}
                 aria-label={item.label}
                 aria-current={active ? "page" : undefined}
               >
@@ -937,6 +970,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
+        {userRole === "user" && <OnboardingLauncher />}
         {dialog === "search" && (
           <Modal
             title="جست‌وجوی سریع"

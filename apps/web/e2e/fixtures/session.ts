@@ -16,6 +16,7 @@ const testUser = (role: TestRole) => ({
   createdAt: "2026-01-01T00:00:00.000Z",
   lastLoginAt: "2026-01-01T00:00:00.000Z",
   tablePageSize: 10,
+  onboardingState: { version: 1, status: "not_started", completedSteps: [] },
 });
 
 const plans = [{

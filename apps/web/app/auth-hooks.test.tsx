@@ -15,7 +15,7 @@ function wrapper({ children }: { children: ReactNode }) {
 
 describe("auth hooks", () => {
   it("reads the current user and clears cached data after logout", async () => {
-    apiRequest.mockResolvedValueOnce({ user: { id: "u", phone: "0912", fullName: null, role: "user", status: "active", createdAt: "x", lastLoginAt: null, tablePageSize: 20 } }).mockResolvedValueOnce(undefined);
+    apiRequest.mockResolvedValueOnce({ user: { id: "u", phone: "0912", fullName: null, role: "user", status: "active", createdAt: "x", lastLoginAt: null, tablePageSize: 20, onboardingState: { version: 1, status: "not_started", completedSteps: [] } } }).mockResolvedValueOnce(undefined);
     const { result } = renderHook(() => useAuth(), { wrapper });
     await waitFor(() => expect(result.current.user?.id).toBe("u"));
     expect(result.current.data?.user.tablePageSize).toBe(20);

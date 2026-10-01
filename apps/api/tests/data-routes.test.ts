@@ -57,6 +57,7 @@ const testUser: AuthUser = {
   role: "superadmin",
   status: "active",
   tablePageSize: 20,
+  onboardingState: { version: 1, status: "not_started", completedSteps: [] },
   createdAt: "2026-08-27T10:00:00.000Z",
   lastLoginAt: "2026-08-27T10:00:00.000Z",
 };
@@ -100,6 +101,7 @@ const authService: AuthServicePort = {
   updateUser: async () => testUser,
   updateProfile: async () => testUser,
   updatePreferences: async (_userId, input) => ({ ...testUser, ...input }),
+  updateOnboarding: async (_userId, onboardingState) => ({ ...testUser, onboardingState }),
 };
 
 function createTestApp(authServiceOverride: AuthServicePort = authService) {

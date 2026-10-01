@@ -10,6 +10,7 @@ export type Plan = {
   name: string;
   description: string;
   priceRials: number;
+  radicoinCost: number | null;
   durationDays: number;
   resumeLimit: number | null;
   pdfDownloadLimit: number | null;
@@ -94,6 +95,29 @@ export type OrdersResponse = {
   pageSize: number;
 };
 
+export type CheckoutPaymentMethod = "gateway" | "radicoin";
+export type CreateOrderInput = {
+  planId: string;
+  paymentMethod: CheckoutPaymentMethod;
+  idempotencyKey: string;
+};
+export type CreateOrderResult =
+  | {
+      checkout: "gateway";
+      orderId: string;
+      orderNumber: string;
+      paymentUrl: string;
+      amountRials: number;
+      appliedCoins: number;
+    }
+  | {
+      checkout: "activated";
+      planId: string;
+      planName: string;
+      spentCoins: number;
+      expiresAt: string;
+    };
+
 export const billingKeys = {
   plans: ["billing", "plans"] as const,
   membership: ["billing", "membership"] as const,
@@ -141,14 +165,18 @@ export function useOrders(page = 1, pageSize = 20, search = "", status = "", sor
 export function useCreateOrder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (planId: string) =>
-      apiRequest<{ orderId: string; orderNumber: string; paymentUrl: string }>(
+    mutationFn: (input: CreateOrderInput) =>
+      apiRequest<CreateOrderResult>(
         "/api/billing/orders",
-        { method: "POST", body: JSON.stringify({ planId }) },
+        { method: "POST", body: JSON.stringify(input) },
       ),
-    onSuccess: async ({ paymentUrl }) => {
-      await queryClient.invalidateQueries({ queryKey: ["billing", "orders"] });
-      window.location.assign(paymentUrl);
+    onSuccess: async (result) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["billing", "orders"] }),
+        queryClient.invalidateQueries({ queryKey: billingKeys.membership }),
+        queryClient.invalidateQueries({ queryKey: ["radicoin", "wallet"] }),
+      ]);
+      if (result.checkout === "gateway") window.location.assign(result.paymentUrl);
     },
   });
 }

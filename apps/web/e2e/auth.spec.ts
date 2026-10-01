@@ -8,23 +8,17 @@ test.describe("ورود با کد یک‌بارمصرف", () => {
     await expect(page.getByText("شماره همراه باید با ۰۹ شروع شود و ۱۱ رقم باشد.")).toBeVisible();
   });
 
-  test("کاربر با کد توسعه وارد داشبورد می‌شود", async ({ page }) => {
-    const phone = `091${String(Date.now()).slice(-8)}`;
+  test("پس از درخواست موفق، کد فقط از مسیر پیامکی دریافت می‌شود", async ({ page }) => {
+    await page.route("**/api/auth/request-otp", async (route) => {
+      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({
+        challengeId: "challenge-1",
+        expiresInSeconds: 180,
+      }) });
+    });
     await page.goto("/login");
-    await page.getByPlaceholder("09123456789").fill(phone);
+    await page.getByPlaceholder("09123456789").fill("09121234567");
     await page.getByRole("button", { name: "دریافت کد ورود" }).click();
-
-    const developmentCode = page.getByText("کد محیط توسعه:").locator("..").locator("strong");
-    await expect(developmentCode).toBeVisible();
-    const code = await developmentCode.textContent();
-    expect(code).toMatch(/^\d{6}$/);
-
-    for (const [index, digit] of [...(code ?? "")].entries()) {
-      await page.getByLabel(`رقم ${index + 1} کد یک‌بارمصرف`).fill(digit);
-    }
-
-    await expect(page).toHaveURL("/dashboard");
-    await expect(page.getByText("داشبورد هنوز داده‌ای ندارد")).toBeVisible();
+    await expect(page.getByLabel("رقم 1 کد یک‌بارمصرف")).toBeVisible();
   });
 
   test("کد اشتباه را نمایش می‌دهد و ارسال مجدد، چالش تازه دریافت می‌کند", async ({ page }) => {
@@ -34,7 +28,6 @@ test.describe("ورود با کد یک‌بارمصرف", () => {
       await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({
         challengeId: `challenge-${otpRequests}`,
         expiresInSeconds: 180,
-        developmentCode: "123456",
       }) });
     });
     await page.route("**/api/auth/verify-otp", async (route) => {

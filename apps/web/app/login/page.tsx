@@ -72,7 +72,6 @@ export default function LoginPage() {
   const [step, setStep] = useState<"phone" | "otp">("phone");
   const [submittedPhone, setSubmittedPhone] = useState("");
   const [challengeId, setChallengeId] = useState("");
-  const [developmentCode, setDevelopmentCode] = useState("");
   const [serverError, setServerError] = useState("");
   const [otpDigits, setOtpDigits] = useState(() => Array(6).fill(""));
   const {
@@ -124,7 +123,7 @@ export default function LoginPage() {
 
   const requestOtp = useMutation({
     mutationFn: (phone: string) =>
-      apiRequest<{ challengeId: string; expiresInSeconds: number; developmentCode?: string }>(
+      apiRequest<{ challengeId: string; expiresInSeconds: number }>(
         "/api/auth/request-otp",
         { method: "POST", body: JSON.stringify({ phone }) },
       ),
@@ -143,7 +142,6 @@ export default function LoginPage() {
       const result = await requestOtp.mutateAsync(phone);
       setSubmittedPhone(phone);
       setChallengeId(result.challengeId);
-      setDevelopmentCode(result.developmentCode ?? "");
       resetOtp({ otp: "" });
       setOtpDigits(Array(6).fill(""));
       setStep("otp");
@@ -180,7 +178,6 @@ export default function LoginPage() {
     try {
       const result = await requestOtp.mutateAsync(submittedPhone);
       setChallengeId(result.challengeId);
-      setDevelopmentCode(result.developmentCode ?? "");
       notify("کد ورود مجدداً ارسال شد.");
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "ارسال مجدد کد ناموفق بود.");
@@ -391,12 +388,6 @@ export default function LoginPage() {
                   اصلاح شماره
                 </button>
               </div>
-
-              {developmentCode && (
-                <p className="m-0 rounded-[10px] border border-[#d8e8e1] bg-[#f2f8f5] px-3 py-2 text-[10px] text-[#397060]">
-                  کد محیط توسعه: <strong dir="ltr">{developmentCode}</strong>
-                </p>
-              )}
 
               <button
                 className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"

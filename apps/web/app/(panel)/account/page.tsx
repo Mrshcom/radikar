@@ -18,6 +18,7 @@ import {
   MembershipSummary,
 } from "../_components/membership-summary";
 import { MembershipSummarySkeleton } from "../_components/skeletons";
+import { TextField } from "@/app/_components/text-field";
 
 const schema = z.object({
   fullName: z.string().trim().min(2, "نام باید حداقل دو حرف باشد.").max(100),
@@ -66,13 +67,13 @@ export default function AccountPage() {
         <div className="grid items-start gap-5 md:grid-cols-2">
           <label className="grid gap-2 text-[10px] font-bold">
             نام و نام خانوادگی
-            <input className="h-12 rounded-[11px] border border-[#dfe6e0] px-4 text-[12px] outline-none focus:border-[#79b8a5]" {...form.register("fullName")} />
+            <TextField {...form.register("fullName")} />
             {form.formState.errors.fullName && <span className="text-[10px] font-medium text-[#b14848]">{form.formState.errors.fullName.message}</span>}
           </label>
           <div className="grid gap-2">
             <label className="grid gap-2 text-[10px] font-bold">
               {loginMethod}
-              <input className="h-12 rounded-[11px] border border-[#e5e9e5] bg-[#f5f7f4] px-4 text-[12px] text-[#72817e]" dir="ltr" readOnly value={loginIdentifier} />
+              <TextField className="bg-[#f5f7f4] text-[#72817e]" dir="ltr" readOnly value={loginIdentifier} />
             </label>
             <p className="m-0 text-[9px] leading-6 text-[#87938f]">این شناسه از روش ورود تأییدشده حساب گرفته شده و در این بخش قابل تغییر نیست.</p>
           </div>

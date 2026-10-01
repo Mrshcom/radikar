@@ -81,15 +81,12 @@ stack را recreate و endpoint آماده‌بودن را روی آدرس HTTPS
 
 ## چک‌لیست انتقال از تست IP به دامنه
 
-در deployment فعلی، ورود آزمایشی روی IP فعال است و پیامک ارسال نمی‌شود. قبل از
-انتشار عمومی دامنه، همهٔ موارد زیر باید انجام شوند:
+قبل از انتشار عمومی دامنه، همهٔ موارد زیر باید انجام شوند:
 
-- مقدار واقعی `OTP_WEBHOOK_URL` و در صورت نیاز `OTP_WEBHOOK_TOKEN` تنظیم شود.
-- `ALLOW_INSECURE_DEMO_OTP=false` و `EXPOSE_DEVELOPMENT_OTP=false` قرار گیرد.
+- مقادیر واقعی `SMSIR_USERNAME`، `SMSIR_API_KEY` و `SMSIR_LINE_NUMBER` تنظیم شوند؛ `OTP_WEBHOOK_URL` فقط fallback قدیمی است.
 - `NEXT_PUBLIC_API_BASE_URL` و `API_PUBLIC_URL` به آدرس HTTPS دامنه تغییر کنند.
 - `CORS_ORIGINS` فقط شامل originهای HTTPS دامنه باشد و `http://IP:5000` حذف شود.
-- با غیرفعال‌شدن demo، cookie امن `__Host-radikar_session` و پرچم `Secure` فعال
-  می‌شوند؛ سپس imageهای API و Web دوباره build و سرویس‌ها restart شوند.
+- cookie امن `__Host-radikar_session` و پرچم `Secure` در Production فعال هستند؛ سپس imageهای API و Web را دوباره build و سرویس‌ها را restart کنید.
 - پس از انتشار، درخواست OTP، ورود، `/health` و `/ready` با دامنهٔ HTTPS تست شوند.
 
 تا قبل از تکمیل این چک‌لیست، حالت OTP آزمایشی نباید روی آدرس production عمومی

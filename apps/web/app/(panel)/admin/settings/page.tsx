@@ -174,7 +174,7 @@ export default function AdminSettingsPage() {
             <label htmlFor="job-pool-location">موقعیت‌های جست‌وجو</label>
             <input type="hidden" {...jobPoolForm.register("locations")} />
             <SearchableSelect allowCustom maxSelected={10} multiple searchable options={jobPoolLocationOptions.map((location) => ({ value: location, label: location }))} value={selectedJobPoolLocations} onChange={(value) => jobPoolForm.setValue("locations", (Array.isArray(value) ? value : [value]).join("\n"), { shouldDirty: true, shouldValidate: true })} placeholder="موقعیت‌ها را انتخاب یا جست‌وجو کن" searchPlaceholder="نام شهر یا کشور..." />
-            <small className="font-normal text-[#899793]">نام Location در Actor متن آزاد انگلیسی است. از فهرست جست‌وجو کن یا شهر/کشور دیگری را وارد کن؛ بدون انتخاب موقعیت، Apify اجرا نمی‌شود.</small>
+            <span className="font-normal text-[10px] text-[#899793]">نام Location در Actor متن آزاد انگلیسی است. از فهرست جست‌وجو کن یا شهر/کشور دیگری را وارد کن؛ بدون انتخاب موقعیت، Apify اجرا نمی‌شود.</span>
             {jobPoolForm.formState.errors.locations && <small className="font-normal text-[#c44d4d]">{jobPoolForm.formState.errors.locations.message}</small>}
           </div>
           <div className="grid gap-4 min-[700px]:grid-cols-2">

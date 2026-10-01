@@ -26,7 +26,12 @@ const membershipListSchema = adminListSchema.extend({
   membershipStatus: optionalQueryValue(z.enum(["active", "expired", "canceled"])),
   userStatus: optionalQueryValue(z.enum(["active", "suspended"])),
 });
-const createOrderSchema = z.object({ planId: z.string().min(1).max(64) });
+const createOrderSchema = z.object({
+  planId: z.string().min(1).max(64),
+  paymentMethod: z.enum(["gateway", "radicoin"]).default("gateway"),
+  idempotencyKey: z.uuid().optional(),
+});
+const redeemWithRadicoinSchema = createOrderSchema.extend({ idempotencyKey: z.uuid() });
 const callbackSchema = z.object({
   Authority: z.string().min(1),
   Status: z.string().min(1),
@@ -82,8 +87,16 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
       request.auth!.user.id,
       request.auth!.user.phone,
       input.planId,
+      input.paymentMethod,
+      input.idempotencyKey,
     );
     return reply.code(201).send(result);
+  });
+
+  app.post("/api/billing/radicoin/redeem", async (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
+    const input = redeemWithRadicoinSchema.parse(request.body);
+    return reply.code(201).send(await billing.redeemPlanWithRadicoins(request.auth!.user.id, input.planId, input.idempotencyKey));
   });
 
   app.post("/api/billing/usage/pdf", async (request, reply) => {

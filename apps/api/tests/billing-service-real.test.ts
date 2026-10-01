@@ -6,6 +6,8 @@ import { promisify } from "node:util";
 import { createDatabase } from "@radikar/database";
 import postgres from "postgres";
 import { BillingError, BillingService } from "../src/modules/billing/service";
+import { ZarinpalError } from "../src/modules/billing/zarinpal-client";
+import { RadicoinService } from "../src/modules/radicoin/service";
 
 const execFileAsync = promisify(execFile);
 const root = new URL("../../../", import.meta.url).pathname;
@@ -40,11 +42,12 @@ async function user(sql: postgres.Sql, phone: string) {
   return id;
 }
 
-function gateway(billing: BillingService, authority: string, verify = true) {
+function gateway(billing: BillingService, authority: string, verify: boolean | "transient" = true) {
   (billing as any).gateway = {
     requestPayment: async () => ({ authority, paymentUrl: `https://pay.test/${authority}`, providerData: { code: 100 } }),
     verifyPayment: async () => {
-      if (!verify) throw new Error("gateway verification failed");
+      if (verify === "transient") throw new Error("gateway temporarily unavailable");
+      if (!verify) throw new ZarinpalError("gateway verification failed", -51);
       return { code: 100, refId: `ref-${authority}`, cardPan: "6037", cardHash: "hash", providerData: { verified: true } };
     },
   };
@@ -57,6 +60,8 @@ test("BillingService commits successful, concurrent, renewal, upgrade and expire
     await billing.ensureSignupMembership(id);
     gateway(billing, "AUTH-ONE");
     const created = await billing.createOrder(id, "09120000101", "job-search");
+    assert.equal(created.checkout, "gateway");
+    if (created.checkout !== "gateway") throw new Error("expected gateway checkout");
     assert.match(created.paymentUrl, /AUTH-ONE/);
     await Promise.all([billing.handleCallback("AUTH-ONE", "OK"), billing.handleCallback("AUTH-ONE", "OK")]);
     const paid = (await sql`select o.status as order_status, p.status as payment_status, m.plan_id, m.ai_credits_remaining from orders o join payments p on p.order_id = o.id join user_memberships m on m.user_id = o.user_id where o.id = ${created.orderId}`)[0];
@@ -82,9 +87,18 @@ test("BillingService commits successful, concurrent, renewal, upgrade and expire
 
     gateway(billing, "AUTH-BAD", false);
     const failed = await billing.createOrder(id, "09120000101", "professional");
+    assert.equal(failed.checkout, "gateway");
+    if (failed.checkout !== "gateway") throw new Error("expected gateway checkout");
     const result = await billing.handleCallback("AUTH-BAD", "OK");
     assert.match(result, /status=failed/);
     assert.equal((await sql`select status from orders where id = ${failed.orderId}`)[0].status, "failed");
+
+    gateway(billing, "AUTH-RETRY", "transient");
+    const retryable = await billing.createOrder(id, "09120000101", "professional");
+    if (retryable.checkout !== "gateway") throw new Error("expected gateway checkout");
+    const retryResult = await billing.handleCallback("AUTH-RETRY", "OK");
+    assert.match(retryResult, /status=pending/);
+    assert.equal((await sql`select status from orders where id = ${retryable.orderId}`)[0].status, "pending");
     const userOrders = await billing.listUserOrders(id, 1, 2, "RM-", "paid");
     assert.equal(userOrders.total, 4);
     assert.equal(userOrders.items.length, 2);
@@ -143,5 +157,114 @@ test("BillingService filters real reports and persists every admin mutation", { 
     assert.equal(memberships.total, 1);
     const history = await billing.getAdminMembership(id);
     assert.equal(history.history.length, 4);
+  });
+});
+
+test("Radicoin daily rewards and plan redemption stay idempotent in PostgreSQL", { timeout: 60_000 }, async () => {
+  await withDatabase(async (database, sql) => {
+    const id = await user(sql, "09120000105");
+    const actor = await user(sql, "09120000106");
+    const radicoin = new RadicoinService(database);
+    const billing = new BillingService(database, { ...options, radicoinService: radicoin });
+    await billing.ensureSignupMembership(id);
+
+    const loginTime = new Date("2026-09-29T08:00:00.000Z");
+    await Promise.all([radicoin.grantDailyLogin(id, loginTime), radicoin.grantDailyLogin(id, loginTime)]);
+    assert.equal((await sql`select count(*)::int as count from radicoin_transactions where user_id = ${id} and source = 'daily_login'`)[0].count, 1);
+
+    await radicoin.adjust(id, 3_000, "اعتبار تست تبدیل پلن", actor, "fund-redemption-test");
+    const requestId = randomUUID();
+    const first = await billing.redeemPlanWithRadicoins(id, "job-search", requestId);
+    const second = await billing.redeemPlanWithRadicoins(id, "job-search", requestId);
+    assert.equal(first.expiresAt, second.expiresAt);
+
+    const wallet = (await sql`select available_coins, lifetime_spent_coins from radicoin_wallets where user_id = ${id}`)[0];
+    assert.deepEqual([Number(wallet.available_coins), Number(wallet.lifetime_spent_coins)], [2_002, 1_000]);
+    assert.equal((await sql`select count(*)::int as count from radicoin_transactions where user_id = ${id} and source = 'redemption'`)[0].count, 1);
+    assert.equal((await sql`select count(*)::int as count from membership_events where user_id = ${id} and details->>'paymentMethod' = 'radicoin'`)[0].count, 1);
+  });
+});
+
+test("Hybrid checkout reserves, commits and releases Radicoins atomically", { timeout: 60_000 }, async () => {
+  await withDatabase(async (database, sql) => {
+    const successfulUser = await user(sql, "09120000107");
+    const canceledUser = await user(sql, "09120000108");
+    const actor = await user(sql, "09120000109");
+    const radicoin = new RadicoinService(database);
+    const billing = new BillingService(database, { ...options, radicoinService: radicoin });
+    await Promise.all([
+      billing.ensureSignupMembership(successfulUser),
+      billing.ensureSignupMembership(canceledUser),
+    ]);
+    await Promise.all([
+      radicoin.adjust(successfulUser, 400, "اعتبار تست پرداخت ترکیبی", actor, "hybrid-success-fund"),
+      radicoin.adjust(canceledUser, 400, "اعتبار تست لغو پرداخت ترکیبی", actor, "hybrid-cancel-fund"),
+    ]);
+
+    gateway(billing, "AUTH-HYBRID-SUCCESS");
+    const successfulCheckoutKey = randomUUID();
+    const successful = await billing.createOrder(
+      successfulUser,
+      "09120000107",
+      "job-search",
+      "radicoin",
+      successfulCheckoutKey,
+    );
+    assert.equal(successful.checkout, "gateway");
+    if (successful.checkout !== "gateway") throw new Error("expected hybrid gateway checkout");
+    assert.deepEqual([successful.appliedCoins, successful.amountRials], [400, 2_994_000]);
+    const replay = await billing.createOrder(
+      successfulUser,
+      "09120000107",
+      "job-search",
+      "radicoin",
+      successfulCheckoutKey,
+    );
+    assert.equal(replay.checkout, "gateway");
+    if (replay.checkout !== "gateway") throw new Error("expected idempotent gateway checkout");
+    assert.equal(replay.orderId, successful.orderId);
+    assert.equal((await sql`select count(*)::int as count from orders where user_id = ${successfulUser}`)[0].count, 1);
+    const reservedWallet = (await sql`select available_coins, pending_coins, lifetime_spent_coins from radicoin_wallets where user_id = ${successfulUser}`)[0];
+    assert.deepEqual([Number(reservedWallet.available_coins), Number(reservedWallet.pending_coins), Number(reservedWallet.lifetime_spent_coins)], [0, 400, 0]);
+    assert.equal((await sql`select status from radicoin_transactions where order_id = ${successful.orderId}`)[0].status, "pending");
+
+    await billing.handleCallback("AUTH-HYBRID-SUCCESS", "OK");
+    const committedWallet = (await sql`select available_coins, pending_coins, lifetime_spent_coins from radicoin_wallets where user_id = ${successfulUser}`)[0];
+    assert.deepEqual([Number(committedWallet.available_coins), Number(committedWallet.pending_coins), Number(committedWallet.lifetime_spent_coins)], [30, 0, 400]);
+    assert.equal((await sql`select status from radicoin_transactions where order_id = ${successful.orderId} and source = 'redemption'`)[0].status, "available");
+    assert.equal((await sql`select details->>'paymentMethod' as method from membership_events where order_id = ${successful.orderId}`)[0].method, "hybrid");
+
+    gateway(billing, "AUTH-HYBRID-CANCELED", false);
+    const canceled = await billing.createOrder(
+      canceledUser,
+      "09120000108",
+      "job-search",
+      "radicoin",
+      randomUUID(),
+    );
+    assert.equal(canceled.checkout, "gateway");
+    if (canceled.checkout !== "gateway") throw new Error("expected hybrid gateway checkout");
+    await billing.handleCallback("AUTH-HYBRID-CANCELED", "NOK");
+    const releasedWallet = (await sql`select available_coins, pending_coins, lifetime_spent_coins from radicoin_wallets where user_id = ${canceledUser}`)[0];
+    assert.deepEqual([Number(releasedWallet.available_coins), Number(releasedWallet.pending_coins), Number(releasedWallet.lifetime_spent_coins)], [400, 0, 0]);
+    const canceledTransactions = await sql`select source, status, amount from radicoin_transactions where order_id = ${canceled.orderId} order by created_at asc`;
+    assert.deepEqual(canceledTransactions.map((transaction) => [transaction.source, transaction.status, Number(transaction.amount)]), [
+      ["redemption", "reversed", -400],
+      ["reversal", "available", 400],
+    ]);
+
+    gateway(billing, "AUTH-HYBRID-RECONCILE", false);
+    const pending = await billing.createOrder(
+      canceledUser,
+      "09120000108",
+      "job-search",
+      "radicoin",
+      randomUUID(),
+    );
+    if (pending.checkout !== "gateway") throw new Error("expected hybrid gateway checkout");
+    await sql`update orders set created_at = now() - interval '31 minutes' where id = ${pending.orderId}`;
+    assert.deepEqual(await billing.reconcilePendingOrders(), { scanned: 1, paid: 0, canceled: 0, failed: 1, pending: 0 });
+    const reconciledWallet = (await sql`select available_coins, pending_coins, lifetime_spent_coins from radicoin_wallets where user_id = ${canceledUser}`)[0];
+    assert.deepEqual([Number(reconciledWallet.available_coins), Number(reconciledWallet.pending_coins), Number(reconciledWallet.lifetime_spent_coins)], [400, 0, 0]);
   });
 });

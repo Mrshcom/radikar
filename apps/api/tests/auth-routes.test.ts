@@ -5,7 +5,7 @@ import type { AuthServicePort } from "../src/modules/auth/routes";
 import type { AuthUser, SessionIdentity } from "../src/modules/auth/types";
 import type { RecordRepository } from "../src/modules/data/record-repository";
 
-const user: AuthUser = { id: "11111111-1111-4111-8111-111111111111", phone: "09120000000", email: null, fullName: "کاربر", role: "user", status: "active", tablePageSize: 20, createdAt: "2026-01-01T00:00:00.000Z", lastLoginAt: null };
+const user: AuthUser = { id: "11111111-1111-4111-8111-111111111111", phone: "09120000000", email: null, fullName: "کاربر", role: "user", status: "active", tablePageSize: 20, onboardingState: { version: 1, status: "not_started", completedSteps: [] }, createdAt: "2026-01-01T00:00:00.000Z", lastLoginAt: null };
 const admin: AuthUser = { ...user, id: "22222222-2222-4222-8222-222222222222", role: "admin" };
 const superadmin: AuthUser = { ...user, id: "33333333-3333-4333-8333-333333333333", role: "superadmin" };
 const identities: Record<string, SessionIdentity> = { user: { user, sessionId: "session-user" }, admin: { user: admin, sessionId: "session-admin" }, superadmin: { user: superadmin, sessionId: "session-superadmin" } };
@@ -25,6 +25,7 @@ function createApp({ google = false } = {}) {
     updateUser: async (...args) => { calls.push({ name: "updateUser", args }); return user; },
     updateProfile: async (...args) => { calls.push({ name: "updateProfile", args }); return { ...user, fullName: "نام جدید" }; },
     updatePreferences: async (...args) => { calls.push({ name: "updatePreferences", args }); return { ...user, tablePageSize: 50 }; },
+    updateOnboarding: async (...args) => { calls.push({ name: "updateOnboarding", args }); return { ...user, onboardingState: args[1] as AuthUser["onboardingState"] }; },
     listUserSessions: async (...args) => { calls.push({ name: "listUserSessions", args }); return []; },
     ...(google ? {
       isGoogleLoginEnabled: () => true,
@@ -51,7 +52,7 @@ test("auth request and verify routes normalize input, set a cookie and expose th
   const verified = await app.inject({ method: "POST", url: "/api/auth/verify-otp", payload: { phone: "09120000000", challengeId: "11111111-1111-4111-8111-111111111111", code: "۱۲۳۴۵۶" } });
   assert.equal(verified.statusCode, 200);
   assert.match(String(verified.headers["set-cookie"]), /radikar_session=user/);
-  assert.deepEqual(calls.find((call) => call.name === "verifyOtp")?.args, ["11111111-1111-4111-8111-111111111111", "09120000000", "123456", "127.0.0.1"]);
+  assert.deepEqual(calls.find((call) => call.name === "verifyOtp")?.args, ["11111111-1111-4111-8111-111111111111", "09120000000", "123456", "127.0.0.1", undefined]);
   const me = await app.inject({ method: "GET", url: "/api/auth/me", cookies: { radikar_session: "user" } });
   assert.equal(me.statusCode, 200);
   assert.equal(me.json().user.id, user.id);
@@ -67,7 +68,7 @@ test("Google provider, start and callback routes preserve state and create a ses
   assert.equal(started.statusCode, 302);
   assert.equal(started.headers.location, "https://accounts.google.com/o/oauth2/v2/auth?state=google-state");
   assert.match(String(started.headers["set-cookie"]), /radikar_session_google_oauth=google-state/);
-  assert.deepEqual(calls.find((call) => call.name === "beginGoogleLogin")?.args, ["/jobs"]);
+  assert.deepEqual(calls.find((call) => call.name === "beginGoogleLogin")?.args, ["/jobs", undefined]);
 
   const callback = await app.inject({
     method: "GET",
@@ -89,6 +90,10 @@ test("account preferences, admin filters and permission boundaries are enforced"
   const prefs = await app.inject({ method: "PATCH", url: "/api/account/preferences", cookies: { radikar_session: "user" }, payload: { tablePageSize: 50 } });
   assert.equal(prefs.statusCode, 200);
   assert.deepEqual(calls.find((call) => call.name === "updatePreferences")?.args, [user.id, { tablePageSize: 50 }]);
+  const onboarding = { version: 1, status: "active", completedSteps: ["profile"] };
+  const onboardingResponse = await app.inject({ method: "PATCH", url: "/api/account/onboarding", cookies: { radikar_session: "user" }, payload: onboarding });
+  assert.equal(onboardingResponse.statusCode, 200);
+  assert.deepEqual(calls.find((call) => call.name === "updateOnboarding")?.args, [user.id, onboarding]);
   const sessions = await app.inject({ method: "GET", url: "/api/account/sessions", cookies: { radikar_session: "user" } });
   assert.equal(sessions.statusCode, 200);
   assert.deepEqual(calls.find((call) => call.name === "listUserSessions")?.args, [user.id, "session-user"]);

@@ -376,12 +376,12 @@ export default function DashboardPage() {
   if (!hasResume)
     return (
       <div className={emptyState}>
-        <FileCheck2 size={34} />
-        <h3>داشبورد هنوز داده‌ای ندارد</h3>
-        <p>اولین رزومه‌ات را بساز تا تحلیل و آمار واقعی نمایش داده شود.</p>
-        <Link className={primaryAction} href="/resumes">
-          ساخت اولین رزومه
-        </Link>
+          <FileCheck2 size={34} />
+          <h3>داشبورد هنوز داده‌ای ندارد</h3>
+          <p>اولین رزومه‌ات را بساز تا تحلیل و آمار واقعی نمایش داده شود.</p>
+          <Link className={primaryAction} href="/resumes">
+            ساخت اولین رزومه
+          </Link>
       </div>
     );
   if (error || !data)

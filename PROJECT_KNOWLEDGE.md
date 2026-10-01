@@ -75,8 +75,7 @@ npm run dev:stack
 - فایل‌های واقعی `.env` و `.env.local` secret هستند؛ آن‌ها را در این سند، logها
   یا Git ثبت نکنید.
 - API برای توسعه به `DATABASE_URL` محلی یا اتصال Neon نیاز دارد.
-- Production باید `AUTH_SECRET` تصادفی، OTP واقعی، CORS محدود و
-  `EXPOSE_DEVELOPMENT_OTP=false` داشته باشد.
+- Production باید `AUTH_SECRET` تصادفی، ارسال OTP واقعی و CORS محدود داشته باشد.
 - شماره bootstrap فقط برای راه‌اندازی کنترل‌شدهٔ سوپرادمین استفاده شود و بعد
   حذف شود.
 
@@ -121,8 +120,7 @@ graphify path "A" "B"
 - VPS فعلی رادیکار در مسیر `/home/sport724/mampel/radikar` اجرا می‌شود؛ دامنهٔ
   production از پورت‌های استاندارد HTTP `80` و HTTPS `443` استفاده می‌کند و
   پورت‌های داخلی API/Web عمومی نیستند.
-- در تست IP، OTP پیامک نمی‌شود و `developmentCode` نمایش داده می‌شود؛ پیش از
-  انتشار دامنه باید این حالت خاموش، CORS محدود و cookie امن فعال شود.
+- OTP در همهٔ محیط‌ها فقط از مسیر ارسالکنندهٔ پیکربندی‌شدهٔ پیامک تحویل داده می‌شود و هرگز در پاسخ API نمایش داده نمی‌شود.
 - خروجی provider هوش مصنوعی از کانتینر API روی HTTPS استفاده می‌کند و برای
   پایداری، `api.gapgpt.app` در Compose به edge سالم pin شده است.
 - CI/CD در `.github/workflows/deploy-production.yml` با push تگ‌هایی مثل

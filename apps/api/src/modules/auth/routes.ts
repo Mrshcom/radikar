@@ -3,7 +3,7 @@ import { normalizeDigits } from "@radikar/validators";
 import { updateAdminAliasSchema } from "@radikar/validators";
 import { z } from "zod";
 import { AuthError, AuthService } from "./service";
-import { can, type AuthUser, type Permission, type SessionIdentity } from "./types";
+import { can, type AuthUser, type OnboardingState, type Permission, type SessionIdentity } from "./types";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -74,6 +74,16 @@ const updatePreferencesSchema = z.object({
     z.literal(200),
   ]),
 });
+const onboardingStateSchema = z.object({
+  version: z.literal(1),
+  status: z.enum(["not_started", "active", "dismissed", "completed"]),
+  completedSteps: z.array(z.enum(["profile", "match", "resume", "application"])).max(4)
+    .transform((steps) => [...new Set(steps)]),
+}).superRefine((state, context) => {
+  if (state.status === "completed" && state.completedSteps.length !== 4) {
+    context.addIssue({ code: "custom", message: "راهنما فقط پس از تکمیل همه مراحل کامل می‌شود." });
+  }
+});
 
 export type AuthRouteOptions = {
   authService: AuthServicePort;
@@ -97,6 +107,7 @@ export type AuthServicePort = Pick<
   | "updateUser"
   | "updateProfile"
   | "updatePreferences"
+  | "updateOnboarding"
 > &
   Partial<
     Pick<
@@ -239,6 +250,14 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
     return { user: await authService.updatePreferences(request.auth.user.id, input) };
   });
 
+  app.patch("/api/account/onboarding", async (request, reply) => {
+    if (!request.auth) {
+      return reply.code(401).send({ error: "نشست فعال نیست.", requestId: request.id });
+    }
+    const input = onboardingStateSchema.parse(request.body) as OnboardingState;
+    return { user: await authService.updateOnboarding(request.auth.user.id, input) };
+  });
+
   app.get("/api/account/sessions", async (request, reply) => {
     if (!request.auth) {
       return reply.code(401).send({ error: "نشست فعال نیست.", requestId: request.id });
@@ -295,7 +314,7 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
     if (!requirePermission(request, reply, "reports:read:any")) return;
     const { id } = userParamsSchema.parse(request.params);
     const input = referralAdjustmentSchema.parse(request.body);
-    return { event: await authService.adjustReferralPoints?.(id, input.points, input.description) };
+    return { event: await authService.adjustReferralPoints?.(id, input.points, input.description, request.auth!.user.id) };
   });
 
   app.get("/api/admin/events", async (request, reply) => {

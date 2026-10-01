@@ -4,14 +4,14 @@
 
 ▲ Next.js 16.3.3 (Turbopack)
 - Environments: .env.local
-✓ Running next.config.ts took 24ms
+✓ Running next.config.ts took 16ms
 
   Creating an optimized production build ...
 
 -----
-[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /var/folders/74/pclfzc0j42g5ryjy9bq8fdqw0000gn/T/next-panic-c302e79be0ca269b3aa83fee20681f59.log.
+[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /var/folders/74/pclfzc0j42g5ryjy9bq8fdqw0000gn/T/next-panic-638795a589c6f6b3d4827beec6cddee7.log.
 
-To help make Turbopack better, report this error by clicking here: https://bugs.nextjs.org/search?category=turbopack-error-report&title=Turbopack%20Error%3A%20Failed%20to%20write%20app%20endpoint%20%2Fsitemap.xml%2Froute&body=Turbopack%20version%3A%20%60a9a1cb78%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0AFailed%20to%20write%20app%20endpoint%20%2Fsitemap.xml%2Froute%0A%0ACaused%20by%3A%0A-%20%5Bproject%5D%2Fnode_modules%2F%40fontsource%2Fpoppins%2F700.css%20%5Bapp-client%5D%20%28css%29%0A-%20creating%20new%20process%0A-%20binding%20to%20a%20port%0A-%20Operation%20not%20permitted%20%28os%20error%201%29%0A%0ADebug%20info%3A%0A-%20Execution%20of%20get_all_written_entrypoints_with_issues_operation%20failed%0A-%20Execution%20of%20EntrypointsOperation%3A%3Anew%20failed%0A-%20Execution%20of%20all_entrypoints_write_to_disk_operation%20failed%0A-%20Execution%20of%20output_assets_operation%20failed%0A-%20Execution%20of%20%3CAppEndpoint%20as%20Endpoint%3E%3A%3Aoutput%20failed%0A-%20Failed%20to%20write%20app%20endpoint%20%2Fsitemap.xml%2Froute%0A-%20Execution%20of%20AppEndpoint%3A%3Aoutput%20failed%0A-%20Execution%20of%20whole_app_module_graph_operation%20failed%0A-%20Execution%20of%20%2AProject%3A%3Aget_all_additional_entries%20failed%0A-%20Execution%20of%20ModuleGraph%3A%3Afrom_graphs%20failed%0A-%20Execution%20of%20ModuleGraph%3A%3Afrom_graphs_inner%20failed%0A-%20Execution%20of%20SingleModuleGraph%3A%3Anew_with_entries%20failed%0A-%20%5Bproject%5D%2Fnode_modules%2F%40fontsource%2Fpoppins%2F700.css%20%5Bapp-client%5D%20%28css%29%0A-%20Execution%20of%20primary_chunkable_referenced_modules%20failed%0A-%20Execution%20of%20%3CCssModule%20as%20Module%3E%3A%3Areferences%20failed%0A-%20Execution%20of%20parse_css%20failed%0A-%20Execution%20of%20%3CPostCssTransformedAsset%20as%20Asset%3E%3A%3Acontent%20failed%0A-%20Execution%20of%20PostCssTransformedAsset%3A%3Aprocess%20failed%0A-%20Execution%20of%20evaluate_webpack_loader%20failed%0A-%20creating%20new%20process%0A-%20binding%20to%20a%20port%0A-%20Operation%20not%20permitted%20%28os%20error%201%29%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace
+To help make Turbopack better, report this error by clicking here: https://bugs.nextjs.org/search?category=turbopack-error-report&title=Turbopack%20Error%3A%20Failed%20to%20write%20app%20endpoint%20%2Fsitemap.xml%2Froute&body=Turbopack%20version%3A%20%60a9a1cb78%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0AFailed%20to%20write%20app%20endpoint%20%2Fsitemap.xml%2Froute%0A%0ACaused%20by%3A%0A-%20%5Bproject%5D%2Fnode_modules%2F%40fontsource-variable%2Fvazirmatn%2Findex.css%20%5Bapp-client%5D%20%28css%29%0A-%20creating%20new%20process%0A-%20binding%20to%20a%20port%0A-%20Operation%20not%20permitted%20%28os%20error%201%29%0A%0ADebug%20info%3A%0A-%20Execution%20of%20get_all_written_entrypoints_with_issues_operation%20failed%0A-%20Execution%20of%20EntrypointsOperation%3A%3Anew%20failed%0A-%20Execution%20of%20all_entrypoints_write_to_disk_operation%20failed%0A-%20Execution%20of%20output_assets_operation%20failed%0A-%20Execution%20of%20%3CAppEndpoint%20as%20Endpoint%3E%3A%3Aoutput%20failed%0A-%20Failed%20to%20write%20app%20endpoint%20%2Fsitemap.xml%2Froute%0A-%20Execution%20of%20AppEndpoint%3A%3Aoutput%20failed%0A-%20Execution%20of%20whole_app_module_graph_operation%20failed%0A-%20Execution%20of%20%2AProject%3A%3Aget_all_additional_entries%20failed%0A-%20Execution%20of%20ModuleGraph%3A%3Afrom_graphs%20failed%0A-%20Execution%20of%20ModuleGraph%3A%3Afrom_graphs_inner%20failed%0A-%20Execution%20of%20SingleModuleGraph%3A%3Anew_with_entries%20failed%0A-%20%5Bproject%5D%2Fnode_modules%2F%40fontsource-variable%2Fvazirmatn%2Findex.css%20%5Bapp-client%5D%20%28css%29%0A-%20Execution%20of%20primary_chunkable_referenced_modules%20failed%0A-%20Execution%20of%20%3CCssModule%20as%20Module%3E%3A%3Areferences%20failed%0A-%20Execution%20of%20parse_css%20failed%0A-%20Execution%20of%20%3CPostCssTransformedAsset%20as%20Asset%3E%3A%3Acontent%20failed%0A-%20Execution%20of%20PostCssTransformedAsset%3A%3Aprocess%20failed%0A-%20Execution%20of%20evaluate_webpack_loader%20failed%0A-%20creating%20new%20process%0A-%20binding%20to%20a%20port%0A-%20Operation%20not%20permitted%20%28os%20error%201%29%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace
 -----
 
 
@@ -19,7 +19,7 @@ To help make Turbopack better, report this error by clicking here: https://bugs.
 Error [TurbopackInternalError]: Failed to write app endpoint /sitemap.xml/route
 
 Caused by:
-- [project]/node_modules/@fontsource/poppins/700.css [app-client] (css)
+- [project]/node_modules/@fontsource-variable/vazirmatn/index.css [app-client] (css)
 - creating new process
 - binding to a port
 - Operation not permitted (os error 1)
@@ -37,7 +37,7 @@ Debug info:
 - Execution of ModuleGraph::from_graphs failed
 - Execution of ModuleGraph::from_graphs_inner failed
 - Execution of SingleModuleGraph::new_with_entries failed
-- [project]/node_modules/@fontsource/poppins/700.css [app-client] (css)
+- [project]/node_modules/@fontsource-variable/vazirmatn/index.css [app-client] (css)
 - Execution of primary_chunkable_referenced_modules failed
 - Execution of <CssModule as Module>::references failed
 - Execution of parse_css failed

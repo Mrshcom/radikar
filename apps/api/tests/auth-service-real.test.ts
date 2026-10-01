@@ -49,6 +49,7 @@ const billingOptions = {
   zarinpalBaseUrl: "http://gateway.test",
   zarinpalMerchantId: "merchant",
 };
+const otpCode = "123456";
 
 function encodeJwtPart(value: unknown) {
   return Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -86,7 +87,7 @@ test("AuthService resolves, refreshes and revokes real PostgreSQL sessions", { t
       otpTtlSeconds: 180,
       sessionTtlDays: 30,
       allowFirstUserSuperadmin: true,
-      exposeDevelopmentOtp: true,
+      otpCodeGenerator: () => otpCode,
       grantSignupMembership: (userId) => billing.ensureSignupMembership(userId),
     });
 
@@ -94,7 +95,7 @@ test("AuthService resolves, refreshes and revokes real PostgreSQL sessions", { t
     assert.equal(await auth.resolveSession("missing"), null);
 
     const challenge = await auth.requestOtp("09120000001");
-    const verified = await auth.verifyOtp(challenge.challengeId, "09120000001", challenge.developmentCode!, "203.0.113.10");
+    const verified = await auth.verifyOtp(challenge.challengeId, "09120000001", otpCode, "203.0.113.10");
     assert.equal(verified.user.role, "superadmin");
     assert.equal((await sql`select count(*)::int as count from user_memberships where user_id = ${verified.user.id}`)[0].count, 1);
 
@@ -119,12 +120,12 @@ test("AuthService resolves, refreshes and revokes real PostgreSQL sessions", { t
     assert.equal(endedSessions[0].logoutIp, "203.0.113.11");
 
     const activeChallenge = await auth.requestOtp("09120000002");
-    const activeUser = await auth.verifyOtp(activeChallenge.challengeId, "09120000002", activeChallenge.developmentCode!);
+    const activeUser = await auth.verifyOtp(activeChallenge.challengeId, "09120000002", otpCode);
     await sql`update auth_sessions set expires_at = now() - interval '1 second' where token_hash = encode(sha256(${activeUser.sessionToken}::bytea), 'hex')`;
     assert.equal(await auth.resolveSession(activeUser.sessionToken), null);
 
     const suspendedChallenge = await auth.requestOtp("09120000003");
-    const suspendedUser = await auth.verifyOtp(suspendedChallenge.challengeId, "09120000003", suspendedChallenge.developmentCode!);
+    const suspendedUser = await auth.verifyOtp(suspendedChallenge.challengeId, "09120000003", otpCode);
     await sql`update users set status = 'suspended' where id = ${suspendedUser.user.id}`;
     assert.equal(await auth.resolveSession(suspendedUser.sessionToken), null);
   });
@@ -138,12 +139,12 @@ test("AuthService creates users, memberships and sessions and reports OTP webhoo
       otpTtlSeconds: 180,
       sessionTtlDays: 30,
       allowFirstUserSuperadmin: false,
-      exposeDevelopmentOtp: true,
+      otpCodeGenerator: () => otpCode,
       grantSignupMembership: (userId: string) => billing.ensureSignupMembership(userId),
     };
     const auth = new AuthService(database, options);
     const challenge = await auth.requestOtp("09120000004");
-    const result = await auth.verifyOtp(challenge.challengeId, "09120000004", challenge.developmentCode!);
+    const result = await auth.verifyOtp(challenge.challengeId, "09120000004", otpCode);
     assert.equal(result.user.role, "user");
     assert.match(result.sessionToken, /^[A-Za-z0-9_-]{32,}$/);
     assert.equal((await sql`select consumed from otp_challenges where id = ${challenge.challengeId}`)[0].consumed, true);
@@ -153,19 +154,26 @@ test("AuthService creates users, memberships and sessions and reports OTP webhoo
     const originalFetch = globalThis.fetch;
     try {
       globalThis.fetch = async () => new Response("down", { status: 503 });
-      const failedWebhook = new AuthService(database, { ...options, otpWebhookUrl: "https://sms.test/send" });
+      const failedWebhook = new AuthService(database, {
+        ...options,
+        deliverOtp: async () => {
+          const response = await fetch("https://sms.test/send");
+          if (!response.ok) throw new Error("delivery failed");
+        },
+      });
       await assert.rejects(
         () => failedWebhook.requestOtp("09120000005"),
         (error: unknown) => error instanceof AuthError && error.statusCode === 502,
+      );
+      assert.equal(
+        (await sql`select count(*)::int as count from otp_challenges where phone = '09120000005'`)[0].count,
+        0,
       );
 
       const originalTimeout = AbortSignal.timeout;
       try {
         AbortSignal.timeout = () => AbortSignal.abort();
-        globalThis.fetch = async (_url, init) => {
-          assert.equal(init?.signal?.aborted, true);
-          throw new DOMException("aborted", "AbortError");
-        };
+        globalThis.fetch = async () => { throw new DOMException("aborted", "AbortError"); };
         await assert.rejects(
           () => failedWebhook.requestOtp("09120000006"),
           (error: unknown) => error instanceof AuthError && error.statusCode === 502,
@@ -191,7 +199,6 @@ test("AuthService verifies Google PKCE login, prevents replay and reuses provide
       otpTtlSeconds: 180,
       sessionTtlDays: 30,
       allowFirstUserSuperadmin: true,
-      exposeDevelopmentOtp: false,
       googleClientId: clientId,
       googleClientSecret: "google-client-secret",
       googleRedirectUri: "http://web.test/api/auth/google/callback",
@@ -265,17 +272,17 @@ test("AuthService manages users, profiles, preferences, statistics and events in
       otpTtlSeconds: 180,
       sessionTtlDays: 30,
       allowFirstUserSuperadmin: true,
-      exposeDevelopmentOtp: true,
+      otpCodeGenerator: () => otpCode,
       grantSignupMembership: (userId) => billing.ensureSignupMembership(userId),
     });
     const superadminChallenge = await auth.requestOtp("09120000007");
     const superadmin = await auth.verifyOtp(
       superadminChallenge.challengeId,
       "09120000007",
-      superadminChallenge.developmentCode!,
+      otpCode,
     );
     const userChallenge = await auth.requestOtp("09120000008");
-    const user = await auth.verifyOtp(userChallenge.challengeId, "09120000008", userChallenge.developmentCode!);
+    const user = await auth.verifyOtp(userChallenge.challengeId, "09120000008", otpCode);
 
     const profile = await auth.updateProfile(user.user.id, { fullName: "کاربر آزمون" });
     assert.equal(profile.fullName, "کاربر آزمون");

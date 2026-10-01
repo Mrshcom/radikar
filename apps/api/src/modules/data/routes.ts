@@ -7,6 +7,7 @@ import {
 import type { RecordRepository } from "./record-repository";
 import { requirePermission } from "../auth/routes";
 import type { BillingService } from "../billing/service";
+import type { RadicoinService } from "../radicoin/service";
 
 type CollectionParams = { collection: string };
 type RecordParams = CollectionParams & { id: string };
@@ -19,6 +20,7 @@ export function registerDataRoutes(
   app: FastifyInstance,
   repository: RecordRepository,
   billing?: BillingService,
+  radicoin?: RadicoinService,
 ) {
   app.get<{ Params: CollectionParams }>(
     "/v1/data/:collection",
@@ -64,7 +66,11 @@ export function registerDataRoutes(
         );
       }
       try {
-        return await repository.put(request.auth!.user.id, collection, record);
+        const stored = await repository.put(request.auth!.user.id, collection, record);
+        if (collection === "resumes") {
+          await radicoin?.grantReferralActivation(request.auth!.user.id, request.id);
+        }
+        return stored;
       } catch (error) {
         if (isNewResume && billing) {
           await billing.refundUsage(

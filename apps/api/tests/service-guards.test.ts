@@ -3,6 +3,7 @@ import test from "node:test";
 import type { DataRecord } from "@radikar/shared-types";
 import { AuthError, AuthService } from "../src/modules/auth/service";
 import { BillingError, BillingService } from "../src/modules/billing/service";
+import { ZarinpalError } from "../src/modules/billing/zarinpal-client";
 import { PostgresRecordRepository } from "../src/modules/data/record-repository";
 
 function chain<T>(value: T) {
@@ -29,7 +30,8 @@ function queuedDatabase(selects: unknown[][]) {
   return { db, writes };
 }
 
-const authOptions = { secret: "test-secret", otpTtlSeconds: 180, sessionTtlDays: 30, allowFirstUserSuperadmin: false, exposeDevelopmentOtp: true };
+const otpCode = "123456";
+const authOptions = { secret: "test-secret", otpTtlSeconds: 180, sessionTtlDays: 30, allowFirstUserSuperadmin: false, otpCodeGenerator: () => otpCode };
 
 test("AuthService validates phones, rate limits OTP and records a safe challenge", async () => {
   const invalid = new AuthService(queuedDatabase([]).db as never, authOptions);
@@ -40,10 +42,10 @@ test("AuthService validates phones, rate limits OTP and records a safe challenge
   const service = new AuthService(db as never, authOptions);
   const result = await service.requestOtp("۰۹۱۲۱۲۳۴۵۶۷");
   assert.match(result.challengeId, /^[0-9a-f-]{36}$/i);
-  assert.match(String(result.developmentCode), /^\d{6}$/);
+  assert.deepEqual(result, { challengeId: result.challengeId, expiresInSeconds: 180 });
   const inserted = writes.find((item) => item.kind === "insert")?.value as { phone: string; codeHash: string; expiresAt: Date };
   assert.equal(inserted.phone, "09121234567");
-  assert.notEqual(inserted.codeHash, result.developmentCode);
+  assert.notEqual(inserted.codeHash, otpCode);
   assert.ok(inserted.expiresAt > new Date());
 });
 
@@ -107,12 +109,13 @@ test("BillingService creates gateway orders and marks failed gateway requests", 
   assert.equal(failedDb.writes.some((item) => item.kind === "update"), true);
 });
 
-test("BillingService callback returns paid idempotently and cancels rejected payments", async () => {
+test("BillingService verifies every callback before it cancels a rejected payment", async () => {
   const paidRow = { order: { id: "order", status: "paid" }, plan: {} };
   const paid = new BillingService(queuedDatabase([[paidRow]]).db as never, billingOptions);
   assert.match(await paid.handleCallback("A1", "OK"), /status=success/);
   const canceledDb = queuedDatabase([[{ order: { id: "order", status: "pending" }, plan: {} }]]);
   const canceled = new BillingService(canceledDb.db as never, billingOptions);
+  (canceled as any).gateway = { verifyPayment: async () => { throw new ZarinpalError("rejected", -51); } };
   assert.match(await canceled.handleCallback("A1", "NOK"), /status=canceled/);
   assert.equal(canceledDb.writes.filter((item) => item.kind === "update").length, 2);
   const missing = new BillingService(queuedDatabase([[]]).db as never, billingOptions);

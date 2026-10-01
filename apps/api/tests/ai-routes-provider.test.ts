@@ -8,8 +8,8 @@ import postgres from "postgres";
 import { buildApp } from "../src/build-app";
 import { getMatchAnalyzeConfig } from "../src/modules/ai/routes";
 
-const user = { id: "11111111-1111-4111-8111-111111111111", phone: "09120000000", fullName: "کاربر", role: "user" as const, status: "active" as const, tablePageSize: 20, createdAt: "2026-01-01T00:00:00.000Z", lastLoginAt: null };
-const auth: any = { resolveSession: async () => ({ user, sessionId: "session" }), requestOtp: async () => ({}), verifyOtp: async () => ({}), revokeSession: async () => {}, getStats: async () => ({}), getRecentEvents: async () => ({ items: [] }), listUsers: async () => ({}), listAllRecords: async () => ({}), getUserDetails: async () => ({}), updateUser: async () => ({}), updateProfile: async () => ({}), updatePreferences: async () => ({}) };
+const user = { id: "11111111-1111-4111-8111-111111111111", phone: "09120000000", fullName: "کاربر", role: "user" as const, status: "active" as const, tablePageSize: 20, onboardingState: { version: 1 as const, status: "not_started" as const, completedSteps: [] }, createdAt: "2026-01-01T00:00:00.000Z", lastLoginAt: null };
+const auth: any = { resolveSession: async () => ({ user, sessionId: "session" }), requestOtp: async () => ({}), verifyOtp: async () => ({}), revokeSession: async () => {}, getStats: async () => ({}), getRecentEvents: async () => ({ items: [] }), listUsers: async () => ({}), listAllRecords: async () => ({}), getUserDetails: async () => ({}), updateUser: async () => ({}), updateProfile: async () => ({}), updatePreferences: async () => ({}), updateOnboarding: async () => ({}) };
 const repository: any = { list: async () => [], get: async () => null, put: async () => ({}), remove: async () => {}, clear: async () => {} };
 const resume = { fullName: "سارا احمدی", jobTitle: "توسعه‌دهنده", summary: "توسعه‌دهنده React", experiences: [], projects: [], educations: [] };
 const execFileAsync = promisify(execFile);

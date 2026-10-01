@@ -25,12 +25,15 @@ import {
   referralSettings,
   referrals,
   referralVisits,
+  radicoinTransactions,
   userMemberships,
   userIdentities,
   users,
   type Database,
 } from "@radikar/database";
-import type { AuthUser, SessionIdentity, UserRole, UserStatus } from "./types";
+import type { RadicoinService } from "../radicoin/service";
+import type { OtpDelivery } from "../notifications/otp-delivery";
+import type { AuthUser, OnboardingState, SessionIdentity, UserRole, UserStatus } from "./types";
 
 export type AuthServiceOptions = {
   secret: string;
@@ -38,19 +41,19 @@ export type AuthServiceOptions = {
   sessionTtlDays: number;
   bootstrapSuperadminPhone?: string;
   allowFirstUserSuperadmin: boolean;
-  exposeDevelopmentOtp: boolean;
-  otpWebhookUrl?: string;
-  otpWebhookToken?: string;
+  exposeOtpDeliveryError?: boolean;
+  deliverOtp?: OtpDelivery;
+  otpCodeGenerator?: () => string;
   googleClientId?: string;
   googleClientSecret?: string;
   googleRedirectUri?: string;
   grantSignupMembership?: (userId: string) => Promise<void>;
+  radicoinService?: RadicoinService;
 };
 
 export type RequestOtpResult = {
   challengeId: string;
   expiresInSeconds: number;
-  developmentCode?: string;
 };
 
 export type VerifyOtpResult = {
@@ -222,6 +225,7 @@ function toAuthUser(row: typeof users.$inferSelect): AuthUser {
     createdAt: row.createdAt.toISOString(),
     lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
     tablePageSize: row.tablePageSize as AuthUser["tablePageSize"],
+    onboardingState: row.onboardingState,
   };
 }
 
@@ -306,21 +310,24 @@ export class AuthService {
 
   async getReferralDashboard(userId: string): Promise<ReferralDashboard> {
     const code = await this.ensureReferralCode(userId);
-    const [visitCounts, referralRows, pointRows] = await Promise.all([
+    const [visitCounts, referralRows, coinRows] = await Promise.all([
       this.database.select({ value: count() }).from(referralVisits).where(eq(referralVisits.referralCodeId, code.id)),
       this.database.select().from(referrals).where(eq(referrals.referrerUserId, userId)).orderBy(desc(referrals.createdAt)),
-      this.database.select().from(referralPointEvents).where(eq(referralPointEvents.userId, userId)).orderBy(desc(referralPointEvents.createdAt)).limit(30),
+      this.database.select().from(radicoinTransactions).where(and(
+        eq(radicoinTransactions.userId, userId),
+        inArray(radicoinTransactions.source, ["referral_signup", "referral_activation", "referral_upgrade"]),
+      )).orderBy(desc(radicoinTransactions.createdAt)).limit(30),
     ]);
     return {
       code: code.code,
       visits: Number(visitCounts[0]?.value ?? 0),
       pendingReferrals: referralRows.filter((item) => item.status === "pending").length,
       confirmedReferrals: referralRows.filter((item) => item.status === "confirmed").length,
-      confirmedPoints: pointRows.filter((item) => item.status === "confirmed").reduce((total, item) => total + item.points, 0),
-      events: pointRows.map((item) => ({
+      confirmedPoints: coinRows.filter((item) => item.status === "available").reduce((total, item) => total + item.amount, 0),
+      events: coinRows.map((item) => ({
         id: item.id,
-        points: item.points,
-        status: item.status,
+        points: item.amount,
+        status: item.status === "available" ? "confirmed" : item.status === "reversed" ? "revoked" : "pending",
         description: item.description,
         createdAt: item.createdAt.toISOString(),
       })),
@@ -399,32 +406,29 @@ export class AuthService {
     if (!referralCode || referralCode.userId === userId) return;
 
     const now = new Date();
-    const [referral] = await this.database
-      .insert(referrals)
-      .values({
-        id: randomUUID(),
-        referralCodeId: referralCode.id,
-        referrerUserId: referralCode.userId,
-        referredUserId: userId,
-        status: "confirmed",
-        createdAt: now,
-        confirmedAt: now,
-      })
-      .onConflictDoNothing()
-      .returning();
-    if (!referral) return;
-    await this.database.insert(referralPointEvents).values([
-      {
-        id: randomUUID(), userId: referralCode.userId, referralId: referral.id,
-        type: "referrer_signup", status: "confirmed", points: settings.referrerPoints,
-        description: "امتیاز دعوت موفق", createdAt: now,
-      },
-      {
-        id: randomUUID(), userId, referralId: referral.id,
-        type: "referred_signup", status: "confirmed", points: settings.referredPoints,
-        description: "امتیاز عضویت با دعوت", createdAt: now,
-      },
-    ]);
+    await this.database.transaction(async (tx) => {
+      const [referral] = await tx
+        .insert(referrals)
+        .values({
+          id: randomUUID(),
+          referralCodeId: referralCode.id,
+          referrerUserId: referralCode.userId,
+          referredUserId: userId,
+          status: "confirmed",
+          createdAt: now,
+          confirmedAt: now,
+        })
+        .onConflictDoNothing()
+        .returning();
+      if (!referral) return;
+      await this.options.radicoinService?.grantReferralSignupInTransaction(
+        tx,
+        referral.id,
+        referralCode.userId,
+        userId,
+        now,
+      );
+    });
   }
 
   async getReferralSettings(): Promise<ReferralSettings> {
@@ -442,7 +446,10 @@ export class AuthService {
     return settings ?? this.getReferralSettings();
   }
 
-  async adjustReferralPoints(userId: string, points: number, description: string) {
+  async adjustReferralPoints(userId: string, points: number, description: string, actorUserId?: string) {
+    if (this.options.radicoinService && actorUserId) {
+      return this.options.radicoinService.adjust(userId, points, description, actorUserId);
+    }
     const event = {
       id: randomUUID(),
       userId,
@@ -474,6 +481,7 @@ export class AuthService {
       lastSeenAt: now,
       loginIp: loginIp || null,
     });
+    if (userRow.role === "user") await this.options.radicoinService?.grantDailyLogin(userRow.id, now);
     return {
       user: toAuthUser(userRow),
       sessionToken,
@@ -677,7 +685,7 @@ export class AuthService {
     }
 
     const challengeId = randomUUID();
-    const code = String(randomInt(100_000, 1_000_000));
+    const code = this.options.otpCodeGenerator?.() ?? String(randomInt(100_000, 1_000_000));
     const createdAt = new Date();
     await this.database.insert(otpChallenges).values({
       id: challengeId,
@@ -687,21 +695,25 @@ export class AuthService {
       createdAt,
     });
 
-    if (this.options.otpWebhookUrl) {
+    if (this.options.deliverOtp) {
       try {
-        const response = await fetch(this.options.otpWebhookUrl, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            ...(this.options.otpWebhookToken
-              ? { authorization: `Bearer ${this.options.otpWebhookToken}` }
-              : {}),
-          },
-          body: JSON.stringify({ phone, code, purpose: "login" }),
-          signal: AbortSignal.timeout(8_000),
+        await this.options.deliverOtp({
+          phone,
+          code,
+          purpose: "login",
+          expiresInSeconds: this.options.otpTtlSeconds,
         });
-        if (!response.ok) throw new Error("OTP webhook rejected the request");
-      } catch {
+      } catch (error) {
+        // A code that could not be delivered must not count towards the OTP
+        // rate limit. Otherwise a temporary provider failure can lock the
+        // account owner out for ten minutes without receiving a usable code.
+        await this.database.delete(otpChallenges).where(eq(otpChallenges.id, challengeId));
+        const providerMessage = error instanceof Error
+          ? error.message.replace(/[\r\n]+/g, " ").trim().slice(0, 180)
+          : "";
+        if (this.options.exposeOtpDeliveryError && providerMessage) {
+          throw new AuthError(502, `ارسال پیامک ورود ناموفق بود: ${providerMessage}`);
+        }
         throw new AuthError(502, "ارسال پیامک ورود ناموفق بود.");
       }
     }
@@ -709,7 +721,6 @@ export class AuthService {
     return {
       challengeId,
       expiresInSeconds: this.options.otpTtlSeconds,
-      ...(this.options.exposeDevelopmentOtp ? { developmentCode: code } : {}),
     };
   }
 
@@ -1210,6 +1221,16 @@ export class AuthService {
     const [user] = await this.database
       .update(users)
       .set({ tablePageSize: input.tablePageSize, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!user) throw new AuthError(404, "کاربر پیدا نشد.");
+    return toAuthUser(user);
+  }
+
+  async updateOnboarding(userId: string, onboardingState: OnboardingState) {
+    const [user] = await this.database
+      .update(users)
+      .set({ onboardingState, updatedAt: new Date() })
       .where(eq(users.id, userId))
       .returning();
     if (!user) throw new AuthError(404, "کاربر پیدا نشد.");

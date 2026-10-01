@@ -7,7 +7,7 @@ import type { AuthUser, SessionIdentity } from "../src/modules/auth/types";
 import type { BillingService } from "../src/modules/billing/service";
 import type { RecordRepository } from "../src/modules/data/record-repository";
 
-const user: AuthUser = { id: "11111111-1111-4111-8111-111111111111", phone: "09120000000", email: null, fullName: "کاربر", role: "user", status: "active", tablePageSize: 20, createdAt: "2026-01-01T00:00:00.000Z", lastLoginAt: null };
+const user: AuthUser = { id: "11111111-1111-4111-8111-111111111111", phone: "09120000000", email: null, fullName: "کاربر", role: "user", status: "active", tablePageSize: 20, onboardingState: { version: 1, status: "not_started", completedSteps: [] }, createdAt: "2026-01-01T00:00:00.000Z", lastLoginAt: null };
 const admin: AuthUser = { ...user, id: "22222222-2222-4222-8222-222222222222", phone: "09121111111", role: "admin" };
 const superadmin: AuthUser = { ...user, id: "33333333-3333-4333-8333-333333333333", phone: "09122222222", role: "superadmin" };
 const identities: Record<string, SessionIdentity> = {
@@ -29,6 +29,7 @@ const authService: AuthServicePort = {
   updateUser: async () => user,
   updateProfile: async () => user,
   updatePreferences: async () => user,
+  updateOnboarding: async () => user,
 };
 
 const repository: RecordRepository = {
@@ -47,7 +48,7 @@ function createApp(overrides: Partial<Record<keyof BillingService, unknown>> = {
   };
   const billing = {
     listPlans: method("listPlans", []), getMembership: method("getMembership"), listUserOrders: method("listUserOrders", { items: [], total: 0 }),
-    createOrder: method("createOrder", { orderId: "order-1", orderNumber: "RK-1", paymentUrl: "https://pay.test" }),
+    createOrder: method("createOrder", { checkout: "gateway", orderId: "order-1", orderNumber: "RK-1", paymentUrl: "https://pay.test", amountRials: 1000, appliedCoins: 0 }),
     consumeUsage: method("consumeUsage"), handleCallback: method("handleCallback", "http://localhost:3161/billing/result?status=success"),
     listAdminOrders: method("listAdminOrders", { items: [], total: 0 }), getBillingStats: method("getBillingStats", {}),
     getModelUsageStats: method("getModelUsageStats", {}), listAdminPayments: method("listAdminPayments", { items: [], total: 0 }),
@@ -72,9 +73,10 @@ test("billing routes require a session and reject customer operations for manage
 
 test("customer order creation forwards the authenticated identity and returns 201", async () => {
   const { app, calls } = createApp();
-  const response = await app.inject({ method: "POST", url: "/api/billing/orders", cookies: { radikar_session: "user-token" }, payload: { planId: "job-search" } });
+  const idempotencyKey = "44444444-4444-4444-8444-444444444444";
+  const response = await app.inject({ method: "POST", url: "/api/billing/orders", cookies: { radikar_session: "user-token" }, payload: { planId: "job-search", paymentMethod: "radicoin", idempotencyKey } });
   assert.equal(response.statusCode, 201);
-  assert.deepEqual(calls.find((call) => call.name === "createOrder")?.args, [user.id, user.phone, "job-search"]);
+  assert.deepEqual(calls.find((call) => call.name === "createOrder")?.args, [user.id, user.phone, "job-search", "radicoin", idempotencyKey]);
   assert.equal(response.json().paymentUrl, "https://pay.test");
   await app.close();
 });

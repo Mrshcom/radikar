@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { and, asc, count, desc, eq, gt, gte, ilike, inArray, isNotNull, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, gte, ilike, inArray, isNotNull, lt, ne, or, sql } from "drizzle-orm";
 import type { ModelUsageEvent } from "@radikar/ai";
 import {
   membershipEvents,
@@ -7,12 +7,14 @@ import {
   orders,
   payments,
   plans,
+  radicoinTransactions,
   usageEvents,
   userMemberships,
   users,
   type Database,
 } from "@radikar/database";
 import { ZarinpalClient, ZarinpalError } from "./zarinpal-client";
+import type { RadicoinService } from "../radicoin/service";
 
 export class BillingError extends Error {
   constructor(
@@ -36,11 +38,19 @@ function orderNumber() {
   return `RM-${Date.now()}-${randomBytes(3).toString("hex").toUpperCase()}`;
 }
 
+export type CheckoutPaymentMethod = "gateway" | "radicoin";
+
+function cashAmountAfterCoins(priceRials: number, fullCoinCost: number, appliedCoins: number) {
+  if (appliedCoins <= 0) return priceRials;
+  return Math.max(0, Math.ceil(priceRials * (fullCoinCost - appliedCoins) / fullCoinCost));
+}
+
 export type BillingServiceOptions = {
   apiPublicUrl: string;
   webAppUrl: string;
   zarinpalBaseUrl: string;
   zarinpalMerchantId: string;
+  radicoinService?: RadicoinService;
 };
 
 export type UsageResource = "resume" | "pdf" | "ai" | "match" | "interview";
@@ -249,6 +259,11 @@ export class BillingService {
           createdAt: new Date(),
         })),
       );
+      await this.options.radicoinService?.grantUsageActivityInTransaction(
+        tx,
+        userId,
+        requestId,
+      );
     });
   }
 
@@ -297,6 +312,11 @@ export class BillingService {
           createdAt: new Date(),
         })),
       );
+      await this.options.radicoinService?.revokeUsageActivityInTransaction(
+        tx,
+        userId,
+        requestId,
+      );
     });
   }
 
@@ -330,7 +350,7 @@ export class BillingService {
     return { items, total: totalRows[0]?.total ?? 0, page, pageSize };
   }
 
-  async createOrder(userId: string, phone: string | null, planId: string) {
+  async createOrder(userId: string, phone: string | null, planId: string, paymentMethod: CheckoutPaymentMethod = "gateway", idempotencyKey: string = randomUUID()) {
     const [plan] = await this.database
       .select()
       .from(plans)
@@ -338,6 +358,66 @@ export class BillingService {
       .limit(1);
     if (!plan || !plan.isPurchasable || plan.priceRials <= 0) {
       throw new BillingError(400, "این پلن قابل خرید نیست.");
+    }
+
+    const [existingOrder] = await this.database
+      .select()
+      .from(orders)
+      .where(and(eq(orders.userId, userId), eq(orders.checkoutKey, idempotencyKey)))
+      .limit(1);
+    if (existingOrder) {
+      if (existingOrder.planId !== plan.id) {
+        throw new BillingError(409, "کلید این پرداخت قبلاً برای بسته دیگری استفاده شده است.");
+      }
+      if (existingOrder.status !== "pending" || !existingOrder.authority) {
+        throw new BillingError(
+          409,
+          existingOrder.status === "pending"
+            ? "این سفارش در حال آماده‌سازی است."
+            : "این درخواست پرداخت قبلاً نهایی شده است.",
+        );
+      }
+      const [reservation] = await this.database
+        .select({ amount: radicoinTransactions.amount })
+        .from(radicoinTransactions)
+        .where(and(
+          eq(radicoinTransactions.orderId, existingOrder.id),
+          eq(radicoinTransactions.source, "redemption"),
+        ))
+        .limit(1);
+      return {
+        checkout: "gateway" as const,
+        orderId: existingOrder.id,
+        orderNumber: existingOrder.orderNumber,
+        paymentUrl: `${this.options.zarinpalBaseUrl.replace(/\/$/, "")}/pg/StartPay/${existingOrder.authority}`,
+        amountRials: existingOrder.amountRials,
+        appliedCoins: Math.abs(reservation?.amount ?? 0),
+      };
+    }
+
+    if (paymentMethod === "radicoin") {
+      const [previousRedemption] = await this.database
+        .select({ planId: membershipEvents.planId, planName: plans.name })
+        .from(membershipEvents)
+        .innerJoin(plans, eq(membershipEvents.planId, plans.id))
+        .where(and(
+          eq(membershipEvents.userId, userId),
+          sql`${membershipEvents.details}->>'redemptionId' = ${idempotencyKey}`,
+        ))
+        .limit(1);
+      if (previousRedemption) {
+        if (previousRedemption.planId !== plan.id) {
+          throw new BillingError(409, "کلید این پرداخت قبلاً برای بسته دیگری استفاده شده است.");
+        }
+        const currentMembership = await this.getMembership(userId);
+        return {
+          checkout: "activated" as const,
+          planId: plan.id,
+          planName: previousRedemption.planName,
+          spentCoins: plan.radicoinCost ?? 0,
+          expiresAt: currentMembership.expiresAt.toISOString(),
+        };
+      }
     }
 
     const membership = await this.getMembership(userId);
@@ -352,22 +432,56 @@ export class BillingService {
       );
     }
 
+    const radicoin = this.options.radicoinService;
+    const radicoinCost = paymentMethod === "radicoin" ? plan.radicoinCost : null;
+    if (paymentMethod === "radicoin" && (!radicoin || !radicoinCost)) {
+      throw new BillingError(400, "این پلن با رادیکوین قابل پرداخت نیست.");
+    }
+    let availableCoins = 0;
+    if (radicoin && radicoinCost) {
+      const wallet = await radicoin.getWallet(userId, 1);
+      availableCoins = wallet.wallet?.availableCoins ?? 0;
+      if (availableCoins >= radicoinCost) {
+        const activated = await this.redeemPlanWithRadicoins(userId, plan.id, idempotencyKey);
+        return { checkout: "activated" as const, ...activated };
+      }
+    }
+
     const now = new Date();
     const id = randomUUID();
     const number = orderNumber();
-    await this.database.insert(orders).values({
-      id,
-      orderNumber: number,
-      userId,
-      planId: plan.id,
-      amountRials: plan.priceRials,
-      createdAt: now,
-      updatedAt: now,
+    let reservedCoins = 0;
+    let amountRials = plan.priceRials;
+    await this.database.transaction(async (tx) => {
+      const [insertedOrder] = await tx.insert(orders).values({
+        id,
+        orderNumber: number,
+        checkoutKey: idempotencyKey,
+        userId,
+        planId: plan.id,
+        amountRials: plan.priceRials,
+        gateway: "zarinpal_sandbox",
+        createdAt: now,
+        updatedAt: now,
+      }).onConflictDoNothing({ target: [orders.userId, orders.checkoutKey] }).returning({ id: orders.id });
+      if (!insertedOrder) {
+        throw new BillingError(409, "این سفارش هم‌اکنون در حال آماده‌سازی است.");
+      }
+      if (radicoin && radicoinCost && availableCoins > 0) {
+        const reservation = await radicoin.reserveSpendInTransaction(tx, userId, Math.min(availableCoins, radicoinCost - 1), id, `رزرو رادیکوین برای خرید پلن ${plan.name}`, now);
+        reservedCoins = reservation.coins;
+        amountRials = cashAmountAfterCoins(plan.priceRials, radicoinCost, reservedCoins);
+        await tx.update(orders).set({
+          amountRials,
+          gateway: reservedCoins > 0 ? "zarinpal_sandbox+radicoin" : "zarinpal_sandbox",
+          updatedAt: now,
+        }).where(eq(orders.id, id));
+      }
     });
 
     try {
       const result = await this.gateway.requestPayment({
-        amountRials: plan.priceRials,
+        amountRials,
         callbackUrl: `${this.options.apiPublicUrl}/api/billing/callback`,
         description: `خرید پلن ${plan.name} - سفارش ${number}`,
         mobile: phone ?? undefined,
@@ -381,26 +495,52 @@ export class BillingService {
           id: randomUUID(),
           orderId: id,
           authority: result.authority,
-          amountRials: plan.priceRials,
+          amountRials,
           providerData: result.providerData,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
       });
-      return { orderId: id, orderNumber: number, paymentUrl: result.paymentUrl };
+      return { checkout: "gateway" as const, orderId: id, orderNumber: number, paymentUrl: result.paymentUrl, amountRials, appliedCoins: reservedCoins };
     } catch (error) {
       const failure = error instanceof ZarinpalError ? error : undefined;
-      await this.database
-        .update(orders)
-        .set({
+      await this.database.transaction(async (tx) => {
+        await radicoin?.releaseReservedSpendInTransaction(tx, id, new Date());
+        await tx.update(orders).set({
           status: "failed",
           failureCode: failure?.code,
           failureMessage: error instanceof Error ? error.message : "خطای درگاه",
           updatedAt: new Date(),
         })
         .where(eq(orders.id, id));
+      });
       throw new BillingError(502, "ساخت تراکنش در درگاه زرین‌پال ناموفق بود.");
     }
+  }
+
+  async redeemPlanWithRadicoins(userId: string, planId: string, idempotencyKey: string) {
+    const radicoin = this.options.radicoinService;
+    if (!radicoin) throw new BillingError(503, "فروشگاه رادیکوین در دسترس نیست.");
+    const [plan] = await this.database.select().from(plans).where(and(eq(plans.id, planId), eq(plans.isActive, true))).limit(1);
+    if (!plan?.radicoinCost || !plan.isPurchasable) throw new BillingError(400, "این پلن با رادیکوین قابل تهیه نیست.");
+    const radicoinCost = plan.radicoinCost;
+    return this.database.transaction(async (tx) => {
+      await tx.execute(sql`select id from user_memberships where user_id = ${userId} for update`);
+      const [current] = await tx.select({ membership: userMemberships, plan: plans }).from(userMemberships).innerJoin(plans, eq(userMemberships.planId, plans.id)).where(eq(userMemberships.userId, userId)).limit(1);
+      if (!current) throw new BillingError(409, "عضویت کاربر آماده نیست.");
+      const now = new Date();
+      const active = current.membership.status === "active" && current.membership.expiresAt > now;
+      if (active && current.plan.sortOrder > plan.sortOrder) throw new BillingError(409, "پلن پایین‌تر پس از پایان عضویت فعلی قابل دریافت است.");
+      const redemptionId = idempotencyKey;
+      const spending = await radicoin.spendInTransaction(tx, userId, radicoinCost, `plan-redemption:${userId}:${redemptionId}`, `تبدیل رادیکوین به پلن ${plan.name}`, now);
+      if (!spending.created) {
+        return { planId: plan.id, planName: plan.name, spentCoins: radicoinCost, expiresAt: current.membership.expiresAt.toISOString() };
+      }
+      const baseExpiry = active ? current.membership.expiresAt : now;
+      await tx.update(userMemberships).set({ planId: plan.id, status: "active", startsAt: now, expiresAt: addDays(baseExpiry, plan.durationDays), resumesRemaining: addLimit(current.membership.resumesRemaining, plan.resumeLimit), pdfDownloadsRemaining: addLimit(current.membership.pdfDownloadsRemaining, plan.pdfDownloadLimit), aiCreditsRemaining: current.membership.aiCreditsRemaining + plan.aiCredits, matchCreditsRemaining: current.membership.matchCreditsRemaining + plan.matchCredits, interviewCreditsRemaining: current.membership.interviewCreditsRemaining + plan.interviewCredits, canceledAt: null, canceledByUserId: null, cancelReason: null, updatedAt: now }).where(eq(userMemberships.id, current.membership.id));
+      await tx.insert(membershipEvents).values({ id: randomUUID(), userId, membershipId: current.membership.id, planId: plan.id, type: current.plan.id === plan.id ? "renewal" : active ? "upgrade" : "purchase", durationDays: plan.durationDays, details: { paymentMethod: "radicoin", radicoinCost, redemptionId }, createdAt: now });
+      return { planId: plan.id, planName: plan.name, spentCoins: radicoinCost, expiresAt: addDays(baseExpiry, plan.durationDays).toISOString() };
+    });
   }
 
   async handleCallback(authority: string, callbackStatus: string) {
@@ -418,22 +558,10 @@ export class BillingService {
       resultUrl.searchParams.set("status", "success");
       return resultUrl.toString();
     }
-    if (callbackStatus !== "OK") {
-      const now = new Date();
-      await this.database.transaction(async (tx) => {
-        await tx
-          .update(orders)
-          .set({ status: "canceled", callbackStatus, updatedAt: now })
-          .where(eq(orders.id, row.order.id));
-        await tx
-          .update(payments)
-          .set({ status: "canceled", updatedAt: now })
-          .where(eq(payments.authority, authority));
-      });
-      resultUrl.searchParams.set("status", "canceled");
+    if (row.order.status === "canceled" || row.order.status === "failed") {
+      resultUrl.searchParams.set("status", row.order.status);
       return resultUrl.toString();
     }
-
     try {
       const verification = await this.gateway.verifyPayment({
         authority,
@@ -446,6 +574,9 @@ export class BillingService {
         `);
         const current = locked[0] as { status?: string } | undefined;
         if (current?.status === "paid") return;
+        if (current?.status === "canceled" || current?.status === "failed") {
+          throw new BillingError(409, "این سفارش پیش‌تر بسته شده است.");
+        }
 
         const [currentMembership] = await tx
           .select({ membership: userMemberships, plan: plans })
@@ -472,6 +603,12 @@ export class BillingService {
             : active
               ? "upgrade"
               : "purchase";
+        const committedCoins =
+          await this.options.radicoinService?.commitReservedSpendInTransaction(
+            tx,
+            row.order.id,
+            now,
+          ) ?? 0;
         await tx
           .update(userMemberships)
           .set({
@@ -508,6 +645,11 @@ export class BillingService {
           orderId: row.order.id,
           type: eventType,
           durationDays: row.plan.durationDays,
+          details: {
+            paymentMethod: committedCoins > 0 ? "hybrid" : "gateway",
+            radicoinCoins: committedCoins,
+            cashAmountRials: row.order.amountRials,
+          },
           createdAt: now,
         });
         await tx
@@ -533,16 +675,57 @@ export class BillingService {
             updatedAt: now,
           })
           .where(eq(payments.authority, authority));
+        await this.options.radicoinService?.grantPurchaseInTransaction(
+          tx,
+          row.order.userId,
+          row.order.id,
+          now,
+        );
+        if (eventType === "upgrade") {
+          await this.options.radicoinService?.grantReferralUpgradeInTransaction(
+            tx,
+            row.order.userId,
+            row.order.id,
+            now,
+          );
+        }
       });
       resultUrl.searchParams.set("status", "success");
       return resultUrl.toString();
     } catch (error) {
       const failure = error instanceof ZarinpalError ? error : undefined;
+      const retryable = !failure || failure.code === undefined || failure.code >= 500;
+      if (retryable) {
+        const now = new Date();
+        await this.database.transaction(async (tx) => {
+          await tx
+            .update(orders)
+            .set({
+              callbackStatus,
+              failureCode: failure?.code,
+              failureMessage: error instanceof Error ? error.message : "خطای موقت تأیید پرداخت",
+              updatedAt: now,
+            })
+            .where(and(eq(orders.id, row.order.id), eq(orders.status, "pending")));
+          await tx
+            .update(payments)
+            .set({ providerCode: failure?.code, updatedAt: now })
+            .where(and(eq(payments.authority, authority), eq(payments.status, "initiated")));
+        });
+        resultUrl.searchParams.set("status", "pending");
+        return resultUrl.toString();
+      }
       await this.database.transaction(async (tx) => {
+        await this.options.radicoinService?.releaseReservedSpendInTransaction(
+          tx,
+          row.order.id,
+          new Date(),
+        );
+        const terminalStatus = callbackStatus === "NOK" ? "canceled" : "failed";
         await tx
           .update(orders)
           .set({
-            status: "failed",
+            status: terminalStatus,
             callbackStatus,
             failureCode: failure?.code,
             failureMessage: error instanceof Error ? error.message : "خطای تأیید پرداخت",
@@ -551,12 +734,38 @@ export class BillingService {
           .where(eq(orders.id, row.order.id));
         await tx
           .update(payments)
-          .set({ status: "failed", providerCode: failure?.code, updatedAt: new Date() })
+          .set({ status: terminalStatus, providerCode: failure?.code, updatedAt: new Date() })
           .where(eq(payments.authority, authority));
       });
-      resultUrl.searchParams.set("status", "failed");
+      resultUrl.searchParams.set("status", callbackStatus === "NOK" ? "canceled" : "failed");
       return resultUrl.toString();
     }
+  }
+
+  async reconcilePendingOrders(now = new Date(), maxAgeMs = 30 * 60_000, limit = 50) {
+    const cutoff = new Date(now.getTime() - maxAgeMs);
+    const pendingOrders = await this.database
+      .select({ authority: orders.authority })
+      .from(orders)
+      .where(and(
+        eq(orders.status, "pending"),
+        isNotNull(orders.authority),
+        lt(orders.createdAt, cutoff),
+      ))
+      .orderBy(asc(orders.createdAt))
+      .limit(limit);
+
+    const outcomes = { scanned: pendingOrders.length, paid: 0, canceled: 0, failed: 0, pending: 0 };
+    for (const order of pendingOrders) {
+      if (!order.authority) continue;
+      const redirectUrl = await this.handleCallback(order.authority, "RECONCILIATION");
+      const status = new URL(redirectUrl).searchParams.get("status");
+      if (status === "success") outcomes.paid += 1;
+      else if (status === "canceled") outcomes.canceled += 1;
+      else if (status === "failed") outcomes.failed += 1;
+      else outcomes.pending += 1;
+    }
+    return outcomes;
   }
 
   async listAdminOrders(

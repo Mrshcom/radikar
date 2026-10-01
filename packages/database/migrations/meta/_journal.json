@@ -127,6 +127,41 @@
       "when": 1790967600000,
       "tag": "0017_referrals",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790967600001,
+      "tag": "0018_user_onboarding",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791054000000,
+      "tag": "0019_radicoin",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791054000001,
+      "tag": "0020_radicoin_store",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791054000002,
+      "tag": "0021_hybrid_checkout",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791054000003,
+      "tag": "0022_radicoin_pending_reservations",
+      "breakpoints": true
     }
   ]
 }

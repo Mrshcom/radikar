@@ -9,7 +9,7 @@ import type { RecordRepository } from "../src/modules/data/record-repository";
 const user: AuthUser = {
   id: "11111111-1111-4111-8111-111111111111", phone: "09120000000", fullName: "کاربر",
   email: null,
-  role: "user", status: "active", tablePageSize: 20, createdAt: "2026-01-01T00:00:00.000Z", lastLoginAt: null,
+  role: "user", status: "active", tablePageSize: 20, onboardingState: { version: 1, status: "not_started", completedSteps: [] }, createdAt: "2026-01-01T00:00:00.000Z", lastLoginAt: null,
 };
 const identity: SessionIdentity = { user, sessionId: "session" };
 const authService: AuthServicePort = {
@@ -20,7 +20,7 @@ const authService: AuthServicePort = {
   getStats: async () => ({ users: { total: 0, active: 0, registeredToday: 0, activeToday: 0 }, records: { total: 0, resumes: 0, resumesToday: 0, byCollection: [] }, usersByRole: [] }),
   getRecentEvents: async () => ({ items: [] }), listUsers: async () => ({ items: [], total: 0, page: 1, pageSize: 20 }),
   listAllRecords: async () => ({ items: [], total: 0, page: 1, pageSize: 20 }), getUserDetails: async () => ({ ...user, records: [] }),
-  updateUser: async () => user, updateProfile: async () => user, updatePreferences: async () => user,
+  updateUser: async () => user, updateProfile: async () => user, updatePreferences: async () => user, updateOnboarding: async () => user,
 };
 const repository: RecordRepository = {
   list: async () => [], get: async () => null,

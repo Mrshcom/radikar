@@ -34,7 +34,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "EXPOSE_DEVELOPMENT_OTP=true npm --prefix ../.. run dev:api",
+      command: "npm --prefix ../.. run dev:api",
       url: "http://localhost:3162/ready",
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

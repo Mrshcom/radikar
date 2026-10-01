@@ -11,6 +11,20 @@ import {
 } from "drizzle-orm/pg-core";
 import type { DataRecord } from "@radikar/shared-types";
 
+export type OnboardingStepId = "profile" | "match" | "resume" | "application";
+
+export type OnboardingState = {
+  version: number;
+  status: "not_started" | "active" | "dismissed" | "completed";
+  completedSteps: OnboardingStepId[];
+};
+
+export const defaultOnboardingState: OnboardingState = {
+  version: 1,
+  status: "not_started",
+  completedSteps: [],
+};
+
 export const aiSettings = pgTable("ai_settings", {
   id: text("id").primaryKey(),
   provider: text("provider").notNull(),
@@ -71,6 +85,10 @@ export const users = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     tablePageSize: integer("table_page_size").notNull().default(20),
+    onboardingState: jsonb("onboarding_state")
+      .$type<OnboardingState>()
+      .notNull()
+      .default(defaultOnboardingState),
   },
   (table) => [uniqueIndex("users_phone_unique").on(table.phone)],
 );
@@ -226,6 +244,58 @@ export const referralPointEvents = pgTable(
   ],
 );
 
+export const radicoinSettings = pgTable("radicoin_settings", {
+  id: text("id").primaryKey(),
+  dailyLoginCoins: integer("daily_login_coins").notNull().default(2),
+  dailyActivityCoinCap: integer("daily_activity_coin_cap").notNull().default(15),
+  activityCoins: integer("activity_coins").notNull().default(3),
+  referrerSignupCoins: integer("referrer_signup_coins").notNull().default(40),
+  referredSignupCoins: integer("referred_signup_coins").notNull().default(30),
+  referrerActivationCoins: integer("referrer_activation_coins").notNull().default(80),
+  referredActivationCoins: integer("referred_activation_coins").notNull().default(50),
+  referrerUpgradeCoins: integer("referrer_upgrade_coins").notNull().default(200),
+  purchaserCoins: integer("purchaser_coins").notNull().default(30),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+});
+
+export const radicoinWallets = pgTable("radicoin_wallets", {
+  userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  availableCoins: integer("available_coins").notNull().default(0),
+  pendingCoins: integer("pending_coins").notNull().default(0),
+  lifetimeEarnedCoins: integer("lifetime_earned_coins").notNull().default(0),
+  lifetimeSpentCoins: integer("lifetime_spent_coins").notNull().default(0),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+});
+
+export const radicoinTransactions = pgTable(
+  "radicoin_transactions",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    referralId: uuid("referral_id").references(() => referrals.id, { onDelete: "set null" }),
+    orderId: uuid("order_id").references(() => orders.id, { onDelete: "set null" }),
+    source: text("source", {
+      enum: ["daily_login", "activity", "referral_signup", "referral_activation", "referral_upgrade", "purchase", "campaign", "birthday", "admin_adjustment", "redemption", "reversal"],
+    }).notNull(),
+    bucket: text("bucket", { enum: ["earned", "promotional"] }).notNull().default("earned"),
+    status: text("status", { enum: ["pending", "available", "reversed", "expired"] }).notNull().default("available"),
+    amount: integer("amount").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    awardDay: text("award_day"),
+    description: text("description").notNull(),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    availableAt: timestamp("available_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("radicoin_transactions_idempotency_unique").on(table.idempotencyKey),
+    index("radicoin_transactions_user_created_idx").on(table.userId, table.createdAt),
+    index("radicoin_transactions_expiry_idx").on(table.status, table.expiresAt),
+    index("radicoin_transactions_user_day_idx").on(table.userId, table.awardDay),
+  ],
+);
+
 export const plans = pgTable(
   "plans",
   {
@@ -233,6 +303,7 @@ export const plans = pgTable(
     name: text("name").notNull(),
     description: text("description").notNull(),
     priceRials: integer("price_rials").notNull(),
+    radicoinCost: integer("radicoin_cost"),
     durationDays: integer("duration_days").notNull().default(30),
     resumeLimit: integer("resume_limit"),
     pdfDownloadLimit: integer("pdf_download_limit"),
@@ -296,6 +367,7 @@ export const orders = pgTable(
   {
     id: uuid("id").primaryKey(),
     orderNumber: text("order_number").notNull(),
+    checkoutKey: uuid("checkout_key"),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -320,6 +392,7 @@ export const orders = pgTable(
   },
   (table) => [
     uniqueIndex("orders_order_number_unique").on(table.orderNumber),
+    uniqueIndex("orders_user_checkout_key_unique").on(table.userId, table.checkoutKey),
     uniqueIndex("orders_authority_unique").on(table.authority),
     index("orders_user_created_idx").on(table.userId, table.createdAt),
     index("orders_status_created_idx").on(table.status, table.createdAt),
