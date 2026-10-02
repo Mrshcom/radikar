@@ -17,6 +17,8 @@
     "dev:web": "turbo run dev --filter=@radikar/web",
     "dev:api": "turbo run dev --filter=@radikar/api",
     "dev:stack": "turbo run dev --filter=@radikar/web --filter=@radikar/api",
+    "format": "prettier --write \"{apps,packages,scripts}/**/*.{ts,tsx,js,mjs,cjs,json}\" \"*.{js,mjs,cjs,json}\"",
+    "format:check": "prettier --check \"{apps,packages,scripts}/**/*.{ts,tsx,js,mjs,cjs,json}\" \"*.{js,mjs,cjs,json}\"",
     "build": "turbo run build",
     "build:web": "turbo run build --filter=@radikar/web...",
     "build:api": "turbo run build --filter=@radikar/api...",
@@ -42,6 +44,7 @@
   },
   "devDependencies": {
     "husky": "^9.1.7",
+    "prettier": "^3.9.9",
     "turbo": "2.10.11"
   }
 }
