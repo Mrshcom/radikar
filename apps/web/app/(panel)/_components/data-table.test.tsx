@@ -27,7 +27,9 @@ describe("حالت‌های مشترک جدول داده", () => {
     render(
       <DataTableErrorState
         error={new Error("خطای سرویس")}
-        onRetry={() => { retries += 1; }}
+        onRetry={() => {
+          retries += 1;
+        }}
       />,
     );
     expect(screen.getByRole("alert")).toHaveTextContent("خطای سرویس");

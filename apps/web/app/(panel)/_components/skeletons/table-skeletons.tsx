@@ -1,13 +1,7 @@
 import { cn } from "@/lib/cn";
 import type { DataTableColumn } from "../data-table";
 
-export function DataTableSkeleton<T>({
-  columns,
-  rows = 5,
-}: {
-  columns: DataTableColumn<T>[];
-  rows?: number;
-}) {
+export function DataTableSkeleton<T>({ columns, rows = 5 }: { columns: DataTableColumn<T>[]; rows?: number }) {
   return (
     <tbody aria-label="در حال بارگذاری جدول">
       {Array.from({ length: rows }, (_, rowIndex) => (
@@ -28,13 +22,7 @@ export function DataTableSkeleton<T>({
   );
 }
 
-export function DataTableCardSkeleton<T>({
-  columns,
-  rows = 5,
-}: {
-  columns: DataTableColumn<T>[];
-  rows?: number;
-}) {
+export function DataTableCardSkeleton<T>({ columns, rows = 5 }: { columns: DataTableColumn<T>[]; rows?: number }) {
   return (
     <div aria-label="در حال بارگذاری فهرست" className="grid gap-3 p-3">
       {Array.from({ length: rows }, (_, rowIndex) => (

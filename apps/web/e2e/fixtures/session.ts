@@ -19,21 +19,23 @@ const testUser = (role: TestRole) => ({
   onboardingState: { version: 1, status: "not_started", completedSteps: [] },
 });
 
-const plans = [{
-  id: "starter",
-  name: "شروع",
-  description: "پلن آزمایشی",
-  priceRials: 0,
-  durationDays: 30,
-  resumeLimit: 3,
-  pdfDownloadLimit: 3,
-  aiCredits: 10,
-  matchCredits: 3,
-  interviewCredits: 3,
-  isFree: true,
-  isPurchasable: true,
-  sortOrder: 1,
-}];
+const plans = [
+  {
+    id: "starter",
+    name: "شروع",
+    description: "پلن آزمایشی",
+    priceRials: 0,
+    durationDays: 30,
+    resumeLimit: 3,
+    pdfDownloadLimit: 3,
+    aiCredits: 10,
+    matchCredits: 3,
+    interviewCredits: 3,
+    isFree: true,
+    isPurchasable: true,
+    sortOrder: 1,
+  },
+];
 
 const membership = {
   id: "e2e-membership",
@@ -74,8 +76,27 @@ const billingStats = {
 
 const modelUsage = {
   periodDays: 30,
-  totals: { requests: 0, successfulRequests: 0, failedRequests: 0, inputTokens: 0, outputTokens: 0, totalTokens: 0, estimatedCostMicros: 0, providerReportedRequests: 0, estimatedRequests: 0, averageDurationMs: 0 },
-  today: { requests: 0, successfulRequests: 0, failedRequests: 0, inputTokens: 0, outputTokens: 0, totalTokens: 0, estimatedCostMicros: 0 },
+  totals: {
+    requests: 0,
+    successfulRequests: 0,
+    failedRequests: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    totalTokens: 0,
+    estimatedCostMicros: 0,
+    providerReportedRequests: 0,
+    estimatedRequests: 0,
+    averageDurationMs: 0,
+  },
+  today: {
+    requests: 0,
+    successfulRequests: 0,
+    failedRequests: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    totalTokens: 0,
+    estimatedCostMicros: 0,
+  },
   byModel: [],
   byOperation: [],
   daily: [],
@@ -144,10 +165,7 @@ export async function mockSession(page: Page, role: TestRole = "user") {
   });
 }
 
-export async function mockDataCollections(
-  page: Page,
-  initial: TestDataCollections = {},
-) {
+export async function mockDataCollections(page: Page, initial: TestDataCollections = {}) {
   const collections = new Map(
     Object.entries(initial).map(([name, records]) => [
       name,
@@ -164,9 +182,7 @@ export async function mockDataCollections(
     collections.set(collectionName, collection);
 
     if (request.method() === "GET") {
-      const body = recordId
-        ? collection.get(recordId) ?? null
-        : [...collection.values()];
+      const body = recordId ? (collection.get(recordId) ?? null) : [...collection.values()];
       await route.fulfill({ contentType: "application/json", body: JSON.stringify(body) });
       return;
     }

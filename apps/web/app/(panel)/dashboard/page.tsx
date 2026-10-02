@@ -20,12 +20,7 @@ import { CircularProgress } from "../_components/circular-progress";
 import { JobCard, JobLogo } from "../_components/job-card";
 import { DashboardSkeleton } from "../_components/skeletons";
 import { SectionTitle } from "../_components/ui";
-import {
-  emptyState,
-  panelSurface,
-  primaryAction,
-  secondaryAction,
-} from "../_components/panel-styles";
+import { emptyState, panelSurface, primaryAction, secondaryAction } from "../_components/panel-styles";
 import { useToast } from "@/app/_components/toast";
 import { useModelTasks } from "../_components/model-task-provider";
 import {
@@ -58,10 +53,7 @@ type DashboardState = {
 };
 
 const statIcons = [BriefcaseBusiness, FileCheck2, MessageSquareText, Zap];
-const stageLabels: Record<
-  ApplicationStage,
-  { label: string; className: string }
-> = {
+const stageLabels: Record<ApplicationStage, { label: string; className: string }> = {
   saved: { label: "ذخیره‌شده", className: "bg-[#eee8f8] text-[#735ba8]" },
   applied: { label: "ارسال‌شده", className: "bg-[#fff1d9] text-[#a87529]" },
   review: { label: "در حال بررسی", className: "bg-[#e7f0f7] text-[#577b9e]" },
@@ -85,16 +77,13 @@ const barHeightClass = (value: number) => {
 
 function dashboardTitle(fullName: string) {
   const firstName = fullName.trim().split(/\s+/)[0];
-  return firstName
-    ? `سلام ${firstName}، آماده‌ی یک قدم تازه‌ای؟`
-    : "سلام، آماده‌ی یک قدم تازه‌ای؟";
+  return firstName ? `سلام ${firstName}، آماده‌ی یک قدم تازه‌ای؟` : "سلام، آماده‌ی یک قدم تازه‌ای؟";
 }
 
 function JobPoolPreview() {
   const listings = useJobPoolListings({ pageSize: 3 });
 
-  if (listings.isLoading || listings.isError || !listings.data?.items.length)
-    return null;
+  if (listings.isLoading || listings.isError || !listings.data?.items.length) return null;
 
   return (
     <section className={`${panelSurface} mt-4 p-[21px]`}>
@@ -105,7 +94,10 @@ function JobPoolPreview() {
             {formatPersianNumber(listings.data.total)} آگهی فعال در Job Pool
           </p>
         </div>
-        <Link className="flex items-center gap-[3px] p-1.5 text-[10px] font-bold text-[#0f7b62] no-underline" href="/jobs">
+        <Link
+          className="flex items-center gap-[3px] p-1.5 text-[10px] font-bold text-[#0f7b62] no-underline"
+          href="/jobs"
+        >
           همه فرصت‌ها <ChevronLeft size={16} />
         </Link>
       </div>
@@ -118,7 +110,9 @@ function JobPoolPreview() {
           >
             <JobLogo company={listing.companyName} logoUrl={listing.companyLogoUrl || undefined} variant="board" />
             <span className="min-w-0">
-              <strong className="block truncate text-[10px] text-[#19312f]" dir="auto">{listing.title}</strong>
+              <strong className="block truncate text-[10px] text-[#19312f]" dir="auto">
+                {listing.title}
+              </strong>
               <span className="mt-1 block truncate text-[8px] text-[#71817d]" dir="auto">
                 {[listing.companyName, listing.location].filter(Boolean).join(" · ")}
               </span>
@@ -151,18 +145,12 @@ function ExpandableText({
     const text = textRef.current;
     if (!text) return;
     const updateOverflow = () => {
-      const lineHeight = Number.parseFloat(
-        window.getComputedStyle(text).lineHeight,
-      );
+      const lineHeight = Number.parseFloat(window.getComputedStyle(text).lineHeight);
       const nextCollapsedHeight = lineHeight * 3;
       const nextExpandedHeight = text.scrollHeight;
       setCanExpand(nextExpandedHeight > nextCollapsedHeight + 1);
-      setCollapsedHeight((current) =>
-        current === nextCollapsedHeight ? current : nextCollapsedHeight,
-      );
-      setExpandedHeight((current) =>
-        current === nextExpandedHeight ? current : nextExpandedHeight,
-      );
+      setCollapsedHeight((current) => (current === nextCollapsedHeight ? current : nextCollapsedHeight));
+      setExpandedHeight((current) => (current === nextExpandedHeight ? current : nextExpandedHeight));
     };
     updateOverflow();
     const observer = new ResizeObserver(updateOverflow);
@@ -222,14 +210,13 @@ export default function DashboardPage() {
       setLoading(true);
       setError("");
       try {
-        const [resumes, jobs, applications, snapshots, knowledgeProfiles] =
-          await Promise.all([
-            resumeStore.list(),
-            jobStore.list(),
-            applicationStore.list(),
-            dashboardSnapshotStore.list(),
-            knowledgeProfileStore.list(),
-          ]);
+        const [resumes, jobs, applications, snapshots, knowledgeProfiles] = await Promise.all([
+          resumeStore.list(),
+          jobStore.list(),
+          applicationStore.list(),
+          dashboardSnapshotStore.list(),
+          knowledgeProfileStore.list(),
+        ]);
         const resume = resumes[0];
         const knowledge = knowledgeProfiles[0];
         const analysisResume = knowledge?.resumeData ?? resume?.data;
@@ -247,16 +234,9 @@ export default function DashboardPage() {
         const sourceType = knowledge ? "knowledge" : "resume";
         const sourceUpdatedAt = knowledge?.updatedAt ?? resume!.updatedAt;
         const cachedSnapshot =
-          snapshots.find(
-            (snapshot) =>
-              snapshot.sourceId === sourceId &&
-              snapshot.sourceType === sourceType,
-          ) ??
-          (!knowledge
-            ? snapshots.find((snapshot) => snapshot.resumeId === resume!.id)
-            : undefined);
-        const snapshotIsCurrent =
-          cachedSnapshot?.sourceUpdatedAt === sourceUpdatedAt;
+          snapshots.find((snapshot) => snapshot.sourceId === sourceId && snapshot.sourceType === sourceType) ??
+          (!knowledge ? snapshots.find((snapshot) => snapshot.resumeId === resume!.id) : undefined);
+        const snapshotIsCurrent = cachedSnapshot?.sourceUpdatedAt === sourceUpdatedAt;
 
         if (cachedSnapshot && snapshotIsCurrent) {
           if (active)
@@ -279,10 +259,7 @@ export default function DashboardPage() {
             href: "/dashboard",
             run: async () => {
               const result = await apiRequest<
-                Omit<
-                  DashboardSnapshotRecord,
-                  "id" | "resumeId" | "createdAt" | "updatedAt"
-                > & { error?: string }
+                Omit<DashboardSnapshotRecord, "id" | "resumeId" | "createdAt" | "updatedAt"> & { error?: string }
               >("/api/panel/dashboard", {
                 method: "POST",
                 body: JSON.stringify({
@@ -306,9 +283,7 @@ export default function DashboardPage() {
               const now = new Date().toISOString();
               const snapshot: DashboardSnapshotRecord = {
                 ...result,
-                id:
-                  cachedSnapshot?.id ||
-                  `dashboard-${sourceType}-${sourceId}`,
+                id: cachedSnapshot?.id || `dashboard-${sourceType}-${sourceId}`,
                 resumeId: resume?.id ?? "",
                 sourceId,
                 sourceType,
@@ -320,8 +295,7 @@ export default function DashboardPage() {
               return snapshot;
             },
           });
-          if (active)
-            setData({ snapshot, resumes, jobs, applications, displayName });
+          if (active) setData({ snapshot, resumes, jobs, applications, displayName });
         } catch (modelError) {
           if (cachedSnapshot) {
             if (active)
@@ -338,10 +312,7 @@ export default function DashboardPage() {
         }
       } catch (event) {
         if (active) {
-          const message =
-            event instanceof Error
-              ? event.message
-              : "دریافت اطلاعات داشبورد ناموفق بود.";
+          const message = event instanceof Error ? event.message : "دریافت اطلاعات داشبورد ناموفق بود.";
           setError(message);
           notify(message, "error");
         }
@@ -360,28 +331,23 @@ export default function DashboardPage() {
     if (!data) return bars;
     const today = new Date();
     data.applications.forEach((application) => {
-      const daysAgo = Math.floor(
-        (today.getTime() - new Date(application.createdAt).getTime()) /
-          86400000,
-      );
+      const daysAgo = Math.floor((today.getTime() - new Date(application.createdAt).getTime()) / 86400000);
       if (daysAgo >= 0 && daysAgo < 7) bars[6 - daysAgo] += 1;
     });
     const maximum = Math.max(...bars, 1);
-    return bars.map((count) =>
-      count ? Math.max(18, Math.round((count / maximum) * 100)) : 0,
-    );
+    return bars.map((count) => (count ? Math.max(18, Math.round((count / maximum) * 100)) : 0));
   }, [data]);
 
   if (loading) return <DashboardSkeleton />;
   if (!hasResume)
     return (
       <div className={emptyState}>
-          <FileCheck2 size={34} />
-          <h3>داشبورد هنوز داده‌ای ندارد</h3>
-          <p>اولین رزومه‌ات را بساز تا تحلیل و آمار واقعی نمایش داده شود.</p>
-          <Link className={primaryAction} href="/resumes">
-            ساخت اولین رزومه
-          </Link>
+        <FileCheck2 size={34} />
+        <h3>داشبورد هنوز داده‌ای ندارد</h3>
+        <p>اولین رزومه‌ات را بساز تا تحلیل و آمار واقعی نمایش داده شود.</p>
+        <Link className={primaryAction} href="/resumes">
+          ساخت اولین رزومه
+        </Link>
       </div>
     );
   if (error || !data)
@@ -390,21 +356,14 @@ export default function DashboardPage() {
         <Sparkles size={34} />
         <h3>ساخت داشبورد ناموفق بود</h3>
         <p>{error}</p>
-        <button
-          className={secondaryAction}
-          onClick={() => window.location.reload()}
-        >
+        <button className={secondaryAction} onClick={() => window.location.reload()}>
           تلاش دوباره
         </button>
       </div>
     );
 
-  const activeApplications = data.applications.filter(
-    (application) => application.stage !== "saved",
-  );
-  const interviews = data.applications.filter(
-    (application) => application.stage === "interview",
-  );
+  const activeApplications = data.applications.filter((application) => application.stage !== "saved");
+  const interviews = data.applications.filter((application) => application.stage === "interview");
   const stats = [
     {
       label: "فرصت‌های واردشده",
@@ -473,9 +432,7 @@ export default function DashboardPage() {
             label={`امتیاز رزومه ${formatPersianNumber(data.snapshot.profileScore)} از ۱۰۰`}
             strokeWidth={8}
           >
-            <strong className="text-[32px]">
-              {formatPersianNumber(data.snapshot.profileScore)}
-            </strong>
+            <strong className="text-[32px]">{formatPersianNumber(data.snapshot.profileScore)}</strong>
             <span className="text-[8px] text-[#9fb9b3]">از ۱۰۰</span>
           </CircularProgress>
           <div className="absolute -bottom-[120px] -left-[35px] size-[230px] rounded-full border border-white/6 shadow-[0_0_0_35px_rgba(255,255,255,.02),0_0_0_75px_rgba(255,255,255,.015)]" />
@@ -487,9 +444,7 @@ export default function DashboardPage() {
           <span className="-mt-[35px] mr-auto rounded-md bg-[#f4dfb9] px-[7px] py-1 text-[8px] text-[#8a6327]">
             پیشنهاد مدل
           </span>
-          <h3 className="mt-5 mb-1.5 max-w-60 text-lg leading-[1.65]">
-            {data.snapshot.aiTitle}
-          </h3>
+          <h3 className="mt-5 mb-1.5 max-w-60 text-lg leading-[1.65]">{data.snapshot.aiTitle}</h3>
           <ExpandableText
             className="m-0 text-[10px] leading-[1.8] text-[#72827f]"
             expanded={aiTextExpanded}
@@ -521,13 +476,9 @@ export default function DashboardPage() {
                 <Icon size={20} />
               </div>
               <div className="grid flex-1 grid-cols-[auto_auto]">
-                <span className="col-span-2 text-[9px] text-[#7d8b88]">
-                  {stat.label}
-                </span>
+                <span className="col-span-2 text-[9px] text-[#7d8b88]">{stat.label}</span>
                 <strong className="mt-0.5 text-[22px]">{stat.value}</strong>
-                <small className="self-end justify-self-end text-[8px] text-[#3a9a77]">
-                  {stat.note}
-                </small>
+                <small className="self-end justify-self-end text-[8px] text-[#3a9a77]">{stat.note}</small>
               </div>
             </div>
           );
@@ -538,9 +489,7 @@ export default function DashboardPage() {
           <div className="flex items-start justify-between gap-5">
             <div>
               <h3 className="m-0 mb-[5px] text-[13px]">آخرین اپلای‌ها</h3>
-              <p className="m-0 text-[9px] text-[#99a4a1]">
-                براساس وضعیت‌هایی که خودت ثبت کرده‌ای
-              </p>
+              <p className="m-0 text-[9px] text-[#99a4a1]">براساس وضعیت‌هایی که خودت ثبت کرده‌ای</p>
             </div>
             <Link
               className="flex items-center gap-[3px] p-1.5 text-[10px] font-bold text-[#0f7b62] no-underline"
@@ -561,16 +510,10 @@ export default function DashboardPage() {
                     {Array.from(item.company)[0] || "—"}
                   </div>
                   <div className="flex min-w-0 flex-col gap-1">
-                    <strong className="truncate text-[10px]">
-                      {item.role}
-                    </strong>
-                    <span className="truncate text-[8px] text-[#929e9b]">
-                      {item.company}
-                    </span>
+                    <strong className="truncate text-[10px]">{item.role}</strong>
+                    <span className="truncate text-[8px] text-[#929e9b]">{item.company}</span>
                   </div>
-                  <span
-                    className={`w-fit rounded-[7px] px-2 py-[5px] text-[8px] ${stage.className}`}
-                  >
+                  <span className={`w-fit rounded-[7px] px-2 py-[5px] text-[8px] ${stage.className}`}>
                     {stage.label}
                   </span>
                   <span className="text-[8px] text-[#929e9b]">
@@ -579,9 +522,7 @@ export default function DashboardPage() {
                   <button
                     className="grid place-items-center bg-transparent p-[5px] text-[#9ba5a3]"
                     aria-label="گزینه‌های بیشتر"
-                    onClick={() =>
-                      notify(`جزئیات اپلای ${item.company} آماده مشاهده است`)
-                    }
+                    onClick={() => notify(`جزئیات اپلای ${item.company} آماده مشاهده است`)}
                   >
                     <MoreHorizontal size={18} />
                   </button>
@@ -599,9 +540,7 @@ export default function DashboardPage() {
           <div className="flex items-start justify-between gap-5">
             <div>
               <h3 className="m-0 mb-[5px] text-[13px]">عملکرد این هفته</h3>
-              <p className="m-0 text-[9px] text-[#99a4a1]">
-                محاسبه‌شده از زمان ثبت اپلای‌ها
-              </p>
+              <p className="m-0 text-[9px] text-[#99a4a1]">محاسبه‌شده از زمان ثبت اپلای‌ها</p>
             </div>
             <div className="grid size-[39px] place-items-center rounded-xl bg-[#e5eff7] text-[#547da5]">
               <Gauge size={20} />
@@ -609,16 +548,11 @@ export default function DashboardPage() {
           </div>
           <div className="my-[19px] mb-[13px] flex h-[118px] items-end justify-between gap-[7px] border-b border-[#edf0ec]">
             {weekly.map((value, index) => (
-              <div
-                className="flex h-full flex-1 flex-col items-center justify-end gap-1.5"
-                key={index}
-              >
+              <div className="flex h-full flex-1 flex-col items-center justify-end gap-1.5" key={index}>
                 <span
                   className={`w-[70%] min-w-2 max-w-[17px] rounded-t-md ${barHeightClass(value)} ${value === Math.max(...weekly) && value > 0 ? "bg-[#0f7b62]" : "bg-[#dce8e3]"}`}
                 />
-                <small className="text-[8px] text-[#9ba6a3]">
-                  {["ش", "ی", "د", "س", "چ", "پ", "ج"][index]}
-                </small>
+                <small className="text-[8px] text-[#9ba6a3]">{["ش", "ی", "د", "س", "چ", "پ", "ج"][index]}</small>
               </div>
             ))}
           </div>
@@ -628,12 +562,7 @@ export default function DashboardPage() {
               <span>اپلای</span>
             </div>
             <div>
-              <strong>
-                {formatPersianNumber(
-                  data.applications.filter((item) => item.stage === "review")
-                    .length,
-                )}
-              </strong>
+              <strong>{formatPersianNumber(data.applications.filter((item) => item.stage === "review").length)}</strong>
               <span>پاسخ</span>
             </div>
             <div>
@@ -648,9 +577,7 @@ export default function DashboardPage() {
         <div className="flex items-start justify-between gap-5">
           <div>
             <h3 className="m-0 mb-[5px] text-[13px]">فرصت‌های ذخیره‌شده</h3>
-            <p className="m-0 text-[9px] text-[#99a4a1]">
-              آگهی‌هایی که وارد یا تحلیل کرده‌ای
-            </p>
+            <p className="m-0 text-[9px] text-[#99a4a1]">آگهی‌هایی که وارد یا تحلیل کرده‌ای</p>
           </div>
           <Link
             className="flex items-center gap-[3px] p-1.5 text-[10px] font-bold text-[#0f7b62] no-underline"

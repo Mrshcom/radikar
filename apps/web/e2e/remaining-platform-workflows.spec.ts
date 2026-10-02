@@ -7,7 +7,14 @@ test.describe("سناریوهای باقی‌مانده پنل", () => {
     let attempts = 0;
     await page.route("**/api/account", async (route) => {
       attempts += 1;
-      await route.fulfill(attempts === 1 ? { status: 500, contentType: "application/json", body: JSON.stringify({ error: "ذخیره ناموفق بود" }) } : { contentType: "application/json", body: JSON.stringify({ user: { id: "e2e-user-user", fullName: "نام تازه" } }) });
+      await route.fulfill(
+        attempts === 1
+          ? { status: 500, contentType: "application/json", body: JSON.stringify({ error: "ذخیره ناموفق بود" }) }
+          : {
+              contentType: "application/json",
+              body: JSON.stringify({ user: { id: "e2e-user-user", fullName: "نام تازه" } }),
+            },
+      );
     });
     await page.goto("/account");
     await page.getByLabel("نام و نام خانوادگی").fill("نام تازه");
@@ -20,7 +27,10 @@ test.describe("سناریوهای باقی‌مانده پنل", () => {
 
   test("workspace ساخته، انتخاب و با تأیید دوم حذف می‌شود", async ({ page }) => {
     await mockSession(page);
-    await mockDataCollections(page, { appProfiles: [{ id: "profile-default", workspaceName: "فضای کاری اصلی", createdAt: "x", updatedAt: "x" }], workspaceState: [{ id: "active-profile", activeProfileId: "profile-default", createdAt: "x", updatedAt: "x" }] });
+    await mockDataCollections(page, {
+      appProfiles: [{ id: "profile-default", workspaceName: "فضای کاری اصلی", createdAt: "x", updatedAt: "x" }],
+      workspaceState: [{ id: "active-profile", activeProfileId: "profile-default", createdAt: "x", updatedAt: "x" }],
+    });
     await page.goto("/dashboard");
     await page.getByTitle("فضای کاری شخصی").click();
     await page.getByRole("button", { name: "افزودن فضای کاری جدید" }).click();

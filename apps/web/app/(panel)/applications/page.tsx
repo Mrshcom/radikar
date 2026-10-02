@@ -1,30 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState, type DragEvent } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Clock3,
-  GripVertical,
-  LoaderCircle,
-  Plus,
-  Target,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock3, GripVertical, LoaderCircle, Plus, Target, Trash2 } from "lucide-react";
 import { DeleteConfirmModal, Modal, SectionTitle } from "../_components/ui";
 import { JobDetailsModal, JobLogo } from "../_components/job-card";
 import { ApplicationsSkeleton } from "../_components/skeletons";
 import { useToast } from "@/app/_components/toast";
-import {
-  applicationStore,
-  createRecordId,
-  jobStore,
-} from "@/lib/data/stores";
-import type {
-  ApplicationRecord,
-  ApplicationStage,
-  JobRecord,
-} from "@/lib/data/models";
+import { applicationStore, createRecordId, jobStore } from "@/lib/data/stores";
+import type { ApplicationRecord, ApplicationStage, JobRecord } from "@/lib/data/models";
 import { formatPersianNumber } from "@/lib/fa-number";
 import { PersianDateTime } from "@/lib/date-time-display";
 import {
@@ -34,19 +17,9 @@ import {
 } from "@/lib/application-board";
 
 async function readApplicationBoard() {
-  const [jobs, storedApplications] = await Promise.all([
-    jobStore.list(),
-    applicationStore.list(),
-  ]);
-  const synchronized = synchronizeJobsWithApplicationBoard(
-    jobs,
-    storedApplications,
-  );
-  await Promise.all(
-    synchronized.additions.map((application) =>
-      applicationStore.put(application),
-    ),
-  );
+  const [jobs, storedApplications] = await Promise.all([jobStore.list(), applicationStore.list()]);
+  const synchronized = synchronizeJobsWithApplicationBoard(jobs, storedApplications);
+  await Promise.all(synchronized.additions.map((application) => applicationStore.put(application)));
   return { applications: synchronized.applications, jobs };
 }
 
@@ -63,10 +36,8 @@ export default function ApplicationsPage() {
   const [draggingId, setDraggingId] = useState<string>();
   const [dragOverStage, setDragOverStage] = useState<ApplicationStage>();
   const [pendingId, setPendingId] = useState<string>();
-  const [deleteCandidate, setDeleteCandidate] =
-    useState<ApplicationRecord>();
-  const [detailsCandidate, setDetailsCandidate] =
-    useState<ApplicationRecord>();
+  const [deleteCandidate, setDeleteCandidate] = useState<ApplicationRecord>();
+  const [detailsCandidate, setDetailsCandidate] = useState<ApplicationRecord>();
 
   const loadPipeline = async () => {
     setLoading(true);
@@ -76,10 +47,7 @@ export default function ApplicationsPage() {
       setApplications(board.applications);
       setJobs(board.jobs);
     } catch (event) {
-      const message =
-        event instanceof Error
-          ? event.message
-          : "خواندن اپلای‌های ذخیره‌شده ناموفق بود.";
+      const message = event instanceof Error ? event.message : "خواندن اپلای‌های ذخیره‌شده ناموفق بود.";
       setError(message);
       notify(message, "error");
     } finally {
@@ -98,10 +66,7 @@ export default function ApplicationsPage() {
       })
       .catch((event: unknown) => {
         if (active) {
-          const message =
-            event instanceof Error
-              ? event.message
-              : "خواندن اپلای‌های ذخیره‌شده ناموفق بود.";
+          const message = event instanceof Error ? event.message : "خواندن اپلای‌های ذخیره‌شده ناموفق بود.";
           setError(message);
           notify(message, "error");
         }
@@ -125,16 +90,11 @@ export default function ApplicationsPage() {
     [applications],
   );
 
-  const jobsById = useMemo(
-    () => new Map(jobs.map((job) => [job.id, job])),
-    [jobs],
-  );
+  const jobsById = useMemo(() => new Map(jobs.map((job) => [job.id, job])), [jobs]);
 
   const detailsJob = useMemo(() => {
     if (!detailsCandidate) return undefined;
-    const linkedJob = detailsCandidate.jobId
-      ? jobsById.get(detailsCandidate.jobId)
-      : undefined;
+    const linkedJob = detailsCandidate.jobId ? jobsById.get(detailsCandidate.jobId) : undefined;
     return (
       linkedJob ?? {
         company: detailsCandidate.company,
@@ -147,30 +107,21 @@ export default function ApplicationsPage() {
   }, [detailsCandidate, jobsById]);
 
   const responseStats = useMemo(() => {
-    const sent = applications.filter(
-      (application) => application.stage !== "saved",
-    );
-    const responded = sent.filter(
-      (application) =>
-        application.stage === "review" || application.stage === "interview",
-    );
+    const sent = applications.filter((application) => application.stage !== "saved");
+    const responded = sent.filter((application) => application.stage === "review" || application.stage === "interview");
     const responseDays = responded
       .filter((application) => application.appliedAt)
       .map((application) =>
         Math.max(
           0,
           Math.round(
-            (new Date(application.updatedAt).getTime() -
-              new Date(application.appliedAt!).getTime()) /
-              86400000,
+            (new Date(application.updatedAt).getTime() - new Date(application.appliedAt!).getTime()) / 86400000,
           ),
         ),
       );
     return {
       sentCount: sent.length,
-      rate: sent.length
-        ? `${formatPersianNumber(Math.round((responded.length / sent.length) * 100))}٪`
-        : "—",
+      rate: sent.length ? `${formatPersianNumber(Math.round((responded.length / sent.length) * 100))}٪` : "—",
       average: responseDays.length
         ? `${formatPersianNumber(Math.round(responseDays.reduce((sum, day) => sum + day, 0) / responseDays.length))} روز`
         : "—",
@@ -207,25 +158,14 @@ export default function ApplicationsPage() {
     }
   };
 
-  const changeStage = async (
-    application: ApplicationRecord,
-    stage: ApplicationStage,
-  ) => {
+  const changeStage = async (application: ApplicationRecord, stage: ApplicationStage) => {
     if (application.stage === stage || pendingId === application.id) return;
-    const updated = moveApplicationToStage(
-      application,
-      stage,
-      new Date().toISOString(),
-    );
-    const stageTitle = applicationPipelineStages.find(
-      (item) => item.id === stage,
-    )?.title;
+    const updated = moveApplicationToStage(application, stage, new Date().toISOString());
+    const stageTitle = applicationPipelineStages.find((item) => item.id === stage)?.title;
     setPendingId(application.id);
     try {
       await applicationStore.put(updated);
-      setApplications((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
-      );
+      setApplications((current) => current.map((item) => (item.id === updated.id ? updated : item)));
       notify(`فرصت به مرحله «${stageTitle}» منتقل شد`);
     } catch {
       notify("تغییر مرحله اپلای ناموفق بود.", "error");
@@ -250,9 +190,7 @@ export default function ApplicationsPage() {
         }
       }
       await applicationStore.remove(application.id);
-      setApplications((current) =>
-        current.filter((item) => item.id !== application.id),
-      );
+      setApplications((current) => current.filter((item) => item.id !== application.id));
       setDeleteCandidate(undefined);
       notify("فرصت از برد پیگیری حذف شد");
     } catch {
@@ -262,26 +200,17 @@ export default function ApplicationsPage() {
     }
   };
 
-  const dropOnStage = (
-    event: DragEvent<HTMLElement>,
-    stage: ApplicationStage,
-  ) => {
+  const dropOnStage = (event: DragEvent<HTMLElement>, stage: ApplicationStage) => {
     event.preventDefault();
-    const applicationId =
-      event.dataTransfer.getData("text/plain") || draggingId;
+    const applicationId = event.dataTransfer.getData("text/plain") || draggingId;
     const application = applications.find((item) => item.id === applicationId);
     setDraggingId(undefined);
     setDragOverStage(undefined);
     if (application) void changeStage(application, stage);
   };
 
-  const adjacentStage = (
-    application: ApplicationRecord,
-    offset: -1 | 1,
-  ) => {
-    const currentIndex = applicationPipelineStages.findIndex(
-      (stage) => stage.id === application.stage,
-    );
+  const adjacentStage = (application: ApplicationRecord, offset: -1 | 1) => {
+    const currentIndex = applicationPipelineStages.findIndex((stage) => stage.id === application.stage);
     return applicationPipelineStages[currentIndex + offset];
   };
 
@@ -319,12 +248,10 @@ export default function ApplicationsPage() {
           {formatPersianNumber(responseStats.sentCount)} اپلای ثبت‌شده
         </span>
         <span>
-          نرخ پاسخ{" "}
-          <strong className="text-[#19312f]">{responseStats.rate}</strong>
+          نرخ پاسخ <strong className="text-[#19312f]">{responseStats.rate}</strong>
         </span>
         <span>
-          میانگین پاسخ{" "}
-          <strong className="text-[#19312f]">{responseStats.average}</strong>
+          میانگین پاسخ <strong className="text-[#19312f]">{responseStats.average}</strong>
         </span>
       </div>
       <div className="grid grid-cols-4 gap-3 overflow-x-auto max-[1120px]:grid-cols-[repeat(4,250px)]">
@@ -339,8 +266,7 @@ export default function ApplicationsPage() {
               event.dataTransfer.dropEffect = "move";
             }}
             onDragLeave={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget as Node))
-                setDragOverStage(undefined);
+              if (!event.currentTarget.contains(event.relatedTarget as Node)) setDragOverStage(undefined);
             }}
             onDrop={(event) => dropOnStage(event, stage.id)}
           >
@@ -384,21 +310,9 @@ export default function ApplicationsPage() {
                   </span>
                   <JobLogo
                     company={application.company}
-                    letter={
-                      application.jobId
-                        ? jobsById.get(application.jobId)?.letter
-                        : undefined
-                    }
-                    logoUrl={
-                      application.jobId
-                        ? jobsById.get(application.jobId)?.logoUrl
-                        : undefined
-                    }
-                    tone={
-                      application.jobId
-                        ? jobsById.get(application.jobId)?.tone
-                        : undefined
-                    }
+                    letter={application.jobId ? jobsById.get(application.jobId)?.letter : undefined}
+                    logoUrl={application.jobId ? jobsById.get(application.jobId)?.logoUrl : undefined}
+                    tone={application.jobId ? jobsById.get(application.jobId)?.tone : undefined}
                     variant="board"
                   />
                   <small className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[8px] text-[#7b8986]">
@@ -406,8 +320,7 @@ export default function ApplicationsPage() {
                   </small>
                   {typeof application.match === "number" && (
                     <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[#e8f4ef] px-2 py-1 text-[8px] font-bold text-[#0f7b62]">
-                      <Target size={12} /> تطابق{" "}
-                      {formatPersianNumber(application.match)}٪
+                      <Target size={12} /> تطابق {formatPersianNumber(application.match)}٪
                     </span>
                   )}
                 </div>
@@ -416,36 +329,26 @@ export default function ApplicationsPage() {
                   <button
                     aria-label="بازگشت به مرحله قبل"
                     className="grid size-7 place-items-center rounded-lg border border-[#e5eae5] bg-white text-[#70807c] disabled:cursor-not-allowed disabled:opacity-30"
-                    disabled={
-                      !adjacentStage(application, -1) ||
-                      pendingId === application.id
-                    }
+                    disabled={!adjacentStage(application, -1) || pendingId === application.id}
                     onClick={(event) => {
                       event.stopPropagation();
                       const previousStage = adjacentStage(application, -1);
-                      if (previousStage)
-                        void changeStage(application, previousStage.id);
+                      if (previousStage) void changeStage(application, previousStage.id);
                     }}
                     title="مرحله قبل"
                     type="button"
                   >
                     <ArrowRight size={14} />
                   </button>
-                  <span className="text-[7px] text-[#9aa5a2]">
-                    کارت را برای جابه‌جایی بکشید
-                  </span>
+                  <span className="text-[7px] text-[#9aa5a2]">کارت را برای جابه‌جایی بکشید</span>
                   <button
                     aria-label="انتقال به مرحله بعد"
                     className="grid size-7 place-items-center rounded-lg border border-[#d9e9e2] bg-[#edf7f2] text-[#0f7b62] disabled:cursor-not-allowed disabled:opacity-30"
-                    disabled={
-                      !adjacentStage(application, 1) ||
-                      pendingId === application.id
-                    }
+                    disabled={!adjacentStage(application, 1) || pendingId === application.id}
                     onClick={(event) => {
                       event.stopPropagation();
                       const nextStage = adjacentStage(application, 1);
-                      if (nextStage)
-                        void changeStage(application, nextStage.id);
+                      if (nextStage) void changeStage(application, nextStage.id);
                     }}
                     title="مرحله بعد"
                     type="button"
@@ -455,8 +358,7 @@ export default function ApplicationsPage() {
                 </div>
                 <footer className="mt-3 flex items-center justify-between gap-2 border-t border-[#edf0ec] pt-2 text-[8px] text-[#9aa5a2]">
                   <span className="flex min-w-0 items-center gap-1">
-                    <Clock3 size={13} /> آخرین تغییر{" "}
-                    <PersianDateTime value={application.updatedAt} />
+                    <Clock3 size={13} /> آخرین تغییر <PersianDateTime value={application.updatedAt} />
                   </span>
                   {application.stage === "saved" && (
                     <button
@@ -479,12 +381,7 @@ export default function ApplicationsPage() {
           </section>
         ))}
       </div>
-      {detailsJob && (
-        <JobDetailsModal
-          job={detailsJob}
-          onClose={() => setDetailsCandidate(undefined)}
-        />
-      )}
+      {detailsJob && <JobDetailsModal job={detailsJob} onClose={() => setDetailsCandidate(undefined)} />}
       {addOpen && (
         <Modal
           title="افزودن اپلای"
@@ -494,11 +391,7 @@ export default function ApplicationsPage() {
           <div className="grid gap-[14px] pt-[18px] [&_label]:grid [&_label]:gap-[7px] [&_label]:text-[10px] [&_label]:font-semibold [&_label]:text-[#536562] [&_input]:w-full [&_input]:rounded-[10px] [&_input]:border [&_input]:border-[#dfe5df] [&_input]:bg-[#fbfcfa] [&_input]:px-3 [&_input]:py-[11px] [&_input]:text-[12px] [&_input]:outline-0">
             <label>
               عنوان موقعیت
-              <input
-                value={newRole}
-                onChange={(event) => setNewRole(event.target.value)}
-                placeholder="عنوان موقعیت"
-              />
+              <input value={newRole} onChange={(event) => setNewRole(event.target.value)} placeholder="عنوان موقعیت" />
             </label>
             <label>
               نام شرکت
@@ -509,10 +402,7 @@ export default function ApplicationsPage() {
               />
             </label>
             <div className="flex justify-end gap-2 pt-[5px] max-[560px]:flex-col-reverse">
-              <button
-                className={secondaryButton}
-                onClick={() => setAddOpen(false)}
-              >
+              <button className={secondaryButton} onClick={() => setAddOpen(false)}>
                 انصراف
               </button>
               <button
@@ -532,11 +422,8 @@ export default function ApplicationsPage() {
           description={
             <>
               آیا از حذف این موقعیت شغلی(
-              <bdi>{`${deleteCandidate.role} در ${deleteCandidate.company}`}</bdi>
-              ) برای پیگیری وضعیت شغلی مطمئن هستی؟
-              <span className="mt-1 block text-[11px]">
-                (این شغل در لیست فرصت‌های شغلی همچنان باقی خواهد ماند)
-              </span>
+              <bdi>{`${deleteCandidate.role} در ${deleteCandidate.company}`}</bdi>) برای پیگیری وضعیت شغلی مطمئن هستی؟
+              <span className="mt-1 block text-[11px]">(این شغل در لیست فرصت‌های شغلی همچنان باقی خواهد ماند)</span>
             </>
           }
           showCloseButton={false}

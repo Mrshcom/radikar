@@ -2,15 +2,7 @@
 
 import { ArrowLeft, CheckCircle2, CircleAlert, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import {
   ApiError,
@@ -36,13 +28,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
   const upgradeMessageRef = useRef<string | null>(null);
-  const notify = useCallback<ToastNotifier>(
-    (message, variant = "success") => {
-      if (variant === "error" && message === upgradeMessageRef.current) return;
-      setToast({ message, variant });
-    },
-    [],
-  );
+  const notify = useCallback<ToastNotifier>((message, variant = "success") => {
+    if (variant === "error" && message === upgradeMessageRef.current) return;
+    setToast({ message, variant });
+  }, []);
 
   const closeUpgradeModal = useCallback(() => {
     clearPendingPlanUpgradeMessage();
@@ -76,10 +65,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     window.addEventListener("unhandledrejection", handleUnhandledRejection);
     return () => {
       window.removeEventListener("error", handleWindowError);
-      window.removeEventListener(
-        "unhandledrejection",
-        handleUnhandledRejection,
-      );
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
     };
   }, []);
 
@@ -90,21 +76,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       setUpgradeMessage(message);
     };
     const handleUpgradeRequired = (event: Event) => {
-      const detail = (event as CustomEvent<PlanUpgradeRequiredEventDetail>)
-        .detail;
+      const detail = (event as CustomEvent<PlanUpgradeRequiredEventDetail>).detail;
       if (detail?.message) showUpgradeModal(detail.message);
     };
-    window.addEventListener(
-      PLAN_UPGRADE_REQUIRED_EVENT,
-      handleUpgradeRequired,
-    );
+    window.addEventListener(PLAN_UPGRADE_REQUIRED_EVENT, handleUpgradeRequired);
     const pendingMessage = getPendingPlanUpgradeMessage();
     if (pendingMessage) showUpgradeModal(pendingMessage);
-    return () =>
-      window.removeEventListener(
-        PLAN_UPGRADE_REQUIRED_EVENT,
-        handleUpgradeRequired,
-      );
+    return () => window.removeEventListener(PLAN_UPGRADE_REQUIRED_EVENT, handleUpgradeRequired);
   }, []);
 
   return (

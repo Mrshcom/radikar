@@ -38,11 +38,7 @@ import {
   type ResumeProject,
   supportsResumeColors,
 } from "./resume-data";
-import {
-  createRecordId,
-  getActiveProfileId,
-  knowledgeProfileStore,
-} from "@/lib/data/stores";
+import { createRecordId, getActiveProfileId, knowledgeProfileStore } from "@/lib/data/stores";
 import { scheduleFieldDirectionRefresh } from "@/lib/field-direction";
 import { cn } from "@/lib/cn";
 import { formatPersianNumber } from "@/lib/fa-number";
@@ -120,28 +116,20 @@ const proficiencyOptions = [
 ] as const;
 
 function proficiencyLabel(value: string) {
-  return (
-    proficiencyOptions.find((option) => option.value === value)?.label || value
-  );
+  return proficiencyOptions.find((option) => option.value === value)?.label || value;
 }
 
 function normalizeProficiency(value: string) {
   const normalized = value.trim().toLocaleLowerCase();
   const option = proficiencyOptions.find(
-    (item) =>
-      item.value === normalized || item.label.toLocaleLowerCase() === normalized,
+    (item) => item.value === normalized || item.label.toLocaleLowerCase() === normalized,
   );
   if (option) return option.value;
-  if (/(native|bilingual|مادری|دوزبانه|دو زبانه)/.test(normalized))
-    return "native-bilingual";
-  if (/(full professional|fluent|تسلط کامل)/.test(normalized))
-    return "full-professional";
-  if (/(professional working|حرفه‌ای|حرفه ای)/.test(normalized))
-    return "professional-working";
-  if (/(limited working|intermediate|محدود|متوسط)/.test(normalized))
-    return "limited-working";
-  if (/(elementary|basic|beginner|مقدماتی|پایه)/.test(normalized))
-    return "elementary";
+  if (/(native|bilingual|مادری|دوزبانه|دو زبانه)/.test(normalized)) return "native-bilingual";
+  if (/(full professional|fluent|تسلط کامل)/.test(normalized)) return "full-professional";
+  if (/(professional working|حرفه‌ای|حرفه ای)/.test(normalized)) return "professional-working";
+  if (/(limited working|intermediate|محدود|متوسط)/.test(normalized)) return "limited-working";
+  if (/(elementary|basic|beginner|مقدماتی|پایه)/.test(normalized)) return "elementary";
   return "";
 }
 
@@ -158,29 +146,17 @@ function parseEditableLanguages(value: string): EditableLanguage[] {
         proficiency: normalizeProficiency(levelParts.join(" — ")),
       };
     });
-  return items.length
-    ? items
-    : [{ id: createRecordId("resume-language"), name: "", proficiency: "" }];
+  return items.length ? items : [{ id: createRecordId("resume-language"), name: "", proficiency: "" }];
 }
 
 function serializeLanguages(items: EditableLanguage[]) {
   return items
     .filter((item) => item.name.trim())
-    .map((item) =>
-      [item.name.trim(), proficiencyLabel(item.proficiency)]
-        .filter(Boolean)
-        .join(" — "),
-    )
+    .map((item) => [item.name.trim(), proficiencyLabel(item.proficiency)].filter(Boolean).join(" — "))
     .join(" | ");
 }
 
-function ResumeLanguageEditor({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
+function ResumeLanguageEditor({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const [items, setItems] = useState(() => parseEditableLanguages(value));
   const lastSerializedValue = useRef(value);
 
@@ -229,13 +205,7 @@ function ResumeLanguageEditor({
               value={language.name}
               placeholder="مثلاً English"
               onChange={(event) =>
-                commit(
-                  items.map((item) =>
-                    item.id === language.id
-                      ? { ...item, name: event.target.value }
-                      : item,
-                  ),
-                )
+                commit(items.map((item) => (item.id === language.id ? { ...item, name: event.target.value } : item)))
               }
             />
           </label>
@@ -245,13 +215,7 @@ function ResumeLanguageEditor({
               options={proficiencyOptions}
               value={language.proficiency}
               onChange={(value) =>
-                commit(
-                  items.map((item) =>
-                    item.id === language.id
-                      ? { ...item, proficiency: String(value) }
-                      : item,
-                  ),
-                )
+                commit(items.map((item) => (item.id === language.id ? { ...item, proficiency: String(value) } : item)))
               }
             />
           </label>
@@ -260,9 +224,7 @@ function ResumeLanguageEditor({
             type="button"
             disabled={items.length === 1}
             aria-label={`حذف زبان ${formatPersianNumber(index + 1)}`}
-            onClick={() =>
-              commit(items.filter((item) => item.id !== language.id))
-            }
+            onClick={() => commit(items.filter((item) => item.id !== language.id))}
           >
             <Trash2 size={15} />
           </button>
@@ -297,8 +259,7 @@ export function ResumeBuilder({
   const generationBusy = generating || isRunning("resume-generate");
   const [modelError, setModelError] = useState("");
   const [atsMatchSummary, setAtsMatchSummary] = useState<AtsMatchSummary | null>(null);
-  const [modelOverwriteConfirmOpen, setModelOverwriteConfirmOpen] =
-    useState(false);
+  const [modelOverwriteConfirmOpen, setModelOverwriteConfirmOpen] = useState(false);
   const [photoError, setPhotoError] = useState("");
   const [photoDeleteConfirm, setPhotoDeleteConfirm] = useState(false);
   const [printView, setPrintView] = useState(false);
@@ -307,12 +268,9 @@ export function ResumeBuilder({
     itemName: string;
     action: () => void;
   } | null>(null);
-  const [generationLanguagePickerOpen, setGenerationLanguagePickerOpen] =
-    useState(false);
+  const [generationLanguagePickerOpen, setGenerationLanguagePickerOpen] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
-  const selected = resumeTemplates.find(
-    (template) => template.id === selectedTemplate,
-  );
+  const selected = resumeTemplates.find((template) => template.id === selectedTemplate);
   useEffect(() => {
     if (!printView) return;
     const closePrintView = () => {
@@ -343,33 +301,16 @@ export function ResumeBuilder({
   const projects = Array.isArray(data.projects) ? data.projects : [];
   const canContinue = [
     Boolean(data.fullName.trim() && data.jobTitle.trim() && data.email.trim()),
+    Boolean(experiences.some((experience) => experience.jobTitle.trim() && experience.company.trim())),
     Boolean(
-      experiences.some(
-        (experience) =>
-          experience.jobTitle.trim() && experience.company.trim(),
-      ),
-    ),
-    Boolean(
-      educations.some(
-        (education) =>
-          education.credential.trim() || education.institution.trim(),
-      ) && data.skills.trim(),
+      educations.some((education) => education.credential.trim() || education.institution.trim()) && data.skills.trim(),
     ),
     true,
   ][step];
-  const input =
-    (field: keyof ResumeData) =>
-    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const ltrOnly =
-        field === "email" ||
-        field === "phone" ||
-        field === "website" ||
-        field === "experienceDate";
-      onDataChange(
-        field,
-        ltrOnly ? sanitizeLtrField(event.target.value) : event.target.value,
-      );
-    };
+  const input = (field: keyof ResumeData) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const ltrOnly = field === "email" || field === "phone" || field === "website" || field === "experienceDate";
+    onDataChange(field, ltrOnly ? sanitizeLtrField(event.target.value) : event.target.value);
+  };
   const saveResume = async () => {
     if (savingRef.current) return false;
     savingRef.current = true;
@@ -378,10 +319,7 @@ export function ResumeBuilder({
       await onSave();
       return true;
     } catch (error) {
-      notify(
-        error instanceof Error ? error.message : "ذخیره رزومه ناموفق بود.",
-        "error",
-      );
+      notify(error instanceof Error ? error.message : "ذخیره رزومه ناموفق بود.", "error");
       return false;
     } finally {
       savingRef.current = false;
@@ -395,10 +333,7 @@ export function ResumeBuilder({
       setPrintReady(false);
       setPrintView(true);
     } catch (error) {
-      notify(
-        error instanceof Error ? error.message : "دریافت خروجی PDF ناموفق بود.",
-        "error",
-      );
+      notify(error instanceof Error ? error.message : "دریافت خروجی PDF ناموفق بود.", "error");
     }
   };
   const replaceExperiences = (nextExperiences: ResumeExperience[]) => {
@@ -409,12 +344,7 @@ export function ResumeBuilder({
       experienceTitle: first?.jobTitle || "",
       company: first?.company || "",
       experienceDate: first
-        ? [
-            first.startDate,
-            first.isCurrent ? "امروز" : first.endDate,
-          ]
-            .filter(Boolean)
-            .join(" تا ")
+        ? [first.startDate, first.isCurrent ? "امروز" : first.endDate].filter(Boolean).join(" تا ")
         : "",
       experience: first?.description || "",
     });
@@ -425,31 +355,22 @@ export function ResumeBuilder({
       educations: nextEducations,
       education: nextEducations
         .map((item) => {
-          const title = [item.credential, item.institution]
-            .filter(Boolean)
-            .join("، ");
-          const date = [
-            item.startDate,
-            item.isCurrent ? "امروز" : item.endDate,
-          ]
-            .filter(Boolean)
-            .join(" تا ");
+          const title = [item.credential, item.institution].filter(Boolean).join("، ");
+          const date = [item.startDate, item.isCurrent ? "امروز" : item.endDate].filter(Boolean).join(" تا ");
           return [title, date].filter(Boolean).join(" — ");
         })
         .filter(Boolean)
         .join("\n"),
     });
   };
-  const replaceProjects = (nextProjects: ResumeProject[]) =>
-    onDataReplace({ ...data, projects: nextProjects });
+  const replaceProjects = (nextProjects: ResumeProject[]) => onDataReplace({ ...data, projects: nextProjects });
   const updatePhoto = async (file: File) => {
     setPhotoError("");
     try {
       onDataChange("photoUrl", await readProfileImage(file));
       notify("تصویر رزومه با موفقیت انتخاب شد.");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "انتخاب تصویر ناموفق بود.";
+      const message = error instanceof Error ? error.message : "انتخاب تصویر ناموفق بود.";
       setPhotoError(message);
       notify(message, "error");
     } finally {
@@ -469,9 +390,7 @@ export function ResumeBuilder({
         completedLabel: "تکمیل رزومه انجام شد",
         href: "/resumes",
         run: async () => {
-          const knowledge = await knowledgeProfileStore.get(
-            await getActiveProfileId(),
-          );
+          const knowledge = await knowledgeProfileStore.get(await getActiveProfileId());
           const result = await apiRequest<{
             resume?: unknown;
             error?: string;
@@ -480,8 +399,7 @@ export function ResumeBuilder({
             method: "POST",
             body: JSON.stringify({ resume: data, knowledge, language }),
           });
-          if (!result.resume)
-            throw new Error(result.error || "مدل رزومه‌ساز پاسخ نداد.");
+          if (!result.resume) throw new Error(result.error || "مدل رزومه‌ساز پاسخ نداد.");
           setAtsMatchSummary(result.atsMatchSummary ?? null);
           const safeResume = normalizeResumeDataInput(result.resume);
           await onDataMerge(safeResume);
@@ -491,8 +409,7 @@ export function ResumeBuilder({
       scheduleFieldDirectionRefresh();
       notify("رزومه با مدل ساخته و ذخیره شد.");
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "مدل رزومه‌ساز پاسخ نداد.";
+      const message = error instanceof Error ? error.message : "مدل رزومه‌ساز پاسخ نداد.";
       setModelError(message);
       notify(message, "error");
     } finally {
@@ -522,7 +439,8 @@ export function ResumeBuilder({
             disabled={saving}
             onClick={() => void saveResume()}
           >
-            {saving ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />} {saving ? "در حال ذخیره..." : "ذخیره رزومه"}
+            {saving ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />}{" "}
+            {saving ? "در حال ذخیره..." : "ذخیره رزومه"}
           </button>
           {hasBeenSaved && (
             <button
@@ -538,32 +456,70 @@ export function ResumeBuilder({
       }
       onClose={onClose}
     >
-      <div className={cn("grid h-[min(760px,calc(100vh-120px))] min-w-0 grid-cols-1 [grid-template-areas:'form'_'preview'] max-[820px]:h-[calc(100dvh-155px)] min-[821px]:grid-cols-[minmax(0,1fr)_430px] min-[821px]:[grid-template-areas:'preview_form'] min-[1121px]:grid-cols-[minmax(0,1fr)_520px]", mobileView === "form" ? "max-[820px]:[grid-template-areas:'tabs'_'actions'_'form']" : "max-[820px]:[grid-template-areas:'tabs'_'actions'_'preview']")}>
-        <div className="col-span-full hidden items-center gap-1 rounded-[12px] border border-[#dfe7e1] bg-[#f0f4f1] p-1 [grid-area:tabs] max-[820px]:flex" role="tablist" aria-label="نمایش رزومه">
+      <div
+        className={cn(
+          "grid h-[min(760px,calc(100vh-120px))] min-w-0 grid-cols-1 [grid-template-areas:'form'_'preview'] max-[820px]:h-[calc(100dvh-155px)] min-[821px]:grid-cols-[minmax(0,1fr)_430px] min-[821px]:[grid-template-areas:'preview_form'] min-[1121px]:grid-cols-[minmax(0,1fr)_520px]",
+          mobileView === "form"
+            ? "max-[820px]:[grid-template-areas:'tabs'_'actions'_'form']"
+            : "max-[820px]:[grid-template-areas:'tabs'_'actions'_'preview']",
+        )}
+      >
+        <div
+          className="col-span-full hidden items-center gap-1 rounded-[12px] border border-[#dfe7e1] bg-[#f0f4f1] p-1 [grid-area:tabs] max-[820px]:flex"
+          role="tablist"
+          aria-label="نمایش رزومه"
+        >
           <button
-            className={cn("min-h-10 flex-1 rounded-[9px] px-3 text-[10px] font-bold", mobileView === "form" ? "bg-white text-[#0f7b62] shadow-sm" : "text-[#71817d]")}
+            className={cn(
+              "min-h-10 flex-1 rounded-[9px] px-3 text-[10px] font-bold",
+              mobileView === "form" ? "bg-white text-[#0f7b62] shadow-sm" : "text-[#71817d]",
+            )}
             type="button"
             role="tab"
             aria-selected={mobileView === "form"}
             onClick={() => setMobileView("form")}
-          >ویرایش اطلاعات</button>
+          >
+            ویرایش اطلاعات
+          </button>
           <button
-            className={cn("min-h-10 flex-1 rounded-[9px] px-3 text-[10px] font-bold", mobileView === "preview" ? "bg-white text-[#0f7b62] shadow-sm" : "text-[#71817d]")}
+            className={cn(
+              "min-h-10 flex-1 rounded-[9px] px-3 text-[10px] font-bold",
+              mobileView === "preview" ? "bg-white text-[#0f7b62] shadow-sm" : "text-[#71817d]",
+            )}
             type="button"
             role="tab"
             aria-selected={mobileView === "preview"}
             onClick={() => setMobileView("preview")}
-          >پیش‌نمایش</button>
+          >
+            پیش‌نمایش
+          </button>
         </div>
         <div className="col-span-full hidden items-center justify-end gap-2 pt-2 [grid-area:actions] max-[820px]:flex">
-          <button className={`${secondaryButton} w-fit px-3 text-[9px]`} type="button" disabled={generationBusy} onClick={() => setModelOverwriteConfirmOpen(true)}><Sparkles size={14} /> تکمیل با AI</button>
-          <button className={`${primaryButton} w-fit px-3 text-[9px]`} type="button" disabled={saving} onClick={() => void saveResume()}>{saving ? <LoaderCircle className="animate-spin" size={14} /> : <Save size={14} />} {saving ? "در حال ذخیره..." : "ذخیره رزومه"}</button>
-        </div>
-        <aside className={cn("flex min-h-0 min-w-0 flex-col overflow-hidden [grid-area:form]", mobileView === "form" ? "max-[820px]:flex" : "max-[820px]:hidden")}>
-          <div
-            className="min-h-0 flex-1 overflow-y-auto p-[22px] pb-6"
-            data-resume-builder-scroll
+          <button
+            className={`${secondaryButton} w-fit px-3 text-[9px]`}
+            type="button"
+            disabled={generationBusy}
+            onClick={() => setModelOverwriteConfirmOpen(true)}
           >
+            <Sparkles size={14} /> تکمیل با AI
+          </button>
+          <button
+            className={`${primaryButton} w-fit px-3 text-[9px]`}
+            type="button"
+            disabled={saving}
+            onClick={() => void saveResume()}
+          >
+            {saving ? <LoaderCircle className="animate-spin" size={14} /> : <Save size={14} />}{" "}
+            {saving ? "در حال ذخیره..." : "ذخیره رزومه"}
+          </button>
+        </div>
+        <aside
+          className={cn(
+            "flex min-h-0 min-w-0 flex-col overflow-hidden [grid-area:form]",
+            mobileView === "form" ? "max-[820px]:flex" : "max-[820px]:hidden",
+          )}
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto p-[22px] pb-6" data-resume-builder-scroll>
             <section
               className="mb-3 grid gap-3 rounded-[14px] border border-[#dfe7e1] bg-[#f8faf8] px-3.5 py-3 shadow-[0_5px_18px_rgba(27,55,50,.035)]"
               aria-label="تنظیمات قالب"
@@ -579,9 +535,7 @@ export function ResumeBuilder({
               </label>
               {supportsResumeColors(selectedTemplate) && (
                 <div className="flex flex-wrap items-center gap-2.5 border-t border-[#e3e9e4] pt-3">
-                  <span className="ml-auto text-[8px] font-bold text-[#5f726d]">
-                    رنگ‌بندی قالب
-                  </span>
+                  <span className="ml-auto text-[8px] font-bold text-[#5f726d]">رنگ‌بندی قالب</span>
                   {resumeColorOptions.map((color) => (
                     <button
                       key={color.id}
@@ -591,8 +545,7 @@ export function ResumeBuilder({
                       className={cn(
                         "size-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#d7dfda] transition-all duration-200 hover:scale-110",
                         color.swatch,
-                        selectedColor === color.id &&
-                          "scale-110 shadow-[0_0_0_2px_#0f7b62]",
+                        selectedColor === color.id && "scale-110 shadow-[0_0_0_2px_#0f7b62]",
                       )}
                       onClick={() => onColorChange(color.id)}
                     />
@@ -608,8 +561,7 @@ export function ResumeBuilder({
             >
               {steps.map((item, index) => {
                 const Icon = item.icon;
-                const state =
-                  index === step ? "active" : index < step ? "done" : "idle";
+                const state = index === step ? "active" : index < step ? "done" : "idle";
                 return (
                   <button
                     key={item.title}
@@ -617,8 +569,7 @@ export function ResumeBuilder({
                       "flex min-w-0 items-center justify-center gap-2 rounded-[10px] border border-transparent px-2 py-2.5 text-center transition-all duration-200",
                       state === "active" &&
                         "border-white bg-white text-[#0f7b62] shadow-[0_5px_16px_rgba(27,55,50,.1)]",
-                      state === "done" &&
-                        "bg-[#e5f2ec] text-[#3f7567] hover:bg-[#dcece5]",
+                      state === "done" && "bg-[#e5f2ec] text-[#3f7567] hover:bg-[#dcece5]",
                       state === "idle" && "text-[#8a9692]",
                     )}
                     type="button"
@@ -636,9 +587,7 @@ export function ResumeBuilder({
                     >
                       {index < step ? <Check size={14} /> : <Icon size={14} />}
                     </span>
-                    <strong className="hidden min-w-0 truncate text-[7px] min-[421px]:block">
-                      {item.title}
-                    </strong>
+                    <strong className="hidden min-w-0 truncate text-[7px] min-[421px]:block">{item.title}</strong>
                   </button>
                 );
               })}
@@ -649,451 +598,281 @@ export function ResumeBuilder({
               </div>
             )}
             {atsMatchSummary && (
-              <section className="mb-3 grid gap-2 rounded-lg border border-[#cfe6db] bg-[#f3faf6] px-3 py-2 text-[8px] text-[#526d65]" aria-label="خلاصه تطبیق ATS">
+              <section
+                className="mb-3 grid gap-2 rounded-lg border border-[#cfe6db] bg-[#f3faf6] px-3 py-2 text-[8px] text-[#526d65]"
+                aria-label="خلاصه تطبیق ATS"
+              >
                 <strong className="text-[9px] text-[#0f705a]">خلاصه ATS</strong>
                 <span>
-                  پوشش کلیدواژه‌ها: {atsMatchSummary.estimatedKeywordCoverage === null ? "بدون شرح شغل" : `${atsMatchSummary.estimatedKeywordCoverage}٪`}
+                  پوشش کلیدواژه‌ها:{" "}
+                  {atsMatchSummary.estimatedKeywordCoverage === null
+                    ? "بدون شرح شغل"
+                    : `${atsMatchSummary.estimatedKeywordCoverage}٪`}
                 </span>
-                {atsMatchSummary.strongMatches.length > 0 && <span>نقاط قوت: {atsMatchSummary.strongMatches.join("، ")}</span>}
-                {atsMatchSummary.keywordGaps.length > 0 && <span>شکاف‌های کلیدواژه‌ای: {atsMatchSummary.keywordGaps.join("، ")}</span>}
+                {atsMatchSummary.strongMatches.length > 0 && (
+                  <span>نقاط قوت: {atsMatchSummary.strongMatches.join("، ")}</span>
+                )}
+                {atsMatchSummary.keywordGaps.length > 0 && (
+                  <span>شکاف‌های کلیدواژه‌ای: {atsMatchSummary.keywordGaps.join("، ")}</span>
+                )}
               </section>
             )}
 
             <div className={`${fieldArea} min-h-[345px]`} key={step}>
-            {step === 0 && (
-              <>
-                <h3>اطلاعات فردی</h3>
-                <p className="m-0 text-[8px] leading-[1.8] text-[#82908d]">
-                  اطلاعات این نسخه مستقل است و تغییری در پایگاه دانش یا
-                  رزومه‌های دیگر ایجاد نمی‌کند.
-                </p>
-                <div className="flex items-center gap-3 rounded-xl border border-[#dfe8e2] bg-[#f8faf8] p-3">
-                  <div className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl border border-[#d5e3dc] bg-[#e8f2ed] text-[#6d8980]">
-                    <UserRound size={25} />
-                    {data.photoUrl && (
-                      <Image
-                        className="absolute inset-0 size-full object-cover"
-                        src={data.photoUrl}
-                        width={128}
-                        height={128}
-                        unoptimized
-                        alt="تصویر این رزومه"
-                        onError={(event) => {
-                          event.currentTarget.style.display = "none";
-                        }}
-                      />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <strong className="text-[9px] text-[#19312f]">
-                      عکس همین رزومه
-                    </strong>
-                    <p className="mb-0 mt-1 text-[7px] leading-[1.7] text-[#84928f]">
-                      {data.photoUrl
-                        ? "می‌توانی عکس را برای همین نسخه جایگزین یا حذف کنی."
-                        : "این رزومه بدون عکس ساخته می‌شود؛ در صورت نیاز عکس اضافه کن."}
-                    </p>
-                    {photoError && (
-                      <span className="mt-1 block text-[7px] text-[#b65e52]">
-                        {photoError}
-                      </span>
-                    )}
-                  </div>
-                  <input
-                    ref={photoInputRef}
-                    className="sr-only"
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) void updatePhoto(file);
-                    }}
-                  />
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <button
-                      className="grid size-9 place-items-center rounded-[10px] border border-[#dfe5df] bg-white text-[#526461] transition-colors duration-200 hover:bg-[#edf7f2] hover:text-[#0f7b62]"
-                      type="button"
-                      aria-label={data.photoUrl ? "جایگزینی عکس" : "افزودن عکس"}
-                      title={data.photoUrl ? "جایگزینی عکس" : "افزودن عکس"}
-                      onClick={() => photoInputRef.current?.click()}
-                    >
-                      <ImagePlus size={16} />
-                    </button>
-                    {data.photoUrl && (
-                      <button
-                        className="grid size-9 place-items-center rounded-[10px] border border-[#eccfc9] bg-[#fff5f2] text-[#b65e52] transition-colors duration-200 hover:bg-[#ffe9e4]"
-                        type="button"
-                        aria-label="حذف عکس"
-                        title="حذف عکس"
-                        onClick={() => setPhotoDeleteConfirm(true)}
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
-                  <label>
-                    نام و نام خانوادگی
-                    <input
-                      autoFocus
-                      value={data.fullName}
-                      onChange={input("fullName")}
-                    />
-                  </label>
-                  <label>
-                    عنوان حرفه‌ای
-                    <input value={data.jobTitle} onChange={input("jobTitle")} />
-                  </label>
-                </div>
-                <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
-                  <label>
-                    ایمیل
-                    <input
-                      className="!text-left placeholder-ltr"
-                      dir="ltr"
-                      data-direction="ltr"
-                      type="email"
-                      value={data.email}
-                      onChange={input("email")}
-                    />
-                  </label>
-                  <label>
-                    شماره تماس
-                    <input
-                      className="!text-left placeholder-ltr"
-                      dir="ltr"
-                      data-direction="ltr"
-                      type="tel"
-                      value={data.phone}
-                      onChange={input("phone")}
-                    />
-                  </label>
-                </div>
-                <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
-                  <label>
-                    محل سکونت
-                    <input value={data.location} onChange={input("location")} />
-                  </label>
-                  <label>
-                    وب‌سایت یا لینکدین
-                    <input
-                      className="!text-left placeholder-ltr"
-                      dir="ltr"
-                      data-direction="ltr"
-                      inputMode="url"
-                      value={data.website}
-                      onChange={input("website")}
-                    />
-                  </label>
-                </div>
-              </>
-            )}
-
-            {step === 1 && (
-              <>
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h3>سوابق کاری</h3>
-                    <p className="m-0 text-[8px] leading-[1.8] text-[#82908d]">
-                      همه تجربه‌های این رزومه را مستقل ویرایش کن.
-                    </p>
-                  </div>
-                  <button
-                    className={secondaryButton}
-                    type="button"
-                    onClick={() =>
-                      replaceExperiences([
-                        ...experiences,
-                        {
-                          id: createRecordId("resume-experience"),
-                          jobTitle: "",
-                          company: "",
-                          location: "",
-                          startDate: "",
-                          endDate: "",
-                          isCurrent: false,
-                          description: "",
-                          technologies: "",
-                        },
-                      ])
-                    }
-                  >
-                    <Plus size={15} /> افزودن سابقه
-                  </button>
-                </div>
-                {experiences.map((experience, index) => (
-                  <article
-                    className="grid gap-3 rounded-xl border border-[#dfe8e2] bg-[#f8faf8] p-3"
-                    key={experience.id}
-                  >
-                    <header className="flex items-center justify-between gap-3">
-                      <strong className="text-[9px]">
-                        تجربه {formatPersianNumber(index + 1)}
-                      </strong>
-                      <button
-                        className="grid size-7 place-items-center rounded-lg bg-transparent text-[#c95649] transition-colors hover:bg-[#fff0ed]"
-                        type="button"
-                        aria-label={`حذف تجربه ${formatPersianNumber(index + 1)}`}
-                        onClick={() =>
-                          setPendingItemDelete({
-                            itemName:
-                              experience.jobTitle ||
-                              `تجربه ${formatPersianNumber(index + 1)}`,
-                            action: () =>
-                              replaceExperiences(
-                                experiences.filter(
-                                  (item) => item.id !== experience.id,
-                                ),
-                              ),
-                          })
-                        }
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </header>
-                    <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
-                      {(
-                        [
-                          ["jobTitle", "عنوان شغلی"],
-                          ["company", "شرکت"],
-                          ["location", "محل فعالیت"],
-                        ] as const
-                      ).map(([field, label]) => (
-                        <label key={field}>
-                          {label}
-                          <input
-                            value={experience[field]}
-                            onChange={(event) =>
-                              replaceExperiences(
-                                experiences.map((item) =>
-                                  item.id === experience.id
-                                    ? { ...item, [field]: event.target.value }
-                                    : item,
-                                ),
-                              )
-                            }
-                          />
-                        </label>
-                      ))}
-                      {(
-                        [
-                          ["startDate", "تاریخ شروع"],
-                          ["endDate", "تاریخ پایان"],
-                        ] as const
-                      ).map(([field, label]) => (
-                        <label key={field}>
-                          {label}
-                          <input
-                            className="!text-left placeholder-ltr"
-                            dir="ltr"
-                            disabled={
-                              field === "endDate" && experience.isCurrent
-                            }
-                            value={experience[field]}
-                            onChange={(event) =>
-                              replaceExperiences(
-                                experiences.map((item) =>
-                                  item.id === experience.id
-                                    ? {
-                                        ...item,
-                                        [field]: sanitizeLtrField(
-                                          event.target.value,
-                                        ),
-                                      }
-                                    : item,
-                                ),
-                              )
-                            }
-                          />
-                        </label>
-                      ))}
+              {step === 0 && (
+                <>
+                  <h3>اطلاعات فردی</h3>
+                  <p className="m-0 text-[8px] leading-[1.8] text-[#82908d]">
+                    اطلاعات این نسخه مستقل است و تغییری در پایگاه دانش یا رزومه‌های دیگر ایجاد نمی‌کند.
+                  </p>
+                  <div className="flex items-center gap-3 rounded-xl border border-[#dfe8e2] bg-[#f8faf8] p-3">
+                    <div className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-xl border border-[#d5e3dc] bg-[#e8f2ed] text-[#6d8980]">
+                      <UserRound size={25} />
+                      {data.photoUrl && (
+                        <Image
+                          className="absolute inset-0 size-full object-cover"
+                          src={data.photoUrl}
+                          width={128}
+                          height={128}
+                          unoptimized
+                          alt="تصویر این رزومه"
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none";
+                          }}
+                        />
+                      )}
                     </div>
-                    <label className="!flex items-center gap-2">
-                      <Checkbox
-                        className="!size-4 !min-h-0 !w-4"
-                        checked={experience.isCurrent}
-                        onChange={(event) =>
-                          replaceExperiences(
-                            experiences.map((item) =>
-                              item.id === experience.id
-                                ? {
-                                    ...item,
-                                    isCurrent: event.target.checked,
-                                    endDate: event.target.checked
-                                      ? ""
-                                      : item.endDate,
-                                  }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                      همچنان مشغول فعالیت هستم
-                    </label>
-                    <label>
-                      دستاوردها — هر مورد در یک خط
-                      <textarea
-                        value={experience.description}
-                        onChange={(event) =>
-                          replaceExperiences(
-                            experiences.map((item) =>
-                              item.id === experience.id
-                                ? {
-                                    ...item,
-                                    description: event.target.value,
-                                  }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </label>
-                    <label>
-                      مهارت‌ها و فناوری‌های این تجربه
-                      <input
-                        value={experience.technologies}
-                        onChange={(event) =>
-                          replaceExperiences(
-                            experiences.map((item) =>
-                              item.id === experience.id
-                                ? {
-                                    ...item,
-                                    technologies: event.target.value,
-                                  }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </label>
-                  </article>
-                ))}
-                {!experiences.length && (
-                  <button
-                    className={`${secondaryButton} w-full`}
-                    type="button"
-                    onClick={() =>
-                      replaceExperiences([
-                        {
-                          id: createRecordId("resume-experience"),
-                          jobTitle: "",
-                          company: "",
-                          location: "",
-                          startDate: "",
-                          endDate: "",
-                          isCurrent: false,
-                          description: "",
-                          technologies: "",
-                        },
-                      ])
-                    }
-                  >
-                    <Plus size={15} /> ثبت اولین سابقه کاری
-                  </button>
-                )}
-              </>
-            )}
-
-            {step === 2 && (
-              <>
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h3>پروژه‌ها</h3>
-                    <p className="m-0 text-[8px] leading-[1.8] text-[#82908d]">
-                      پروژه‌های شخصی، متن‌باز یا حرفه‌ای قابل ارائه را اضافه کن.
-                    </p>
-                  </div>
-                  <button
-                    className={secondaryButton}
-                    type="button"
-                    onClick={() =>
-                      replaceProjects([
-                        ...projects,
-                        {
-                          id: createRecordId("resume-project"),
-                          name: "",
-                          role: "",
-                          url: "",
-                          startDate: "",
-                          endDate: "",
-                          isCurrent: false,
-                          description: "",
-                          technologies: "",
-                        },
-                      ])
-                    }
-                  >
-                    <Plus size={15} /> افزودن پروژه
-                  </button>
-                </div>
-                {projects.map((project, index) => (
-                  <article
-                    className="grid gap-3 rounded-xl border border-[#dfe8e2] bg-[#f8faf8] p-3"
-                    key={project.id}
-                  >
-                    <header className="flex items-center justify-between gap-3">
-                      <strong className="text-[9px]">
-                        پروژه {formatPersianNumber(index + 1)}
-                      </strong>
+                    <div className="min-w-0 flex-1">
+                      <strong className="text-[9px] text-[#19312f]">عکس همین رزومه</strong>
+                      <p className="mb-0 mt-1 text-[7px] leading-[1.7] text-[#84928f]">
+                        {data.photoUrl
+                          ? "می‌توانی عکس را برای همین نسخه جایگزین یا حذف کنی."
+                          : "این رزومه بدون عکس ساخته می‌شود؛ در صورت نیاز عکس اضافه کن."}
+                      </p>
+                      {photoError && <span className="mt-1 block text-[7px] text-[#b65e52]">{photoError}</span>}
+                    </div>
+                    <input
+                      ref={photoInputRef}
+                      className="sr-only"
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) void updatePhoto(file);
+                      }}
+                    />
+                    <div className="flex shrink-0 items-center gap-1.5">
                       <button
-                        className="grid size-7 place-items-center rounded-lg bg-transparent text-[#c95649] transition-colors hover:bg-[#fff0ed]"
+                        className="grid size-9 place-items-center rounded-[10px] border border-[#dfe5df] bg-white text-[#526461] transition-colors duration-200 hover:bg-[#edf7f2] hover:text-[#0f7b62]"
                         type="button"
-                        aria-label={`حذف پروژه ${formatPersianNumber(index + 1)}`}
-                        onClick={() =>
-                          setPendingItemDelete({
-                            itemName:
-                              project.name ||
-                              `پروژه ${formatPersianNumber(index + 1)}`,
-                            action: () =>
-                              replaceProjects(
-                                projects.filter(
-                                  (item) => item.id !== project.id,
-                                ),
-                              ),
-                          })
-                        }
+                        aria-label={data.photoUrl ? "جایگزینی عکس" : "افزودن عکس"}
+                        title={data.photoUrl ? "جایگزینی عکس" : "افزودن عکس"}
+                        onClick={() => photoInputRef.current?.click()}
                       >
-                        <Trash2 size={15} />
+                        <ImagePlus size={16} />
                       </button>
-                    </header>
-                    <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
-                      {(
-                        [
-                          ["name", "نام پروژه"],
-                          ["role", "نقش، کارفرما یا نوع پروژه"],
-                        ] as const
-                      ).map(([field, label]) => (
-                        <label key={field}>
-                          {label}
-                          <input
-                            value={project[field]}
-                            onChange={(event) =>
-                              replaceProjects(
-                                projects.map((item) =>
-                                  item.id === project.id
-                                    ? { ...item, [field]: event.target.value }
-                                    : item,
-                                ),
-                              )
-                            }
-                          />
-                        </label>
-                      ))}
-                      <label>
-                        لینک پروژه
-                        <input
-                          className="!text-left placeholder-ltr"
-                          dir="ltr"
-                          inputMode="url"
-                          value={project.url}
+                      {data.photoUrl && (
+                        <button
+                          className="grid size-9 place-items-center rounded-[10px] border border-[#eccfc9] bg-[#fff5f2] text-[#b65e52] transition-colors duration-200 hover:bg-[#ffe9e4]"
+                          type="button"
+                          aria-label="حذف عکس"
+                          title="حذف عکس"
+                          onClick={() => setPhotoDeleteConfirm(true)}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
+                    <label>
+                      نام و نام خانوادگی
+                      <input autoFocus value={data.fullName} onChange={input("fullName")} />
+                    </label>
+                    <label>
+                      عنوان حرفه‌ای
+                      <input value={data.jobTitle} onChange={input("jobTitle")} />
+                    </label>
+                  </div>
+                  <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
+                    <label>
+                      ایمیل
+                      <input
+                        className="!text-left placeholder-ltr"
+                        dir="ltr"
+                        data-direction="ltr"
+                        type="email"
+                        value={data.email}
+                        onChange={input("email")}
+                      />
+                    </label>
+                    <label>
+                      شماره تماس
+                      <input
+                        className="!text-left placeholder-ltr"
+                        dir="ltr"
+                        data-direction="ltr"
+                        type="tel"
+                        value={data.phone}
+                        onChange={input("phone")}
+                      />
+                    </label>
+                  </div>
+                  <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
+                    <label>
+                      محل سکونت
+                      <input value={data.location} onChange={input("location")} />
+                    </label>
+                    <label>
+                      وب‌سایت یا لینکدین
+                      <input
+                        className="!text-left placeholder-ltr"
+                        dir="ltr"
+                        data-direction="ltr"
+                        inputMode="url"
+                        value={data.website}
+                        onChange={input("website")}
+                      />
+                    </label>
+                  </div>
+                </>
+              )}
+
+              {step === 1 && (
+                <>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3>سوابق کاری</h3>
+                      <p className="m-0 text-[8px] leading-[1.8] text-[#82908d]">
+                        همه تجربه‌های این رزومه را مستقل ویرایش کن.
+                      </p>
+                    </div>
+                    <button
+                      className={secondaryButton}
+                      type="button"
+                      onClick={() =>
+                        replaceExperiences([
+                          ...experiences,
+                          {
+                            id: createRecordId("resume-experience"),
+                            jobTitle: "",
+                            company: "",
+                            location: "",
+                            startDate: "",
+                            endDate: "",
+                            isCurrent: false,
+                            description: "",
+                            technologies: "",
+                          },
+                        ])
+                      }
+                    >
+                      <Plus size={15} /> افزودن سابقه
+                    </button>
+                  </div>
+                  {experiences.map((experience, index) => (
+                    <article
+                      className="grid gap-3 rounded-xl border border-[#dfe8e2] bg-[#f8faf8] p-3"
+                      key={experience.id}
+                    >
+                      <header className="flex items-center justify-between gap-3">
+                        <strong className="text-[9px]">تجربه {formatPersianNumber(index + 1)}</strong>
+                        <button
+                          className="grid size-7 place-items-center rounded-lg bg-transparent text-[#c95649] transition-colors hover:bg-[#fff0ed]"
+                          type="button"
+                          aria-label={`حذف تجربه ${formatPersianNumber(index + 1)}`}
+                          onClick={() =>
+                            setPendingItemDelete({
+                              itemName: experience.jobTitle || `تجربه ${formatPersianNumber(index + 1)}`,
+                              action: () => replaceExperiences(experiences.filter((item) => item.id !== experience.id)),
+                            })
+                          }
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </header>
+                      <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
+                        {(
+                          [
+                            ["jobTitle", "عنوان شغلی"],
+                            ["company", "شرکت"],
+                            ["location", "محل فعالیت"],
+                          ] as const
+                        ).map(([field, label]) => (
+                          <label key={field}>
+                            {label}
+                            <input
+                              value={experience[field]}
+                              onChange={(event) =>
+                                replaceExperiences(
+                                  experiences.map((item) =>
+                                    item.id === experience.id ? { ...item, [field]: event.target.value } : item,
+                                  ),
+                                )
+                              }
+                            />
+                          </label>
+                        ))}
+                        {(
+                          [
+                            ["startDate", "تاریخ شروع"],
+                            ["endDate", "تاریخ پایان"],
+                          ] as const
+                        ).map(([field, label]) => (
+                          <label key={field}>
+                            {label}
+                            <input
+                              className="!text-left placeholder-ltr"
+                              dir="ltr"
+                              disabled={field === "endDate" && experience.isCurrent}
+                              value={experience[field]}
+                              onChange={(event) =>
+                                replaceExperiences(
+                                  experiences.map((item) =>
+                                    item.id === experience.id
+                                      ? {
+                                          ...item,
+                                          [field]: sanitizeLtrField(event.target.value),
+                                        }
+                                      : item,
+                                  ),
+                                )
+                              }
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      <label className="!flex items-center gap-2">
+                        <Checkbox
+                          className="!size-4 !min-h-0 !w-4"
+                          checked={experience.isCurrent}
                           onChange={(event) =>
-                            replaceProjects(
-                              projects.map((item) =>
-                                item.id === project.id
+                            replaceExperiences(
+                              experiences.map((item) =>
+                                item.id === experience.id
                                   ? {
                                       ...item,
-                                      url: sanitizeLtrField(event.target.value),
+                                      isCurrent: event.target.checked,
+                                      endDate: event.target.checked ? "" : item.endDate,
+                                    }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
+                        همچنان مشغول فعالیت هستم
+                      </label>
+                      <label>
+                        دستاوردها — هر مورد در یک خط
+                        <textarea
+                          value={experience.description}
+                          onChange={(event) =>
+                            replaceExperiences(
+                              experiences.map((item) =>
+                                item.id === experience.id
+                                  ? {
+                                      ...item,
+                                      description: event.target.value,
                                     }
                                   : item,
                               ),
@@ -1101,28 +880,140 @@ export function ResumeBuilder({
                           }
                         />
                       </label>
-                      {(
-                        [
-                          ["startDate", "تاریخ شروع"],
-                          ["endDate", "تاریخ پایان"],
-                        ] as const
-                      ).map(([field, label]) => (
-                        <label key={field}>
-                          {label}
+                      <label>
+                        مهارت‌ها و فناوری‌های این تجربه
+                        <input
+                          value={experience.technologies}
+                          onChange={(event) =>
+                            replaceExperiences(
+                              experiences.map((item) =>
+                                item.id === experience.id
+                                  ? {
+                                      ...item,
+                                      technologies: event.target.value,
+                                    }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                    </article>
+                  ))}
+                  {!experiences.length && (
+                    <button
+                      className={`${secondaryButton} w-full`}
+                      type="button"
+                      onClick={() =>
+                        replaceExperiences([
+                          {
+                            id: createRecordId("resume-experience"),
+                            jobTitle: "",
+                            company: "",
+                            location: "",
+                            startDate: "",
+                            endDate: "",
+                            isCurrent: false,
+                            description: "",
+                            technologies: "",
+                          },
+                        ])
+                      }
+                    >
+                      <Plus size={15} /> ثبت اولین سابقه کاری
+                    </button>
+                  )}
+                </>
+              )}
+
+              {step === 2 && (
+                <>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3>پروژه‌ها</h3>
+                      <p className="m-0 text-[8px] leading-[1.8] text-[#82908d]">
+                        پروژه‌های شخصی، متن‌باز یا حرفه‌ای قابل ارائه را اضافه کن.
+                      </p>
+                    </div>
+                    <button
+                      className={secondaryButton}
+                      type="button"
+                      onClick={() =>
+                        replaceProjects([
+                          ...projects,
+                          {
+                            id: createRecordId("resume-project"),
+                            name: "",
+                            role: "",
+                            url: "",
+                            startDate: "",
+                            endDate: "",
+                            isCurrent: false,
+                            description: "",
+                            technologies: "",
+                          },
+                        ])
+                      }
+                    >
+                      <Plus size={15} /> افزودن پروژه
+                    </button>
+                  </div>
+                  {projects.map((project, index) => (
+                    <article
+                      className="grid gap-3 rounded-xl border border-[#dfe8e2] bg-[#f8faf8] p-3"
+                      key={project.id}
+                    >
+                      <header className="flex items-center justify-between gap-3">
+                        <strong className="text-[9px]">پروژه {formatPersianNumber(index + 1)}</strong>
+                        <button
+                          className="grid size-7 place-items-center rounded-lg bg-transparent text-[#c95649] transition-colors hover:bg-[#fff0ed]"
+                          type="button"
+                          aria-label={`حذف پروژه ${formatPersianNumber(index + 1)}`}
+                          onClick={() =>
+                            setPendingItemDelete({
+                              itemName: project.name || `پروژه ${formatPersianNumber(index + 1)}`,
+                              action: () => replaceProjects(projects.filter((item) => item.id !== project.id)),
+                            })
+                          }
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </header>
+                      <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
+                        {(
+                          [
+                            ["name", "نام پروژه"],
+                            ["role", "نقش، کارفرما یا نوع پروژه"],
+                          ] as const
+                        ).map(([field, label]) => (
+                          <label key={field}>
+                            {label}
+                            <input
+                              value={project[field]}
+                              onChange={(event) =>
+                                replaceProjects(
+                                  projects.map((item) =>
+                                    item.id === project.id ? { ...item, [field]: event.target.value } : item,
+                                  ),
+                                )
+                              }
+                            />
+                          </label>
+                        ))}
+                        <label>
+                          لینک پروژه
                           <input
                             className="!text-left placeholder-ltr"
                             dir="ltr"
-                            disabled={field === "endDate" && project.isCurrent}
-                            value={project[field]}
+                            inputMode="url"
+                            value={project.url}
                             onChange={(event) =>
                               replaceProjects(
                                 projects.map((item) =>
                                   item.id === project.id
                                     ? {
                                         ...item,
-                                        [field]: sanitizeLtrField(
-                                          event.target.value,
-                                        ),
+                                        url: sanitizeLtrField(event.target.value),
                                       }
                                     : item,
                                 ),
@@ -1130,276 +1021,270 @@ export function ResumeBuilder({
                             }
                           />
                         </label>
-                      ))}
-                    </div>
-                    <label className="!flex items-center gap-2">
-                      <Checkbox
-                        className="!size-4 !min-h-0 !w-4"
-                        checked={project.isCurrent}
-                        onChange={(event) =>
-                          replaceProjects(
-                            projects.map((item) =>
-                              item.id === project.id
-                                ? {
-                                    ...item,
-                                    isCurrent: event.target.checked,
-                                    endDate: event.target.checked
-                                      ? ""
-                                      : item.endDate,
-                                  }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                      پروژه همچنان فعال است
-                    </label>
-                    <label>
-                      توضیحات و دستاوردها — هر مورد در یک خط
-                      <textarea
-                        value={project.description}
-                        onChange={(event) =>
-                          replaceProjects(
-                            projects.map((item) =>
-                              item.id === project.id
-                                ? { ...item, description: event.target.value }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </label>
-                    <label>
-                      فناوری‌ها و ابزارها
-                      <input
-                        value={project.technologies}
-                        onChange={(event) =>
-                          replaceProjects(
-                            projects.map((item) =>
-                              item.id === project.id
-                                ? { ...item, technologies: event.target.value }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                    </label>
-                  </article>
-                ))}
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h3>مهارت و تحصیلات</h3>
-                    <p className="m-0 text-[8px] leading-[1.8] text-[#82908d]">
-                      همه سوابق آموزشی این رزومه را مستقل ویرایش کن.
-                    </p>
-                  </div>
-                  <button
-                    className={secondaryButton}
-                    type="button"
-                    onClick={() =>
-                      replaceEducations([
-                        ...educations,
-                        {
-                          id: createRecordId("resume-education"),
-                          institution: "",
-                          credential: "",
-                          startDate: "",
-                          endDate: "",
-                          isCurrent: false,
-                        },
-                      ])
-                    }
-                  >
-                    <Plus size={15} /> افزودن تحصیلات
-                  </button>
-                </div>
-                {educations.map((education, index) => (
-                  <article
-                    className="grid gap-3 rounded-xl border border-[#dfe8e2] bg-[#f8faf8] p-3"
-                    key={education.id}
-                  >
-                    <header className="flex items-center justify-between gap-3">
-                      <strong className="text-[9px]">
-                        تحصیلات {formatPersianNumber(index + 1)}
-                      </strong>
-                      <button
-                        className="grid size-7 place-items-center rounded-lg bg-transparent text-[#c95649] transition-colors hover:bg-[#fff0ed]"
-                        type="button"
-                        aria-label={`حذف تحصیلات ${formatPersianNumber(index + 1)}`}
-                        onClick={() =>
-                          setPendingItemDelete({
-                            itemName:
-                              education.credential ||
-                              `تحصیلات ${formatPersianNumber(index + 1)}`,
-                            action: () =>
-                              replaceEducations(
-                                educations.filter(
-                                  (item) => item.id !== education.id,
-                                ),
+                        {(
+                          [
+                            ["startDate", "تاریخ شروع"],
+                            ["endDate", "تاریخ پایان"],
+                          ] as const
+                        ).map(([field, label]) => (
+                          <label key={field}>
+                            {label}
+                            <input
+                              className="!text-left placeholder-ltr"
+                              dir="ltr"
+                              disabled={field === "endDate" && project.isCurrent}
+                              value={project[field]}
+                              onChange={(event) =>
+                                replaceProjects(
+                                  projects.map((item) =>
+                                    item.id === project.id
+                                      ? {
+                                          ...item,
+                                          [field]: sanitizeLtrField(event.target.value),
+                                        }
+                                      : item,
+                                  ),
+                                )
+                              }
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      <label className="!flex items-center gap-2">
+                        <Checkbox
+                          className="!size-4 !min-h-0 !w-4"
+                          checked={project.isCurrent}
+                          onChange={(event) =>
+                            replaceProjects(
+                              projects.map((item) =>
+                                item.id === project.id
+                                  ? {
+                                      ...item,
+                                      isCurrent: event.target.checked,
+                                      endDate: event.target.checked ? "" : item.endDate,
+                                    }
+                                  : item,
                               ),
-                          })
-                        }
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </header>
-                    <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
-                      {(
-                        [
-                          ["institution", "دانشگاه یا مؤسسه"],
-                          ["credential", "مدرک یا رشته"],
-                        ] as const
-                      ).map(([field, label]) => (
-                        <label key={field}>
-                          {label}
-                          <input
-                            value={education[field]}
-                            onChange={(event) =>
-                              replaceEducations(
-                                educations.map((item) =>
-                                  item.id === education.id
-                                    ? { ...item, [field]: event.target.value }
-                                    : item,
-                                ),
-                              )
-                            }
-                          />
-                        </label>
-                      ))}
-                      {(
-                        [
-                          ["startDate", "تاریخ شروع"],
-                          ["endDate", "تاریخ پایان"],
-                        ] as const
-                      ).map(([field, label]) => (
-                        <label key={field}>
-                          {label}
-                          <input
-                            className="!text-left placeholder-ltr"
-                            dir="ltr"
-                            disabled={
-                              field === "endDate" && education.isCurrent
-                            }
-                            value={education[field]}
-                            onChange={(event) =>
-                              replaceEducations(
-                                educations.map((item) =>
-                                  item.id === education.id
-                                    ? {
-                                        ...item,
-                                        [field]: sanitizeLtrField(
-                                          event.target.value,
-                                        ),
-                                      }
-                                    : item,
-                                ),
-                              )
-                            }
-                          />
-                        </label>
-                      ))}
+                            )
+                          }
+                        />
+                        پروژه همچنان فعال است
+                      </label>
+                      <label>
+                        توضیحات و دستاوردها — هر مورد در یک خط
+                        <textarea
+                          value={project.description}
+                          onChange={(event) =>
+                            replaceProjects(
+                              projects.map((item) =>
+                                item.id === project.id ? { ...item, description: event.target.value } : item,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                      <label>
+                        فناوری‌ها و ابزارها
+                        <input
+                          value={project.technologies}
+                          onChange={(event) =>
+                            replaceProjects(
+                              projects.map((item) =>
+                                item.id === project.id ? { ...item, technologies: event.target.value } : item,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                    </article>
+                  ))}
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3>مهارت و تحصیلات</h3>
+                      <p className="m-0 text-[8px] leading-[1.8] text-[#82908d]">
+                        همه سوابق آموزشی این رزومه را مستقل ویرایش کن.
+                      </p>
                     </div>
-                    <label className="!flex items-center gap-2">
-                          <Checkbox
-                            className="!size-4 !min-h-0 !w-4"
-                        checked={education.isCurrent}
-                        onChange={(event) =>
-                          replaceEducations(
-                            educations.map((item) =>
-                              item.id === education.id
-                                ? {
-                                    ...item,
-                                    isCurrent: event.target.checked,
-                                    endDate: event.target.checked
-                                      ? ""
-                                      : item.endDate,
-                                  }
-                                : item,
-                            ),
-                          )
-                        }
-                      />
-                      همچنان مشغول تحصیل هستم
-                    </label>
-                  </article>
-                ))}
-                {!educations.length && (
-                  <button
-                    className={`${secondaryButton} w-full`}
-                    type="button"
-                    onClick={() =>
-                      replaceEducations([
-                        {
-                          id: createRecordId("resume-education"),
-                          institution: "",
-                          credential: "",
-                          startDate: "",
-                          endDate: "",
-                          isCurrent: false,
-                        },
-                      ])
-                    }
-                  >
-                    <Plus size={15} /> ثبت اولین سابقه تحصیلی
-                  </button>
-                )}
-                <label>
-                  مهارت‌ها
-                  <input value={data.skills} onChange={input("skills")} />
-                </label>
-                <ResumeLanguageEditor
-                  value={data.languages}
-                  onChange={(value) => onDataChange("languages", value)}
-                />
-              </>
-            )}
+                    <button
+                      className={secondaryButton}
+                      type="button"
+                      onClick={() =>
+                        replaceEducations([
+                          ...educations,
+                          {
+                            id: createRecordId("resume-education"),
+                            institution: "",
+                            credential: "",
+                            startDate: "",
+                            endDate: "",
+                            isCurrent: false,
+                          },
+                        ])
+                      }
+                    >
+                      <Plus size={15} /> افزودن تحصیلات
+                    </button>
+                  </div>
+                  {educations.map((education, index) => (
+                    <article
+                      className="grid gap-3 rounded-xl border border-[#dfe8e2] bg-[#f8faf8] p-3"
+                      key={education.id}
+                    >
+                      <header className="flex items-center justify-between gap-3">
+                        <strong className="text-[9px]">تحصیلات {formatPersianNumber(index + 1)}</strong>
+                        <button
+                          className="grid size-7 place-items-center rounded-lg bg-transparent text-[#c95649] transition-colors hover:bg-[#fff0ed]"
+                          type="button"
+                          aria-label={`حذف تحصیلات ${formatPersianNumber(index + 1)}`}
+                          onClick={() =>
+                            setPendingItemDelete({
+                              itemName: education.credential || `تحصیلات ${formatPersianNumber(index + 1)}`,
+                              action: () => replaceEducations(educations.filter((item) => item.id !== education.id)),
+                            })
+                          }
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </header>
+                      <div className="grid min-w-0 grid-cols-1 gap-3 min-[561px]:grid-cols-2">
+                        {(
+                          [
+                            ["institution", "دانشگاه یا مؤسسه"],
+                            ["credential", "مدرک یا رشته"],
+                          ] as const
+                        ).map(([field, label]) => (
+                          <label key={field}>
+                            {label}
+                            <input
+                              value={education[field]}
+                              onChange={(event) =>
+                                replaceEducations(
+                                  educations.map((item) =>
+                                    item.id === education.id ? { ...item, [field]: event.target.value } : item,
+                                  ),
+                                )
+                              }
+                            />
+                          </label>
+                        ))}
+                        {(
+                          [
+                            ["startDate", "تاریخ شروع"],
+                            ["endDate", "تاریخ پایان"],
+                          ] as const
+                        ).map(([field, label]) => (
+                          <label key={field}>
+                            {label}
+                            <input
+                              className="!text-left placeholder-ltr"
+                              dir="ltr"
+                              disabled={field === "endDate" && education.isCurrent}
+                              value={education[field]}
+                              onChange={(event) =>
+                                replaceEducations(
+                                  educations.map((item) =>
+                                    item.id === education.id
+                                      ? {
+                                          ...item,
+                                          [field]: sanitizeLtrField(event.target.value),
+                                        }
+                                      : item,
+                                  ),
+                                )
+                              }
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      <label className="!flex items-center gap-2">
+                        <Checkbox
+                          className="!size-4 !min-h-0 !w-4"
+                          checked={education.isCurrent}
+                          onChange={(event) =>
+                            replaceEducations(
+                              educations.map((item) =>
+                                item.id === education.id
+                                  ? {
+                                      ...item,
+                                      isCurrent: event.target.checked,
+                                      endDate: event.target.checked ? "" : item.endDate,
+                                    }
+                                  : item,
+                              ),
+                            )
+                          }
+                        />
+                        همچنان مشغول تحصیل هستم
+                      </label>
+                    </article>
+                  ))}
+                  {!educations.length && (
+                    <button
+                      className={`${secondaryButton} w-full`}
+                      type="button"
+                      onClick={() =>
+                        replaceEducations([
+                          {
+                            id: createRecordId("resume-education"),
+                            institution: "",
+                            credential: "",
+                            startDate: "",
+                            endDate: "",
+                            isCurrent: false,
+                          },
+                        ])
+                      }
+                    >
+                      <Plus size={15} /> ثبت اولین سابقه تحصیلی
+                    </button>
+                  )}
+                  <label>
+                    مهارت‌ها
+                    <input value={data.skills} onChange={input("skills")} />
+                  </label>
+                  <ResumeLanguageEditor value={data.languages} onChange={(value) => onDataChange("languages", value)} />
+                </>
+              )}
 
-            {step === 3 && (
-              <>
-                <h3>خلاصه و بازبینی</h3>
-                <p className="m-0 text-[8px] leading-[1.8] text-[#82908d]">
-                  در چند جمله ارزش حرفه‌ای خودت را توضیح بده و پیش‌نمایش را
-                  بررسی کن.
-                </p>
-                <label>
-                  خلاصه حرفه‌ای
-                  <textarea
-                    autoFocus
-                    value={data.summary}
-                    onChange={input("summary")}
-                  />
-                </label>
-                <div className="grid gap-2 [&>div]:flex [&>div]:items-center [&>div]:gap-[9px] [&>div]:rounded-[10px] [&>div]:border [&>div]:border-[#dce8e2] [&>div]:bg-[#f4f9f6] [&>div]:p-2.5 [&>div]:text-[#0f7b62] [&_span]:flex [&_span]:min-w-0 [&_span]:flex-col [&_strong]:text-[9px] [&_strong]:text-[#19312f] [&_small]:mt-0.5 [&_small]:truncate [&_small]:text-[7px] [&_small]:text-[#81908d]">
-                  <div>
-                    <Check size={15} />
-                    <span>
-                      <strong>اطلاعات فردی</strong>
-                      <small>
-                        {data.fullName} · {data.jobTitle}
-                      </small>
-                    </span>
+              {step === 3 && (
+                <>
+                  <h3>خلاصه و بازبینی</h3>
+                  <p className="m-0 text-[8px] leading-[1.8] text-[#82908d]">
+                    در چند جمله ارزش حرفه‌ای خودت را توضیح بده و پیش‌نمایش را بررسی کن.
+                  </p>
+                  <label>
+                    خلاصه حرفه‌ای
+                    <textarea autoFocus value={data.summary} onChange={input("summary")} />
+                  </label>
+                  <div className="grid gap-2 [&>div]:flex [&>div]:items-center [&>div]:gap-[9px] [&>div]:rounded-[10px] [&>div]:border [&>div]:border-[#dce8e2] [&>div]:bg-[#f4f9f6] [&>div]:p-2.5 [&>div]:text-[#0f7b62] [&_span]:flex [&_span]:min-w-0 [&_span]:flex-col [&_strong]:text-[9px] [&_strong]:text-[#19312f] [&_small]:mt-0.5 [&_small]:truncate [&_small]:text-[7px] [&_small]:text-[#81908d]">
+                    <div>
+                      <Check size={15} />
+                      <span>
+                        <strong>اطلاعات فردی</strong>
+                        <small>
+                          {data.fullName} · {data.jobTitle}
+                        </small>
+                      </span>
+                    </div>
+                    <div>
+                      <Check size={15} />
+                      <span>
+                        <strong>سابقه کاری</strong>
+                        <small>
+                          {data.experienceTitle} در {data.company}
+                        </small>
+                      </span>
+                    </div>
+                    <div>
+                      <Check size={15} />
+                      <span>
+                        <strong>مهارت‌ها</strong>
+                        <small>{data.skills.split(/،|,/).slice(0, 3).join("، ")}</small>
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <Check size={15} />
-                    <span>
-                      <strong>سابقه کاری</strong>
-                      <small>
-                        {data.experienceTitle} در {data.company}
-                      </small>
-                    </span>
-                  </div>
-                  <div>
-                    <Check size={15} />
-                    <span>
-                      <strong>مهارت‌ها</strong>
-                      <small>
-                        {data.skills.split(/،|,/).slice(0, 3).join("، ")}
-                      </small>
-                    </span>
-                  </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
             </div>
           </div>
 
@@ -1407,11 +1292,7 @@ export function ResumeBuilder({
             className="flex shrink-0 justify-between gap-2 border-t border-[#e7ebe6] bg-white px-[22px] py-[18px]"
             data-resume-builder-footer
           >
-            <button
-              className={secondaryButton}
-              disabled={step === 0}
-              onClick={() => setStep((current) => current - 1)}
-            >
+            <button className={secondaryButton} disabled={step === 0} onClick={() => setStep((current) => current - 1)}>
               <ArrowRight size={16} /> مرحله قبل
             </button>
             {step < steps.length - 1 ? (
@@ -1427,32 +1308,25 @@ export function ResumeBuilder({
                 <Download size={16} /> دریافت PDF
               </button>
             ) : (
-              <button
-                className={primaryButton}
-                disabled={saving}
-                onClick={() => void saveResume()}
-              >
-                {saving ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />} {saving ? "در حال ذخیره..." : "ذخیره رزومه"}
+              <button className={primaryButton} disabled={saving} onClick={() => void saveResume()}>
+                {saving ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />}{" "}
+                {saving ? "در حال ذخیره..." : "ذخیره رزومه"}
               </button>
             )}
           </div>
         </aside>
 
-        <section className={cn("flex min-w-0 flex-col overflow-hidden bg-[#edf0ed] [grid-area:preview]", mobileView === "preview" ? "max-[820px]:flex" : "max-[820px]:hidden")}>
-          <div
-            className={cn(
-              "grid min-h-0 flex-1 items-start justify-items-center overflow-auto p-5 print:contents",
-            )}
-          >
+        <section
+          className={cn(
+            "flex min-w-0 flex-col overflow-hidden bg-[#edf0ed] [grid-area:preview]",
+            mobileView === "preview" ? "max-[820px]:flex" : "max-[820px]:hidden",
+          )}
+        >
+          <div className={cn("grid min-h-0 flex-1 items-start justify-items-center overflow-auto p-5 print:contents")}>
             {generationBusy ? (
               <ResumePreviewSkeleton />
             ) : (
-              <ScaledResumePreview
-                templateId={selectedTemplate}
-                data={data}
-                colorId={selectedColor}
-                showAllPages
-              />
+              <ScaledResumePreview templateId={selectedTemplate} data={data} colorId={selectedColor} showAllPages />
             )}
           </div>
         </section>
@@ -1484,11 +1358,7 @@ export function ResumeBuilder({
           onClose={() => setModelOverwriteConfirmOpen(false)}
         >
           <div className="mt-5 flex flex-wrap justify-end gap-2">
-            <button
-              className={secondaryButton}
-              type="button"
-              onClick={() => setModelOverwriteConfirmOpen(false)}
-            >
+            <button className={secondaryButton} type="button" onClick={() => setModelOverwriteConfirmOpen(false)}>
               انصراف
             </button>
             <button
@@ -1521,9 +1391,7 @@ export function ResumeBuilder({
               </span>
               <span className="flex flex-col">
                 <strong className="text-[10px]">رزومه فارسی</strong>
-                <small className="mt-1 text-[8px] text-[#758582]">
-                  متن فارسی و چیدمان راست‌چین
-                </small>
+                <small className="mt-1 text-[8px] text-[#758582]">متن فارسی و چیدمان راست‌چین</small>
               </span>
             </button>
             <button
@@ -1537,9 +1405,7 @@ export function ResumeBuilder({
               </span>
               <span className="flex flex-col">
                 <strong className="text-[10px]">English resume</strong>
-                <small className="mt-1 text-[8px] text-[#758582]">
-                  English content and LTR layout
-                </small>
+                <small className="mt-1 text-[8px] text-[#758582]">English content and LTR layout</small>
               </span>
             </button>
           </div>

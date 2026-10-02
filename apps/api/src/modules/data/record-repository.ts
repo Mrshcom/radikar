@@ -20,9 +20,7 @@ export class PostgresRecordRepository implements RecordRepository {
       .from(dataRecords)
       .where(and(eq(dataRecords.ownerUserId, ownerUserId), eq(dataRecords.collection, collection)))
       .orderBy(desc(dataRecords.updatedAt));
-    return rows.map(({ payload }) =>
-      normalizeDataRecordForStorage(collection, payload),
-    );
+    return rows.map(({ payload }) => normalizeDataRecordForStorage(collection, payload));
   }
 
   async get(ownerUserId: string, collection: DataCollection, id: string) {
@@ -30,16 +28,10 @@ export class PostgresRecordRepository implements RecordRepository {
       .select({ payload: dataRecords.payload })
       .from(dataRecords)
       .where(
-        and(
-          eq(dataRecords.collection, collection),
-          eq(dataRecords.id, id),
-          eq(dataRecords.ownerUserId, ownerUserId),
-        ),
+        and(eq(dataRecords.collection, collection), eq(dataRecords.id, id), eq(dataRecords.ownerUserId, ownerUserId)),
       )
       .limit(1);
-    return row?.payload
-      ? normalizeDataRecordForStorage(collection, row.payload)
-      : null;
+    return row?.payload ? normalizeDataRecordForStorage(collection, row.payload) : null;
   }
 
   async put(ownerUserId: string, collection: DataCollection, record: DataRecord) {
@@ -75,11 +67,7 @@ export class PostgresRecordRepository implements RecordRepository {
     await this.database
       .delete(dataRecords)
       .where(
-        and(
-          eq(dataRecords.collection, collection),
-          eq(dataRecords.id, id),
-          eq(dataRecords.ownerUserId, ownerUserId),
-        ),
+        and(eq(dataRecords.collection, collection), eq(dataRecords.id, id), eq(dataRecords.ownerUserId, ownerUserId)),
       );
   }
 

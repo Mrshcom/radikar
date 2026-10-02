@@ -66,21 +66,36 @@ export function HoverTooltip({ children, content, className, contentClassName, a
       onFocus={showTooltip}
       onMouseEnter={showTooltip}
       onMouseLeave={() => setOpen(false)}
-      ref={(element) => { targetRef.current = element; }}
+      ref={(element) => {
+        targetRef.current = element;
+      }}
     >
       {children}
-      {content != null && open && typeof document !== "undefined" && createPortal(
-        <span
-          className={cn("pointer-events-none fixed z-[100] w-max max-w-[calc(100vw-16px)] whitespace-nowrap rounded-xl border border-[#28594d] bg-[#19312f] px-3 py-2 text-center text-[10px] text-white shadow-[0_10px_30px_rgba(25,49,47,.2)] transition-opacity", position ? "opacity-100" : "opacity-0", contentClassName)}
-          ref={tooltipRef}
-          role="tooltip"
-          style={{ left: position?.left ?? -10_000, top: position?.top ?? -10_000 }}
-        >
-          {content}
-          {position && <span aria-hidden="true" className={`absolute size-3 rotate-45 border-[#28594d] bg-[#19312f] ${position.below ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-b border-r"}`} style={{ left: position.arrowLeft - 6 }} />}
-        </span>,
-        document.body,
-      )}
+      {content != null &&
+        open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <span
+            className={cn(
+              "pointer-events-none fixed z-[100] w-max max-w-[calc(100vw-16px)] whitespace-nowrap rounded-xl border border-[#28594d] bg-[#19312f] px-3 py-2 text-center text-[10px] text-white shadow-[0_10px_30px_rgba(25,49,47,.2)] transition-opacity",
+              position ? "opacity-100" : "opacity-0",
+              contentClassName,
+            )}
+            ref={tooltipRef}
+            role="tooltip"
+            style={{ left: position?.left ?? -10_000, top: position?.top ?? -10_000 }}
+          >
+            {content}
+            {position && (
+              <span
+                aria-hidden="true"
+                className={`absolute size-3 rotate-45 border-[#28594d] bg-[#19312f] ${position.below ? "-top-1.5 border-l border-t" : "-bottom-1.5 border-b border-r"}`}
+                style={{ left: position.arrowLeft - 6 }}
+              />
+            )}
+          </span>,
+          document.body,
+        )}
     </Tag>
   );
 }

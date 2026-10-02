@@ -5,15 +5,39 @@ const repository = { list: vi.fn(), get: vi.fn(), put: vi.fn(), remove: vi.fn(),
 vi.mock("@/lib/data/repository", () => ({ getDataRepository: () => repository }));
 
 describe("data repository and scoped stores", () => {
-  afterEach(() => { vi.clearAllMocks(); vi.resetModules(); });
+  afterEach(() => {
+    vi.clearAllMocks();
+    vi.resetModules();
+  });
 
   it("scopes records to the active workspace and removes every workspace record", async () => {
-    const { jobStore, removeWorkspace, setActiveProfileId, ensureDefaultAppProfile } = await import("@/lib/data/stores");
+    const { jobStore, removeWorkspace, setActiveProfileId, ensureDefaultAppProfile } =
+      await import("@/lib/data/stores");
     const now = "2026-01-01T00:00:00.000Z";
     repository.get.mockResolvedValue({ id: "active-profile", activeProfileId: "p2", createdAt: now, updatedAt: now });
-    repository.list.mockImplementation(async (collection: string) => collection === "appProfiles" ? [{ id: "p2", workspaceName: "Team", createdAt: now, updatedAt: now }] : [{ id: "own", profileId: "p2", createdAt: now, updatedAt: now }, { id: "other", profileId: "p3", createdAt: now, updatedAt: now }]);
+    repository.list.mockImplementation(async (collection: string) =>
+      collection === "appProfiles"
+        ? [{ id: "p2", workspaceName: "Team", createdAt: now, updatedAt: now }]
+        : [
+            { id: "own", profileId: "p2", createdAt: now, updatedAt: now },
+            { id: "other", profileId: "p3", createdAt: now, updatedAt: now },
+          ],
+    );
     await expect(jobStore.list()).resolves.toEqual([{ id: "own", profileId: "p2", createdAt: now, updatedAt: now }]);
-    await jobStore.put({ id: "new", createdAt: now, updatedAt: now, company: "شرکت", role: "توسعه‌دهنده", match: 80, place: "تهران", age: "امروز", tone: "green", letter: "", description: "شرح", saved: false });
+    await jobStore.put({
+      id: "new",
+      createdAt: now,
+      updatedAt: now,
+      company: "شرکت",
+      role: "توسعه‌دهنده",
+      match: 80,
+      place: "تهران",
+      age: "امروز",
+      tone: "green",
+      letter: "",
+      description: "شرح",
+      saved: false,
+    });
     expect(repository.put).toHaveBeenCalledWith("jobs", expect.objectContaining({ profileId: "p2" }));
     await removeWorkspace("p2");
     expect(repository.remove).toHaveBeenCalledWith("jobs", "own");
@@ -24,15 +48,40 @@ describe("data repository and scoped stores", () => {
   });
 
   it("migrates legacy profiles, keeps profiles isolated and never removes another workspace", async () => {
-    const { ensureDefaultAppProfile, jobStore, removeWorkspace, setActiveProfileId } = await import("@/lib/data/stores");
+    const { ensureDefaultAppProfile, jobStore, removeWorkspace, setActiveProfileId } =
+      await import("@/lib/data/stores");
     const now = "2026-01-01T00:00:00.000Z";
     repository.list.mockImplementation(async (collection: string) => {
-      if (collection === "appProfiles") return [{ id: "profile-default", fullName: "سارا", targetTitle: "Dev", workspaceName: "فضای کاری اصلی", createdAt: now, updatedAt: now }];
-      return [{ id: "legacy", createdAt: now, updatedAt: now }, { id: "p2", profileId: "p2", createdAt: now, updatedAt: now }, { id: "foreign", profileId: "p3", createdAt: now, updatedAt: now }];
+      if (collection === "appProfiles")
+        return [
+          {
+            id: "profile-default",
+            fullName: "سارا",
+            targetTitle: "Dev",
+            workspaceName: "فضای کاری اصلی",
+            createdAt: now,
+            updatedAt: now,
+          },
+        ];
+      return [
+        { id: "legacy", createdAt: now, updatedAt: now },
+        { id: "p2", profileId: "p2", createdAt: now, updatedAt: now },
+        { id: "foreign", profileId: "p3", createdAt: now, updatedAt: now },
+      ];
     });
-    repository.get.mockResolvedValue({ id: "active-profile", activeProfileId: "profile-default", createdAt: now, updatedAt: now });
-    await expect(ensureDefaultAppProfile()).resolves.toEqual([expect.objectContaining({ workspaceName: "فضای کاری شخصی" })]);
-    expect(repository.put).toHaveBeenCalledWith("appProfiles", expect.not.objectContaining({ fullName: expect.anything() }));
+    repository.get.mockResolvedValue({
+      id: "active-profile",
+      activeProfileId: "profile-default",
+      createdAt: now,
+      updatedAt: now,
+    });
+    await expect(ensureDefaultAppProfile()).resolves.toEqual([
+      expect.objectContaining({ workspaceName: "فضای کاری شخصی" }),
+    ]);
+    expect(repository.put).toHaveBeenCalledWith(
+      "appProfiles",
+      expect.not.objectContaining({ fullName: expect.anything() }),
+    );
     await expect(jobStore.list()).resolves.toEqual([expect.objectContaining({ id: "legacy" })]);
     await setActiveProfileId("p2");
     repository.get.mockResolvedValue({ id: "active-profile", activeProfileId: "p2", createdAt: now, updatedAt: now });

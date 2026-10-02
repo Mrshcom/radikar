@@ -2,11 +2,7 @@ import { NextRequest } from "next/server";
 
 const apiOrigin = process.env.API_PROXY_ORIGIN?.replace(/\/+$/, "");
 
-export async function proxyApiRequest(
-  request: NextRequest,
-  pathPrefix: string,
-  path: string[],
-) {
+export async function proxyApiRequest(request: NextRequest, pathPrefix: string, path: string[]) {
   if (!apiOrigin) return Response.json({ error: "API proxy is not configured." }, { status: 503 });
 
   const target = `${apiOrigin}/${pathPrefix}/${path.join("/")}${request.nextUrl.search}`;

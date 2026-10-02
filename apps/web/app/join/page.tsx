@@ -71,17 +71,14 @@ export default function JoinPage() {
             <h1 className="m-0 text-[27px] font-black text-[#19312f]">به رادیکار دعوت شدی</h1>
           </div>
           <p className="mb-0 mt-5 text-[12px] leading-8 text-[#71817e]">
-            مسیر شغلی‌ات را هدفمند بساز؛ رزومه، فرصت‌های شغلی و تحلیل‌های هوشمند را یک‌جا داشته
-            باش.
+            مسیر شغلی‌ات را هدفمند بساز؛ رزومه، فرصت‌های شغلی و تحلیل‌های هوشمند را یک‌جا داشته باش.
           </p>
           <div className="mt-6 grid gap-3 rounded-[16px] bg-[#f7faf8] p-4 text-[12px] text-[#526561]">
             <span className="flex items-center gap-2">
-              <Sparkles className="text-[#0f7b62]" size={16} /> عضویت زودهنگام و مزایای ویژه‌ی
-              زمان لانچ
+              <Sparkles className="text-[#0f7b62]" size={16} /> عضویت زودهنگام و مزایای ویژه‌ی زمان لانچ
             </span>
             <span className="flex items-center gap-2">
-              <UsersRound className="text-[#0f7b62]" size={16} /> امتیاز دعوت پس از احراز هویت
-              ثبت می‌شود
+              <UsersRound className="text-[#0f7b62]" size={16} /> امتیاز دعوت پس از احراز هویت ثبت می‌شود
             </span>
           </div>
           <Link

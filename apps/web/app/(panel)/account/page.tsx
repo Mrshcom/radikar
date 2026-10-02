@@ -2,11 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  LoaderCircle,
-  Save,
-  UserRound,
-} from "lucide-react";
+import { LoaderCircle, Save, UserRound } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -14,9 +10,7 @@ import { authQueryKey, useAuth, type CurrentUser } from "@/app/_components/auth"
 import { useToast } from "@/app/_components/toast";
 import { apiRequest } from "@/lib/api-client";
 import { useMembership } from "@/lib/billing";
-import {
-  MembershipSummary,
-} from "../_components/membership-summary";
+import { MembershipSummary } from "../_components/membership-summary";
 import { MembershipSummarySkeleton } from "../_components/skeletons";
 import { TextField } from "@/app/_components/text-field";
 
@@ -36,49 +30,65 @@ export default function AccountPage() {
   useEffect(() => form.reset({ fullName: user?.fullName ?? "" }), [form, user?.fullName]);
 
   const update = useMutation({
-    mutationFn: (input: Values) => apiRequest<{ user: CurrentUser }>("/api/account", { method: "PATCH", body: JSON.stringify(input) }),
+    mutationFn: (input: Values) =>
+      apiRequest<{ user: CurrentUser }>("/api/account", { method: "PATCH", body: JSON.stringify(input) }),
     onSuccess: async () => {
       notify("اطلاعات فردی با موفقیت ذخیره شد.");
       await queryClient.invalidateQueries({ queryKey: authQueryKey });
     },
-    onError: (error) =>
-      notify(
-        error instanceof Error ? error.message : "ذخیره اطلاعات فردی ناموفق بود.",
-        "error",
-      ),
+    onError: (error) => notify(error instanceof Error ? error.message : "ذخیره اطلاعات فردی ناموفق بود.", "error"),
   });
 
   return (
     <div className="mx-auto grid w-full max-w-5xl gap-6">
       <header>
-        <span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]"><UserRound size={18} /> حساب کاربری</span>
+        <span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]">
+          <UserRound size={18} /> حساب کاربری
+        </span>
         <h1 className="mb-0 mt-3 text-[26px] font-black">اطلاعات حساب و میزان مصرف</h1>
-        <p className="mb-0 mt-2 text-[10px] leading-6 text-[#7c8c87]">وضعیت عضویت، زمان و اعتبار باقی‌مانده را یکجا ببین.</p>
+        <p className="mb-0 mt-2 text-[10px] leading-6 text-[#7c8c87]">
+          وضعیت عضویت، زمان و اعتبار باقی‌مانده را یکجا ببین.
+        </p>
       </header>
 
       {membership.isPending && <MembershipSummarySkeleton />}
       {membership.isError && (
-        <div className="rounded-[18px] border border-[#f0d7d0] bg-[#fff7f4] p-5 text-[10px] text-[#a44d3e]">دریافت وضعیت پلن ممکن نشد. کمی بعد دوباره تلاش کن.</div>
+        <div className="rounded-[18px] border border-[#f0d7d0] bg-[#fff7f4] p-5 text-[10px] text-[#a44d3e]">
+          دریافت وضعیت پلن ممکن نشد. کمی بعد دوباره تلاش کن.
+        </div>
       )}
       {membership.data && <MembershipSummary membership={membership.data} showUpgradeAction />}
 
-      <form className="grid gap-5 rounded-[20px] border border-[#e3e9e3] bg-white p-6" onSubmit={form.handleSubmit((values) => update.mutate(values))}>
+      <form
+        className="grid gap-5 rounded-[20px] border border-[#e3e9e3] bg-white p-6"
+        onSubmit={form.handleSubmit((values) => update.mutate(values))}
+      >
         <h2 className="m-0 text-[16px] font-black text-[#263d38]">اطلاعات فردی</h2>
         <div className="grid items-start gap-5 md:grid-cols-2">
           <label className="grid gap-2 text-[10px] font-bold">
             نام و نام خانوادگی
             <TextField {...form.register("fullName")} />
-            {form.formState.errors.fullName && <span className="text-[10px] font-medium text-[#b14848]">{form.formState.errors.fullName.message}</span>}
+            {form.formState.errors.fullName && (
+              <span className="text-[10px] font-medium text-[#b14848]">{form.formState.errors.fullName.message}</span>
+            )}
           </label>
           <div className="grid gap-2">
             <label className="grid gap-2 text-[10px] font-bold">
               {loginMethod}
               <TextField className="bg-[#f5f7f4] text-[#72817e]" dir="ltr" readOnly value={loginIdentifier} />
             </label>
-            <p className="m-0 text-[9px] leading-6 text-[#87938f]">این شناسه از روش ورود تأییدشده حساب گرفته شده و در این بخش قابل تغییر نیست.</p>
+            <p className="m-0 text-[9px] leading-6 text-[#87938f]">
+              این شناسه از روش ورود تأییدشده حساب گرفته شده و در این بخش قابل تغییر نیست.
+            </p>
           </div>
         </div>
-        <button className="inline-flex min-h-11 w-fit items-center gap-2 rounded-[11px] border-0 bg-[#0f7b62] px-5 text-[11px] font-bold text-white disabled:opacity-40" disabled={update.isPending} type="submit">{update.isPending ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />} ذخیره تغییرات</button>
+        <button
+          className="inline-flex min-h-11 w-fit items-center gap-2 rounded-[11px] border-0 bg-[#0f7b62] px-5 text-[11px] font-bold text-white disabled:opacity-40"
+          disabled={update.isPending}
+          type="submit"
+        >
+          {update.isPending ? <LoaderCircle className="animate-spin" size={16} /> : <Save size={16} />} ذخیره تغییرات
+        </button>
       </form>
     </div>
   );

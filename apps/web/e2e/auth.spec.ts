@@ -10,10 +10,14 @@ test.describe("ورود با کد یک‌بارمصرف", () => {
 
   test("پس از درخواست موفق، کد فقط از مسیر پیامکی دریافت می‌شود", async ({ page }) => {
     await page.route("**/api/auth/request-otp", async (route) => {
-      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({
-        challengeId: "challenge-1",
-        expiresInSeconds: 180,
-      }) });
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({
+          challengeId: "challenge-1",
+          expiresInSeconds: 180,
+        }),
+      });
     });
     await page.goto("/login");
     await page.getByPlaceholder("09123456789").fill("09121234567");
@@ -25,13 +29,21 @@ test.describe("ورود با کد یک‌بارمصرف", () => {
     let otpRequests = 0;
     await page.route("**/api/auth/request-otp", async (route) => {
       otpRequests += 1;
-      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({
-        challengeId: `challenge-${otpRequests}`,
-        expiresInSeconds: 180,
-      }) });
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({
+          challengeId: `challenge-${otpRequests}`,
+          expiresInSeconds: 180,
+        }),
+      });
     });
     await page.route("**/api/auth/verify-otp", async (route) => {
-      await route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ error: "کد ورود نادرست یا منقضی شده است" }) });
+      await route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "کد ورود نادرست یا منقضی شده است" }),
+      });
     });
     await page.goto("/login");
     await page.getByPlaceholder("09123456789").fill("09121234567");
@@ -47,7 +59,11 @@ test.describe("ورود با کد یک‌بارمصرف", () => {
 
   test("خطای سرویس دریافت کد در همان مرحلهٔ شماره همراه باقی می‌ماند", async ({ page }) => {
     await page.route("**/api/auth/request-otp", async (route) => {
-      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "سرویس پیامک موقتاً در دسترس نیست" }) });
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "سرویس پیامک موقتاً در دسترس نیست" }),
+      });
     });
     await page.goto("/login");
     await page.getByPlaceholder("09123456789").fill("09121234567");

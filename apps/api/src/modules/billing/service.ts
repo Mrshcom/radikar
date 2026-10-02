@@ -43,7 +43,7 @@ export type CheckoutPaymentMethod = "gateway" | "radicoin";
 
 function cashAmountAfterCoins(priceRials: number, fullCoinCost: number, appliedCoins: number) {
   if (appliedCoins <= 0) return priceRials;
-  return Math.max(0, Math.ceil(priceRials * (fullCoinCost - appliedCoins) / fullCoinCost));
+  return Math.max(0, Math.ceil((priceRials * (fullCoinCost - appliedCoins)) / fullCoinCost));
 }
 
 export type BillingServiceOptions = {
@@ -73,18 +73,11 @@ export class BillingService {
     private readonly database: Database,
     private readonly options: BillingServiceOptions,
   ) {
-    this.gateway = new ZarinpalClient(
-      options.zarinpalBaseUrl,
-      options.zarinpalMerchantId,
-    );
+    this.gateway = new ZarinpalClient(options.zarinpalBaseUrl, options.zarinpalMerchantId);
   }
 
   listPlans() {
-    return this.database
-      .select()
-      .from(plans)
-      .where(eq(plans.isActive, true))
-      .orderBy(plans.sortOrder);
+    return this.database.select().from(plans).where(eq(plans.isActive, true)).orderBy(plans.sortOrder);
   }
 
   async ensureSignupMembership(userId: string) {
@@ -166,18 +159,12 @@ export class BillingService {
       resume: {
         used: used.resume,
         remaining: row.membership.resumesRemaining,
-        total:
-          row.membership.resumesRemaining === null
-            ? null
-            : used.resume + row.membership.resumesRemaining,
+        total: row.membership.resumesRemaining === null ? null : used.resume + row.membership.resumesRemaining,
       },
       pdf: {
         used: used.pdf,
         remaining: row.membership.pdfDownloadsRemaining,
-        total:
-          row.membership.pdfDownloadsRemaining === null
-            ? null
-            : used.pdf + row.membership.pdfDownloadsRemaining,
+        total: row.membership.pdfDownloadsRemaining === null ? null : used.pdf + row.membership.pdfDownloadsRemaining,
       },
       ai: {
         used: used.ai,
@@ -204,30 +191,17 @@ export class BillingService {
     };
   }
 
-  async consumeUsage(
-    userId: string,
-    costs: UsageCosts,
-    operation: string,
-    requestId: string,
-  ) {
+  async consumeUsage(userId: string, costs: UsageCosts, operation: string, requestId: string) {
     await this.ensureSignupMembership(userId);
     const entries = Object.entries(costs).filter(
-      (entry): entry is [UsageResource, number] =>
-        typeof entry[1] === "number" && entry[1] > 0,
+      (entry): entry is [UsageResource, number] => typeof entry[1] === "number" && entry[1] > 0,
     );
     if (!entries.length) return;
     await this.database.transaction(async (tx) => {
       await tx.execute(sql`select id from user_memberships where user_id = ${userId} for update`);
-      const [membership] = await tx
-        .select()
-        .from(userMemberships)
-        .where(eq(userMemberships.userId, userId))
-        .limit(1);
+      const [membership] = await tx.select().from(userMemberships).where(eq(userMemberships.userId, userId)).limit(1);
       if (!membership || membership.status !== "active" || membership.expiresAt <= new Date()) {
-        throw new BillingError(
-          402,
-          "اعتبار پلن فعلی شما به پایان رسیده است.",
-        );
+        throw new BillingError(402, "اعتبار پلن فعلی شما به پایان رسیده است.");
       }
       const fields = {
         resume: "resumesRemaining",
@@ -261,32 +235,18 @@ export class BillingService {
           createdAt: new Date(),
         })),
       );
-      await this.options.radicoinService?.grantUsageActivityInTransaction(
-        tx,
-        userId,
-        requestId,
-      );
+      await this.options.radicoinService?.grantUsageActivityInTransaction(tx, userId, requestId);
     });
   }
 
-  async refundUsage(
-    userId: string,
-    costs: UsageCosts,
-    operation: string,
-    requestId: string,
-  ) {
+  async refundUsage(userId: string, costs: UsageCosts, operation: string, requestId: string) {
     const entries = Object.entries(costs).filter(
-      (entry): entry is [UsageResource, number] =>
-        typeof entry[1] === "number" && entry[1] > 0,
+      (entry): entry is [UsageResource, number] => typeof entry[1] === "number" && entry[1] > 0,
     );
     if (!entries.length) return;
     await this.database.transaction(async (tx) => {
       await tx.execute(sql`select id from user_memberships where user_id = ${userId} for update`);
-      const [membership] = await tx
-        .select()
-        .from(userMemberships)
-        .where(eq(userMemberships.userId, userId))
-        .limit(1);
+      const [membership] = await tx.select().from(userMemberships).where(eq(userMemberships.userId, userId)).limit(1);
       if (!membership) return;
       const fields = {
         resume: "resumesRemaining",
@@ -314,11 +274,7 @@ export class BillingService {
           createdAt: new Date(),
         })),
       );
-      await this.options.radicoinService?.revokeUsageActivityInTransaction(
-        tx,
-        userId,
-        requestId,
-      );
+      await this.options.radicoinService?.revokeUsageActivityInTransaction(tx, userId, requestId);
     });
   }
 
@@ -336,7 +292,18 @@ export class BillingService {
       search.trim() ? ilike(orders.orderNumber, `%${search.trim()}%`) : undefined,
       status ? eq(orders.status, status) : undefined,
     );
-    const sortColumn = sortBy === "number" ? orders.orderNumber : sortBy === "plan" ? plans.name : sortBy === "amount" ? orders.amountRials : sortBy === "status" ? orders.status : sortBy === "tracking" ? orders.refId : orders.createdAt;
+    const sortColumn =
+      sortBy === "number"
+        ? orders.orderNumber
+        : sortBy === "plan"
+          ? plans.name
+          : sortBy === "amount"
+            ? orders.amountRials
+            : sortBy === "status"
+              ? orders.status
+              : sortBy === "tracking"
+                ? orders.refId
+                : orders.createdAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [items, totalRows] = await Promise.all([
       this.database
@@ -352,7 +319,13 @@ export class BillingService {
     return { items, total: totalRows[0]?.total ?? 0, page, pageSize };
   }
 
-  async createOrder(userId: string, phone: string | null, planId: string, paymentMethod: CheckoutPaymentMethod = "gateway", idempotencyKey: string = randomUUID()) {
+  async createOrder(
+    userId: string,
+    phone: string | null,
+    planId: string,
+    paymentMethod: CheckoutPaymentMethod = "gateway",
+    idempotencyKey: string = randomUUID(),
+  ) {
     const [plan] = await this.database
       .select()
       .from(plans)
@@ -382,10 +355,7 @@ export class BillingService {
       const [reservation] = await this.database
         .select({ amount: radicoinTransactions.amount })
         .from(radicoinTransactions)
-        .where(and(
-          eq(radicoinTransactions.orderId, existingOrder.id),
-          eq(radicoinTransactions.source, "redemption"),
-        ))
+        .where(and(eq(radicoinTransactions.orderId, existingOrder.id), eq(radicoinTransactions.source, "redemption")))
         .limit(1);
       return {
         checkout: "gateway" as const,
@@ -402,10 +372,12 @@ export class BillingService {
         .select({ planId: membershipEvents.planId, planName: plans.name })
         .from(membershipEvents)
         .innerJoin(plans, eq(membershipEvents.planId, plans.id))
-        .where(and(
-          eq(membershipEvents.userId, userId),
-          sql`${membershipEvents.details}->>'redemptionId' = ${idempotencyKey}`,
-        ))
+        .where(
+          and(
+            eq(membershipEvents.userId, userId),
+            sql`${membershipEvents.details}->>'redemptionId' = ${idempotencyKey}`,
+          ),
+        )
         .limit(1);
       if (previousRedemption) {
         if (previousRedemption.planId !== plan.id) {
@@ -428,10 +400,7 @@ export class BillingService {
       membership.expiresAt > new Date() &&
       membership.plan.sortOrder > plan.sortOrder
     ) {
-      throw new BillingError(
-        409,
-        "خرید پلن پایین‌تر پس از پایان عضویت فعلی امکان‌پذیر است.",
-      );
+      throw new BillingError(409, "خرید پلن پایین‌تر پس از پایان عضویت فعلی امکان‌پذیر است.");
     }
 
     const radicoin = this.options.radicoinService;
@@ -445,7 +414,12 @@ export class BillingService {
       availableCoins = wallet.wallet?.availableCoins ?? 0;
       if (availableCoins >= radicoinCost) {
         const activated = await this.redeemPlanWithRadicoins(userId, plan.id, idempotencyKey);
-        await this.options.productEvents?.record("membership_checkout_result", `checkout:${userId}:${idempotencyKey}`, userId, { plan_id: plan.id, payment_mode: "radicoin", result: "paid" });
+        await this.options.productEvents?.record(
+          "membership_checkout_result",
+          `checkout:${userId}:${idempotencyKey}`,
+          userId,
+          { plan_id: plan.id, payment_mode: "radicoin", result: "paid" },
+        );
         return { checkout: "activated" as const, ...activated };
       }
     }
@@ -456,29 +430,43 @@ export class BillingService {
     let reservedCoins = 0;
     let amountRials = plan.priceRials;
     await this.database.transaction(async (tx) => {
-      const [insertedOrder] = await tx.insert(orders).values({
-        id,
-        orderNumber: number,
-        checkoutKey: idempotencyKey,
-        userId,
-        planId: plan.id,
-        amountRials: plan.priceRials,
-        gateway: "zarinpal_sandbox",
-        createdAt: now,
-        updatedAt: now,
-      }).onConflictDoNothing({ target: [orders.userId, orders.checkoutKey] }).returning({ id: orders.id });
+      const [insertedOrder] = await tx
+        .insert(orders)
+        .values({
+          id,
+          orderNumber: number,
+          checkoutKey: idempotencyKey,
+          userId,
+          planId: plan.id,
+          amountRials: plan.priceRials,
+          gateway: "zarinpal_sandbox",
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoNothing({ target: [orders.userId, orders.checkoutKey] })
+        .returning({ id: orders.id });
       if (!insertedOrder) {
         throw new BillingError(409, "این سفارش هم‌اکنون در حال آماده‌سازی است.");
       }
       if (radicoin && radicoinCost && availableCoins > 0) {
-        const reservation = await radicoin.reserveSpendInTransaction(tx, userId, Math.min(availableCoins, radicoinCost - 1), id, `رزرو رادیکوین برای خرید پلن ${plan.name}`, now);
+        const reservation = await radicoin.reserveSpendInTransaction(
+          tx,
+          userId,
+          Math.min(availableCoins, radicoinCost - 1),
+          id,
+          `رزرو رادیکوین برای خرید پلن ${plan.name}`,
+          now,
+        );
         reservedCoins = reservation.coins;
         amountRials = cashAmountAfterCoins(plan.priceRials, radicoinCost, reservedCoins);
-        await tx.update(orders).set({
-          amountRials,
-          gateway: reservedCoins > 0 ? "zarinpal_sandbox+radicoin" : "zarinpal_sandbox",
-          updatedAt: now,
-        }).where(eq(orders.id, id));
+        await tx
+          .update(orders)
+          .set({
+            amountRials,
+            gateway: reservedCoins > 0 ? "zarinpal_sandbox+radicoin" : "zarinpal_sandbox",
+            updatedAt: now,
+          })
+          .where(eq(orders.id, id));
       }
     });
 
@@ -490,10 +478,7 @@ export class BillingService {
         mobile: phone ?? undefined,
       });
       await this.database.transaction(async (tx) => {
-        await tx
-          .update(orders)
-          .set({ authority: result.authority, updatedAt: new Date() })
-          .where(eq(orders.id, id));
+        await tx.update(orders).set({ authority: result.authority, updatedAt: new Date() }).where(eq(orders.id, id));
         await tx.insert(payments).values({
           id: randomUUID(),
           orderId: id,
@@ -504,19 +489,33 @@ export class BillingService {
           updatedAt: new Date(),
         });
       });
-      await this.options.productEvents?.record("membership_checkout_result", `checkout:${userId}:${idempotencyKey}`, userId, { plan_id: plan.id, payment_mode: reservedCoins ? "hybrid" : "cash", result: "started" });
-      return { checkout: "gateway" as const, orderId: id, orderNumber: number, paymentUrl: result.paymentUrl, amountRials, appliedCoins: reservedCoins };
+      await this.options.productEvents?.record(
+        "membership_checkout_result",
+        `checkout:${userId}:${idempotencyKey}`,
+        userId,
+        { plan_id: plan.id, payment_mode: reservedCoins ? "hybrid" : "cash", result: "started" },
+      );
+      return {
+        checkout: "gateway" as const,
+        orderId: id,
+        orderNumber: number,
+        paymentUrl: result.paymentUrl,
+        amountRials,
+        appliedCoins: reservedCoins,
+      };
     } catch (error) {
       const failure = error instanceof ZarinpalError ? error : undefined;
       await this.database.transaction(async (tx) => {
         await radicoin?.releaseReservedSpendInTransaction(tx, id, new Date());
-        await tx.update(orders).set({
-          status: "failed",
-          failureCode: failure?.code,
-          failureMessage: error instanceof Error ? error.message : "خطای درگاه",
-          updatedAt: new Date(),
-        })
-        .where(eq(orders.id, id));
+        await tx
+          .update(orders)
+          .set({
+            status: "failed",
+            failureCode: failure?.code,
+            failureMessage: error instanceof Error ? error.message : "خطای درگاه",
+            updatedAt: new Date(),
+          })
+          .where(eq(orders.id, id));
       });
       throw new BillingError(502, "ساخت تراکنش در درگاه زرین‌پال ناموفق بود.");
     }
@@ -525,25 +524,78 @@ export class BillingService {
   async redeemPlanWithRadicoins(userId: string, planId: string, idempotencyKey: string) {
     const radicoin = this.options.radicoinService;
     if (!radicoin) throw new BillingError(503, "فروشگاه رادیکوین در دسترس نیست.");
-    const [plan] = await this.database.select().from(plans).where(and(eq(plans.id, planId), eq(plans.isActive, true))).limit(1);
+    const [plan] = await this.database
+      .select()
+      .from(plans)
+      .where(and(eq(plans.id, planId), eq(plans.isActive, true)))
+      .limit(1);
     if (!plan?.radicoinCost || !plan.isPurchasable) throw new BillingError(400, "این پلن با رادیکوین قابل تهیه نیست.");
     const radicoinCost = plan.radicoinCost;
     return this.database.transaction(async (tx) => {
       await tx.execute(sql`select id from user_memberships where user_id = ${userId} for update`);
-      const [current] = await tx.select({ membership: userMemberships, plan: plans }).from(userMemberships).innerJoin(plans, eq(userMemberships.planId, plans.id)).where(eq(userMemberships.userId, userId)).limit(1);
+      const [current] = await tx
+        .select({ membership: userMemberships, plan: plans })
+        .from(userMemberships)
+        .innerJoin(plans, eq(userMemberships.planId, plans.id))
+        .where(eq(userMemberships.userId, userId))
+        .limit(1);
       if (!current) throw new BillingError(409, "عضویت کاربر آماده نیست.");
       const now = new Date();
       const active = current.membership.status === "active" && current.membership.expiresAt > now;
-      if (active && current.plan.sortOrder > plan.sortOrder) throw new BillingError(409, "پلن پایین‌تر پس از پایان عضویت فعلی قابل دریافت است.");
+      if (active && current.plan.sortOrder > plan.sortOrder)
+        throw new BillingError(409, "پلن پایین‌تر پس از پایان عضویت فعلی قابل دریافت است.");
       const redemptionId = idempotencyKey;
-      const spending = await radicoin.spendInTransaction(tx, userId, radicoinCost, `plan-redemption:${userId}:${redemptionId}`, `تبدیل رادیکوین به پلن ${plan.name}`, now);
+      const spending = await radicoin.spendInTransaction(
+        tx,
+        userId,
+        radicoinCost,
+        `plan-redemption:${userId}:${redemptionId}`,
+        `تبدیل رادیکوین به پلن ${plan.name}`,
+        now,
+      );
       if (!spending.created) {
-        return { planId: plan.id, planName: plan.name, spentCoins: radicoinCost, expiresAt: current.membership.expiresAt.toISOString() };
+        return {
+          planId: plan.id,
+          planName: plan.name,
+          spentCoins: radicoinCost,
+          expiresAt: current.membership.expiresAt.toISOString(),
+        };
       }
       const baseExpiry = active ? current.membership.expiresAt : now;
-      await tx.update(userMemberships).set({ planId: plan.id, status: "active", startsAt: now, expiresAt: addDays(baseExpiry, plan.durationDays), resumesRemaining: addLimit(current.membership.resumesRemaining, plan.resumeLimit), pdfDownloadsRemaining: addLimit(current.membership.pdfDownloadsRemaining, plan.pdfDownloadLimit), aiCreditsRemaining: current.membership.aiCreditsRemaining + plan.aiCredits, matchCreditsRemaining: current.membership.matchCreditsRemaining + plan.matchCredits, interviewCreditsRemaining: current.membership.interviewCreditsRemaining + plan.interviewCredits, canceledAt: null, canceledByUserId: null, cancelReason: null, updatedAt: now }).where(eq(userMemberships.id, current.membership.id));
-      await tx.insert(membershipEvents).values({ id: randomUUID(), userId, membershipId: current.membership.id, planId: plan.id, type: current.plan.id === plan.id ? "renewal" : active ? "upgrade" : "purchase", durationDays: plan.durationDays, details: { paymentMethod: "radicoin", radicoinCost, redemptionId }, createdAt: now });
-      return { planId: plan.id, planName: plan.name, spentCoins: radicoinCost, expiresAt: addDays(baseExpiry, plan.durationDays).toISOString() };
+      await tx
+        .update(userMemberships)
+        .set({
+          planId: plan.id,
+          status: "active",
+          startsAt: now,
+          expiresAt: addDays(baseExpiry, plan.durationDays),
+          resumesRemaining: addLimit(current.membership.resumesRemaining, plan.resumeLimit),
+          pdfDownloadsRemaining: addLimit(current.membership.pdfDownloadsRemaining, plan.pdfDownloadLimit),
+          aiCreditsRemaining: current.membership.aiCreditsRemaining + plan.aiCredits,
+          matchCreditsRemaining: current.membership.matchCreditsRemaining + plan.matchCredits,
+          interviewCreditsRemaining: current.membership.interviewCreditsRemaining + plan.interviewCredits,
+          canceledAt: null,
+          canceledByUserId: null,
+          cancelReason: null,
+          updatedAt: now,
+        })
+        .where(eq(userMemberships.id, current.membership.id));
+      await tx.insert(membershipEvents).values({
+        id: randomUUID(),
+        userId,
+        membershipId: current.membership.id,
+        planId: plan.id,
+        type: current.plan.id === plan.id ? "renewal" : active ? "upgrade" : "purchase",
+        durationDays: plan.durationDays,
+        details: { paymentMethod: "radicoin", radicoinCost, redemptionId },
+        createdAt: now,
+      });
+      return {
+        planId: plan.id,
+        planName: plan.name,
+        spentCoins: radicoinCost,
+        expiresAt: addDays(baseExpiry, plan.durationDays).toISOString(),
+      };
     });
   }
 
@@ -597,22 +649,11 @@ export class BillingService {
           throw new BillingError(409, "پلن خریداری‌شده پایین‌تر از پلن فعال است.");
         }
 
-        const active =
-          currentMembership.membership.status === "active" &&
-          currentMembership.membership.expiresAt > now;
+        const active = currentMembership.membership.status === "active" && currentMembership.membership.expiresAt > now;
         const baseExpiry = active ? currentMembership.membership.expiresAt : now;
-        const eventType =
-          currentMembership.plan.id === row.plan.id
-            ? "renewal"
-            : active
-              ? "upgrade"
-              : "purchase";
+        const eventType = currentMembership.plan.id === row.plan.id ? "renewal" : active ? "upgrade" : "purchase";
         const committedCoins =
-          await this.options.radicoinService?.commitReservedSpendInTransaction(
-            tx,
-            row.order.id,
-            now,
-          ) ?? 0;
+          (await this.options.radicoinService?.commitReservedSpendInTransaction(tx, row.order.id, now)) ?? 0;
         await tx
           .update(userMemberships)
           .set({
@@ -620,21 +661,15 @@ export class BillingService {
             status: "active",
             startsAt: now,
             expiresAt: addDays(baseExpiry, row.plan.durationDays),
-            resumesRemaining: addLimit(
-              currentMembership.membership.resumesRemaining,
-              row.plan.resumeLimit,
-            ),
+            resumesRemaining: addLimit(currentMembership.membership.resumesRemaining, row.plan.resumeLimit),
             pdfDownloadsRemaining: addLimit(
               currentMembership.membership.pdfDownloadsRemaining,
               row.plan.pdfDownloadLimit,
             ),
-            aiCreditsRemaining:
-              currentMembership.membership.aiCreditsRemaining + row.plan.aiCredits,
-            matchCreditsRemaining:
-              currentMembership.membership.matchCreditsRemaining + row.plan.matchCredits,
+            aiCreditsRemaining: currentMembership.membership.aiCreditsRemaining + row.plan.aiCredits,
+            matchCreditsRemaining: currentMembership.membership.matchCreditsRemaining + row.plan.matchCredits,
             interviewCreditsRemaining:
-              currentMembership.membership.interviewCreditsRemaining +
-              row.plan.interviewCredits,
+              currentMembership.membership.interviewCreditsRemaining + row.plan.interviewCredits,
             canceledAt: null,
             canceledByUserId: null,
             cancelReason: null,
@@ -679,12 +714,7 @@ export class BillingService {
             updatedAt: now,
           })
           .where(eq(payments.authority, authority));
-        await this.options.radicoinService?.grantPurchaseInTransaction(
-          tx,
-          row.order.userId,
-          row.order.id,
-          now,
-        );
+        await this.options.radicoinService?.grantPurchaseInTransaction(tx, row.order.userId, row.order.id, now);
         if (eventType === "upgrade") {
           await this.options.radicoinService?.grantReferralUpgradeInTransaction(
             tx,
@@ -698,7 +728,11 @@ export class BillingService {
         "membership_checkout_result",
         `checkout-result:${row.order.id}`,
         row.order.userId,
-        { plan_id: row.plan.id, payment_mode: row.order.gateway.includes("radicoin") ? "hybrid" : "cash", result: "paid" },
+        {
+          plan_id: row.plan.id,
+          payment_mode: row.order.gateway.includes("radicoin") ? "hybrid" : "cash",
+          result: "paid",
+        },
       );
       resultUrl.searchParams.set("status", "success");
       return resultUrl.toString();
@@ -726,11 +760,7 @@ export class BillingService {
         return resultUrl.toString();
       }
       await this.database.transaction(async (tx) => {
-        await this.options.radicoinService?.releaseReservedSpendInTransaction(
-          tx,
-          row.order.id,
-          new Date(),
-        );
+        await this.options.radicoinService?.releaseReservedSpendInTransaction(tx, row.order.id, new Date());
         const terminalStatus = callbackStatus === "NOK" ? "canceled" : "failed";
         await tx
           .update(orders)
@@ -757,11 +787,7 @@ export class BillingService {
     const pendingOrders = await this.database
       .select({ authority: orders.authority })
       .from(orders)
-      .where(and(
-        eq(orders.status, "pending"),
-        isNotNull(orders.authority),
-        lt(orders.createdAt, cutoff),
-      ))
+      .where(and(eq(orders.status, "pending"), isNotNull(orders.authority), lt(orders.createdAt, cutoff)))
       .orderBy(asc(orders.createdAt))
       .limit(limit);
 
@@ -799,7 +825,20 @@ export class BillingService {
       status ? eq(orders.status, status) : undefined,
       planId ? eq(orders.planId, planId) : undefined,
     );
-    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})` : sortBy === "plan" ? plans.name : sortBy === "amount" ? orders.amountRials : sortBy === "status" ? orders.status : sortBy === "tracking" ? orders.refId : sortBy === "order" ? orders.orderNumber : orders.createdAt;
+    const sortColumn =
+      sortBy === "user"
+        ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})`
+        : sortBy === "plan"
+          ? plans.name
+          : sortBy === "amount"
+            ? orders.amountRials
+            : sortBy === "status"
+              ? orders.status
+              : sortBy === "tracking"
+                ? orders.refId
+                : sortBy === "order"
+                  ? orders.orderNumber
+                  : orders.createdAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [items, totals] = await Promise.all([
       this.database
@@ -811,11 +850,7 @@ export class BillingService {
         .orderBy(order)
         .limit(pageSize)
         .offset((page - 1) * pageSize),
-      this.database
-        .select({ total: count() })
-        .from(orders)
-        .innerJoin(users, eq(orders.userId, users.id))
-        .where(filter),
+      this.database.select({ total: count() }).from(orders).innerJoin(users, eq(orders.userId, users.id)).where(filter),
     ]);
     return { items, total: totals[0]?.total ?? 0, page, pageSize };
   }
@@ -845,12 +880,7 @@ export class BillingService {
     };
   }
 
-  async recordModelUsage(
-    userId: string,
-    requestId: string,
-    operation: string,
-    event: ModelUsageEvent,
-  ) {
+  async recordModelUsage(userId: string, requestId: string, operation: string, event: ModelUsageEvent) {
     await this.database
       .insert(modelUsageEvents)
       .values({
@@ -874,7 +904,14 @@ export class BillingService {
       .onConflictDoNothing({ target: modelUsageEvents.requestId });
   }
 
-  async getModelUsageStats(days = 30, page = 1, pageSize = 20, provider?: string, sortBy?: string, sortDirection: "asc" | "desc" = "desc") {
+  async getModelUsageStats(
+    days = 30,
+    page = 1,
+    pageSize = 20,
+    provider?: string,
+    sortBy?: string,
+    sortDirection: "asc" | "desc" = "desc",
+  ) {
     const since = new Date(Date.now() - days * 86_400_000);
     const filter = and(
       gte(modelUsageEvents.createdAt, since),
@@ -889,82 +926,90 @@ export class BillingService {
       totalTokens: sql<number>`coalesce(sum(${modelUsageEvents.totalTokens}), 0)`,
       estimatedCostMicros: sql<number>`coalesce(sum(${modelUsageEvents.estimatedCostMicros}), 0)`,
     };
-    const recentSortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})` : sortBy === "operation" ? modelUsageEvents.operation : sortBy === "model" ? modelUsageEvents.model : sortBy === "tokens" ? modelUsageEvents.totalTokens : sortBy === "cost" ? modelUsageEvents.estimatedCostMicros : sortBy === "status" ? modelUsageEvents.successful : modelUsageEvents.createdAt;
+    const recentSortColumn =
+      sortBy === "user"
+        ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})`
+        : sortBy === "operation"
+          ? modelUsageEvents.operation
+          : sortBy === "model"
+            ? modelUsageEvents.model
+            : sortBy === "tokens"
+              ? modelUsageEvents.totalTokens
+              : sortBy === "cost"
+                ? modelUsageEvents.estimatedCostMicros
+                : sortBy === "status"
+                  ? modelUsageEvents.successful
+                  : modelUsageEvents.createdAt;
     const recentOrder = sortDirection === "asc" ? asc(recentSortColumn) : desc(recentSortColumn);
-    const [totalsRows, todayRows, byModelRows, byOperationRows, dailyRows, recentRows] =
-      await Promise.all([
-        this.database
-          .select({
-            ...aggregate,
-            providerReportedRequests: sql<number>`count(*) filter (where ${modelUsageEvents.tokenSource} = 'provider')`,
-            estimatedRequests: sql<number>`count(*) filter (where ${modelUsageEvents.tokenSource} = 'estimated')`,
-            averageDurationMs: sql<number>`coalesce(round(avg(${modelUsageEvents.durationMs})), 0)`,
-          })
-          .from(modelUsageEvents)
-          .where(filter),
-        this.database
-          .select(aggregate)
-          .from(modelUsageEvents)
-          .where(
-            gte(
-              modelUsageEvents.createdAt,
-              sql`date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran'`,
-            ),
+    const [totalsRows, todayRows, byModelRows, byOperationRows, dailyRows, recentRows] = await Promise.all([
+      this.database
+        .select({
+          ...aggregate,
+          providerReportedRequests: sql<number>`count(*) filter (where ${modelUsageEvents.tokenSource} = 'provider')`,
+          estimatedRequests: sql<number>`count(*) filter (where ${modelUsageEvents.tokenSource} = 'estimated')`,
+          averageDurationMs: sql<number>`coalesce(round(avg(${modelUsageEvents.durationMs})), 0)`,
+        })
+        .from(modelUsageEvents)
+        .where(filter),
+      this.database
+        .select(aggregate)
+        .from(modelUsageEvents)
+        .where(
+          gte(
+            modelUsageEvents.createdAt,
+            sql`date_trunc('day', now() at time zone 'Asia/Tehran') at time zone 'Asia/Tehran'`,
           ),
-        this.database
-          .select({
-            provider: modelUsageEvents.provider,
-            model: modelUsageEvents.model,
-            ...aggregate,
-          })
-          .from(modelUsageEvents)
-          .where(filter)
-          .groupBy(modelUsageEvents.provider, modelUsageEvents.model)
-          .orderBy(desc(sql`count(*)`)),
-        this.database
-          .select({ operation: modelUsageEvents.operation, ...aggregate })
-          .from(modelUsageEvents)
-          .where(filter)
-          .groupBy(modelUsageEvents.operation)
-          .orderBy(desc(sql`count(*)`)),
-        this.database
-          .select({
-            date: sql<string>`to_char(date_trunc('day', ${modelUsageEvents.createdAt} at time zone 'Asia/Tehran'), 'YYYY-MM-DD')`,
-            ...aggregate,
-          })
-          .from(modelUsageEvents)
-          .where(filter)
-          .groupBy(
-            sql`date_trunc('day', ${modelUsageEvents.createdAt} at time zone 'Asia/Tehran')`,
-          )
-          .orderBy(
-            sql`date_trunc('day', ${modelUsageEvents.createdAt} at time zone 'Asia/Tehran')`,
-          ),
-        this.database
-          .select({
-            id: modelUsageEvents.id,
-            operation: modelUsageEvents.operation,
-            provider: modelUsageEvents.provider,
-            model: modelUsageEvents.model,
-            inputTokens: modelUsageEvents.inputTokens,
-            outputTokens: modelUsageEvents.outputTokens,
-            totalTokens: modelUsageEvents.totalTokens,
-            estimatedCostMicros: modelUsageEvents.estimatedCostMicros,
-            successful: modelUsageEvents.successful,
-            createdAt: modelUsageEvents.createdAt,
-            user: {
-              phone: users.phone,
-              email: users.email,
-              fullName: users.fullName,
-            },
-          })
-          .from(modelUsageEvents)
-          .innerJoin(users, eq(users.id, modelUsageEvents.userId))
-          .where(filter)
-          .orderBy(recentOrder)
-          .limit(pageSize)
-          .offset((page - 1) * pageSize),
-      ]);
+        ),
+      this.database
+        .select({
+          provider: modelUsageEvents.provider,
+          model: modelUsageEvents.model,
+          ...aggregate,
+        })
+        .from(modelUsageEvents)
+        .where(filter)
+        .groupBy(modelUsageEvents.provider, modelUsageEvents.model)
+        .orderBy(desc(sql`count(*)`)),
+      this.database
+        .select({ operation: modelUsageEvents.operation, ...aggregate })
+        .from(modelUsageEvents)
+        .where(filter)
+        .groupBy(modelUsageEvents.operation)
+        .orderBy(desc(sql`count(*)`)),
+      this.database
+        .select({
+          date: sql<string>`to_char(date_trunc('day', ${modelUsageEvents.createdAt} at time zone 'Asia/Tehran'), 'YYYY-MM-DD')`,
+          ...aggregate,
+        })
+        .from(modelUsageEvents)
+        .where(filter)
+        .groupBy(sql`date_trunc('day', ${modelUsageEvents.createdAt} at time zone 'Asia/Tehran')`)
+        .orderBy(sql`date_trunc('day', ${modelUsageEvents.createdAt} at time zone 'Asia/Tehran')`),
+      this.database
+        .select({
+          id: modelUsageEvents.id,
+          operation: modelUsageEvents.operation,
+          provider: modelUsageEvents.provider,
+          model: modelUsageEvents.model,
+          inputTokens: modelUsageEvents.inputTokens,
+          outputTokens: modelUsageEvents.outputTokens,
+          totalTokens: modelUsageEvents.totalTokens,
+          estimatedCostMicros: modelUsageEvents.estimatedCostMicros,
+          successful: modelUsageEvents.successful,
+          createdAt: modelUsageEvents.createdAt,
+          user: {
+            phone: users.phone,
+            email: users.email,
+            fullName: users.fullName,
+          },
+        })
+        .from(modelUsageEvents)
+        .innerJoin(users, eq(users.id, modelUsageEvents.userId))
+        .where(filter)
+        .orderBy(recentOrder)
+        .limit(pageSize)
+        .offset((page - 1) * pageSize),
+    ]);
 
     const numericFields = new Set([
       "requests",
@@ -982,9 +1027,7 @@ export class BillingService {
       Object.fromEntries(
         Object.entries(row).map(([key, value]) => [
           key,
-          typeof value === "string" && numericFields.has(key)
-            ? Number(value)
-            : value,
+          typeof value === "string" && numericFields.has(key) ? Number(value) : value,
         ]),
       );
 
@@ -1024,7 +1067,20 @@ export class BillingService {
         : undefined,
       status ? eq(payments.status, status) : undefined,
     );
-    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})` : sortBy === "amount" ? payments.amountRials : sortBy === "status" ? payments.status : sortBy === "authority" ? payments.authority : sortBy === "reference" ? payments.refId : sortBy === "card" ? payments.cardPan : payments.createdAt;
+    const sortColumn =
+      sortBy === "user"
+        ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})`
+        : sortBy === "amount"
+          ? payments.amountRials
+          : sortBy === "status"
+            ? payments.status
+            : sortBy === "authority"
+              ? payments.authority
+              : sortBy === "reference"
+                ? payments.refId
+                : sortBy === "card"
+                  ? payments.cardPan
+                  : payments.createdAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [items, totals] = await Promise.all([
       this.database
@@ -1069,7 +1125,20 @@ export class BillingService {
       membershipStatus ? eq(userMemberships.status, membershipStatus) : undefined,
       userStatus ? eq(users.status, userStatus) : undefined,
     );
-    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})` : sortBy === "plan" ? plans.name : sortBy === "account" ? users.status : sortBy === "membership" ? userMemberships.status : sortBy === "expiry" ? userMemberships.expiresAt : sortBy === "ai" ? userMemberships.aiCreditsRemaining : users.createdAt;
+    const sortColumn =
+      sortBy === "user"
+        ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})`
+        : sortBy === "plan"
+          ? plans.name
+          : sortBy === "account"
+            ? users.status
+            : sortBy === "membership"
+              ? userMemberships.status
+              : sortBy === "expiry"
+                ? userMemberships.expiresAt
+                : sortBy === "ai"
+                  ? userMemberships.aiCreditsRemaining
+                  : users.createdAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [items, totals] = await Promise.all([
       this.database
@@ -1108,20 +1177,11 @@ export class BillingService {
     const events = await this.database
       .select()
       .from(membershipEvents)
-      .where(
-        and(
-          eq(membershipEvents.userId, userId),
-          isNotNull(membershipEvents.actorUserId),
-        ),
-      )
+      .where(and(eq(membershipEvents.userId, userId), isNotNull(membershipEvents.actorUserId)))
       .orderBy(desc(membershipEvents.createdAt))
       .limit(100);
-    const actorIds = [
-      ...new Set(events.flatMap((event) => event.actorUserId ? [event.actorUserId] : [])),
-    ];
-    const planIds = [
-      ...new Set(events.flatMap((event) => event.planId ? [event.planId] : [])),
-    ];
+    const actorIds = [...new Set(events.flatMap((event) => (event.actorUserId ? [event.actorUserId] : [])))];
+    const planIds = [...new Set(events.flatMap((event) => (event.planId ? [event.planId] : [])))];
     const [actors, eventPlans] = await Promise.all([
       actorIds.length
         ? this.database
@@ -1136,18 +1196,15 @@ export class BillingService {
             .where(inArray(users.id, actorIds))
         : [],
       planIds.length
-        ? this.database
-            .select({ id: plans.id, name: plans.name })
-            .from(plans)
-            .where(inArray(plans.id, planIds))
+        ? this.database.select({ id: plans.id, name: plans.name }).from(plans).where(inArray(plans.id, planIds))
         : [],
     ]);
     const actorById = new Map(actors.map((actor) => [actor.id, actor]));
     const planById = new Map(eventPlans.map((plan) => [plan.id, plan]));
     const history = events.map((event) => ({
       ...event,
-      actor: event.actorUserId ? actorById.get(event.actorUserId) ?? null : null,
-      plan: event.planId ? planById.get(event.planId) ?? null : null,
+      actor: event.actorUserId ? (actorById.get(event.actorUserId) ?? null) : null,
+      plan: event.planId ? (planById.get(event.planId) ?? null) : null,
     }));
     return { user, membership, history };
   }
@@ -1178,14 +1235,10 @@ export class BillingService {
           startsAt: now,
           expiresAt: addDays(baseExpiry, plan.durationDays),
           resumesRemaining: addLimit(membership.resumesRemaining, plan.resumeLimit),
-          pdfDownloadsRemaining: addLimit(
-            membership.pdfDownloadsRemaining,
-            plan.pdfDownloadLimit,
-          ),
+          pdfDownloadsRemaining: addLimit(membership.pdfDownloadsRemaining, plan.pdfDownloadLimit),
           aiCreditsRemaining: membership.aiCreditsRemaining + plan.aiCredits,
           matchCreditsRemaining: membership.matchCreditsRemaining + plan.matchCredits,
-          interviewCreditsRemaining:
-            membership.interviewCreditsRemaining + plan.interviewCredits,
+          interviewCreditsRemaining: membership.interviewCreditsRemaining + plan.interviewCredits,
           canceledAt: null,
           canceledByUserId: null,
           cancelReason: null,
@@ -1224,21 +1277,24 @@ export class BillingService {
     const now = new Date();
     const active = membership.status === "active" && membership.expiresAt > now;
     await this.database.transaction(async (tx) => {
-      await tx.update(userMemberships).set({
-        planId: plan.id,
-        status: "active",
-        startsAt: active ? membership.startsAt : now,
-        expiresAt: active ? membership.expiresAt : addDays(now, plan.durationDays),
-        resumesRemaining: plan.resumeLimit,
-        pdfDownloadsRemaining: plan.pdfDownloadLimit,
-        aiCreditsRemaining: plan.aiCredits,
-        matchCreditsRemaining: plan.matchCredits,
-        interviewCreditsRemaining: plan.interviewCredits,
-        canceledAt: null,
-        canceledByUserId: null,
-        cancelReason: null,
-        updatedAt: now,
-      }).where(eq(userMemberships.id, membership.id));
+      await tx
+        .update(userMemberships)
+        .set({
+          planId: plan.id,
+          status: "active",
+          startsAt: active ? membership.startsAt : now,
+          expiresAt: active ? membership.expiresAt : addDays(now, plan.durationDays),
+          resumesRemaining: plan.resumeLimit,
+          pdfDownloadsRemaining: plan.pdfDownloadLimit,
+          aiCreditsRemaining: plan.aiCredits,
+          matchCreditsRemaining: plan.matchCredits,
+          interviewCreditsRemaining: plan.interviewCredits,
+          canceledAt: null,
+          canceledByUserId: null,
+          cancelReason: null,
+          updatedAt: now,
+        })
+        .where(eq(userMemberships.id, membership.id));
       await tx.insert(membershipEvents).values({
         id: randomUUID(),
         userId,

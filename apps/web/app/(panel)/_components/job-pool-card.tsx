@@ -27,11 +27,7 @@ export function JobPoolCard({
       <article className="flex min-h-[250px] min-w-0 flex-col rounded-2xl border border-[#d9e6df] bg-white p-5 transition-colors hover:border-[#9ac8b8]">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <JobLogo
-              company={listing.companyName}
-              logoUrl={listing.companyLogoUrl || undefined}
-              tone="green"
-            />
+            <JobLogo company={listing.companyName} logoUrl={listing.companyLogoUrl || undefined} tone="green" />
             <div className="min-w-0">
               <strong className="block truncate text-[10px] font-bold text-[#314943]" dir="auto">
                 {listing.companyName}
@@ -68,10 +64,19 @@ export function JobPoolCard({
             <Sparkles size={12} /> پیشنهاد جدید
           </span>
           <div className="flex flex-wrap justify-end gap-1">
-            <button className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[8px] font-bold text-[#60716e] hover:bg-[#f3f6f4] hover:text-[#0f7b62]" type="button" onClick={() => setDetailsOpen(true)}>
+            <button
+              className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[8px] font-bold text-[#60716e] hover:bg-[#f3f6f4] hover:text-[#0f7b62]"
+              type="button"
+              onClick={() => setDetailsOpen(true)}
+            >
               جزئیات
             </button>
-            <button className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[8px] font-bold text-[#0b795d] hover:bg-[#edf7f2]" type="button" onClick={onAnalyze} disabled={saving || !listing.description}>
+            <button
+              className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[8px] font-bold text-[#0b795d] hover:bg-[#edf7f2]"
+              type="button"
+              onClick={onAnalyze}
+              disabled={saving || !listing.description}
+            >
               <Target size={13} /> تحلیل با رزومه
             </button>
           </div>
@@ -84,7 +89,9 @@ export function JobPoolCard({
             role: listing.title,
             match: 0,
             place: listing.location || "",
-            age: listing.postedAt ? new Intl.DateTimeFormat("fa-IR", { month: "short", day: "numeric" }).format(new Date(listing.postedAt)) : "",
+            age: listing.postedAt
+              ? new Intl.DateTimeFormat("fa-IR", { month: "short", day: "numeric" }).format(new Date(listing.postedAt))
+              : "",
             reason: summary,
             description: listing.description || undefined,
             sourceUrl: listing.canonicalUrl,

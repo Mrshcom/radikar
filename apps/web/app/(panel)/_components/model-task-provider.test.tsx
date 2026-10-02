@@ -21,9 +21,29 @@ function Harness({ run }: { run: (signal: AbortSignal) => Promise<string> }) {
   const task = tasks[0];
   return (
     <div>
-      <button type="button" onClick={() => void runModelTask({ key: "test", title: "تست", pendingLabel: "در حال اجرا", completedLabel: "تمام شد", href: "/dashboard", run }).then(setResult).catch(() => undefined)}>شروع</button>
-      <button type="button" disabled={!task} onClick={() => task && cancelTask(task.id)}>لغو</button>
-      <button type="button" disabled={!task} onClick={() => task && dismissTask(task.id)}>حذف</button>
+      <button
+        type="button"
+        onClick={() =>
+          void runModelTask({
+            key: "test",
+            title: "تست",
+            pendingLabel: "در حال اجرا",
+            completedLabel: "تمام شد",
+            href: "/dashboard",
+            run,
+          })
+            .then(setResult)
+            .catch(() => undefined)
+        }
+      >
+        شروع
+      </button>
+      <button type="button" disabled={!task} onClick={() => task && cancelTask(task.id)}>
+        لغو
+      </button>
+      <button type="button" disabled={!task} onClick={() => task && dismissTask(task.id)}>
+        حذف
+      </button>
       <span data-testid="status">{task?.status ?? "empty"}</span>
       <span data-testid="result">{result}</span>
     </div>
@@ -40,10 +60,16 @@ describe("ModelTaskProvider", () => {
 
   it("لغو، AbortSignal را فعال و وضعیت را canceled می‌کند", async () => {
     let receivedSignal: AbortSignal | undefined;
-    renderProvider(<Harness run={(signal) => {
-      receivedSignal = signal;
-      return new Promise((_, reject) => signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError"))));
-    }} />);
+    renderProvider(
+      <Harness
+        run={(signal) => {
+          receivedSignal = signal;
+          return new Promise((_, reject) =>
+            signal.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError"))),
+          );
+        }}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "شروع" }));
     await waitFor(() => expect(screen.getByTestId("status")).toHaveTextContent("running"));
     fireEvent.click(screen.getByRole("button", { name: "لغو" }));

@@ -59,9 +59,7 @@ export function CircularProgress({
           transform={`rotate(${startAngle} 50 50)`}
         />
       </svg>
-      <div className="relative z-2 flex flex-col items-center justify-center">
-        {children}
-      </div>
+      <div className="relative z-2 flex flex-col items-center justify-center">{children}</div>
     </div>
   );
 }

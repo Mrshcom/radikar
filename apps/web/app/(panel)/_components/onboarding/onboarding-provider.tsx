@@ -1,22 +1,9 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, CircleHelp, Sparkles, X } from "lucide-react";
-import {
-  EVENTS,
-  Joyride,
-  STATUS,
-  type Step,
-  type TooltipRenderProps,
-} from "react-joyride";
+import { EVENTS, Joyride, STATUS, type Step, type TooltipRenderProps } from "react-joyride";
 import {
   authQueryKey,
   useAuth,
@@ -27,12 +14,7 @@ import {
 import { apiRequest } from "@/lib/api-client";
 import { OnboardingChecklistModal } from "./onboarding-checklist";
 
-const onboardingSteps: readonly OnboardingStepId[] = [
-  "profile",
-  "match",
-  "resume",
-  "application",
-];
+const onboardingSteps: readonly OnboardingStepId[] = ["profile", "match", "resume", "application"];
 
 type AuthResponse = { user: CurrentUser };
 type OnboardingContextValue = {
@@ -180,7 +162,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [tourRunning, setTourRunning] = useState(false);
   const [tourSteps, setTourSteps] = useState<Step[]>([]);
   const state = user?.onboardingState ?? null;
-  const checklistOpen = user?.role === "user" && (checklistOpenedManually || (state?.status === "not_started" && !checklistDismissed));
+  const checklistOpen =
+    user?.role === "user" && (checklistOpenedManually || (state?.status === "not_started" && !checklistDismissed));
   const mutation = useMutation({
     mutationFn: (onboardingState: OnboardingState) =>
       apiRequest<AuthResponse>("/api/account/onboarding", {
@@ -218,14 +201,20 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setChecklistOpenedManually(false);
     if (state?.status === "not_started") saveState({ ...state, status: "dismissed" });
   }, [saveState, state]);
-  const markCompleted = useCallback((steps: OnboardingStepId[]) => {
-    if (!state) return;
-    const completedSteps = onboardingSteps.filter((step) => steps.includes(step));
-    const status = completedSteps.length === onboardingSteps.length ? "completed" : "active";
-    const isSame = status === state.status && completedSteps.join(",") === state.completedSteps.join(",");
-    if (!isSame) saveState({ ...state, status, completedSteps });
-  }, [saveState, state]);
-  const value = useMemo(() => ({ state, startTour, openChecklist, closeChecklist, markCompleted, isSaving: mutation.isPending }), [closeChecklist, markCompleted, mutation.isPending, openChecklist, startTour, state]);
+  const markCompleted = useCallback(
+    (steps: OnboardingStepId[]) => {
+      if (!state) return;
+      const completedSteps = onboardingSteps.filter((step) => steps.includes(step));
+      const status = completedSteps.length === onboardingSteps.length ? "completed" : "active";
+      const isSame = status === state.status && completedSteps.join(",") === state.completedSteps.join(",");
+      if (!isSame) saveState({ ...state, status, completedSteps });
+    },
+    [saveState, state],
+  );
+  const value = useMemo(
+    () => ({ state, startTour, openChecklist, closeChecklist, markCompleted, isSaving: mutation.isPending }),
+    [closeChecklist, markCompleted, mutation.isPending, openChecklist, startTour, state],
+  );
 
   return (
     <OnboardingContext.Provider value={value}>
@@ -233,11 +222,27 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       {checklistOpen && <OnboardingChecklistModal onClose={closeChecklist} />}
       <Joyride
         continuous
-        locale={{ back: "قبلی", close: "بستن", last: "شروع مسیر", next: "بعدی", nextWithProgress: "بعدی", open: "باز کردن راهنما", skip: "رد کردن" }}
-        onEvent={(event) => {
-          if (event.type === EVENTS.TOUR_END || event.status === STATUS.FINISHED || event.status === STATUS.SKIPPED) setTourRunning(false);
+        locale={{
+          back: "قبلی",
+          close: "بستن",
+          last: "شروع مسیر",
+          next: "بعدی",
+          nextWithProgress: "بعدی",
+          open: "باز کردن راهنما",
+          skip: "رد کردن",
         }}
-        options={{ overlayColor: "rgba(9, 41, 34, .64)", primaryColor: "#0f7b62", showProgress: true, spotlightPadding: 7, zIndex: 90, skipBeacon: true }}
+        onEvent={(event) => {
+          if (event.type === EVENTS.TOUR_END || event.status === STATUS.FINISHED || event.status === STATUS.SKIPPED)
+            setTourRunning(false);
+        }}
+        options={{
+          overlayColor: "rgba(9, 41, 34, .64)",
+          primaryColor: "#0f7b62",
+          showProgress: true,
+          spotlightPadding: 7,
+          zIndex: 90,
+          skipBeacon: true,
+        }}
         run={tourRunning}
         scrollToFirstStep
         steps={tourSteps}

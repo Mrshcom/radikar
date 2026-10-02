@@ -37,7 +37,10 @@ export function useReferralDashboard() {
 export function useReferralLeaderboard() {
   return useQuery({
     queryKey: referralLeaderboardQueryKey,
-    queryFn: () => apiRequest<{ items: Array<{ userId: string; displayName: string; referrals: number }> }>("/api/referrals/leaderboard"),
+    queryFn: () =>
+      apiRequest<{ items: Array<{ userId: string; displayName: string; referrals: number }> }>(
+        "/api/referrals/leaderboard",
+      ),
     staleTime: 60_000,
   });
 }
@@ -57,7 +60,11 @@ export function useReferralSettings() {
 export function useUpdateReferralSettings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (settings: ReferralSettings) => apiRequest<{ settings: ReferralSettings }>("/api/admin/referrals/settings", { method: "PATCH", body: JSON.stringify(settings) }),
+    mutationFn: (settings: ReferralSettings) =>
+      apiRequest<{ settings: ReferralSettings }>("/api/admin/referrals/settings", {
+        method: "PATCH",
+        body: JSON.stringify(settings),
+      }),
     onSuccess: (response) => queryClient.setQueryData(referralSettingsQueryKey, response),
   });
 }
@@ -74,7 +81,8 @@ export type AdminReferral = {
 export function useAdminReferrals(page: number, pageSize: number) {
   return useQuery({
     queryKey: ["admin", "referrals", page, pageSize],
-    queryFn: () => apiRequest<{ items: AdminReferral[]; total: number }>(`/api/admin/referrals?page=${page}&pageSize=${pageSize}`),
+    queryFn: () =>
+      apiRequest<{ items: AdminReferral[]; total: number }>(`/api/admin/referrals?page=${page}&pageSize=${pageSize}`),
     staleTime: 20_000,
   });
 }
@@ -82,7 +90,11 @@ export function useAdminReferrals(page: number, pageSize: number) {
 export function useAdjustReferralPoints() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, points, description }: { userId: string; points: number; description: string }) => apiRequest(`/api/admin/referrals/users/${userId}/adjust`, { method: "POST", body: JSON.stringify({ points, description }) }),
+    mutationFn: ({ userId, points, description }: { userId: string; points: number; description: string }) =>
+      apiRequest(`/api/admin/referrals/users/${userId}/adjust`, {
+        method: "POST",
+        body: JSON.stringify({ points, description }),
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin", "referrals"] }),
   });
 }

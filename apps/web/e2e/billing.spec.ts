@@ -47,7 +47,11 @@ test.describe("خرید و نتیجه پرداخت", () => {
     });
     await page.route("**/api/billing/orders", async (route) => {
       attempts += 1;
-      await route.fulfill({ status: 500, contentType: "application/json", body: JSON.stringify({ error: "ایجاد سفارش ناموفق بود" }) });
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "ایجاد سفارش ناموفق بود" }),
+      });
     });
     await page.goto("/upgrade");
     await page.getByRole("button", { name: "ارتقا و فعال‌سازی" }).click();

@@ -13,9 +13,19 @@ const order = {
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 const plan = {
-  id: "starter", name: "شروع", description: "", priceRials: 0, durationDays: 30,
-  resumeLimit: 3, pdfDownloadLimit: 3, aiCredits: 10, matchCredits: 3, interviewCredits: 3,
-  isFree: true, isPurchasable: true, sortOrder: 1,
+  id: "starter",
+  name: "شروع",
+  description: "",
+  priceRials: 0,
+  durationDays: 30,
+  resumeLimit: 3,
+  pdfDownloadLimit: 3,
+  aiCredits: 10,
+  matchCredits: 3,
+  interviewCredits: 3,
+  isFree: true,
+  isPurchasable: true,
+  sortOrder: 1,
 };
 
 test.describe("حالت‌های مهم پنل کاربر", () => {
@@ -39,15 +49,16 @@ test.describe("حالت‌های مهم پنل کاربر", () => {
     await page.goto("/knowledge-base");
     await page.getByRole("button", { name: "ذخیره پروفایل مسیر شغلی" }).click();
     await expect(page.getByText("پایگاه دانش ذخیره شد و برای ابزارهای رادیکار آماده است.")).toBeVisible();
-    await expect.poll(() => savedCollections).toEqual(
-      expect.arrayContaining(["knowledgeProfiles", "userProfiles"]),
-    );
+    await expect.poll(() => savedCollections).toEqual(expect.arrayContaining(["knowledgeProfiles", "userProfiles"]));
   });
 
   test("سفارش‌ها جست‌وجو، فیلتر و صفحه‌بندی را در URL نگه می‌دارند", async ({ page }) => {
     await mockSession(page);
     await page.route("**/api/billing/orders**", async (route) => {
-      await route.fulfill({ contentType: "application/json", body: JSON.stringify({ items: [{ order, plan }], total: 31, page: 1, pageSize: 10 }) });
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ items: [{ order, plan }], total: 31, page: 1, pageSize: 10 }),
+      });
     });
     await page.goto("/orders");
     await expect(page.getByText("RK-1001")).toBeVisible();

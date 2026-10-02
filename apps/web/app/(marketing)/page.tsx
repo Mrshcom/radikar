@@ -1,7 +1,17 @@
 import { JsonLd } from "../_components/json-ld";
 import { siteConfig } from "@/lib/site";
 import { marketingFaqs } from "./_components/marketing-data";
-import { DemoSection, FeaturesSection, FaqSection, FinalCta, HeroSection, PricingSection, TemplatesSection, TrustStrip, WorkflowSection } from "./_components/marketing-sections";
+import {
+  DemoSection,
+  FeaturesSection,
+  FaqSection,
+  FinalCta,
+  HeroSection,
+  PricingSection,
+  TemplatesSection,
+  TrustStrip,
+  WorkflowSection,
+} from "./_components/marketing-sections";
 
 const softwareSchema = {
   "@context": "https://schema.org",
@@ -35,8 +45,7 @@ const howToSchema = {
   "@type": "HowTo",
   "@id": `${siteConfig.url}/#how-it-works`,
   name: "چطور با رادیکار شغل مناسب پیدا کنیم؟",
-  description:
-    "مراحل استفاده از رادیکار برای پیدا کردن فرصت شغلی، ساخت رزومه هدفمند و آمادگی مصاحبه.",
+  description: "مراحل استفاده از رادیکار برای پیدا کردن فرصت شغلی، ساخت رزومه هدفمند و آمادگی مصاحبه.",
   step: [
     { "@type": "HowToStep", position: 1, name: "ساخت پروفایل مسیر شغلی" },
     { "@type": "HowToStep", position: 2, name: "انتخاب یا وارد کردن آگهی شغلی" },
@@ -57,5 +66,20 @@ const faqSchema = {
 };
 
 export default function MarketingPage() {
-  return <><JsonLd data={softwareSchema} /><JsonLd data={howToSchema} /><JsonLd data={faqSchema} /><HeroSection /><TrustStrip /><WorkflowSection /><FeaturesSection /><DemoSection /><TemplatesSection /><PricingSection /><FaqSection /><FinalCta /></>;
+  return (
+    <>
+      <JsonLd data={softwareSchema} />
+      <JsonLd data={howToSchema} />
+      <JsonLd data={faqSchema} />
+      <HeroSection />
+      <TrustStrip />
+      <WorkflowSection />
+      <FeaturesSection />
+      <DemoSection />
+      <TemplatesSection />
+      <PricingSection />
+      <FaqSection />
+      <FinalCta />
+    </>
+  );
 }

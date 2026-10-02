@@ -12,7 +12,9 @@ const service = new JobPoolService(database.db, {
   actorId: config.APIFY_LINKEDIN_JOBS_ACTOR_ID,
   dailyLimit: config.JOB_POOL_DAILY_LIMIT,
   intervalHours: config.JOB_POOL_INTERVAL_HOURS,
-  locations: config.JOB_POOL_LOCATIONS.split(",").map((location) => location.trim()).filter(Boolean),
+  locations: config.JOB_POOL_LOCATIONS.split(",")
+    .map((location) => location.trim())
+    .filter(Boolean),
   publishedAt: config.JOB_POOL_PUBLISHED_AT,
   costPerThousandUsdMicros: config.JOB_POOL_COST_PER_1000_USD_MICROS,
   actorStartCostUsdMicros: config.JOB_POOL_ACTOR_START_COST_USD_MICROS,

@@ -1,7 +1,6 @@
 import { execFileSync } from "node:child_process";
 
-const run = (command, args) =>
-  execFileSync(command, args, { cwd: process.cwd(), stdio: "inherit" });
+const run = (command, args) => execFileSync(command, args, { cwd: process.cwd(), stdio: "inherit" });
 
 try {
   run("docker", ["compose", "up", "-d", "postgres"]);

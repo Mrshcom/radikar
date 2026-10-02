@@ -23,11 +23,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
-export function ImageEditorModal({
-  file,
-  onCancel,
-  onConfirm,
-}: ImageEditorModalProps) {
+export function ImageEditorModal({ file, onCancel, onConfirm }: ImageEditorModalProps) {
   const [source, setSource] = useState("");
   const [metrics, setMetrics] = useState<ImageMetrics | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -47,8 +43,7 @@ export function ImageEditorModal({
   useEffect(() => {
     const viewport = cropViewportRef.current;
     if (!viewport) return;
-    const updateViewportSize = () =>
-      setViewportSize(Math.round(viewport.getBoundingClientRect().width));
+    const updateViewportSize = () => setViewportSize(Math.round(viewport.getBoundingClientRect().width));
     updateViewportSize();
     const observer = new ResizeObserver(updateViewportSize);
     observer.observe(viewport);
@@ -82,11 +77,7 @@ export function ImageEditorModal({
 
   const displayGeometry = metrics
     ? (() => {
-        const scale =
-          Math.max(
-            viewportSize / metrics.width,
-            viewportSize / metrics.height,
-          ) * zoom;
+        const scale = Math.max(viewportSize / metrics.width, viewportSize / metrics.height) * zoom;
         const width = metrics.width * scale;
         const height = metrics.height * scale;
         const centeredX = (viewportSize - width) / 2;
@@ -104,7 +95,7 @@ export function ImageEditorModal({
     : null;
   const updateZoom = (nextZoom: number) => {
     setZoom(clamp(Number(nextZoom.toFixed(2)), 1, 3));
-    setOffset((current) => ({ x: current.x * nextZoom / zoom, y: current.y * nextZoom / zoom }));
+    setOffset((current) => ({ x: (current.x * nextZoom) / zoom, y: (current.y * nextZoom) / zoom }));
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -139,33 +130,44 @@ export function ImageEditorModal({
     const sourceX = Math.max(0, -displayGeometry.left / displayGeometry.scale);
     const sourceY = Math.max(0, -displayGeometry.top / displayGeometry.scale);
     const sourceSize = viewportSize / displayGeometry.scale;
-    context.drawImage(
-      metrics.element,
-      sourceX,
-      sourceY,
-      sourceSize,
-      sourceSize,
-      0,
-      0,
-      outputSize,
-      outputSize,
-    );
+    context.drawImage(metrics.element, sourceX, sourceY, sourceSize, sourceSize, 0, 0, outputSize, outputSize);
     onConfirm(canvas.toDataURL("image/jpeg", 0.9));
     setGenerating(false);
   };
 
   return (
-    <div className="fixed inset-0 z-[90] grid place-items-center bg-[rgba(13,35,32,.58)] p-4 backdrop-blur-[5px]" role="presentation" onMouseDown={onCancel}>
-      <section className="w-[min(430px,100%)] overflow-hidden rounded-[22px] border border-white/70 bg-white shadow-[0_28px_90px_rgba(10,38,33,.3)]" role="dialog" aria-modal="true" aria-labelledby="image-editor-title" onMouseDown={(event) => event.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[90] grid place-items-center bg-[rgba(13,35,32,.58)] p-4 backdrop-blur-[5px]"
+      role="presentation"
+      onMouseDown={onCancel}
+    >
+      <section
+        className="w-[min(430px,100%)] overflow-hidden rounded-[22px] border border-white/70 bg-white shadow-[0_28px_90px_rgba(10,38,33,.3)]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="image-editor-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <header className="flex items-center justify-between border-b border-[#edf1ee] px-5 py-4">
           <div className="flex items-center gap-2">
-            <span className="grid size-9 place-items-center rounded-xl bg-[#eaf6f0] text-[#0f7b62]"><ImageIcon size={18} /></span>
+            <span className="grid size-9 place-items-center rounded-xl bg-[#eaf6f0] text-[#0f7b62]">
+              <ImageIcon size={18} />
+            </span>
             <div>
-              <h2 id="image-editor-title" className="m-0 text-[14px] font-black text-[#19312f]">ویرایش تصویر پروفایل</h2>
+              <h2 id="image-editor-title" className="m-0 text-[14px] font-black text-[#19312f]">
+                ویرایش تصویر پروفایل
+              </h2>
               <p className="m-0 mt-1 text-[9px] text-[#7f908b]">تصویر را جابه‌جا کن و کادر مناسب را انتخاب کن.</p>
             </div>
           </div>
-          <button className="grid size-8 place-items-center rounded-full border border-[#dfe7e2] text-[#72837e]" type="button" onClick={onCancel} aria-label="بستن"><X size={17} /></button>
+          <button
+            className="grid size-8 place-items-center rounded-full border border-[#dfe7e2] text-[#72837e]"
+            type="button"
+            onClick={onCancel}
+            aria-label="بستن"
+          >
+            <X size={17} />
+          </button>
         </header>
 
         <div className="p-5">
@@ -177,7 +179,24 @@ export function ImageEditorModal({
             onPointerUp={() => setDragging(false)}
             onPointerCancel={() => setDragging(false)}
           >
-            {source && displayGeometry ? <img className="pointer-events-none absolute max-w-none select-none" src={source} alt="پیش‌نمایش تصویر پروفایل" style={{ width: displayGeometry.width, height: displayGeometry.height, left: displayGeometry.left, top: displayGeometry.top }} draggable={false} /> : <div className="grid size-full place-items-center text-white/70"><LoaderCircle className="animate-spin" size={24} /></div>}
+            {source && displayGeometry ? (
+              <img
+                className="pointer-events-none absolute max-w-none select-none"
+                src={source}
+                alt="پیش‌نمایش تصویر پروفایل"
+                style={{
+                  width: displayGeometry.width,
+                  height: displayGeometry.height,
+                  left: displayGeometry.left,
+                  top: displayGeometry.top,
+                }}
+                draggable={false}
+              />
+            ) : (
+              <div className="grid size-full place-items-center text-white/70">
+                <LoaderCircle className="animate-spin" size={24} />
+              </div>
+            )}
             <div className="pointer-events-none absolute inset-0 rounded-[18px] ring-1 ring-inset ring-white/40" />
             <div className="pointer-events-none absolute inset-0 border-[2px] border-white/65" />
           </div>
@@ -196,8 +215,21 @@ export function ImageEditorModal({
         </div>
 
         <footer className="flex justify-end gap-2 border-t border-[#edf1ee] bg-[#fbfcfa] px-5 py-4">
-          <button className="min-h-10 rounded-[10px] border border-[#dfe7e2] bg-white px-4 text-[10px] font-bold text-[#62736e]" type="button" onClick={onCancel}>انصراف</button>
-          <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] bg-[#0f7b62] px-5 text-[10px] font-bold text-white disabled:opacity-50" type="button" disabled={!displayGeometry || generating} onClick={createCrop}>{generating ? <LoaderCircle className="animate-spin" size={15} /> : <Check size={15} />} استفاده از تصویر</button>
+          <button
+            className="min-h-10 rounded-[10px] border border-[#dfe7e2] bg-white px-4 text-[10px] font-bold text-[#62736e]"
+            type="button"
+            onClick={onCancel}
+          >
+            انصراف
+          </button>
+          <button
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] bg-[#0f7b62] px-5 text-[10px] font-bold text-white disabled:opacity-50"
+            type="button"
+            disabled={!displayGeometry || generating}
+            onClick={createCrop}
+          >
+            {generating ? <LoaderCircle className="animate-spin" size={15} /> : <Check size={15} />} استفاده از تصویر
+          </button>
         </footer>
       </section>
     </div>

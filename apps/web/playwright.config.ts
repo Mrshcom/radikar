@@ -3,8 +3,7 @@ import { existsSync } from "node:fs";
 
 const useSystemChrome =
   !process.env.CI &&
-  (process.env.PLAYWRIGHT_USE_SYSTEM_CHROME === "1" ||
-    existsSync("/Applications/Google Chrome.app"));
+  (process.env.PLAYWRIGHT_USE_SYSTEM_CHROME === "1" || existsSync("/Applications/Google Chrome.app"));
 const browserChannel = useSystemChrome ? "chrome" : undefined;
 
 export default defineConfig({

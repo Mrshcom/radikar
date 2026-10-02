@@ -47,14 +47,20 @@ test.describe("شاخه‌های باقی‌ماندهٔ جریان‌های ب�
 
   test("لینک آگهی خوانده، تحلیل و به‌عنوان دادهٔ قابل پیگیری ذخیره می‌شود", async ({ page }) => {
     const repository = await mockDataCollections(page, {
-      resumes: [resume], jobs: [], applications: [], matchAnalyses: [],
+      resumes: [resume],
+      jobs: [],
+      applications: [],
+      matchAnalyses: [],
     });
     await page.route("**/api/job-import", async (route) => {
-      await route.fulfill({ contentType: "application/json", body: JSON.stringify({
-        text: "توسعه‌دهنده React مسلط به TypeScript",
-        sourceUrl: "https://jobs.example/react",
-        logoUrl: "https://cdn.example/logo.png",
-      }) });
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          text: "توسعه‌دهنده React مسلط به TypeScript",
+          sourceUrl: "https://jobs.example/react",
+          logoUrl: "https://cdn.example/logo.png",
+        }),
+      });
     });
     await page.route("**/api/match/analyze", async (route) => {
       await route.fulfill({ contentType: "application/json", body: JSON.stringify(analysis) });
@@ -74,10 +80,17 @@ test.describe("شاخه‌های باقی‌ماندهٔ جریان‌های ب�
 
   test("خطای خواندن لینک آگهی تحلیل و ذخیره‌سازی را متوقف می‌کند", async ({ page }) => {
     const repository = await mockDataCollections(page, {
-      resumes: [resume], jobs: [], applications: [], matchAnalyses: [],
+      resumes: [resume],
+      jobs: [],
+      applications: [],
+      matchAnalyses: [],
     });
     await page.route("**/api/job-import", async (route) => {
-      await route.fulfill({ status: 422, contentType: "application/json", body: JSON.stringify({ error: "لینک آگهی قابل خواندن نیست" }) });
+      await route.fulfill({
+        status: 422,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "لینک آگهی قابل خواندن نیست" }),
+      });
     });
     await page.goto("/match");
     await page.getByRole("button", { name: /انتخاب رزومه مبنا/ }).click();
@@ -91,15 +104,21 @@ test.describe("شاخه‌های باقی‌ماندهٔ جریان‌های ب�
 
   test("رزومهٔ اختصاصی پس از تحلیل ساخته و با اتصال به فرصت ذخیره می‌شود", async ({ page }) => {
     const repository = await mockDataCollections(page, {
-      resumes: [resume], jobs: [], applications: [], matchAnalyses: [],
+      resumes: [resume],
+      jobs: [],
+      applications: [],
+      matchAnalyses: [],
     });
     await page.route("**/api/match/analyze", async (route) => {
       await route.fulfill({ contentType: "application/json", body: JSON.stringify(analysis) });
     });
     await page.route("**/api/match/tailor", async (route) => {
-      await route.fulfill({ contentType: "application/json", body: JSON.stringify({
-        resume: { ...resumeData, summary: "خلاصهٔ اختصاصی برای فرصت رادیکار" },
-      }) });
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          resume: { ...resumeData, summary: "خلاصهٔ اختصاصی برای فرصت رادیکار" },
+        }),
+      });
     });
     await page.goto("/match");
     await page.getByRole("radio", { name: /وارد کردن متن آگهی/ }).click();
@@ -112,7 +131,8 @@ test.describe("شاخه‌های باقی‌ماندهٔ جریان‌های ب�
     await page.getByRole("button", { name: "ساخت رزومه فارسی" }).click();
     await expect(page.getByText("نسخه اختصاصی ساخته شد")).toBeVisible();
     await expect.poll(() => repository.list("resumes").length).toBe(2);
-    const tailored = repository.list("resumes").find((item) => item.source === "tailored") as { data?: { summary?: string }; targetJobId?: string } | undefined;
+    const tailored = repository.list("resumes").find((item) => item.source === "tailored") as
+      { data?: { summary?: string }; targetJobId?: string } | undefined;
     expect(tailored?.data?.summary).toBe("خلاصهٔ اختصاصی برای فرصت رادیکار");
     expect(tailored?.targetJobId).toBeTruthy();
   });
@@ -120,10 +140,16 @@ test.describe("شاخه‌های باقی‌ماندهٔ جریان‌های ب�
   test("ساخت جلسهٔ تازهٔ مصاحبه، پرسش‌ها را ذخیره و تمرین را آغاز می‌کند", async ({ page }) => {
     const repository = await mockDataCollections(page, { resumes: [resume], interviewSessions: [] });
     await page.route("**/api/interview/session", async (route) => {
-      await route.fulfill({ contentType: "application/json", body: JSON.stringify({
-        title: "مصاحبه React", subtitle: "تمرین نقش فرانت‌اند", duration: "۲۰ دقیقه",
-        questions: ["React چیست؟"], cards: [{ title: "تمرین فنی", text: "تمرین کن", tone: "mint" }],
-      }) });
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          title: "مصاحبه React",
+          subtitle: "تمرین نقش فرانت‌اند",
+          duration: "۲۰ دقیقه",
+          questions: ["React چیست؟"],
+          cards: [{ title: "تمرین فنی", text: "تمرین کن", tone: "mint" }],
+        }),
+      });
     });
     await page.goto("/interview");
     await page.getByRole("button", { name: "ساخت جلسه مصاحبه" }).click();
@@ -136,7 +162,11 @@ test.describe("شاخه‌های باقی‌ماندهٔ جریان‌های ب�
   test("خطای ساخت جلسهٔ مصاحبه هیچ رکورد ناقصی ذخیره نمی‌کند", async ({ page }) => {
     const repository = await mockDataCollections(page, { resumes: [resume], interviewSessions: [] });
     await page.route("**/api/interview/session", async (route) => {
-      await route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ error: "مدل مصاحبه در دسترس نیست" }) });
+      await route.fulfill({
+        status: 502,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "مدل مصاحبه در دسترس نیست" }),
+      });
     });
     await page.goto("/interview");
     await page.getByRole("button", { name: "ساخت جلسه مصاحبه" }).click();
@@ -148,9 +178,17 @@ test.describe("شاخه‌های باقی‌ماندهٔ جریان‌های ب�
   test("رد شدن سهمیهٔ PDF، چاپ را متوقف و خطا را به کاربر اعلام می‌کند", async ({ page }) => {
     await mockDataCollections(page, { resumes: [resume] });
     let printed = false;
-    await page.addInitScript(() => { window.print = () => { window.sessionStorage.setItem("print-called", "true"); }; });
+    await page.addInitScript(() => {
+      window.print = () => {
+        window.sessionStorage.setItem("print-called", "true");
+      };
+    });
     await page.route("**/api/billing/usage/pdf", async (route) => {
-      await route.fulfill({ status: 402, contentType: "application/json", body: JSON.stringify({ error: "سهمیه دانلود PDF تمام شده است" }) });
+      await route.fulfill({
+        status: 402,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "سهمیه دانلود PDF تمام شده است" }),
+      });
     });
     await page.goto("/resumes");
     await page.getByRole("button", { name: /مشاهده و ویرایش رزومه فرانت‌اند/ }).click();

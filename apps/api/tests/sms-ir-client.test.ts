@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  createSmsIrOtpDelivery,
-  SmsIrClient,
-  SmsIrError,
-} from "../src/modules/notifications/otp-delivery";
+import { createSmsIrOtpDelivery, SmsIrClient, SmsIrError } from "../src/modules/notifications/otp-delivery";
 
 test("SmsIrClient sends the documented URL parameters and parses a successful response", async () => {
   let requestUrl = "";

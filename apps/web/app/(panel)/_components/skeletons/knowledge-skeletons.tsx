@@ -1,13 +1,15 @@
 import { cn } from "@/lib/cn";
 
-const repeatGrid =
-  "grid grid-cols-1 gap-3 min-[561px]:grid-cols-2 min-[1121px]:grid-cols-3 min-[1800px]:grid-cols-4";
+const repeatGrid = "grid grid-cols-1 gap-3 min-[561px]:grid-cols-2 min-[1121px]:grid-cols-3 min-[1800px]:grid-cols-4";
 
 export function KnowledgeCardsSkeleton() {
   return (
     <div className="grid gap-4" aria-label="در حال استخراج اطلاعات رزومه" aria-busy="true">
       {[7, 4, 1, 1, 5].map((fieldCount, cardIndex) => (
-        <section className="rounded-[18px] border border-[#e7ebe6] bg-white p-5 shadow-[0_12px_36px_rgba(27,55,50,.045)]" key={cardIndex}>
+        <section
+          className="rounded-[18px] border border-[#e7ebe6] bg-white p-5 shadow-[0_12px_36px_rgba(27,55,50,.045)]"
+          key={cardIndex}
+        >
           <header className="mb-5 flex items-center gap-3">
             <i className="size-10 animate-pulse rounded-xl bg-[#e8eeea]" />
             <div className="grid flex-1 gap-2">
@@ -19,8 +21,7 @@ export function KnowledgeCardsSkeleton() {
           <div className={repeatGrid}>
             {Array.from({ length: fieldCount }, (_, fieldIndex) => {
               const multiline =
-                (cardIndex === 0 && fieldIndex === fieldCount - 1) ||
-                (cardIndex === 4 && fieldIndex >= 3);
+                (cardIndex === 0 && fieldIndex === fieldCount - 1) || (cardIndex === 4 && fieldIndex >= 3);
               const fullWidth = multiline || cardIndex === 2 || cardIndex === 3;
               return (
                 <div className={cn("grid gap-1.5", fullWidth && "col-span-full")} key={fieldIndex}>
@@ -92,7 +93,13 @@ export function KnowledgePageSkeleton() {
           </div>
           <div className="flex gap-2 overflow-hidden px-[12%] max-[1099px]:[mask-image:linear-gradient(to_right,transparent_0%,black_13%,black_87%,transparent_100%)] min-[1100px]:grid min-[1100px]:overflow-visible min-[1100px]:px-0">
             {Array.from({ length: 6 }, (_, index) => (
-              <div className={cn("flex min-h-[58px] min-w-[76%] items-center gap-3 rounded-[14px] p-3 min-[1100px]:min-w-0", index === 0 ? "bg-[#e9f6f0]" : "bg-[#fbfcfa]")} key={index}>
+              <div
+                className={cn(
+                  "flex min-h-[58px] min-w-[76%] items-center gap-3 rounded-[14px] p-3 min-[1100px]:min-w-0",
+                  index === 0 ? "bg-[#e9f6f0]" : "bg-[#fbfcfa]",
+                )}
+                key={index}
+              >
                 <i className="size-9 shrink-0 animate-pulse rounded-xl bg-[#e3eee8]" />
                 <span className="min-w-0 flex-1">
                   <i className="block h-2.5 w-3/4 animate-pulse rounded bg-[#e5eae6]" />

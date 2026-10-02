@@ -19,14 +19,14 @@ import {
   tableSortByParser,
   tableSortDirectionParser,
 } from "@/lib/table-search-params";
-import {
-  AdminFilterSelect,
-  AdminTablePagination,
-  AdminTableToolbar,
-} from "../_components/admin-table-controls";
+import { AdminFilterSelect, AdminTablePagination, AdminTableToolbar } from "../_components/admin-table-controls";
 
 type Response = {
-  items: Array<{ order: Order; plan: Plan; user: { phone: string | null; email: string | null; fullName: string | null } }>;
+  items: Array<{
+    order: Order;
+    plan: Plan;
+    user: { phone: string | null; email: string | null; fullName: string | null };
+  }>;
   total: number;
 };
 
@@ -49,18 +49,19 @@ const orderFilterParsers = {
 export default function AdminOrdersPage() {
   const { user } = useAuth();
   const plans = usePlans();
-  const [{ search, status, planId, sortBy, sortDirection }, setFilters] = useQueryStates(
-    orderFilterParsers,
-    { ...tableQueryStateOptions, urlKeys: { search: "q", planId: "plan" } },
-  );
-  const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } =
-    useUrlTablePagination();
-  const sort: SortState = sortBy && (sortDirection === "asc" || sortDirection === "desc") ? { key: sortBy, direction: sortDirection } : null;
+  const [{ search, status, planId, sortBy, sortDirection }, setFilters] = useQueryStates(orderFilterParsers, {
+    ...tableQueryStateOptions,
+    urlKeys: { search: "q", planId: "plan" },
+  });
+  const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } = useUrlTablePagination();
+  const sort: SortState =
+    sortBy && (sortDirection === "asc" || sortDirection === "desc") ? { key: sortBy, direction: sortDirection } : null;
   const query = useQuery({
     queryKey: ["admin", "orders", page, pageSize, search, status, planId, sortBy, sortDirection],
-    queryFn: () => apiRequest<Response>(
-      `/api/admin/orders?${buildQueryString({ page, pageSize, search, status, planId, sortBy, sortDirection })}`,
-    ),
+    queryFn: () =>
+      apiRequest<Response>(
+        `/api/admin/orders?${buildQueryString({ page, pageSize, search, status, planId, sortBy, sortDirection })}`,
+      ),
     enabled: user?.role !== "user",
     staleTime: 15_000,
     placeholderData: keepPreviousData,
@@ -68,23 +69,97 @@ export default function AdminOrdersPage() {
   if (user?.role === "user") return null;
   const filtered = Boolean(search || status || planId);
   const columns: DataTableColumn<Response["items"][number]>[] = [
-    { key: "order", title: "سفارش", className: "font-bold", render: ({ order }) => <span dir="ltr">{order.orderNumber}</span> },
+    {
+      key: "order",
+      title: "سفارش",
+      className: "font-bold",
+      render: ({ order }) => <span dir="ltr">{order.orderNumber}</span>,
+    },
     { key: "user", title: "کاربر", render: ({ user: owner }) => userDisplayName(owner) },
     { key: "plan", title: "پلن", render: ({ plan }) => plan.name },
     { key: "amount", title: "مبلغ", render: ({ order }) => `${formatTomans(order.amountRials)} تومان` },
-    { key: "status", title: "وضعیت", render: ({ order }) => statusOptions.find((item) => item.value === order.status)?.label ?? order.status },
-    { key: "date", title: "تاریخ و ساعت", className: "whitespace-nowrap", render: ({ order }) => <PersianDateTime value={order.createdAt} /> },
+    {
+      key: "status",
+      title: "وضعیت",
+      render: ({ order }) => statusOptions.find((item) => item.value === order.status)?.label ?? order.status,
+    },
+    {
+      key: "date",
+      title: "تاریخ و ساعت",
+      className: "whitespace-nowrap",
+      render: ({ order }) => <PersianDateTime value={order.createdAt} />,
+    },
     { key: "tracking", title: "پیگیری", render: ({ order }) => <span dir="ltr">{order.refId || "—"}</span> },
   ];
   return (
     <div className="grid gap-6">
-      <header><h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]"><ReceiptText size={22} /> سفارش‌های سامانه</h1></header>
+      <header>
+        <h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]">
+          <ReceiptText size={22} /> سفارش‌های سامانه
+        </h1>
+      </header>
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
-        <AdminTableToolbar search={search} searchPlaceholder="شماره سفارش، نام، شماره یا ایمیل" activeFilterCount={[status, planId].filter(Boolean).length} onSearch={(value) => { void setFilters({ search: value }); setPage(1); }} onResetFilters={() => { void setFilters({ status: "", planId: "" }); setPage(1); }}>
-          <AdminFilterSelect label="وضعیت سفارش" value={status} options={statusOptions} onChange={(value) => { void setFilters({ status: value }); setPage(1); }} />
-          <AdminFilterSelect label="پلن" value={planId} options={[{ value: "", label: "همه پلن‌ها" }, ...(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))]} onChange={(value) => { void setFilters({ planId: value }); setPage(1); }} />
+        <AdminTableToolbar
+          search={search}
+          searchPlaceholder="شماره سفارش، نام، شماره یا ایمیل"
+          activeFilterCount={[status, planId].filter(Boolean).length}
+          onSearch={(value) => {
+            void setFilters({ search: value });
+            setPage(1);
+          }}
+          onResetFilters={() => {
+            void setFilters({ status: "", planId: "" });
+            setPage(1);
+          }}
+        >
+          <AdminFilterSelect
+            label="وضعیت سفارش"
+            value={status}
+            options={statusOptions}
+            onChange={(value) => {
+              void setFilters({ status: value });
+              setPage(1);
+            }}
+          />
+          <AdminFilterSelect
+            label="پلن"
+            value={planId}
+            options={[
+              { value: "", label: "همه پلن‌ها" },
+              ...(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name })),
+            ]}
+            onChange={(value) => {
+              void setFilters({ planId: value });
+              setPage(1);
+            }}
+          />
         </AdminTableToolbar>
-        <DataTable columns={columns} rows={query.data?.items ?? []} getRowKey={({ order }) => order.id} loading={query.isLoading} error={query.error} retrying={query.isFetching} onRetry={() => void query.refetch()} filtered={filtered} sort={sort} onSortChange={(next) => { void setFilters({ sortBy: next?.key ?? "", sortDirection: next?.direction ?? "" }); setPage(1); }} minWidthClassName="min-w-[850px]" footer={<AdminTablePagination page={page} pageSize={pageSize} total={query.data?.total ?? 0} pageSizeSaving={pageSizeSaving} onPageChange={setPage} onPageSizeChange={setPageSize} />} />
+        <DataTable
+          columns={columns}
+          rows={query.data?.items ?? []}
+          getRowKey={({ order }) => order.id}
+          loading={query.isLoading}
+          error={query.error}
+          retrying={query.isFetching}
+          onRetry={() => void query.refetch()}
+          filtered={filtered}
+          sort={sort}
+          onSortChange={(next) => {
+            void setFilters({ sortBy: next?.key ?? "", sortDirection: next?.direction ?? "" });
+            setPage(1);
+          }}
+          minWidthClassName="min-w-[850px]"
+          footer={
+            <AdminTablePagination
+              page={page}
+              pageSize={pageSize}
+              total={query.data?.total ?? 0}
+              pageSizeSaving={pageSizeSaving}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
+          }
+        />
       </section>
     </div>
   );

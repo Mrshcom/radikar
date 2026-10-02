@@ -17,8 +17,16 @@ describe("apiRequest", () => {
   it("sends JSON requests with credentials and parses responses", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    await expect(apiRequest<{ ok: boolean }>("/api/example", { method: "POST", body: JSON.stringify({ value: 1 }) })).resolves.toEqual({ ok: true });
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/api/example"), expect.objectContaining({ credentials: "include", headers: expect.objectContaining({ "content-type": "application/json" }) }));
+    await expect(
+      apiRequest<{ ok: boolean }>("/api/example", { method: "POST", body: JSON.stringify({ value: 1 }) }),
+    ).resolves.toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/api/example"),
+      expect.objectContaining({
+        credentials: "include",
+        headers: expect.objectContaining({ "content-type": "application/json" }),
+      }),
+    );
   });
 
   it("returns undefined for 204 and preserves form-data content type handling", async () => {
@@ -31,7 +39,9 @@ describe("apiRequest", () => {
   });
 
   it("emits the upgrade event and stores a 402 message", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ error: "سقف استفاده تمام شده" }), { status: 402 }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ error: "سقف استفاده تمام شده" }), { status: 402 }));
     vi.stubGlobal("fetch", fetchMock);
     const event = vi.fn();
     window.addEventListener(PLAN_UPGRADE_REQUIRED_EVENT, event);
@@ -45,7 +55,8 @@ describe("apiRequest", () => {
     await expect(apiRequest("/api/bad-json")).rejects.toBeInstanceOf(ApiError);
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
     await expect(apiRequest("/api/offline")).rejects.toMatchObject({ status: 0 });
-    const abort = new Error("aborted"); abort.name = "AbortError";
+    const abort = new Error("aborted");
+    abort.name = "AbortError";
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(abort));
     await expect(apiRequest("/api/abort")).rejects.toBe(abort);
   });

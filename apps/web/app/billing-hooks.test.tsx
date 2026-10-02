@@ -8,7 +8,11 @@ vi.mock("@/lib/api-client", () => ({ apiRequest }));
 import { billingKeys, useAdminMembership, useCreateOrder, useMembership, useOrders, usePlans } from "@/lib/billing";
 
 function wrapper({ children }: { children: ReactNode }) {
-  return <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      {children}
+    </QueryClientProvider>
+  );
 }
 
 describe("billing queries", () => {
@@ -21,11 +25,18 @@ describe("billing queries", () => {
   });
 
   it("fetches plans, membership and filtered orders through stable API routes", async () => {
-    apiRequest.mockResolvedValueOnce([]).mockResolvedValueOnce({ id: "m" }).mockResolvedValueOnce({ items: [], total: 0, page: 2, pageSize: 10 });
+    apiRequest
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce({ id: "m" })
+      .mockResolvedValueOnce({ items: [], total: 0, page: 2, pageSize: 10 });
     const plans = renderHook(() => usePlans(), { wrapper });
     const membership = renderHook(() => useMembership(), { wrapper });
     const orders = renderHook(() => useOrders(2, 10, "RK", "paid"), { wrapper });
-    await waitFor(() => expect(plans.result.current.isSuccess && membership.result.current.isSuccess && orders.result.current.isSuccess).toBe(true));
+    await waitFor(() =>
+      expect(
+        plans.result.current.isSuccess && membership.result.current.isSuccess && orders.result.current.isSuccess,
+      ).toBe(true),
+    );
     expect(apiRequest).toHaveBeenCalledWith("/api/billing/plans");
     expect(apiRequest).toHaveBeenCalledWith("/api/billing/membership");
     expect(apiRequest).toHaveBeenCalledWith("/api/billing/orders?page=2&pageSize=10&search=RK&status=paid");

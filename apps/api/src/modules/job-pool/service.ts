@@ -65,7 +65,10 @@ function asText(value: unknown) {
 
 function asTextList(value: unknown) {
   return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === "string").map((item) => item.trim()).filter(Boolean)
+    ? value
+        .filter((item): item is string => typeof item === "string")
+        .map((item) => item.trim())
+        .filter(Boolean)
     : [];
 }
 
@@ -78,11 +81,25 @@ function parseDate(value: unknown) {
 
 function parseSalary(value: unknown) {
   const values = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
-  const salaryText = values.filter((item): item is string => typeof item === "string").join(" – ").trim();
+  const salaryText = values
+    .filter((item): item is string => typeof item === "string")
+    .join(" – ")
+    .trim();
   if (!salaryText) return { salaryText: null, salaryMin: null, salaryMax: null, salaryCurrency: null };
-  const salaryCurrency = salaryText.includes("$") ? "USD" : salaryText.includes("€") ? "EUR" : salaryText.includes("£") ? "GBP" : null;
+  const salaryCurrency = salaryText.includes("$")
+    ? "USD"
+    : salaryText.includes("€")
+      ? "EUR"
+      : salaryText.includes("£")
+        ? "GBP"
+        : null;
   const valuesInText = extractSalaryAmounts(salaryText);
-  return { salaryText, salaryMin: valuesInText.length ? Math.round(Math.min(...valuesInText)) : null, salaryMax: valuesInText.length ? Math.round(Math.max(...valuesInText)) : null, salaryCurrency };
+  return {
+    salaryText,
+    salaryMin: valuesInText.length ? Math.round(Math.min(...valuesInText)) : null,
+    salaryMax: valuesInText.length ? Math.round(Math.max(...valuesInText)) : null,
+    salaryCurrency,
+  };
 }
 
 export type SalaryPeriod = "monthly" | "yearly" | "unknown";
@@ -108,8 +125,20 @@ function explicitSalaryPeriod(text: string, requireCurrency = false): SalaryPeri
   const amount = requireCurrency
     ? "(?:[$€£]\\s*\\d[\\d,.]*\\s*[km]?|\\d[\\d,.]*\\s*[km]?\\s*(?:usd|eur|gbp))"
     : "(?:[$€£]?\\s*\\d[\\d,.]*\\s*[km]?|\\d[\\d,.]*\\s*[km]?\\s*(?:usd|eur|gbp|[$€£]))";
-  if (new RegExp(`(?:${amount})\\s*(?:[a-z]{3}\\s*)?(?:per\\s*|/\\s*)?(?:month|mo\\.?|monthly)|(?:month|mo\\.?|monthly)\\s*(?:${amount})|ماه(?:انه|یانه)?`, "i").test(text)) return "monthly";
-  if (new RegExp(`(?:${amount})\\s*(?:[a-z]{3}\\s*)?(?:per\\s*|/\\s*)?(?:year|yr\\.?|annual(?:ly)?|yearly|annum)|(?:year|yr\\.?|annual(?:ly)?|yearly|annum)\\s*(?:${amount})|سال(?:انه|یانه)?`, "i").test(text)) return "yearly";
+  if (
+    new RegExp(
+      `(?:${amount})\\s*(?:[a-z]{3}\\s*)?(?:per\\s*|/\\s*)?(?:month|mo\\.?|monthly)|(?:month|mo\\.?|monthly)\\s*(?:${amount})|ماه(?:انه|یانه)?`,
+      "i",
+    ).test(text)
+  )
+    return "monthly";
+  if (
+    new RegExp(
+      `(?:${amount})\\s*(?:[a-z]{3}\\s*)?(?:per\\s*|/\\s*)?(?:year|yr\\.?|annual(?:ly)?|yearly|annum)|(?:year|yr\\.?|annual(?:ly)?|yearly|annum)\\s*(?:${amount})|سال(?:انه|یانه)?`,
+      "i",
+    ).test(text)
+  )
+    return "yearly";
   return "unknown";
 }
 
@@ -119,7 +148,8 @@ export function detectSalaryPeriod(...values: unknown[]): SalaryPeriod {
   if (salaryPeriod !== "unknown") return salaryPeriod;
   const salaryAmounts = extractSalaryAmounts(salaryText);
   if (salaryAmounts.some((amount) => amount > 15_000)) return "yearly";
-  if (/[€$£]|\b(?:usd|eur|gbp)\b/i.test(salaryText) && salaryAmounts.some((amount) => amount >= 1_000)) return "monthly";
+  if (/[€$£]|\b(?:usd|eur|gbp)\b/i.test(salaryText) && salaryAmounts.some((amount) => amount >= 1_000))
+    return "monthly";
 
   const fallbackText = salaryTextValues(values.slice(4)).join(" ").toLocaleLowerCase("en");
   const fallbackPeriod = explicitSalaryPeriod(fallbackText, true);
@@ -164,13 +194,22 @@ function normalizeJob(raw: RawJob) {
 }
 
 export class JobPoolService {
-  constructor(private readonly db: Database, private readonly options: JobPoolServiceOptions) {}
+  constructor(
+    private readonly db: Database,
+    private readonly options: JobPoolServiceOptions,
+  ) {}
 
   async getSummary() {
     const settings = await this.getSettings();
     const [latestRun] = await this.db.select().from(jobPoolRuns).orderBy(desc(jobPoolRuns.startedAt)).limit(1);
-    const [active] = await this.db.select({ count: sql<number>`count(*)::int` }).from(jobListings).where(eq(jobListings.isActive, true));
-    const [segments] = await this.db.select({ count: sql<number>`count(*)::int` }).from(jobPoolSegments).where(eq(jobPoolSegments.isActive, true));
+    const [active] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(jobListings)
+      .where(eq(jobListings.isActive, true));
+    const [segments] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(jobPoolSegments)
+      .where(eq(jobPoolSegments.isActive, true));
     return {
       settings,
       activeJobCount: active?.count ?? 0,
@@ -181,18 +220,29 @@ export class JobPoolService {
 
   async getReport(days: number) {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1_000);
-    const [totals] = await this.db.select({
-      runs: sql<number>`count(*)::int`,
-      searches: sql<number>`coalesce(sum(${jobPoolRuns.searchCount}), 0)::int`,
-      received: sql<number>`coalesce(sum(${jobPoolRuns.receivedCount}), 0)::int`,
-      inserted: sql<number>`coalesce(sum(${jobPoolRuns.insertedCount}), 0)::int`,
-      updated: sql<number>`coalesce(sum(${jobPoolRuns.updatedCount}), 0)::int`,
-      estimatedCostUsdMicros: sql<number>`coalesce(sum(${jobPoolRuns.estimatedCostUsdMicros}), 0)::int`,
-      successfulRuns: sql<number>`count(*) filter (where ${jobPoolRuns.status} = 'completed')::int`,
-      failedRuns: sql<number>`count(*) filter (where ${jobPoolRuns.status} = 'failed')::int`,
-    }).from(jobPoolRuns).where(gte(jobPoolRuns.startedAt, since));
-    const runs = await this.db.select().from(jobPoolRuns).where(gte(jobPoolRuns.startedAt, since)).orderBy(desc(jobPoolRuns.startedAt)).limit(100);
-    const [active] = await this.db.select({ count: sql<number>`count(*)::int` }).from(jobListings).where(eq(jobListings.isActive, true));
+    const [totals] = await this.db
+      .select({
+        runs: sql<number>`count(*)::int`,
+        searches: sql<number>`coalesce(sum(${jobPoolRuns.searchCount}), 0)::int`,
+        received: sql<number>`coalesce(sum(${jobPoolRuns.receivedCount}), 0)::int`,
+        inserted: sql<number>`coalesce(sum(${jobPoolRuns.insertedCount}), 0)::int`,
+        updated: sql<number>`coalesce(sum(${jobPoolRuns.updatedCount}), 0)::int`,
+        estimatedCostUsdMicros: sql<number>`coalesce(sum(${jobPoolRuns.estimatedCostUsdMicros}), 0)::int`,
+        successfulRuns: sql<number>`count(*) filter (where ${jobPoolRuns.status} = 'completed')::int`,
+        failedRuns: sql<number>`count(*) filter (where ${jobPoolRuns.status} = 'failed')::int`,
+      })
+      .from(jobPoolRuns)
+      .where(gte(jobPoolRuns.startedAt, since));
+    const runs = await this.db
+      .select()
+      .from(jobPoolRuns)
+      .where(gte(jobPoolRuns.startedAt, since))
+      .orderBy(desc(jobPoolRuns.startedAt))
+      .limit(100);
+    const [active] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(jobListings)
+      .where(eq(jobListings.isActive, true));
     return { periodDays: days, totals: { ...totals, activeJobs: active?.count ?? 0 }, runs };
   }
 
@@ -207,13 +257,22 @@ export class JobPoolService {
     const ascending = filters.sortDirection === "asc";
     let orderBy = desc(jobListings.postedAt);
     if (filters.sortBy === "title") orderBy = ascending ? asc(jobListings.title) : desc(jobListings.title);
-    if (filters.sortBy === "company") orderBy = ascending ? asc(jobListings.companyName) : desc(jobListings.companyName);
+    if (filters.sortBy === "company")
+      orderBy = ascending ? asc(jobListings.companyName) : desc(jobListings.companyName);
     if (filters.sortBy === "location") orderBy = ascending ? asc(jobListings.location) : desc(jobListings.location);
     if (filters.sortBy === "salary") orderBy = ascending ? asc(jobListings.salaryMin) : desc(jobListings.salaryMin);
     if (filters.sortBy === "date") orderBy = ascending ? asc(jobListings.postedAt) : desc(jobListings.postedAt);
-    const [total] = await this.db.select({ count: sql<number>`count(*)::int` }).from(jobListings).where(where);
-    const items = await this.db.select().from(jobListings).where(where).orderBy(orderBy, desc(jobListings.lastSeenAt))
-      .limit(filters.pageSize).offset((filters.page - 1) * filters.pageSize);
+    const [total] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(jobListings)
+      .where(where);
+    const items = await this.db
+      .select()
+      .from(jobListings)
+      .where(where)
+      .orderBy(orderBy, desc(jobListings.lastSeenAt))
+      .limit(filters.pageSize)
+      .offset((filters.page - 1) * filters.pageSize);
     return {
       items: items.map((job) => ({
         ...job,
@@ -236,24 +295,44 @@ export class JobPoolService {
     const result = await this.listJobs(filters);
     return {
       ...result,
-      items: result.items.map(({ rawPayload, seniority: _seniority, salaryMin: _salaryMin, salaryMax: _salaryMax, salaryCurrency: _salaryCurrency, source: _source, externalId: _externalId, fingerprint: _fingerprint, discoveredAt: _discoveredAt, lastSeenAt: _lastSeenAt, expiresAt: _expiresAt, isActive: _isActive, ...job }) => ({
-        ...job,
-        companyLogoUrl: asText(rawPayload.companyLogo) || null,
-      } satisfies PublicJobPoolListing)),
+      items: result.items.map(
+        ({
+          rawPayload,
+          seniority: _seniority,
+          salaryMin: _salaryMin,
+          salaryMax: _salaryMax,
+          salaryCurrency: _salaryCurrency,
+          source: _source,
+          externalId: _externalId,
+          fingerprint: _fingerprint,
+          discoveredAt: _discoveredAt,
+          lastSeenAt: _lastSeenAt,
+          expiresAt: _expiresAt,
+          isActive: _isActive,
+          ...job
+        }) =>
+          ({
+            ...job,
+            companyLogoUrl: asText(rawPayload.companyLogo) || null,
+          }) satisfies PublicJobPoolListing,
+      ),
     };
   }
 
   async getSettings(): Promise<JobPoolSettingsInput> {
     const now = new Date();
-    await this.db.insert(jobPoolSettings).values({
-      id: SETTINGS_ID,
-      enabled: this.options.enabled,
-      dailyLimit: this.options.dailyLimit,
-      intervalHours: this.options.intervalHours,
-      publishedAt: this.options.publishedAt,
-      locations: this.options.locations,
-      updatedAt: now,
-    }).onConflictDoNothing();
+    await this.db
+      .insert(jobPoolSettings)
+      .values({
+        id: SETTINGS_ID,
+        enabled: this.options.enabled,
+        dailyLimit: this.options.dailyLimit,
+        intervalHours: this.options.intervalHours,
+        publishedAt: this.options.publishedAt,
+        locations: this.options.locations,
+        updatedAt: now,
+      })
+      .onConflictDoNothing();
     const [settings] = await this.db.select().from(jobPoolSettings).where(eq(jobPoolSettings.id, SETTINGS_ID)).limit(1);
     if (!settings || !publishedAtValues.includes(settings.publishedAt as (typeof publishedAtValues)[number])) {
       throw new Error("تنظیمات Job Pool معتبر نیست.");
@@ -264,14 +343,18 @@ export class JobPoolService {
       intervalHours: settings.intervalHours,
       publishedAt: settings.publishedAt as JobPoolSettingsInput["publishedAt"],
       locations: Array.isArray(settings.locations)
-        ? settings.locations.filter((location) => typeof location === "string" && location.trim()).map((location) => location.trim())
+        ? settings.locations
+            .filter((location) => typeof location === "string" && location.trim())
+            .map((location) => location.trim())
         : [],
     };
   }
 
   async updateSettings(input: JobPoolSettingsInput) {
     const now = new Date();
-    await this.db.insert(jobPoolSettings).values({ id: SETTINGS_ID, ...input, updatedAt: now })
+    await this.db
+      .insert(jobPoolSettings)
+      .values({ id: SETTINGS_ID, ...input, updatedAt: now })
       .onConflictDoUpdate({
         target: jobPoolSettings.id,
         set: { ...input, updatedAt: now },
@@ -282,7 +365,8 @@ export class JobPoolService {
   async syncDailyPool(options: { ignoreInterval?: boolean } = {}) {
     const settings = await this.getSettings();
     if (!settings.enabled) throw new Error("Job Pool در پنل سوپرادمین غیرفعال است.");
-    if (!settings.locations.length) throw new Error("حداقل یک موقعیت جست‌وجو را در تنظیمات Job Pool وارد کن؛ هیچ درخواست Apify ارسال نشد.");
+    if (!settings.locations.length)
+      throw new Error("حداقل یک موقعیت جست‌وجو را در تنظیمات Job Pool وارد کن؛ هیچ درخواست Apify ارسال نشد.");
     if (!this.options.apifyApiToken) throw new Error("APIFY_API_TOKEN برای Job Pool تنظیم نشده است.");
 
     const now = new Date();
@@ -292,15 +376,27 @@ export class JobPoolService {
       .where(and(eq(jobPoolRuns.source, SOURCE), eq(jobPoolRuns.status, "completed")))
       .orderBy(desc(jobPoolRuns.startedAt))
       .limit(1);
-    if (!options.ignoreInterval && latestCompletedRun && now.getTime() - latestCompletedRun.startedAt.getTime() < settings.intervalHours * 60 * 60 * 1_000) {
+    if (
+      !options.ignoreInterval &&
+      latestCompletedRun &&
+      now.getTime() - latestCompletedRun.startedAt.getTime() < settings.intervalHours * 60 * 60 * 1_000
+    ) {
       throw new Error("Job Pool در بازه روزانه فعلی قبلاً با موفقیت اجرا شده است.");
     }
     await this.ensureDefaultSegments(now);
-    const segments = await this.db.select().from(jobPoolSegments).where(eq(jobPoolSegments.isActive, true)).orderBy(jobPoolSegments.sortOrder);
+    const segments = await this.db
+      .select()
+      .from(jobPoolSegments)
+      .where(eq(jobPoolSegments.isActive, true))
+      .orderBy(jobPoolSegments.sortOrder);
     const searchCount = segments.length * settings.locations.length;
     const runId = randomUUID();
     await this.db.insert(jobPoolRuns).values({
-      id: runId, source: SOURCE, status: "running", requestedLimit: settings.dailyLimit, searchCount,
+      id: runId,
+      source: SOURCE,
+      status: "running",
+      requestedLimit: settings.dailyLimit,
+      searchCount,
       startedAt: now,
     });
 
@@ -323,42 +419,66 @@ export class JobPoolService {
         },
       );
       if (!response.ok) throw new Error(`Apify پاسخ ${response.status} داد.`);
-      const payload = await response.json() as unknown;
-      const rawJobs = Array.isArray(payload) ? payload.filter((item): item is RawJob => Boolean(item) && typeof item === "object") : [];
+      const payload = (await response.json()) as unknown;
+      const rawJobs = Array.isArray(payload)
+        ? payload.filter((item): item is RawJob => Boolean(item) && typeof item === "object")
+        : [];
       receivedCount = rawJobs.length;
       let insertedCount = 0;
       let updatedCount = 0;
       for (const rawJob of rawJobs) {
         const job = normalizeJob(rawJob);
         if (!job) continue;
-        const existing = await this.db.select({ id: jobListings.id }).from(jobListings)
-          .where(and(eq(jobListings.source, SOURCE), eq(jobListings.externalId, job.externalId))).limit(1);
+        const existing = await this.db
+          .select({ id: jobListings.id })
+          .from(jobListings)
+          .where(and(eq(jobListings.source, SOURCE), eq(jobListings.externalId, job.externalId)))
+          .limit(1);
         const timestamps = { lastSeenAt: now, isActive: true };
         if (existing.length) {
           updatedCount += 1;
-          await this.db.update(jobListings).set({ ...job, ...timestamps, id: existing[0].id }).where(eq(jobListings.id, existing[0].id));
+          await this.db
+            .update(jobListings)
+            .set({ ...job, ...timestamps, id: existing[0].id })
+            .where(eq(jobListings.id, existing[0].id));
         } else {
           insertedCount += 1;
           await this.db.insert(jobListings).values({ ...job, discoveredAt: now, ...timestamps });
         }
       }
-      const estimatedCostUsdMicros = Math.ceil(rawJobs.length * this.options.costPerThousandUsdMicros / 1_000) + this.options.actorStartCostUsdMicros;
-      await this.db.update(jobPoolRuns).set({
-        status: "completed", receivedCount: rawJobs.length, insertedCount, updatedCount,
-        estimatedCostUsdMicros, completedAt: new Date(),
-      }).where(eq(jobPoolRuns.id, runId));
+      const estimatedCostUsdMicros =
+        Math.ceil((rawJobs.length * this.options.costPerThousandUsdMicros) / 1_000) +
+        this.options.actorStartCostUsdMicros;
+      await this.db
+        .update(jobPoolRuns)
+        .set({
+          status: "completed",
+          receivedCount: rawJobs.length,
+          insertedCount,
+          updatedCount,
+          estimatedCostUsdMicros,
+          completedAt: new Date(),
+        })
+        .where(eq(jobPoolRuns.id, runId));
       return { runId, receivedCount: rawJobs.length, insertedCount, updatedCount, estimatedCostUsdMicros };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "خطای نامشخص در دریافت Job Pool";
-      const estimatedCostUsdMicros = Math.ceil(receivedCount * this.options.costPerThousandUsdMicros / 1_000) + this.options.actorStartCostUsdMicros;
-      await this.db.update(jobPoolRuns).set({ status: "failed", receivedCount, estimatedCostUsdMicros, errorMessage, completedAt: new Date() }).where(eq(jobPoolRuns.id, runId));
+      const estimatedCostUsdMicros =
+        Math.ceil((receivedCount * this.options.costPerThousandUsdMicros) / 1_000) +
+        this.options.actorStartCostUsdMicros;
+      await this.db
+        .update(jobPoolRuns)
+        .set({ status: "failed", receivedCount, estimatedCostUsdMicros, errorMessage, completedAt: new Date() })
+        .where(eq(jobPoolRuns.id, runId));
       throw error;
     }
   }
 
   private async ensureDefaultSegments(now: Date) {
     for (const [index, [id, keyword]] of DEFAULT_JOB_POOL_SEGMENTS.entries()) {
-      await this.db.insert(jobPoolSegments).values({ id, label: keyword, keyword, sortOrder: index, createdAt: now, updatedAt: now })
+      await this.db
+        .insert(jobPoolSegments)
+        .values({ id, label: keyword, keyword, sortOrder: index, createdAt: now, updatedAt: now })
         .onConflictDoNothing();
     }
   }

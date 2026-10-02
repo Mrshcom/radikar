@@ -5,11 +5,7 @@ export {
   type AdminUserEditInput,
   type UpdateAdminAliasInput,
 } from "./admin";
-import {
-  dataCollections,
-  type DataCollection,
-  type DataRecord,
-} from "@radikar/shared-types";
+import { dataCollections, type DataCollection, type DataRecord } from "@radikar/shared-types";
 
 const localizedDigitPattern = /[۰-۹٠-٩]/g;
 const persianDigits = "۰۱۲۳۴۵۶۷۸۹";
@@ -47,23 +43,15 @@ export const baseRecordSchema = z
 const importedTextKeys = ["name", "label", "title", "value", "text"] as const;
 const maxImportedTextLength = 12_000;
 const maxImportedImageLength = 7_000_000;
-const unsafeControlCharacters =
-  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u202A-\u202E\u2066-\u2069]/g;
+const unsafeControlCharacters = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u202A-\u202E\u2066-\u2069]/g;
 
 function sanitizeImportedScalar(value: string, maxLength: number) {
-  return value
-    .replace(/\r\n?/g, "\n")
-    .replace(unsafeControlCharacters, "")
-    .normalize("NFC")
-    .trim()
-    .slice(0, maxLength);
+  return value.replace(/\r\n?/g, "\n").replace(unsafeControlCharacters, "").normalize("NFC").trim().slice(0, maxLength);
 }
 
 export function normalizeImportedText(value: unknown): string {
-  if (typeof value === "string")
-    return sanitizeImportedScalar(value, maxImportedTextLength);
-  if (typeof value === "number" || typeof value === "boolean")
-    return String(value);
+  if (typeof value === "string") return sanitizeImportedScalar(value, maxImportedTextLength);
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
   if (Array.isArray(value))
     return value
       .map(normalizeImportedText)
@@ -90,9 +78,7 @@ export function sanitizeImportedUrl(value: unknown) {
   )
     return "";
   try {
-    const parsed = new URL(
-      /^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`,
-    );
+    const parsed = new URL(/^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`);
     if (
       !["http:", "https:"].includes(parsed.protocol) ||
       !parsed.hostname ||
@@ -110,14 +96,9 @@ export function sanitizeImportedUrl(value: unknown) {
 export function sanitizeImportedImageSource(value: unknown) {
   if (typeof value !== "string") return "";
   const normalized = sanitizeImportedScalar(value, maxImportedImageLength);
-  if (/^data:image\/(?:png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i.test(normalized))
-    return normalized;
+  if (/^data:image\/(?:png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i.test(normalized)) return normalized;
   if (normalized.startsWith("//") || normalized.includes("\\")) return "";
-  if (
-    normalized.startsWith("/") &&
-    !normalized.startsWith("//")
-  )
-    return normalized.slice(0, 2_048);
+  if (normalized.startsWith("/") && !normalized.startsWith("//")) return normalized.slice(0, 2_048);
   return sanitizeImportedUrl(normalized);
 }
 
@@ -141,9 +122,7 @@ export function sanitizeRemoteImageSource(value: unknown) {
 
 function sanitizeImportedEmail(value: unknown) {
   const normalized = normalizeImportedText(value).replace(/\s+/g, "");
-  return /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/u.test(normalized)
-    ? normalized.slice(0, 254)
-    : "";
+  return /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,63}$/u.test(normalized) ? normalized.slice(0, 254) : "";
 }
 
 function sanitizeImportedPhone(value: unknown) {
@@ -156,9 +135,7 @@ export function normalizeImportedBoolean(value: unknown) {
   if (typeof value === "boolean") return value;
   if (typeof value === "number") return value === 1;
   const normalized = normalizeImportedText(value).trim().toLocaleLowerCase("fa");
-  return /^(?:true|yes|1|current|present|بله|اکنون|امروز|در حال حاضر)$/.test(
-    normalized,
-  );
+  return /^(?:true|yes|1|current|present|بله|اکنون|امروز|در حال حاضر)$/.test(normalized);
 }
 
 function objectInput(value: unknown) {
@@ -176,42 +153,25 @@ function parseStructuredString(value: unknown) {
   }
 }
 
-function firstDefined(
-  record: Record<string, unknown>,
-  keys: readonly string[],
-) {
+function firstDefined(record: Record<string, unknown>, keys: readonly string[]) {
   for (const key of keys) {
     if (record[key] !== undefined && record[key] !== null) return record[key];
   }
   return undefined;
 }
 
-function aliasedObjectInput(
-  value: unknown,
-  scalarKey: string,
-  aliases: Record<string, readonly string[]>,
-) {
+function aliasedObjectInput(value: unknown, scalarKey: string, aliases: Record<string, readonly string[]>) {
   const parsed = parseStructuredString(value);
   const source =
     parsed && typeof parsed === "object" && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
       : { [scalarKey]: parsed };
   return Object.fromEntries(
-    Object.entries(aliases).map(([key, candidates]) => [
-      key,
-      firstDefined(source, [key, ...candidates]),
-    ]),
+    Object.entries(aliases).map(([key, candidates]) => [key, firstDefined(source, [key, ...candidates])]),
   );
 }
 
-const collectionWrapperKeys = [
-  "items",
-  "data",
-  "values",
-  "list",
-  "results",
-  "records",
-] as const;
+const collectionWrapperKeys = ["items", "data", "values", "list", "results", "records"] as const;
 
 function collectionInput(value: unknown): unknown[] {
   const parsed = parseStructuredString(value);
@@ -220,66 +180,43 @@ function collectionInput(value: unknown): unknown[] {
   if (parsed && typeof parsed === "object") {
     const record = parsed as Record<string, unknown>;
     const wrapped = firstDefined(record, collectionWrapperKeys);
-    if (wrapped !== undefined && wrapped !== parsed)
-      return collectionInput(wrapped);
+    if (wrapped !== undefined && wrapped !== parsed) return collectionInput(wrapped);
   }
   return [parsed];
 }
 
 export function normalizeImportedTextArray(value: unknown) {
-  return collectionInput(value)
-    .map(normalizeImportedText)
-    .filter(Boolean);
+  return collectionInput(value).map(normalizeImportedText).filter(Boolean);
 }
 
 function omitUndefinedValues<T extends Record<string, unknown>>(value: T) {
-  return Object.fromEntries(
-    Object.entries(value).filter(([, nestedValue]) => nestedValue !== undefined),
-  ) as Partial<T>;
+  return Object.fromEntries(Object.entries(value).filter(([, nestedValue]) => nestedValue !== undefined)) as Partial<T>;
 }
 
 const optionalImportedTextSchema = z.preprocess(
-  (value) =>
-    value === undefined || value === null
-      ? undefined
-      : normalizeImportedText(value),
+  (value) => (value === undefined || value === null ? undefined : normalizeImportedText(value)),
   z.string().optional(),
 );
-const optionalImportedUrlSchema = z.preprocess(
-  (value) => {
-    const sanitized = sanitizeImportedUrl(value);
-    return sanitized || undefined;
-  },
-  z.string().max(2_048).optional(),
-);
-const optionalImportedImageSchema = z.preprocess(
-  (value) => {
-    const sanitized = sanitizeImportedImageSource(value);
-    return sanitized || undefined;
-  },
-  z.string().max(maxImportedImageLength).optional(),
-);
-const optionalImportedEmailSchema = z.preprocess(
-  (value) => {
-    const sanitized = sanitizeImportedEmail(value);
-    return sanitized || undefined;
-  },
-  z.string().max(254).optional(),
-);
-const optionalImportedPhoneSchema = z.preprocess(
-  (value) => {
-    const sanitized = sanitizeImportedPhone(value);
-    return sanitized || undefined;
-  },
-  z.string().max(32).optional(),
-);
+const optionalImportedUrlSchema = z.preprocess((value) => {
+  const sanitized = sanitizeImportedUrl(value);
+  return sanitized || undefined;
+}, z.string().max(2_048).optional());
+const optionalImportedImageSchema = z.preprocess((value) => {
+  const sanitized = sanitizeImportedImageSource(value);
+  return sanitized || undefined;
+}, z.string().max(maxImportedImageLength).optional());
+const optionalImportedEmailSchema = z.preprocess((value) => {
+  const sanitized = sanitizeImportedEmail(value);
+  return sanitized || undefined;
+}, z.string().max(254).optional());
+const optionalImportedPhoneSchema = z.preprocess((value) => {
+  const sanitized = sanitizeImportedPhone(value);
+  return sanitized || undefined;
+}, z.string().max(32).optional());
 const importedBooleanSchema = z.preprocess(normalizeImportedBoolean, z.boolean());
 
 function boundedImportedArray<T extends z.ZodType>(schema: T, maxLength = 100) {
-  return z.preprocess(
-    (value) => collectionInput(value).slice(0, maxLength),
-    z.array(schema).max(maxLength),
-  );
+  return z.preprocess((value) => collectionInput(value).slice(0, maxLength), z.array(schema).max(maxLength));
 }
 
 const importedExperienceSchema = z.preprocess(
@@ -444,13 +381,11 @@ const importedResumeDataSchema = z.preprocess(
 );
 
 function prepareResumeImport(value: unknown) {
-  const envelope = objectInput(parseStructuredString(value)) as Record<
+  const envelope = objectInput(parseStructuredString(value)) as Record<string, unknown>;
+  const nestedEnvelope = objectInput(firstDefined(envelope, ["result", "output", "response"])) as Record<
     string,
     unknown
   >;
-  const nestedEnvelope = objectInput(
-    firstDefined(envelope, ["result", "output", "response"]),
-  ) as Record<string, unknown>;
   const dataEnvelope = objectInput(envelope.data) as Record<string, unknown>;
   const root = {
     ...envelope,
@@ -458,64 +393,27 @@ function prepareResumeImport(value: unknown) {
     ...(Object.keys(nestedEnvelope).length ? nestedEnvelope : {}),
   };
   const resumeData = objectInput(
-    parseStructuredString(
-      firstDefined(root, ["resumeData", "resume", "cv", "profile"]),
-    ),
+    parseStructuredString(firstDefined(root, ["resumeData", "resume", "cv", "profile"])),
   ) as Record<string, unknown>;
   return {
     ...root,
     resumeData,
     experiences:
-      firstDefined(root, [
-        "experiences",
-        "workExperience",
-        "workExperiences",
-        "employmentHistory",
-      ]) ??
-      firstDefined(resumeData, [
-        "experiences",
-        "workExperience",
-        "workExperiences",
-        "employmentHistory",
-      ]),
+      firstDefined(root, ["experiences", "workExperience", "workExperiences", "employmentHistory"]) ??
+      firstDefined(resumeData, ["experiences", "workExperience", "workExperiences", "employmentHistory"]),
     qualifications:
-      firstDefined(root, [
-        "qualifications",
-        "educations",
-        "educationHistory",
-        "degrees",
-      ]) ??
-      firstDefined(resumeData, [
-        "qualifications",
-        "educations",
-        "educationHistory",
-        "degrees",
-      ]),
+      firstDefined(root, ["qualifications", "educations", "educationHistory", "degrees"]) ??
+      firstDefined(resumeData, ["qualifications", "educations", "educationHistory", "degrees"]),
     projects:
       firstDefined(root, ["projects", "portfolioProjects", "project"]) ??
-      firstDefined(resumeData, [
-        "projects",
-        "portfolioProjects",
-        "project",
-      ]),
+      firstDefined(resumeData, ["projects", "portfolioProjects", "project"]),
     skills:
       firstDefined(root, ["skills", "technicalSkills", "technologies"]) ??
-      firstDefined(resumeData, [
-        "skills",
-        "technicalSkills",
-        "technologies",
-      ]),
+      firstDefined(resumeData, ["skills", "technicalSkills", "technologies"]),
     languages:
       firstDefined(root, ["languages", "spokenLanguages", "language"]) ??
-      firstDefined(resumeData, [
-        "languages",
-        "spokenLanguages",
-        "language",
-      ]),
-    languageItems: firstDefined(root, [
-      "languageItems",
-      "spokenLanguageItems",
-    ]),
+      firstDefined(resumeData, ["languages", "spokenLanguages", "language"]),
+    languageItems: firstDefined(root, ["languageItems", "spokenLanguageItems"]),
   };
 }
 
@@ -558,16 +456,12 @@ function canonicalDates(value: Record<string, unknown>) {
   let startDate = normalizeImportedText(value.startDate);
   let endDate = normalizeImportedText(value.endDate);
   if (!startDate && !endDate) {
-    const [start = "", end = ""] = normalizeImportedText(value.date).split(
-      /\s+(?:تا|–|—|-)\s+/,
-      2,
-    );
+    const [start = "", end = ""] = normalizeImportedText(value.date).split(/\s+(?:تا|–|—|-)\s+/, 2);
     startDate = start.trim();
     endDate = end.trim();
   }
   const isCurrent =
-    normalizeImportedBoolean(value.isCurrent) ||
-    /^(?:امروز|اکنون|حال|حال حاضر|present|current|now)$/i.test(endDate);
+    normalizeImportedBoolean(value.isCurrent) || /^(?:امروز|اکنون|حال|حال حاضر|present|current|now)$/i.test(endDate);
   return { startDate, endDate: isCurrent ? "" : endDate, isCurrent };
 }
 
@@ -584,17 +478,12 @@ function canonicalExperience(value: Record<string, unknown>, index: number) {
   };
 }
 
-function canonicalQualification(
-  value: Record<string, unknown>,
-  index: number,
-) {
+function canonicalQualification(value: Record<string, unknown>, index: number) {
   const dates = canonicalDates(value);
   return {
     id: canonicalId(value.id, "qualification", index),
     institution: normalizeImportedText(value.institution),
-    credential: normalizeImportedText(
-      value.credential || value.education || value.certifications,
-    ),
+    credential: normalizeImportedText(value.credential || value.education || value.certifications),
     ...dates,
   };
 }
@@ -636,24 +525,15 @@ export function normalizeStoredResumeData(value: unknown) {
     experienceDate: normalizeImportedText(normalized.experienceDate),
     experience: normalizeImportedText(normalized.experience),
     education: normalizeImportedText(normalized.education),
-    experiences: (normalized.experiences ?? []).map((item, index) =>
-      canonicalExperience(item, index),
-    ),
-    educations: (normalized.educations ?? []).map((item, index) =>
-      canonicalQualification(item, index),
-    ),
-    projects: (normalized.projects ?? []).map((item, index) =>
-      canonicalProject(item, index),
-    ),
+    experiences: (normalized.experiences ?? []).map((item, index) => canonicalExperience(item, index)),
+    educations: (normalized.educations ?? []).map((item, index) => canonicalQualification(item, index)),
+    projects: (normalized.projects ?? []).map((item, index) => canonicalProject(item, index)),
     skills: normalizeImportedText(normalized.skills),
     languages: normalizeImportedText(normalized.languages),
   };
 }
 
-export function normalizeDataRecordForStorage(
-  collection: DataCollection,
-  value: unknown,
-): DataRecord {
+export function normalizeDataRecordForStorage(collection: DataCollection, value: unknown): DataRecord {
   const record = baseRecordSchema.parse(value) as DataRecord;
   if (collection === "resumes") {
     const source = normalizeImportedText(record.source);
@@ -670,8 +550,7 @@ export function normalizeDataRecordForStorage(
     };
   }
   if (collection === "jobs") {
-    const { sourceUrl: rawSourceUrl, logoUrl: rawLogoUrl, ...safeRecord } =
-      record;
+    const { sourceUrl: rawSourceUrl, logoUrl: rawLogoUrl, ...safeRecord } = record;
     const sourceUrl = sanitizeImportedUrl(rawSourceUrl);
     const logoUrl = sanitizeRemoteImageSource(rawLogoUrl);
     return {
@@ -685,34 +564,20 @@ export function normalizeDataRecordForStorage(
     return {
       ...record,
       resumeData: normalizeStoredResumeData(record.resumeData),
-      experiences: normalized.experiences.map((item, index) =>
-        canonicalExperience(item, index),
-      ),
-      qualifications: normalized.qualifications.map((item, index) =>
-        canonicalQualification(item, index),
-      ),
-      projects: normalized.projects.map((item, index) =>
-        canonicalProject(item, index),
-      ),
+      experiences: normalized.experiences.map((item, index) => canonicalExperience(item, index)),
+      qualifications: normalized.qualifications.map((item, index) => canonicalQualification(item, index)),
+      projects: normalized.projects.map((item, index) => canonicalProject(item, index)),
       skills: normalizeImportedText(normalized.skills),
       languages: normalizeImportedText(normalized.languages),
-      languageItems: normalized.languageItems.map((item, index) =>
-        canonicalLanguage(item, index),
-      ),
+      languageItems: normalized.languageItems.map((item, index) => canonicalLanguage(item, index)),
       careerGoals: normalizeImportedText(normalized.careerGoals),
       preferredRoles: normalizeImportedText(normalized.preferredRoles),
-      preferredIndustries: normalizeImportedText(
-        normalized.preferredIndustries,
-      ),
+      preferredIndustries: normalizeImportedText(normalized.preferredIndustries),
       workPreferences: normalizeImportedText(normalized.workPreferences),
       interviewContext: normalizeImportedText(normalized.interviewContext),
-      interviewChallenges: normalizeImportedText(
-        normalized.interviewChallenges,
-      ),
+      interviewChallenges: normalizeImportedText(normalized.interviewChallenges),
       certifications: normalizeImportedText(record.certifications),
-      sampleProjectsSeeded: normalizeImportedBoolean(
-        record.sampleProjectsSeeded,
-      ),
+      sampleProjectsSeeded: normalizeImportedBoolean(record.sampleProjectsSeeded),
     };
   }
   return record;

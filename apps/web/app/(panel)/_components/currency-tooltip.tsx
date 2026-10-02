@@ -28,15 +28,20 @@ export function CurrencyTooltip({
     return <Tag className={className}>{children}</Tag>;
   }
 
-  const content = amountKind === "text"
-    ? formatDollarTextToTomans(String(amount), dollarRateRials)
-    : formatDollarMicrosToTomans(Number(amount), dollarRateRials);
+  const content =
+    amountKind === "text"
+      ? formatDollarTextToTomans(String(amount), dollarRateRials)
+      : formatDollarMicrosToTomans(Number(amount), dollarRateRials);
 
   return (
     <HoverTooltip
       as={as}
       className={className}
-      content={<><span className="font-bold text-[#b9ead6]">معادل تومان:</span>{" "}{content}</>}
+      content={
+        <>
+          <span className="font-bold text-[#b9ead6]">معادل تومان:</span> {content}
+        </>
+      }
       contentClassName={contentClassName}
     >
       {children}

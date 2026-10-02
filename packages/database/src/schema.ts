@@ -1,14 +1,4 @@
-import {
-  boolean,
-  index,
-  integer,
-  jsonb,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { DataRecord } from "@radikar/shared-types";
 
 export type OnboardingStepId = "profile" | "match" | "resume" | "application";
@@ -45,24 +35,10 @@ export const dataRecords = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (table) => [
-    uniqueIndex("data_records_owner_collection_id_unique").on(
-      table.ownerUserId,
-      table.collection,
-      table.id,
-    ),
-    index("data_records_collection_updated_idx").on(
-      table.collection,
-      table.updatedAt,
-    ),
-    index("data_records_profile_idx").on(
-      table.collection,
-      table.profileId,
-    ),
-    index("data_records_owner_collection_idx").on(
-      table.ownerUserId,
-      table.collection,
-      table.updatedAt,
-    ),
+    uniqueIndex("data_records_owner_collection_id_unique").on(table.ownerUserId, table.collection, table.id),
+    index("data_records_collection_updated_idx").on(table.collection, table.updatedAt),
+    index("data_records_profile_idx").on(table.collection, table.profileId),
+    index("data_records_owner_collection_idx").on(table.ownerUserId, table.collection, table.updatedAt),
   ],
 );
 
@@ -85,10 +61,7 @@ export const users = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     tablePageSize: integer("table_page_size").notNull().default(20),
-    onboardingState: jsonb("onboarding_state")
-      .$type<OnboardingState>()
-      .notNull()
-      .default(defaultOnboardingState),
+    onboardingState: jsonb("onboarding_state").$type<OnboardingState>().notNull().default(defaultOnboardingState),
   },
   (table) => [uniqueIndex("users_phone_unique").on(table.phone)],
 );
@@ -126,10 +99,7 @@ export const userIdentities = pgTable(
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }).notNull(),
   },
   (table) => [
-    uniqueIndex("user_identities_provider_subject_unique").on(
-      table.provider,
-      table.providerSubject,
-    ),
+    uniqueIndex("user_identities_provider_subject_unique").on(table.provider, table.providerSubject),
     index("user_identities_user_idx").on(table.userId),
   ],
 );
@@ -201,7 +171,9 @@ export const referralCodes = pgTable(
   "referral_codes",
   {
     id: uuid("id").primaryKey(),
-    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     code: text("code").notNull(),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
@@ -217,7 +189,9 @@ export const referralVisits = pgTable(
   "referral_visits",
   {
     id: uuid("id").primaryKey(),
-    referralCodeId: uuid("referral_code_id").notNull().references(() => referralCodes.id, { onDelete: "cascade" }),
+    referralCodeId: uuid("referral_code_id")
+      .notNull()
+      .references(() => referralCodes.id, { onDelete: "cascade" }),
     ip: text("ip"),
     userAgent: text("user_agent"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
@@ -229,10 +203,18 @@ export const referrals = pgTable(
   "referrals",
   {
     id: uuid("id").primaryKey(),
-    referralCodeId: uuid("referral_code_id").notNull().references(() => referralCodes.id, { onDelete: "restrict" }),
-    referrerUserId: uuid("referrer_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-    referredUserId: uuid("referred_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-    status: text("status", { enum: ["pending", "confirmed", "rejected"] }).notNull().default("pending"),
+    referralCodeId: uuid("referral_code_id")
+      .notNull()
+      .references(() => referralCodes.id, { onDelete: "restrict" }),
+    referrerUserId: uuid("referrer_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    referredUserId: uuid("referred_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["pending", "confirmed", "rejected"] })
+      .notNull()
+      .default("pending"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
   },
@@ -247,10 +229,14 @@ export const referralPointEvents = pgTable(
   "referral_point_events",
   {
     id: uuid("id").primaryKey(),
-    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     referralId: uuid("referral_id").references(() => referrals.id, { onDelete: "cascade" }),
     type: text("type", { enum: ["referrer_signup", "referred_signup", "admin_adjustment"] }).notNull(),
-    status: text("status", { enum: ["pending", "confirmed", "revoked"] }).notNull().default("pending"),
+    status: text("status", { enum: ["pending", "confirmed", "revoked"] })
+      .notNull()
+      .default("pending"),
     points: integer("points").notNull(),
     description: text("description").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
@@ -276,7 +262,9 @@ export const radicoinSettings = pgTable("radicoin_settings", {
 });
 
 export const radicoinWallets = pgTable("radicoin_wallets", {
-  userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
   availableCoins: integer("available_coins").notNull().default(0),
   pendingCoins: integer("pending_coins").notNull().default(0),
   lifetimeEarnedCoins: integer("lifetime_earned_coins").notNull().default(0),
@@ -288,14 +276,32 @@ export const radicoinTransactions = pgTable(
   "radicoin_transactions",
   {
     id: uuid("id").primaryKey(),
-    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     referralId: uuid("referral_id").references(() => referrals.id, { onDelete: "set null" }),
     orderId: uuid("order_id").references(() => orders.id, { onDelete: "set null" }),
     source: text("source", {
-      enum: ["daily_login", "activity", "referral_signup", "referral_activation", "referral_upgrade", "purchase", "campaign", "birthday", "admin_adjustment", "redemption", "reversal"],
+      enum: [
+        "daily_login",
+        "activity",
+        "referral_signup",
+        "referral_activation",
+        "referral_upgrade",
+        "purchase",
+        "campaign",
+        "birthday",
+        "admin_adjustment",
+        "redemption",
+        "reversal",
+      ],
     }).notNull(),
-    bucket: text("bucket", { enum: ["earned", "promotional"] }).notNull().default("earned"),
-    status: text("status", { enum: ["pending", "available", "reversed", "expired"] }).notNull().default("available"),
+    bucket: text("bucket", { enum: ["earned", "promotional"] })
+      .notNull()
+      .default("earned"),
+    status: text("status", { enum: ["pending", "available", "reversed", "expired"] })
+      .notNull()
+      .default("available"),
     amount: integer("amount").notNull(),
     idempotencyKey: text("idempotency_key").notNull(),
     awardDay: text("award_day"),
@@ -334,9 +340,7 @@ export const plans = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
-  (table) => [
-    index("plans_active_sort_idx").on(table.isActive, table.sortOrder),
-  ],
+  (table) => [index("plans_active_sort_idx").on(table.isActive, table.sortOrder)],
 );
 
 export const userMemberships = pgTable(
@@ -358,12 +362,8 @@ export const userMemberships = pgTable(
     resumesRemaining: integer("resumes_remaining"),
     pdfDownloadsRemaining: integer("pdf_downloads_remaining"),
     aiCreditsRemaining: integer("ai_credits_remaining").notNull().default(0),
-    matchCreditsRemaining: integer("match_credits_remaining")
-      .notNull()
-      .default(0),
-    interviewCreditsRemaining: integer("interview_credits_remaining")
-      .notNull()
-      .default(0),
+    matchCreditsRemaining: integer("match_credits_remaining").notNull().default(0),
+    interviewCreditsRemaining: integer("interview_credits_remaining").notNull().default(0),
     canceledAt: timestamp("canceled_at", { withTimezone: true }),
     canceledByUserId: uuid("canceled_by_user_id").references(() => users.id, {
       onDelete: "set null",
@@ -486,10 +486,7 @@ export const membershipEvents = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [
-    index("membership_events_user_created_idx").on(
-      table.userId,
-      table.createdAt,
-    ),
+    index("membership_events_user_created_idx").on(table.userId, table.createdAt),
     index("membership_events_type_created_idx").on(table.type, table.createdAt),
   ],
 );
@@ -519,10 +516,7 @@ export const usageEvents = pgTable(
   (table) => [
     uniqueIndex("usage_events_request_unique").on(table.requestId),
     index("usage_events_user_created_idx").on(table.userId, table.createdAt),
-    index("usage_events_resource_created_idx").on(
-      table.resource,
-      table.createdAt,
-    ),
+    index("usage_events_resource_created_idx").on(table.resource, table.createdAt),
   ],
 );
 
@@ -543,9 +537,7 @@ export const modelUsageEvents = pgTable(
     tokenSource: text("token_source", {
       enum: ["provider", "estimated"],
     }).notNull(),
-    estimatedCostMicros: integer("estimated_cost_micros")
-      .notNull()
-      .default(0),
+    estimatedCostMicros: integer("estimated_cost_micros").notNull().default(0),
     statusCode: integer("status_code").notNull(),
     successful: boolean("successful").notNull(),
     durationMs: integer("duration_ms").notNull(),
@@ -555,19 +547,9 @@ export const modelUsageEvents = pgTable(
   (table) => [
     uniqueIndex("model_usage_events_request_unique").on(table.requestId),
     index("model_usage_events_created_idx").on(table.createdAt),
-    index("model_usage_events_user_created_idx").on(
-      table.userId,
-      table.createdAt,
-    ),
-    index("model_usage_events_model_created_idx").on(
-      table.provider,
-      table.model,
-      table.createdAt,
-    ),
-    index("model_usage_events_operation_created_idx").on(
-      table.operation,
-      table.createdAt,
-    ),
+    index("model_usage_events_user_created_idx").on(table.userId, table.createdAt),
+    index("model_usage_events_model_created_idx").on(table.provider, table.model, table.createdAt),
+    index("model_usage_events_operation_created_idx").on(table.operation, table.createdAt),
   ],
 );
 

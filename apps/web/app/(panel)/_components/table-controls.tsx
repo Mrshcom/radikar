@@ -61,9 +61,7 @@ export function TableToolbar({
   return (
     <div className="border-b border-[#edf0ec] bg-[#fbfcfa]">
       <div className="flex items-center gap-2 p-4 max-[680px]:flex-col max-[680px]:items-stretch">
-        <div
-          className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-[11px] border border-[#dfe6e0] bg-white px-4 max-[680px]:w-full max-[680px]:flex-none min-[1024px]:h-10 min-[1024px]:min-w-[280px] min-[1024px]:px-3"
-        >
+        <div className="flex h-12 min-w-0 flex-1 items-center gap-2 rounded-[11px] border border-[#dfe6e0] bg-white px-4 max-[680px]:w-full max-[680px]:flex-none min-[1024px]:h-10 min-[1024px]:min-w-[280px] min-[1024px]:px-3">
           <Search size={18} className="shrink-0 text-[#84918e] min-[1024px]:size-4" />
           <input
             {...register("search")}

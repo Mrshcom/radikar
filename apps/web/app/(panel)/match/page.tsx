@@ -16,21 +16,10 @@ import {
 } from "lucide-react";
 import { CircularProgress } from "../_components/circular-progress";
 import { Modal, SectionTitle } from "../_components/ui";
-import {
-  panelSurfacePadded,
-  primaryAction,
-  scoreWidthClass,
-  secondaryAction,
-} from "../_components/panel-styles";
-import {
-  GenerationShimmer,
-  MatchAnalysisSkeleton,
-} from "../_components/skeletons";
+import { panelSurfacePadded, primaryAction, scoreWidthClass, secondaryAction } from "../_components/panel-styles";
+import { GenerationShimmer, MatchAnalysisSkeleton } from "../_components/skeletons";
 import { useToast } from "@/app/_components/toast";
-import {
-  isModelTaskCanceledError,
-  useModelTasks,
-} from "../_components/model-task-provider";
+import { isModelTaskCanceledError, useModelTasks } from "../_components/model-task-provider";
 import {
   getDefaultResumeColor,
   resumeColorOptions,
@@ -41,28 +30,15 @@ import {
   type ResumeLanguage,
   supportsResumeColors,
 } from "../resumes/resume-data";
-import {
-  applicationStore,
-  createRecordId,
-  jobStore,
-  matchAnalysisStore,
-  resumeStore,
-} from "@/lib/data/stores";
+import { applicationStore, createRecordId, jobStore, matchAnalysisStore, resumeStore } from "@/lib/data/stores";
 import { createSavedApplicationForJob } from "@/lib/application-board";
-import type {
-  JobRecord,
-  MatchAnalysisRecord,
-  ResumeRecord,
-} from "@/lib/data/models";
+import type { JobRecord, MatchAnalysisRecord, ResumeRecord } from "@/lib/data/models";
 import { cn } from "@/lib/cn";
 import { formatPersianNumber } from "@/lib/fa-number";
 import { sanitizeLtrField } from "@/lib/ltr-field";
 import { apiRequest } from "@/lib/api-client";
 import { normalizeResumeDataInput } from "@/lib/resume-input";
-import {
-  normalizeMatchAnalysisInput,
-  type MatchAnalysis,
-} from "@/lib/match-analysis";
+import { normalizeMatchAnalysisInput, type MatchAnalysis } from "@/lib/match-analysis";
 
 type ImportJobResponse = {
   text?: string;
@@ -89,9 +65,7 @@ type MatchAnalysisTaskContext = {
   resumeMeta: string;
 };
 
-function isMatchAnalysisTaskContext(
-  value: unknown,
-): value is MatchAnalysisTaskContext {
+function isMatchAnalysisTaskContext(value: unknown): value is MatchAnalysisTaskContext {
   if (!value || typeof value !== "object") return false;
   const context = value as Partial<MatchAnalysisTaskContext>;
   return (
@@ -114,37 +88,20 @@ function getJobTextDirection(text: string): "rtl" | "ltr" {
 export default function MatchPage() {
   const notify = useToast();
   const { tasks, isRunning, runModelTask, cancelTask } = useModelTasks();
-  const runningAnalysisTask = tasks.find(
-    (task) => task.key === "match-analysis" && task.status === "running",
-  );
-  const runningAnalysisContext = isMatchAnalysisTaskContext(
-    runningAnalysisTask?.context,
-  )
+  const runningAnalysisTask = tasks.find((task) => task.key === "match-analysis" && task.status === "running");
+  const runningAnalysisContext = isMatchAnalysisTaskContext(runningAnalysisTask?.context)
     ? runningAnalysisTask.context
     : null;
-  const [sourceMode, setSourceMode] = useState<JobSourceMode>(
-    () => runningAnalysisContext?.sourceMode || "url",
-  );
+  const [sourceMode, setSourceMode] = useState<JobSourceMode>(() => runningAnalysisContext?.sourceMode || "url");
   const [description, setDescription] = useState(
-    () =>
-      (runningAnalysisContext?.sourceMode === "text" &&
-        runningAnalysisContext.jobDescription) ||
-      "",
+    () => (runningAnalysisContext?.sourceMode === "text" && runningAnalysisContext.jobDescription) || "",
   );
-  const [jobUrl, setJobUrl] = useState(
-    () => runningAnalysisContext?.sourceUrl || "",
-  );
+  const [jobUrl, setJobUrl] = useState(() => runningAnalysisContext?.sourceUrl || "");
   const [importedDescription, setImportedDescription] = useState(
-    () =>
-      (runningAnalysisContext?.sourceMode === "url" &&
-        runningAnalysisContext.jobDescription) ||
-      "",
+    () => (runningAnalysisContext?.sourceMode === "url" && runningAnalysisContext.jobDescription) || "",
   );
-  const [copiedImportedDescription, setCopiedImportedDescription] =
-    useState(false);
-  const [analysisDescription, setAnalysisDescription] = useState(
-    () => runningAnalysisContext?.jobDescription || "",
-  );
+  const [copiedImportedDescription, setCopiedImportedDescription] = useState(false);
+  const [analysisDescription, setAnalysisDescription] = useState(() => runningAnalysisContext?.jobDescription || "");
   const [importingUrl, setImportingUrl] = useState(false);
   const [importError, setImportError] = useState("");
   const [analyzed, setAnalyzed] = useState(false);
@@ -155,18 +112,14 @@ export default function MatchPage() {
   const [resumePicker, setResumePicker] = useState(false);
   const [resumePickerOpensUp, setResumePickerOpensUp] = useState(false);
   const [resumeOptions, setResumeOptions] = useState<ResumeOption[]>([]);
-  const [baseResumeId, setBaseResumeId] = useState(
-    () => runningAnalysisContext?.resumeId || "",
-  );
+  const [baseResumeId, setBaseResumeId] = useState(() => runningAnalysisContext?.resumeId || "");
   const [prefilledSourceUrl, setPrefilledSourceUrl] = useState("");
   const [prefilledLogoUrl, setPrefilledLogoUrl] = useState("");
   const [sourceJobId, setSourceJobId] = useState("");
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [tailoringTemplateId, setTailoringTemplateId] = useState("");
-  const [tailoringColor, setTailoringColor] =
-    useState<ResumeColorId>("mint");
-  const [tailoringLanguage, setTailoringLanguage] =
-    useState<ResumeLanguage>("fa");
+  const [tailoringColor, setTailoringColor] = useState<ResumeColorId>("mint");
+  const [tailoringLanguage, setTailoringLanguage] = useState<ResumeLanguage>("fa");
   const resumePickerRef = useRef<HTMLDivElement>(null);
   const tailoring = isRunning("match-tailor-resume");
   const analysisBusy = analyzing || isRunning("match-analysis");
@@ -184,14 +137,10 @@ export default function MatchPage() {
         const options = resumes.map((resume) => {
           const data = normalizeResumeDataInput(resume.data);
           const templateName =
-            resumeTemplates.find(
-              (template) => template.id === resume.templateId,
-            )?.name || "قالب ذخیره‌شده";
+            resumeTemplates.find((template) => template.id === resume.templateId)?.name || "قالب ذخیره‌شده";
           return {
             id: resume.id,
-            label: data.jobTitle
-              ? `${data.fullName || "رزومه من"} — ${data.jobTitle}`
-              : data.fullName || resume.name,
+            label: data.jobTitle ? `${data.fullName || "رزومه من"} — ${data.jobTitle}` : data.fullName || resume.name,
             meta: `${resume.source === "tailored" ? "نسخه اختصاصی" : "پیش‌نویس"} · ${templateName}`,
             data,
             templateId: resume.templateId,
@@ -202,16 +151,10 @@ export default function MatchPage() {
 
         if (runningAnalysisContext) {
           setSourceMode(runningAnalysisContext.sourceMode);
-          setDescription(
-            runningAnalysisContext.sourceMode === "text"
-              ? runningAnalysisContext.jobDescription
-              : "",
-          );
+          setDescription(runningAnalysisContext.sourceMode === "text" ? runningAnalysisContext.jobDescription : "");
           setJobUrl(runningAnalysisContext.sourceUrl);
           setImportedDescription(
-            runningAnalysisContext.sourceMode === "url"
-              ? runningAnalysisContext.jobDescription
-              : "",
+            runningAnalysisContext.sourceMode === "url" ? runningAnalysisContext.jobDescription : "",
           );
           setAnalysisDescription(runningAnalysisContext.jobDescription);
           setBaseResumeId(runningAnalysisContext.resumeId);
@@ -233,28 +176,15 @@ export default function MatchPage() {
           const previousAnalysis = matchAnalyses.find(
             (item) =>
               item.jobId === selectedJob.id ||
-              (!item.jobId &&
-                item.jobDescription === selectedJob.description) ||
-              Boolean(
-                !item.jobId &&
-                  selectedJob.sourceUrl &&
-                  item.sourceUrl === selectedJob.sourceUrl,
-              ),
+              (!item.jobId && item.jobDescription === selectedJob.description) ||
+              Boolean(!item.jobId && selectedJob.sourceUrl && item.sourceUrl === selectedJob.sourceUrl),
           );
-          setAnalysis(
-            previousAnalysis
-              ? normalizeMatchAnalysisInput(previousAnalysis.analysis)
-              : null,
-          );
-          setAnalysisDescription(
-            previousAnalysis?.jobDescription || selectedJob.description,
-          );
+          setAnalysis(previousAnalysis ? normalizeMatchAnalysisInput(previousAnalysis.analysis) : null);
+          setAnalysisDescription(previousAnalysis?.jobDescription || selectedJob.description);
           setAnalyzed(Boolean(previousAnalysis));
           const preferredResumeId = previousAnalysis?.resumeId;
           setBaseResumeId(
-            options.some((resume) => resume.id === preferredResumeId)
-              ? preferredResumeId!
-              : options[0]?.id || "",
+            options.some((resume) => resume.id === preferredResumeId) ? preferredResumeId! : options[0]?.id || "",
           );
         }
       })
@@ -269,8 +199,7 @@ export default function MatchPage() {
   useEffect(() => {
     if (!resumePicker) return;
     const closeOnOutsideInteraction = (event: PointerEvent) => {
-      if (!resumePickerRef.current?.contains(event.target as Node))
-        setResumePicker(false);
+      if (!resumePickerRef.current?.contains(event.target as Node)) setResumePicker(false);
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setResumePicker(false);
@@ -283,9 +212,7 @@ export default function MatchPage() {
     };
   }, [resumePicker]);
 
-  const selectedResume = resumeOptions.find(
-    (resume) => resume.id === baseResumeId,
-  );
+  const selectedResume = resumeOptions.find((resume) => resume.id === baseResumeId);
 
   const selectSourceMode = (mode: JobSourceMode) => {
     setSourceMode(mode);
@@ -301,8 +228,7 @@ export default function MatchPage() {
       setCopiedImportedDescription(true);
       notify("متن استخراج‌شده کپی شد");
     } catch {
-      const message =
-        "کپی خودکار انجام نشد؛ مرورگر اجازه دسترسی به کلیپ‌بورد را نداد.";
+      const message = "کپی خودکار انجام نشد؛ مرورگر اجازه دسترسی به کلیپ‌بورد را نداد.";
       setImportError(message);
       notify(message, "error");
     }
@@ -348,10 +274,7 @@ export default function MatchPage() {
         setImportedDescription(selectedDescription);
         setCopiedImportedDescription(false);
       } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "خواندن لینک آگهی با خطا روبه‌رو شد.";
+        const message = error instanceof Error ? error.message : "خواندن لینک آگهی با خطا روبه‌رو شد.";
         setImportError(message);
         notify(message, "error");
         setAnalyzing(false);
@@ -410,8 +333,7 @@ export default function MatchPage() {
             sourceUrl: selectedSourceUrl || undefined,
             logoUrl: selectedLogoUrl || existingJob?.logoUrl || undefined,
             saved: existingJob?.saved || false,
-            applicationBoardDismissedAt:
-              existingJob?.applicationBoardDismissedAt,
+            applicationBoardDismissedAt: existingJob?.applicationBoardDismissedAt,
             createdAt: existingJob?.createdAt || now,
             updatedAt: now,
           };
@@ -420,9 +342,7 @@ export default function MatchPage() {
             (application) => application.jobId === jobRecord.id,
           );
           if (!existingApplication && !jobRecord.applicationBoardDismissedAt) {
-            await applicationStore.put(
-              createSavedApplicationForJob(jobRecord),
-            );
+            await applicationStore.put(createSavedApplicationForJob(jobRecord));
           }
           const analysisRecord: MatchAnalysisRecord = {
             id: createRecordId("match"),
@@ -443,15 +363,10 @@ export default function MatchPage() {
       setAnalysisDescription(selectedDescription);
       setAnalyzed(true);
       setSourceJobId(jobRecord.id);
-      notify(
-        sourceMode === "url"
-          ? "آگهی از لینک خوانده و تحلیل شد"
-          : "متن آگهی با مدل تحلیل شد",
-      );
+      notify(sourceMode === "url" ? "آگهی از لینک خوانده و تحلیل شد" : "متن آگهی با مدل تحلیل شد");
     } catch (error) {
       if (isModelTaskCanceledError(error)) return;
-      const message =
-        error instanceof Error ? error.message : "تحلیل تطابق ناموفق بود.";
+      const message = error instanceof Error ? error.message : "تحلیل تطابق ناموفق بود.";
       setAnalysisError(message);
       notify(message, "error");
     } finally {
@@ -459,11 +374,7 @@ export default function MatchPage() {
     }
   };
 
-  const tailorResume = async (
-    templateId: string,
-    language: ResumeLanguage,
-    colorId: ResumeColorId,
-  ) => {
+  const tailorResume = async (templateId: string, language: ResumeLanguage, colorId: ResumeColorId) => {
     if (!templateId) return;
     setTemplatePickerOpen(false);
     setAnalysisError("");
@@ -487,20 +398,14 @@ export default function MatchPage() {
               language,
             }),
           });
-          if (!result.resume)
-            throw new Error(
-              result.error || "ساخت رزومه اختصاصی ناموفق بود.",
-            );
+          if (!result.resume) throw new Error(result.error || "ساخت رزومه اختصاصی ناموفق بود.");
           const safeResume = normalizeResumeDataInput(result.resume);
           const linkedJob = sourceJobId
             ? await jobStore.get(sourceJobId)
             : (await jobStore.list()).find(
                 (job) =>
                   job.description === analysisDescription ||
-                  Boolean(
-                    prefilledSourceUrl &&
-                      job.sourceUrl === prefilledSourceUrl,
-                  ),
+                  Boolean(prefilledSourceUrl && job.sourceUrl === prefilledSourceUrl),
               );
           const analyzedJobTitle = analysis?.jobTitle?.trim();
           const analyzedCompany = analysis?.company?.trim();
@@ -534,19 +439,13 @@ export default function MatchPage() {
       setTailored(true);
       notify("نسخه اختصاصی با DeepSeek ساخته و ذخیره شد");
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "ساخت رزومه اختصاصی ناموفق بود.";
+      const message = error instanceof Error ? error.message : "ساخت رزومه اختصاصی ناموفق بود.";
       setAnalysisError(message);
       notify(message, "error");
     }
   };
 
-  const hasSelectedInput =
-    sourceMode === "text"
-      ? Boolean(description.trim())
-      : Boolean(jobUrl.trim());
+  const hasSelectedInput = sourceMode === "text" ? Boolean(description.trim()) : Boolean(jobUrl.trim());
 
   return (
     <>
@@ -559,14 +458,9 @@ export default function MatchPage() {
           <CheckCircle2 size={20} />
           <div className="flex flex-1 flex-col">
             <strong className="text-[11px]">نسخه اختصاصی ساخته شد</strong>
-            <span className="mt-0.5 text-[9px] text-[#668d80]">
-              پیش‌نویس جدید در بخش رزومه‌های من ذخیره شد.
-            </span>
+            <span className="mt-0.5 text-[9px] text-[#668d80]">پیش‌نویس جدید در بخش رزومه‌های من ذخیره شد.</span>
           </div>
-          <button
-            className="bg-transparent text-[#71988a]"
-            onClick={() => setTailored(false)}
-          >
+          <button className="bg-transparent text-[#71988a]" onClick={() => setTailored(false)}>
             <X size={18} />
           </button>
         </div>
@@ -576,14 +470,9 @@ export default function MatchPage() {
           <Sparkles size={20} />
           <div className="flex flex-1 flex-col">
             <strong className="text-[11px]">تحلیل انجام نشد</strong>
-            <span className="mt-0.5 text-[9px] text-[#8f7651]">
-              {analysisError}
-            </span>
+            <span className="mt-0.5 text-[9px] text-[#8f7651]">{analysisError}</span>
           </div>
-          <button
-            className="bg-transparent text-[#9a6a20]"
-            onClick={() => setAnalysisError("")}
-          >
+          <button className="bg-transparent text-[#9a6a20]" onClick={() => setAnalysisError("")}>
             <X size={18} />
           </button>
         </div>
@@ -596,16 +485,10 @@ export default function MatchPage() {
             </span>
             <div className="flex flex-col">
               <strong className="text-[11px]">اطلاعات فرصت شغلی</strong>
-              <small className="mt-0.5 text-[8px] text-[#8c9996]">
-                یکی از دو روش زیر را انتخاب کن
-              </small>
+              <small className="mt-0.5 text-[8px] text-[#8c9996]">یکی از دو روش زیر را انتخاب کن</small>
             </div>
           </div>
-          <div
-            className="grid grid-cols-2 gap-2"
-            role="radiogroup"
-            aria-label="روش ورود آگهی شغلی"
-          >
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="روش ورود آگهی شغلی">
             {[
               {
                 mode: "url" as const,
@@ -638,19 +521,10 @@ export default function MatchPage() {
                 >
                   <Icon className="shrink-0" size={19} />
                   <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                    <strong className="text-[9px] text-[#19312f]">
-                      {source.title}
-                    </strong>
-                    <small className="truncate text-[9px] text-[#96a09e]">
-                      {source.hint}
-                    </small>
+                    <strong className="text-[9px] text-[#19312f]">{source.title}</strong>
+                    <small className="truncate text-[9px] text-[#96a09e]">{source.hint}</small>
                   </span>
-                  {active && (
-                    <CheckCircle2
-                      className="shrink-0 text-[#0f7b62] max-[680px]:hidden"
-                      size={18}
-                    />
-                  )}
+                  {active && <CheckCircle2 className="shrink-0 text-[#0f7b62] max-[680px]:hidden" size={18} />}
                 </button>
               );
             })}
@@ -663,15 +537,8 @@ export default function MatchPage() {
                 className="min-h-[160px] w-full resize-y rounded-[11px] border border-[#dfe5df] bg-[#fbfcfa] p-[13px] text-[12px] leading-8 outline-none placeholder:text-right focus:border-[#72b7a2] focus:ring-3 focus:ring-[#e7f3ef]"
                 id="job-description"
                 value={description}
-                dir={
-                  description.trim() ? getJobTextDirection(description) : "rtl"
-                }
-                lang={
-                  description.trim() &&
-                  getJobTextDirection(description) === "ltr"
-                    ? "en"
-                    : "fa"
-                }
+                dir={description.trim() ? getJobTextDirection(description) : "rtl"}
+                lang={description.trim() && getJobTextDirection(description) === "ltr" ? "en" : "fa"}
                 placeholder="شرح موقعیت شغلی، مسئولیت‌ها و مهارت‌های موردنیاز را اینجا وارد کن..."
                 onChange={(event) => {
                   setDescription(event.target.value);
@@ -703,27 +570,20 @@ export default function MatchPage() {
                   dir="ltr"
                   data-direction="ltr"
                   inputMode="url"
-                    placeholder="https://www.linkedin.com/jobs/view/..."
+                  placeholder="https://www.linkedin.com/jobs/view/..."
                 />
               </div>
               <p className="mx-0.5 mt-[9px] text-[10px] leading-[1.8] text-[#8c9996]">
-                هنگام تحلیل، متن آگهی از همین لینک دریافت و سپس برای مدل ارسال
-                می‌شود.
+                هنگام تحلیل، متن آگهی از همین لینک دریافت و سپس برای مدل ارسال می‌شود.
               </p>
-              {importError && (
-                <p className="m-0 text-[8px] text-[#b65e52]">{importError}</p>
-              )}
+              {importError && <p className="m-0 text-[8px] text-[#b65e52]">{importError}</p>}
               {importedDescription && (
                 <div className="relative mt-2.5">
                   <details className="rounded-[10px] border border-[#dbe8e2] bg-[#f4f9f6] [&_p]:m-0 [&_p]:max-h-[125px] [&_p]:overflow-auto [&_p]:whitespace-pre-wrap [&_p]:px-3 [&_p]:pb-3 [&_p]:text-[10px] [&_p]:leading-[1.9] [&_p]:text-[#657572] [&_summary]:min-h-10 [&_summary]:cursor-pointer [&_summary]:py-3 [&_summary]:pr-3 [&_summary]:pl-11 [&_summary]:text-[10px] [&_summary]:font-bold [&_summary]:text-[#0f7b62]">
                     <summary>مشاهده متن استخراج‌شده از لینک</summary>
                     <p
                       dir={getJobTextDirection(importedDescription)}
-                      lang={
-                        getJobTextDirection(importedDescription) === "rtl"
-                          ? "fa"
-                          : "en"
-                      }
+                      lang={getJobTextDirection(importedDescription) === "rtl" ? "fa" : "en"}
                     >
                       {importedDescription}
                     </p>
@@ -737,18 +597,10 @@ export default function MatchPage() {
                         : "border-[#cfe3da] bg-white text-[#0f7b62]",
                     )}
                     onClick={copyImportedDescription}
-                    aria-label={
-                      copiedImportedDescription
-                        ? "متن استخراج‌شده کپی شد"
-                        : "کپی متن استخراج‌شده"
-                    }
+                    aria-label={copiedImportedDescription ? "متن استخراج‌شده کپی شد" : "کپی متن استخراج‌شده"}
                     title={copiedImportedDescription ? "کپی شد" : "کپی متن"}
                   >
-                    {copiedImportedDescription ? (
-                      <Check size={14} />
-                    ) : (
-                      <Copy size={14} />
-                    )}
+                    {copiedImportedDescription ? <Check size={14} /> : <Copy size={14} />}
                   </button>
                 </div>
               )}
@@ -762,22 +614,17 @@ export default function MatchPage() {
             <button
               className={cn(
                 "flex min-h-[58px] w-full items-center gap-2.5 rounded-xl border bg-[#fbfcfa] p-2.5 text-right",
-                selectedResume
-                  ? "border-[#dfe5df]"
-                  : "border-dashed border-[#cfd8d3]",
+                selectedResume ? "border-[#dfe5df]" : "border-dashed border-[#cfd8d3]",
               )}
               onClick={() => {
                 if (resumePicker) {
                   setResumePicker(false);
                   return;
                 }
-                const pickerRect =
-                  resumePickerRef.current?.getBoundingClientRect();
+                const pickerRect = resumePickerRef.current?.getBoundingClientRect();
                 if (pickerRect) {
                   const spaceBelow = window.innerHeight - pickerRect.bottom;
-                  setResumePickerOpensUp(
-                    spaceBelow < 320 && pickerRect.top > spaceBelow,
-                  );
+                  setResumePickerOpensUp(spaceBelow < 320 && pickerRect.top > spaceBelow);
                 }
                 setResumePicker(true);
               }}
@@ -813,8 +660,7 @@ export default function MatchPage() {
                       aria-selected={baseResumeId === resume.id}
                       className={cn(
                         "flex w-full items-center gap-2 rounded-lg p-2.5 text-right text-[#60716e] hover:bg-[#edf7f2]",
-                        baseResumeId === resume.id &&
-                          "bg-[#edf7f2] text-[#0f7b62]",
+                        baseResumeId === resume.id && "bg-[#edf7f2] text-[#0f7b62]",
                       )}
                       onClick={() => {
                         setBaseResumeId(resume.id);
@@ -826,12 +672,8 @@ export default function MatchPage() {
                     >
                       <FileText className="shrink-0" size={16} />
                       <span className="flex min-w-0 flex-1 flex-col">
-                        <strong className="truncate text-[9px]">
-                          {resume.label}
-                        </strong>
-                        <small className="mt-0.5 text-[7px] text-[#929e9a]">
-                          {resume.meta}
-                        </small>
+                        <strong className="truncate text-[9px]">{resume.label}</strong>
+                        <small className="mt-0.5 text-[7px] text-[#929e9a]">{resume.meta}</small>
                       </span>
                       {baseResumeId === resume.id && <Check size={15} />}
                     </button>
@@ -839,9 +681,7 @@ export default function MatchPage() {
                 ) : (
                   <div className="flex flex-col items-center p-4 text-center text-[#8a9793]">
                     <FileText className="text-[#8fb4a8]" size={22} />
-                    <strong className="mt-2 text-[9px] text-[#19312f]">
-                      رزومه ذخیره‌شده‌ای نداری
-                    </strong>
+                    <strong className="mt-2 text-[9px] text-[#19312f]">رزومه ذخیره‌شده‌ای نداری</strong>
                     <small className="mt-1 text-[7px] leading-[1.8]">
                       ابتدا یک رزومه بساز و پیش‌نویس آن را ذخیره کن.
                     </small>
@@ -856,16 +696,12 @@ export default function MatchPage() {
               </div>
             )}
             {!selectedResume && (
-              <p className="m-0 text-[8px] text-[#a36e45]">
-                برای تحلیل تطابق، انتخاب رزومه مبنا الزامی است.
-              </p>
+              <p className="m-0 text-[8px] text-[#a36e45]">برای تحلیل تطابق، انتخاب رزومه مبنا الزامی است.</p>
             )}
           </div>
           <button
             className={`${primaryAction} mt-4 w-full`}
-            disabled={
-              !hasSelectedInput || !selectedResume || analysisBusy || importingUrl
-            }
+            disabled={!hasSelectedInput || !selectedResume || analysisBusy || importingUrl}
             onClick={analyze}
           >
             <Sparkles size={18} />{" "}
@@ -890,23 +726,15 @@ export default function MatchPage() {
                   label={`تطابق رزومه ${formatPersianNumber(analysis.score)} درصد`}
                   strokeWidth={9}
                 >
-                  <strong className="text-[24px]">
-                    {formatPersianNumber(analysis.score)}
-                  </strong>
+                  <strong className="text-[24px]">{formatPersianNumber(analysis.score)}</strong>
                   <span className="text-[8px] text-[#758582]">٪ تطابق</span>
                 </CircularProgress>
                 <div>
                   <span className="rounded-md bg-[#e6f4ee] px-2 py-1 text-[8px] font-bold text-[#0f7b62]">
-                    {analysis.score >= 85
-                      ? "تطابق عالی"
-                      : analysis.score >= 65
-                        ? "تطابق خوب"
-                        : "نیاز به بهبود"}
+                    {analysis.score >= 85 ? "تطابق عالی" : analysis.score >= 65 ? "تطابق خوب" : "نیاز به بهبود"}
                   </span>
                   <h2 className="mb-1 mt-3 text-[16px]">{analysis.jobTitle}</h2>
-                  <p className="m-0 text-[9px] text-[#758582]">
-                    {analysis.company}
-                  </p>
+                  <p className="m-0 text-[9px] text-[#758582]">{analysis.company}</p>
                 </div>
               </div>
               <div className="my-5 grid gap-3">
@@ -917,9 +745,7 @@ export default function MatchPage() {
                       <strong>{formatPersianNumber(item.value)}٪</strong>
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-[#e8eeeb]">
-                      <div
-                        className={`h-full rounded-full bg-[#0f7b62] ${scoreWidthClass(item.value)}`}
-                      />
+                      <div className={`h-full rounded-full bg-[#0f7b62] ${scoreWidthClass(item.value)}`} />
                     </div>
                   </div>
                 ))}
@@ -967,23 +793,16 @@ export default function MatchPage() {
                 className={`${primaryAction} mt-4 w-full`}
                 disabled={tailoring}
                 onClick={() => {
-                  setTailoringTemplateId(
-                    selectedResume?.templateId ||
-                      selectableResumeTemplates[0].id,
-                  );
+                  setTailoringTemplateId(selectedResume?.templateId || selectableResumeTemplates[0].id);
                   setTailoringColor(
                     selectedResume?.colorId ||
-                      getDefaultResumeColor(
-                        selectedResume?.templateId ||
-                          selectableResumeTemplates[0].id,
-                      ),
+                      getDefaultResumeColor(selectedResume?.templateId || selectableResumeTemplates[0].id),
                   );
                   setTailoringLanguage("fa");
                   setTemplatePickerOpen(true);
                 }}
               >
-                <WandSparkles size={18} />{" "}
-                {tailoring ? "در حال ساخت با مدل..." : "ساخت رزومه اختصاصی"}
+                <WandSparkles size={18} /> {tailoring ? "در حال ساخت با مدل..." : "ساخت رزومه اختصاصی"}
               </button>
             </>
           ) : analysisBusy ? (
@@ -1005,22 +824,14 @@ export default function MatchPage() {
                 </div>
               )}
               <MatchAnalysisSkeleton
-                label={
-                  importingUrl
-                    ? "در حال خواندن متن آگهی از لینک"
-                    : "در حال مقایسه رزومه با نیازمندی‌های آگهی"
-                }
+                label={importingUrl ? "در حال خواندن متن آگهی از لینک" : "در حال مقایسه رزومه با نیازمندی‌های آگهی"}
               />
             </div>
           ) : (
             <div className="flex min-h-[420px] flex-col items-center justify-center text-center text-[#8b9996]">
               <Target size={44} />
-              <h3 className="mb-1 mt-3 text-[14px] text-[#19312f]">
-                آماده تحلیل
-              </h3>
-              <p className="m-0 text-[9px]">
-                شرح شغل را وارد کن تا گزارش تطبیق ساخته شود.
-              </p>
+              <h3 className="mb-1 mt-3 text-[14px] text-[#19312f]">آماده تحلیل</h3>
+              <p className="m-0 text-[9px]">شرح شغل را وارد کن تا گزارش تطبیق ساخته شود.</p>
             </div>
           )}
         </section>
@@ -1032,9 +843,7 @@ export default function MatchPage() {
           onClose={() => setTemplatePickerOpen(false)}
         >
           <div className="pt-4">
-            <strong className="mb-2 block text-[10px] text-[#19312f]">
-              زبان رزومه
-            </strong>
+            <strong className="mb-2 block text-[10px] text-[#19312f]">زبان رزومه</strong>
             <div className="grid grid-cols-2 gap-2">
               {(
                 [
@@ -1062,19 +871,14 @@ export default function MatchPage() {
                     <span
                       className={cn(
                         "grid size-7 shrink-0 place-items-center rounded-full border",
-                        selected
-                          ? "border-[#0f7b62] bg-[#0f7b62] text-white"
-                          : "border-[#ccd8d2] bg-white",
+                        selected ? "border-[#0f7b62] bg-[#0f7b62] text-white" : "border-[#ccd8d2] bg-white",
                       )}
                     >
                       {selected && <Check size={14} />}
                     </span>
                     <span className="flex flex-col">
                       <strong className="text-[9px]">{language.label}</strong>
-                      <small
-                        className="mt-0.5 text-[7px] text-[#879590]"
-                        dir={language.id === "en" ? "ltr" : "rtl"}
-                      >
+                      <small className="mt-0.5 text-[7px] text-[#879590]" dir={language.id === "en" ? "ltr" : "rtl"}>
                         {language.description}
                       </small>
                     </span>
@@ -1082,9 +886,7 @@ export default function MatchPage() {
                 );
               })}
             </div>
-            <strong className="mb-2 mt-5 block text-[10px] text-[#19312f]">
-              قالب رزومه
-            </strong>
+            <strong className="mb-2 mt-5 block text-[10px] text-[#19312f]">قالب رزومه</strong>
           </div>
           <div className="grid grid-cols-1 gap-2 min-[561px]:grid-cols-2">
             {selectableResumeTemplates.map((template) => {
@@ -1107,21 +909,13 @@ export default function MatchPage() {
                   <span
                     className={cn(
                       "grid size-9 shrink-0 place-items-center rounded-[10px] text-[9px] font-extrabold",
-                      selectedTemplate
-                        ? "bg-[#0f7b62] text-white"
-                        : "bg-[#e8eeea] text-[#72827e]",
+                      selectedTemplate ? "bg-[#0f7b62] text-white" : "bg-[#e8eeea] text-[#72827e]",
                     )}
                   >
-                    {selectedTemplate ? (
-                      <Check size={16} />
-                    ) : (
-                      template.name.slice(0, 1)
-                    )}
+                    {selectedTemplate ? <Check size={16} /> : template.name.slice(0, 1)}
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <strong className="text-[9px] text-[#19312f]">
-                      {template.name}
-                    </strong>
+                    <strong className="text-[9px] text-[#19312f]">{template.name}</strong>
                     <small className="mt-1 line-clamp-2 text-[7px] leading-[1.7] text-[#879590]">
                       {template.subtitle}
                     </small>
@@ -1132,9 +926,7 @@ export default function MatchPage() {
           </div>
           {supportsResumeColors(tailoringTemplateId) && (
             <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl border border-[#e3e9e4] bg-[#f8faf8] p-3">
-              <strong className="ml-auto text-[9px] text-[#19312f]">
-                رنگ قالب
-              </strong>
+              <strong className="ml-auto text-[9px] text-[#19312f]">رنگ قالب</strong>
               {resumeColorOptions.map((color) => (
                 <button
                   key={color.id}
@@ -1144,8 +936,7 @@ export default function MatchPage() {
                   className={cn(
                     "size-6 rounded-full border-2 border-white shadow-[0_0_0_1px_#d7dfda] transition-shadow",
                     color.swatch,
-                    tailoringColor === color.id &&
-                      "shadow-[0_0_0_2px_#0f7b62]",
+                    tailoringColor === color.id && "shadow-[0_0_0_2px_#0f7b62]",
                   )}
                   onClick={() => setTailoringColor(color.id)}
                 />
@@ -1153,27 +944,16 @@ export default function MatchPage() {
             </div>
           )}
           <div className="sticky -bottom-[22px] -mx-[22px] mt-5 flex justify-end gap-2 border-t border-[#e7ebe6] bg-white/95 px-[22px] py-3 backdrop-blur">
-            <button
-              className={secondaryAction}
-              type="button"
-              onClick={() => setTemplatePickerOpen(false)}
-            >
+            <button className={secondaryAction} type="button" onClick={() => setTemplatePickerOpen(false)}>
               انصراف
             </button>
             <button
               className={primaryAction}
               type="button"
               disabled={!tailoringTemplateId || tailoring}
-              onClick={() =>
-                void tailorResume(
-                  tailoringTemplateId,
-                  tailoringLanguage,
-                  tailoringColor,
-                )
-              }
+              onClick={() => void tailorResume(tailoringTemplateId, tailoringLanguage, tailoringColor)}
             >
-              <WandSparkles size={17} /> ساخت رزومه{" "}
-              {tailoringLanguage === "en" ? "انگلیسی" : "فارسی"}
+              <WandSparkles size={17} /> ساخت رزومه {tailoringLanguage === "en" ? "انگلیسی" : "فارسی"}
             </button>
           </div>
         </Modal>

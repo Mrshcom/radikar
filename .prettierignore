@@ -1,0 +1,6 @@
+**/node_modules/
+**/.next/
+**/.next-dev/
+**/playwright-report/
+**/test-results/
+graphify-out/

@@ -14,7 +14,8 @@ test("AI helper input guards normalize objects and resume content", () => {
 test("job description validation rejects short/repetitive text and accepts a real description", () => {
   assert.equal(validateJobDescription("کوتاه").valid, false);
   assert.equal(validateJobDescription("این متن ".repeat(30)).valid, false);
-  const valid = "ما به دنبال توسعه‌دهنده فرانت‌اند هستیم که مسئولیت طراحی رابط کاربری، نگهداری کد، همکاری با تیم محصول، تست و بهبود تجربه کاربر را بر عهده بگیرد و با React و TypeScript کار کند.";
+  const valid =
+    "ما به دنبال توسعه‌دهنده فرانت‌اند هستیم که مسئولیت طراحی رابط کاربری، نگهداری کد، همکاری با تیم محصول، تست و بهبود تجربه کاربر را بر عهده بگیرد و با React و TypeScript کار کند.";
   assert.deepEqual(validateJobDescription(valid), { valid: true });
 });
 

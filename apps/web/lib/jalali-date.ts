@@ -1,17 +1,16 @@
-const persianPartsFormatter = new Intl.DateTimeFormat(
-  "fa-IR-u-ca-persian-nu-latn",
-  { year: "numeric", month: "numeric", day: "numeric" },
-);
+const persianPartsFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian-nu-latn", {
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+});
 
-const persianDisplayFormatter = new Intl.DateTimeFormat(
-  "fa-IR-u-ca-persian",
-  { year: "numeric", month: "2-digit", day: "2-digit" },
-);
+const persianDisplayFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
 
-const persianMonthFormatter = new Intl.DateTimeFormat(
-  "fa-IR-u-ca-persian",
-  { year: "numeric", month: "long" },
-);
+const persianMonthFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", { year: "numeric", month: "long" });
 
 function atNoon(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12);
@@ -39,8 +38,7 @@ export function toLocalIsoDate(date: Date) {
 
 export function getPersianDateParts(date: Date) {
   const parts = persianPartsFormatter.formatToParts(date);
-  const valueOf = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const valueOf = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value ?? 0);
   return {
     year: valueOf("year"),
     month: valueOf("month"),
@@ -56,11 +54,7 @@ export function getPersianMonthDays(anchor: Date) {
   for (let index = 0; index < 32; index += 1) {
     const date = addCalendarDays(firstDay, index);
     const parts = getPersianDateParts(date);
-    if (
-      parts.year !== anchorParts.year ||
-      parts.month !== anchorParts.month
-    )
-      break;
+    if (parts.year !== anchorParts.year || parts.month !== anchorParts.month) break;
     days.push(date);
   }
   return days;
@@ -68,9 +62,7 @@ export function getPersianMonthDays(anchor: Date) {
 
 export function shiftPersianMonth(anchor: Date, offset: -1 | 1) {
   const days = getPersianMonthDays(anchor);
-  return offset === -1
-    ? addCalendarDays(days[0], -1)
-    : addCalendarDays(days[days.length - 1], 1);
+  return offset === -1 ? addCalendarDays(days[0], -1) : addCalendarDays(days[days.length - 1], 1);
 }
 
 export function formatPersianCalendarDate(date: Date) {

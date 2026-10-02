@@ -23,13 +23,7 @@ type JalaliDatePickerProps = {
 
 const weekDays = ["ش", "ی", "د", "س", "چ", "پ", "ج"];
 
-export function JalaliDatePicker({
-  value,
-  onChange,
-  ariaLabel,
-  min,
-  max,
-}: JalaliDatePickerProps) {
+export function JalaliDatePicker({ value, onChange, ariaLabel, min, max }: JalaliDatePickerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const selectedDate = parseLocalIsoDate(value);
   const [open, setOpen] = useState(false);
@@ -101,9 +95,7 @@ export function JalaliDatePicker({
             >
               <ChevronRight size={16} />
             </button>
-            <strong className="text-[10px] text-[#29433d]">
-              {formatPersianCalendarMonth(viewDate)}
-            </strong>
+            <strong className="text-[10px] text-[#29433d]">{formatPersianCalendarMonth(viewDate)}</strong>
             <button
               type="button"
               aria-label="ماه قبل"
@@ -125,9 +117,7 @@ export function JalaliDatePicker({
             {monthDays.map((date) => {
               const isoDate = toLocalIsoDate(date);
               const time = date.getTime();
-              const disabled =
-                (minDate !== undefined && time < minDate) ||
-                (maxDate !== undefined && time > maxDate);
+              const disabled = (minDate !== undefined && time < minDate) || (maxDate !== undefined && time > maxDate);
               const selected = isoDate === value;
               return (
                 <button
@@ -147,9 +137,7 @@ export function JalaliDatePicker({
                     disabled && "cursor-not-allowed opacity-25 hover:bg-transparent",
                   )}
                 >
-                  {new Intl.NumberFormat("fa-IR").format(
-                    getPersianDateParts(date).day,
-                  )}
+                  {new Intl.NumberFormat("fa-IR").format(getPersianDateParts(date).day)}
                 </button>
               );
             })}

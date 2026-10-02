@@ -1,16 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { chatJson, getAnalyzeConfig } from "@radikar/ai";
-import {
-  extractLinks as extractPdfLinks,
-  extractText as extractPdfText,
-  getDocumentProxy,
-} from "unpdf";
+import { extractLinks as extractPdfLinks, extractText as extractPdfText, getDocumentProxy } from "unpdf";
 import * as mammoth from "mammoth";
-import {
-  normalizeResumeImportPayload,
-  sanitizeImportedUrl,
-  type ResumeImportPayload,
-} from "@radikar/validators";
+import { normalizeResumeImportPayload, sanitizeImportedUrl, type ResumeImportPayload } from "@radikar/validators";
 import { serializeResumeSkills, type JsonObject } from "../ai/helpers";
 import type { BillingService } from "../billing/service";
 
@@ -103,19 +95,14 @@ function isLinkedInUrl(value: string) {
 
 function isLinkedInLikeUrl(value: string) {
   try {
-    const hostname = new URL(value).hostname
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "");
+    const hostname = new URL(value).hostname.toLowerCase().replace(/[^a-z0-9]/g, "");
     return hostname.includes("linkedin");
   } catch {
     return false;
   }
 }
 
-export function applyEmbeddedLinkFallbacks(
-  payload: ResumeImportPayload,
-  links: string[],
-): ResumeImportPayload {
+export function applyEmbeddedLinkFallbacks(payload: ResumeImportPayload, links: string[]): ResumeImportPayload {
   const linkedinUrl = normalizeEmbeddedLinks(links).find(isLinkedInUrl);
   if (!linkedinUrl) return payload;
   const importedWebsite = payload.resumeData.website;
@@ -131,12 +118,8 @@ export function extractContactFallbacks(text: string) {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  const email =
-    text.match(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,63}/i)?.[0] ??
-    "";
-  const phone =
-    text.match(/(?:\+[ \t]?\d[\d \t().-]{7,}\d|\b0\d[\d \t().-]{7,}\d)/)?.[0]
-      ?.trim() ?? "";
+  const email = text.match(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,63}/i)?.[0] ?? "";
+  const phone = text.match(/(?:\+[ \t]?\d[\d \t().-]{7,}\d|\b0\d[\d \t().-]{7,}\d)/)?.[0]?.trim() ?? "";
   const contactStart = lines.findIndex((line) =>
     /^(?:contact|contact information|اطلاعات تماس|راه‌های ارتباطی)$/i.test(line),
   );
@@ -144,20 +127,17 @@ export function extractContactFallbacks(text: string) {
     contactStart < 0
       ? -1
       : lines.findIndex(
-          (line, index) =>
-            index > contactStart &&
-            /^(?:about me|summary|profile|درباره من|خلاصه)$/i.test(line),
+          (line, index) => index > contactStart && /^(?:about me|summary|profile|درباره من|خلاصه)$/i.test(line),
         );
   const location =
     contactStart < 0 || contactEnd < 0
       ? ""
-      : lines.slice(contactStart + 1, contactEnd).find((line) => {
+      : (lines.slice(contactStart + 1, contactEnd).find((line) => {
           if (/^(?:information|linkedin profile)$/i.test(line)) return false;
           if (line === email || line === phone) return false;
-          if (line.includes("@") || /^(?:https?:\/\/|www\.)/i.test(line))
-            return false;
+          if (line.includes("@") || /^(?:https?:\/\/|www\.)/i.test(line)) return false;
           return !/(?:\+[ \t]?\d|\b0\d)[\d \t().-]{7,}\d/.test(line);
-        }) ?? "";
+        }) ?? "");
   return { email, phone, location };
 }
 
@@ -167,9 +147,7 @@ export function extractSummaryFallback(text: string) {
     .map((line) => line.trim())
     .filter(Boolean);
   const start = lines.findIndex((line) =>
-    /^(?:about me|summary|professional summary|profile|درباره من|خلاصه)$/i.test(
-      line,
-    ),
+    /^(?:about me|summary|professional summary|profile|درباره من|خلاصه)$/i.test(line),
   );
   if (start < 0) return "";
   const summary: string[] = [];
@@ -180,8 +158,7 @@ export function extractSummaryFallback(text: string) {
       /^(?:professional experience|work experience|experience|projects?|skills?|languages?|education|contact|اطلاعات تماس|سوابق شغلی|پروژه‌ها|مهارت‌ها|زبان‌ها|تحصیلات)$/i.test(
         line,
       ) ||
-      (/^[A-Z]{1,4}$/.test(line) &&
-        /^[A-Z][A-Z\s.'-]{3,}$/.test(next))
+      (/^[A-Z]{1,4}$/.test(line) && /^[A-Z][A-Z\s.'-]{3,}$/.test(next))
     )
       break;
     summary.push(line);
@@ -194,8 +171,7 @@ export function extractExperienceHeadingFallbacks(text: string) {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
-  const datePattern =
-    /^(\d{1,4}[/-]\d{1,4}|\d{4})\s*[–—-]\s*(present|current|now|\d{1,4}[/-]\d{1,4}|\d{4})$/i;
+  const datePattern = /^(\d{1,4}[/-]\d{1,4}|\d{4})\s*[–—-]\s*(present|current|now|\d{1,4}[/-]\d{1,4}|\d{4})$/i;
   return lines.flatMap((line, index) => {
     const dates = line.match(datePattern);
     const organization = lines[index - 1] ?? "";
@@ -216,10 +192,7 @@ export function extractExperienceHeadingFallbacks(text: string) {
   });
 }
 
-export function applyTextFallbacks(
-  payload: ResumeImportPayload,
-  text: string,
-): ResumeImportPayload {
+export function applyTextFallbacks(payload: ResumeImportPayload, text: string): ResumeImportPayload {
   const fallback = extractContactFallbacks(text);
   const summary = extractSummaryFallback(text);
   const experienceHeadings = extractExperienceHeadingFallbacks(text);
@@ -228,18 +201,11 @@ export function applyTextFallbacks(
       ? payload.experiences.map((experience, index) => ({
           ...experienceHeadings[index],
           ...experience,
-          company:
-            experience.company || experienceHeadings[index]?.company || "",
-          location:
-            experience.location || experienceHeadings[index]?.location || "",
-          startDate:
-            experience.startDate || experienceHeadings[index]?.startDate || "",
-          endDate:
-            experience.endDate || experienceHeadings[index]?.endDate || "",
-          isCurrent:
-            experience.isCurrent ||
-            experienceHeadings[index]?.isCurrent ||
-            false,
+          company: experience.company || experienceHeadings[index]?.company || "",
+          location: experience.location || experienceHeadings[index]?.location || "",
+          startDate: experience.startDate || experienceHeadings[index]?.startDate || "",
+          endDate: experience.endDate || experienceHeadings[index]?.endDate || "",
+          isCurrent: experience.isCurrent || experienceHeadings[index]?.isCurrent || false,
         }))
       : payload.experiences;
   return normalizeResumeImportPayload({
@@ -269,16 +235,12 @@ ${text}
 ${resumeImportShape}`;
 }
 
-async function extractFileContent(
-  filename: string,
-  buffer: Buffer,
-): Promise<ExtractedFileContent> {
+async function extractFileContent(filename: string, buffer: Buffer): Promise<ExtractedFileContent> {
   const extension = extensionOf(filename);
   if (extension === "pdf") {
     const document = await getDocumentProxy(new Uint8Array(buffer));
     try {
-      if (document.numPages > maxPdfPages)
-        throw new Error("فایل PDF باید حداکثر ۳۰ صفحه داشته باشد.");
+      if (document.numPages > maxPdfPages) throw new Error("فایل PDF باید حداکثر ۳۰ صفحه داشته باشد.");
       const [textResult, linksResult] = await Promise.all([
         extractPdfText(document, { mergePages: true }),
         extractPdfLinks(document),
@@ -291,14 +253,11 @@ async function extractFileContent(
       const disposableDocument = document as typeof document & {
         destroy?: () => Promise<void>;
       };
-      if (typeof disposableDocument.destroy === "function")
-        await disposableDocument.destroy();
+      if (typeof disposableDocument.destroy === "function") await disposableDocument.destroy();
     }
   }
-  if (extension === "docx")
-    return { text: (await mammoth.extractRawText({ buffer })).value, links: [] };
-  if (extension === "txt")
-    return { text: new TextDecoder().decode(buffer), links: [] };
+  if (extension === "docx") return { text: (await mammoth.extractRawText({ buffer })).value, links: [] };
+  if (extension === "txt") return { text: new TextDecoder().decode(buffer), links: [] };
   throw new Error("فرمت فایل پشتیبانی نمی‌شود.");
 }
 
@@ -308,29 +267,18 @@ export function registerKnowledgeImportRoute(
   maxUploadSizeBytes = 8 * 1024 * 1024,
 ) {
   app.post("/api/knowledge/import", async (request, reply) => {
-    if (!request.isMultipart())
-      return reply.code(400).send({ error: "فایل رزومه ارسال نشده است." });
+    if (!request.isMultipart()) return reply.code(400).send({ error: "فایل رزومه ارسال نشده است." });
     const file = await request.file({ limits: { fileSize: maxUploadSizeBytes } });
-    if (!file)
-      return reply.code(400).send({ error: "فایل رزومه ارسال نشده است." });
+    if (!file) return reply.code(400).send({ error: "فایل رزومه ارسال نشده است." });
     if (!["pdf", "docx", "txt"].includes(extensionOf(file.filename)))
-      return reply
-        .code(415)
-        .send({ error: "فقط فایل‌های PDF، DOCX و TXT پشتیبانی می‌شوند." });
+      return reply.code(415).send({ error: "فقط فایل‌های PDF، DOCX و TXT پشتیبانی می‌شوند." });
 
     try {
-      const extractedFile = await extractFileContent(
-        file.filename,
-        await file.toBuffer(),
-      );
-      const text = extractedFile.text
-        .replace(/\0/g, "")
-        .trim()
-        .slice(0, maxTextLength);
+      const extractedFile = await extractFileContent(file.filename, await file.toBuffer());
+      const text = extractedFile.text.replace(/\0/g, "").trim().slice(0, maxTextLength);
       if (text.length < 50)
         return reply.code(422).send({
-          error:
-            "متن کافی از فایل استخراج نشد. فایل PDF اسکن‌شده به OCR نیاز دارد.",
+          error: "متن کافی از فایل استخراج نشد. فایل PDF اسکن‌شده به OCR نیاز دارد.",
         });
 
       const analyzeConfig = getAnalyzeConfig();
@@ -341,9 +289,7 @@ export function registerKnowledgeImportRoute(
         });
       }
       const importConfig =
-        analyzeConfig.provider === "freeDeepseekAPI"
-          ? { ...analyzeConfig, model: "deepseek-chat" }
-          : analyzeConfig;
+        analyzeConfig.provider === "freeDeepseekAPI" ? { ...analyzeConfig, model: "deepseek-chat" } : analyzeConfig;
       const extracted = await chatJson<JsonObject>(
         importConfig,
         [
@@ -368,12 +314,12 @@ export function registerKnowledgeImportRoute(
           ...(billing
             ? {
                 onUsage: (event) =>
-                billing.recordModelUsage(
-                  request.auth!.user.id,
-                  `${request.id}:knowledge_import:${event.attempt}`,
-                  "knowledge_import",
-                  event,
-                ),
+                  billing.recordModelUsage(
+                    request.auth!.user.id,
+                    `${request.id}:knowledge_import:${event.attempt}`,
+                    "knowledge_import",
+                    event,
+                  ),
               }
             : {}),
         },
@@ -398,8 +344,7 @@ export function registerKnowledgeImportRoute(
     } catch (error) {
       request.log.error({ err: error }, "Knowledge resume import failed");
       return reply.code(502).send({
-        error:
-          error instanceof Error ? error.message : "پردازش رزومه ناموفق بود.",
+        error: error instanceof Error ? error.message : "پردازش رزومه ناموفق بود.",
       });
     }
   });

@@ -10,7 +10,8 @@ type PaginationItem = number | `ellipsis-${"start" | "end"}`;
 function paginationItems(page: number, totalPages: number): PaginationItem[] {
   if (totalPages <= 8) return Array.from({ length: totalPages }, (_, index) => index + 1);
   if (page <= 4) return [1, 2, 3, 4, "ellipsis-end", totalPages - 2, totalPages - 1, totalPages];
-  if (page >= totalPages - 3) return [1, 2, 3, "ellipsis-start", totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  if (page >= totalPages - 3)
+    return [1, 2, 3, "ellipsis-start", totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
   return [1, "ellipsis-start", page - 1, page, page + 1, "ellipsis-end", totalPages];
 }
 
@@ -50,7 +51,11 @@ export function TablePagination<TPageSize extends number = TablePageSize>({
         {pageSizeSaving && <span className="text-[8px] font-medium text-[#84918e]">در حال ذخیره…</span>}
       </label>
 
-      <nav aria-label="صفحه‌بندی جدول" className="flex min-w-0 flex-1 items-center justify-start gap-2.5 max-[700px]:gap-1.5" dir="ltr">
+      <nav
+        aria-label="صفحه‌بندی جدول"
+        className="flex min-w-0 flex-1 items-center justify-start gap-2.5 max-[700px]:gap-1.5"
+        dir="ltr"
+      >
         <button
           aria-label="صفحه قبل"
           className="grid size-10 shrink-0 place-items-center rounded-full border-0 bg-[#edf0ee] p-0 text-[#65736f] transition-colors hover:bg-[#dfe7e2] disabled:cursor-not-allowed disabled:opacity-40 max-[700px]:size-8"
@@ -79,7 +84,12 @@ export function TablePagination<TPageSize extends number = TablePageSize>({
                 {item.toLocaleString("fa-IR")}
               </button>
             ) : (
-              <span className="grid size-9 shrink-0 place-items-center text-[12px] font-bold text-[#6f7d79] max-[700px]:size-7 max-[700px]:text-[10px]" key={item}>…</span>
+              <span
+                className="grid size-9 shrink-0 place-items-center text-[12px] font-bold text-[#6f7d79] max-[700px]:size-7 max-[700px]:text-[10px]"
+                key={item}
+              >
+                …
+              </span>
             ),
           )}
         </div>

@@ -27,17 +27,12 @@ export function inferJobCategories(job: ClassifiableJob) {
   if (iranSignals.test(searchableText)) categories.add("domestic");
 
   const explicitInternationalSignal = internationalSignals.test(searchableText);
-  const nonIranianLatinPlace =
-    Boolean(place) && /[a-z]/i.test(place) && !iranSignals.test(place);
-  if (explicitInternationalSignal || nonIranianLatinPlace)
-    categories.add("international");
+  const nonIranianLatinPlace = Boolean(place) && /[a-z]/i.test(place) && !iranSignals.test(place);
+  if (explicitInternationalSignal || nonIranianLatinPlace) categories.add("international");
 
   return categories;
 }
 
-export function matchesJobCategory(
-  job: ClassifiableJob,
-  category: JobCategory,
-) {
+export function matchesJobCategory(job: ClassifiableJob, category: JobCategory) {
   return inferJobCategories(job).has(category);
 }

@@ -10,7 +10,10 @@ const settingsSchema = z.object({
   publishedAt: z.enum(["r86400", "r604800", "r2592000"]),
   locations: z.array(z.string().trim().min(2).max(100)).min(1).max(10),
 });
-const optionalNumber = z.preprocess((value) => value === "" || value == null ? undefined : value, z.coerce.number().int().min(0).optional());
+const optionalNumber = z.preprocess(
+  (value) => (value === "" || value == null ? undefined : value),
+  z.coerce.number().int().min(0).optional(),
+);
 const reportQuerySchema = z.object({ days: z.coerce.number().int().min(1).max(90).default(30) });
 const jobsQuerySchema = z.object({
   query: z.string().trim().max(100).default(""),

@@ -1,8 +1,4 @@
-import {
-  createParser,
-  parseAsNumberLiteral,
-  parseAsStringLiteral,
-} from "nuqs/server";
+import { createParser, parseAsNumberLiteral, parseAsStringLiteral } from "nuqs/server";
 
 function boundedString(maxLength: number) {
   return createParser({
@@ -21,14 +17,11 @@ export const tableOptionalFilterParser = boundedString(100).withDefault("");
 export const tableSortByParser = boundedString(40).withDefault("");
 export const tableSortDirectionParser = parseAsStringLiteral(["", "asc", "desc"] as const).withDefault("");
 
-export function createTableFilterParser<const Value extends string>(
-  values: readonly Value[],
-) {
+export function createTableFilterParser<const Value extends string>(values: readonly Value[]) {
   return parseAsStringLiteral(["", ...values] as const).withDefault("");
 }
 
-export const modelUsageDaysParser = parseAsNumberLiteral([7, 30, 90] as const)
-  .withDefault(30);
+export const modelUsageDaysParser = parseAsNumberLiteral([7, 30, 90] as const).withDefault(30);
 
 export const tableQueryStateOptions = {
   history: "replace",

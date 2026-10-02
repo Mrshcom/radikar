@@ -1,7 +1,4 @@
-import {
-  normalizeImportedText,
-  normalizeImportedTextArray,
-} from "@radikar/validators";
+import { normalizeImportedText, normalizeImportedTextArray } from "@radikar/validators";
 
 export type MatchAnalysis = {
   score: number;
@@ -20,16 +17,12 @@ const defaultBreakdownLabels = [
 ] as const;
 
 function objectOf(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : {};
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
 function boundedScore(value: unknown) {
   const score = Number(value);
-  return Number.isFinite(score)
-    ? Math.min(100, Math.max(0, Math.round(score)))
-    : 0;
+  return Number.isFinite(score) ? Math.min(100, Math.max(0, Math.round(score))) : 0;
 }
 
 export function normalizeMatchAnalysisInput(value: unknown): MatchAnalysis {
@@ -45,12 +38,8 @@ export function normalizeMatchAnalysisInput(value: unknown): MatchAnalysis {
 
   return {
     score: boundedScore(record.score),
-    jobTitle:
-      normalizeImportedText(record.jobTitle) ||
-      "عنوان شغل در آگهی مشخص نشده",
-    company:
-      normalizeImportedText(record.company) ||
-      "نام شرکت در آگهی مشخص نشده",
+    jobTitle: normalizeImportedText(record.jobTitle) || "عنوان شغل در آگهی مشخص نشده",
+    company: normalizeImportedText(record.company) || "نام شرکت در آگهی مشخص نشده",
     breakdown,
     strengths: normalizeImportedTextArray(record.strengths).slice(0, 5),
     gaps: normalizeImportedTextArray(record.gaps).slice(0, 4),

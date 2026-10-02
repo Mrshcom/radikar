@@ -21,16 +21,17 @@ test.describe("صفحات عمومی", () => {
       expect(response?.ok()).toBeTruthy();
       await expect(page.locator("html")).toHaveAttribute("lang", "fa");
       await expect(page.locator("body")).toContainText(content);
-      const hasHorizontalOverflow = await page.locator("body").evaluate(
-        (body) => body.scrollWidth > body.clientWidth,
-      );
+      const hasHorizontalOverflow = await page.locator("body").evaluate((body) => body.scrollWidth > body.clientWidth);
       expect(hasHorizontalOverflow).toBe(false);
     });
   }
 
   test("لینک ورود از هدر به صفحه ورود می‌رود", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("link", { name: /ورود|داشبورد کاربری/ }).first().click();
+    await page
+      .getByRole("link", { name: /ورود|داشبورد کاربری/ })
+      .first()
+      .click();
     await expect(page).toHaveURL(/\/(login|dashboard)$/);
   });
 });

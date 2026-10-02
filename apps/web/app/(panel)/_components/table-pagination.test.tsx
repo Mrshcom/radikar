@@ -6,13 +6,7 @@ describe("TablePagination", () => {
   it("disables the previous control on the first page and changes page with the next control", () => {
     const onPageChange = vi.fn();
     render(
-      <TablePagination
-        onPageChange={onPageChange}
-        onPageSizeChange={vi.fn()}
-        page={1}
-        pageSize={10}
-        total={30}
-      />,
+      <TablePagination onPageChange={onPageChange} onPageSizeChange={vi.fn()} page={1} pageSize={10} total={30} />,
     );
 
     expect(screen.getByLabelText("صفحه قبل")).toBeDisabled();
@@ -23,13 +17,7 @@ describe("TablePagination", () => {
   it("sends the selected page size to its owner", () => {
     const onPageSizeChange = vi.fn();
     render(
-      <TablePagination
-        onPageChange={vi.fn()}
-        onPageSizeChange={onPageSizeChange}
-        page={1}
-        pageSize={10}
-        total={30}
-      />,
+      <TablePagination onPageChange={vi.fn()} onPageSizeChange={onPageSizeChange} page={1} pageSize={10} total={30} />,
     );
 
     fireEvent.click(screen.getByLabelText("تعداد ردیف در هر صفحه"));

@@ -2,9 +2,7 @@ import { dataRecords, plans } from "./schema";
 import { createDatabase } from "./client";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
-const databaseUrl =
-  process.env.DATABASE_URL ??
-  "postgresql://radikar:radikar@localhost:5433/radikar";
+const databaseUrl = process.env.DATABASE_URL ?? "postgresql://radikar:radikar@localhost:5433/radikar";
 const database = createDatabase(databaseUrl, 1);
 const now = new Date();
 const timestamp = now.toISOString();
@@ -73,31 +71,31 @@ try {
     });
 
   const initialRecords = [
-      {
-        collection: "appProfiles",
+    {
+      collection: "appProfiles",
+      id: "profile-default",
+      payload: {
         id: "profile-default",
-        payload: {
-          id: "profile-default",
-          workspaceName: "فضای کاری اصلی",
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        },
-        createdAt: now,
-        updatedAt: now,
+        workspaceName: "فضای کاری اصلی",
+        createdAt: timestamp,
+        updatedAt: timestamp,
       },
-      {
-        collection: "workspaceState",
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      collection: "workspaceState",
+      id: "active-profile",
+      payload: {
         id: "active-profile",
-        payload: {
-          id: "active-profile",
-          activeProfileId: "profile-default",
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        },
-        createdAt: now,
-        updatedAt: now,
+        activeProfileId: "profile-default",
+        createdAt: timestamp,
+        updatedAt: timestamp,
       },
-    ];
+      createdAt: now,
+      updatedAt: now,
+    },
+  ];
   // `NULL` values do not conflict in a normal Postgres unique index. Serialize
   // this small global seed section so parallel deploy/CI processes are safe too.
   await database.db.transaction(async (tx) => {

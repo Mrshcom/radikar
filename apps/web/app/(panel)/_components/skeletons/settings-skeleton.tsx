@@ -13,7 +13,9 @@ export function SettingsSkeleton() {
       <section className="grid gap-5 rounded-[20px] border border-[#e3e9e3] bg-white p-5 sm:p-6">
         <span className="h-5 w-32 animate-pulse rounded-md bg-[#e4ece8]" />
         <div className="grid grid-cols-2 gap-3 max-[560px]:grid-cols-1">
-          {[1, 2].map((item) => <span className="h-[70px] animate-pulse rounded-xl border border-[#edf1ee] bg-[#f1f5f2]" key={item} />)}
+          {[1, 2].map((item) => (
+            <span className="h-[70px] animate-pulse rounded-xl border border-[#edf1ee] bg-[#f1f5f2]" key={item} />
+          ))}
         </div>
         <span className="h-11 w-full animate-pulse rounded-[10px] bg-[#f1f5f2]" />
         <span className="h-11 w-full animate-pulse rounded-[10px] bg-[#f1f5f2]" />

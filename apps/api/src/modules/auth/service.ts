@@ -131,10 +131,7 @@ function tokenHash(token: string) {
 }
 
 function safeNextPath(value?: string) {
-  return value?.startsWith("/") &&
-    !value.startsWith("//") &&
-    !value.includes("\\") &&
-    !/[\r\n]/.test(value)
+  return value?.startsWith("/") && !value.startsWith("//") && !value.includes("\\") && !/[\r\n]/.test(value)
     ? value
     : "/dashboard";
 }
@@ -172,11 +169,7 @@ async function getGoogleJwks(forceRefresh = false) {
   return body.keys;
 }
 
-async function verifyGoogleIdToken(
-  idToken: string,
-  clientId: string,
-  expectedNonce: string,
-) {
+async function verifyGoogleIdToken(idToken: string, clientId: string, expectedNonce: string) {
   const parts = idToken.split(".");
   if (parts.length !== 3) throw new AuthError(400, "توکن هویتی Google معتبر نیست.");
   const header = decodeJwtPart<{ alg?: string; kid?: string }>(parts[0]);
@@ -247,17 +240,11 @@ export class AuthService {
   ) {}
 
   private hashOtp(challengeId: string, phone: string, code: string) {
-    return createHmac("sha256", this.options.secret)
-      .update(`${challengeId}:${phone}:${code}`)
-      .digest("hex");
+    return createHmac("sha256", this.options.secret).update(`${challengeId}:${phone}:${code}`).digest("hex");
   }
 
   isGoogleLoginEnabled() {
-    return Boolean(
-      this.options.googleClientId &&
-        this.options.googleClientSecret &&
-        this.options.googleRedirectUri,
-    );
+    return Boolean(this.options.googleClientId && this.options.googleClientSecret && this.options.googleRedirectUri);
   }
 
   private requireGoogleOptions() {
@@ -270,10 +257,7 @@ export class AuthService {
 
   private async getReferralSettingsRow() {
     const now = new Date();
-    await this.database
-      .insert(referralSettings)
-      .values({ id: "default", updatedAt: now })
-      .onConflictDoNothing();
+    await this.database.insert(referralSettings).values({ id: "default", updatedAt: now }).onConflictDoNothing();
     const [settings] = await this.database
       .select()
       .from(referralSettings)
@@ -314,18 +298,31 @@ export class AuthService {
     const code = await this.ensureReferralCode(userId);
     const [visitCounts, referralRows, coinRows] = await Promise.all([
       this.database.select({ value: count() }).from(referralVisits).where(eq(referralVisits.referralCodeId, code.id)),
-      this.database.select().from(referrals).where(eq(referrals.referrerUserId, userId)).orderBy(desc(referrals.createdAt)),
-      this.database.select().from(radicoinTransactions).where(and(
-        eq(radicoinTransactions.userId, userId),
-        inArray(radicoinTransactions.source, ["referral_signup", "referral_activation", "referral_upgrade"]),
-      )).orderBy(desc(radicoinTransactions.createdAt)).limit(30),
+      this.database
+        .select()
+        .from(referrals)
+        .where(eq(referrals.referrerUserId, userId))
+        .orderBy(desc(referrals.createdAt)),
+      this.database
+        .select()
+        .from(radicoinTransactions)
+        .where(
+          and(
+            eq(radicoinTransactions.userId, userId),
+            inArray(radicoinTransactions.source, ["referral_signup", "referral_activation", "referral_upgrade"]),
+          ),
+        )
+        .orderBy(desc(radicoinTransactions.createdAt))
+        .limit(30),
     ]);
     return {
       code: code.code,
       visits: Number(visitCounts[0]?.value ?? 0),
       pendingReferrals: referralRows.filter((item) => item.status === "pending").length,
       confirmedReferrals: referralRows.filter((item) => item.status === "confirmed").length,
-      confirmedPoints: coinRows.filter((item) => item.status === "available").reduce((total, item) => total + item.amount, 0),
+      confirmedPoints: coinRows
+        .filter((item) => item.status === "available")
+        .reduce((total, item) => total + item.amount, 0),
       events: coinRows.map((item) => ({
         id: item.id,
         points: item.amount,
@@ -357,22 +354,42 @@ export class AuthService {
   async getAdminReferralReport(page: number, pageSize: number) {
     const [totalRows, rows] = await Promise.all([
       this.database.select({ value: count() }).from(referrals),
-      this.database.select().from(referrals).orderBy(desc(referrals.createdAt)).limit(pageSize).offset((page - 1) * pageSize),
+      this.database
+        .select()
+        .from(referrals)
+        .orderBy(desc(referrals.createdAt))
+        .limit(pageSize)
+        .offset((page - 1) * pageSize),
     ]);
     const userIds = [...new Set(rows.flatMap((item) => [item.referrerUserId, item.referredUserId]))];
     const userRows = userIds.length
-      ? await this.database.select({ id: users.id, fullName: users.fullName, phone: users.phone, email: users.email }).from(users).where(inArray(users.id, userIds))
+      ? await this.database
+          .select({ id: users.id, fullName: users.fullName, phone: users.phone, email: users.email })
+          .from(users)
+          .where(inArray(users.id, userIds))
       : [];
     const userMap = new Map(userRows.map((user) => [user.id, user]));
     return {
-      total: Number(totalRows[0]?.value ?? 0), page, pageSize,
+      total: Number(totalRows[0]?.value ?? 0),
+      page,
+      pageSize,
       items: rows.map((item) => ({
         id: item.id,
         status: item.status,
         createdAt: item.createdAt.toISOString(),
         confirmedAt: item.confirmedAt?.toISOString() ?? null,
-        referrer: userMap.get(item.referrerUserId) ?? { id: item.referrerUserId, fullName: null, phone: null, email: null },
-        referred: userMap.get(item.referredUserId) ?? { id: item.referredUserId, fullName: null, phone: null, email: null },
+        referrer: userMap.get(item.referrerUserId) ?? {
+          id: item.referrerUserId,
+          fullName: null,
+          phone: null,
+          email: null,
+        },
+        referred: userMap.get(item.referredUserId) ?? {
+          id: item.referredUserId,
+          fullName: null,
+          phone: null,
+          email: null,
+        },
       })),
     };
   }
@@ -435,7 +452,11 @@ export class AuthService {
 
   async getReferralSettings(): Promise<ReferralSettings> {
     const settings = await this.getReferralSettingsRow();
-    return { isActive: settings.isActive, referrerPoints: settings.referrerPoints, referredPoints: settings.referredPoints };
+    return {
+      isActive: settings.isActive,
+      referrerPoints: settings.referrerPoints,
+      referredPoints: settings.referredPoints,
+    };
   }
 
   async updateReferralSettings(input: ReferralSettings) {
@@ -465,15 +486,9 @@ export class AuthService {
     return event;
   }
 
-  private async createSession(
-    userRow: typeof users.$inferSelect,
-    now = new Date(),
-    loginIp?: string,
-  ) {
+  private async createSession(userRow: typeof users.$inferSelect, now = new Date(), loginIp?: string) {
     const sessionToken = randomBytes(32).toString("base64url");
-    const sessionExpiresAt = new Date(
-      now.getTime() + this.options.sessionTtlDays * 86_400_000,
-    );
+    const sessionExpiresAt = new Date(now.getTime() + this.options.sessionTtlDays * 86_400_000);
     await this.database.insert(authSessions).values({
       id: randomUUID(),
       userId: userRow.id,
@@ -496,13 +511,9 @@ export class AuthService {
     const state = randomBytes(32).toString("base64url");
     const nonce = randomBytes(32).toString("base64url");
     const codeVerifier = randomBytes(64).toString("base64url");
-    const codeChallenge = createHash("sha256")
-      .update(codeVerifier)
-      .digest("base64url");
+    const codeChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
     const now = new Date();
-    await this.database
-      .delete(oauthLoginAttempts)
-      .where(lt(oauthLoginAttempts.expiresAt, now));
+    await this.database.delete(oauthLoginAttempts).where(lt(oauthLoginAttempts.expiresAt, now));
     await this.database.insert(oauthLoginAttempts).values({
       id: randomUUID(),
       provider: "google",
@@ -537,15 +548,11 @@ export class AuthService {
     cookieState?: string,
     loginIp?: string,
   ): Promise<GoogleLoginResult> {
-    const { googleClientId, googleClientSecret, googleRedirectUri } =
-      this.requireGoogleOptions();
+    const { googleClientId, googleClientSecret, googleRedirectUri } = this.requireGoogleOptions();
     if (!cookieState) throw new AuthError(400, "نشست ورود Google پیدا نشد.");
     const expectedState = Buffer.from(cookieState);
     const receivedState = Buffer.from(state);
-    if (
-      expectedState.length !== receivedState.length ||
-      !timingSafeEqual(expectedState, receivedState)
-    ) {
+    if (expectedState.length !== receivedState.length || !timingSafeEqual(expectedState, receivedState)) {
       throw new AuthError(400, "درخواست ورود Google معتبر نیست.");
     }
 
@@ -588,11 +595,7 @@ export class AuthService {
     if (!tokenResponse.ok || !tokenBody.id_token) {
       throw new AuthError(400, "تأیید ورود Google ناموفق بود.");
     }
-    const claims = await verifyGoogleIdToken(
-      tokenBody.id_token,
-      googleClientId,
-      attempt.nonce,
-    );
+    const claims = await verifyGoogleIdToken(tokenBody.id_token, googleClientId, attempt.nonce);
     const email = claims.email.trim().toLocaleLowerCase("en");
     const displayName = claims.name?.trim().slice(0, 100) || null;
 
@@ -604,12 +607,7 @@ export class AuthService {
         .select({ identity: userIdentities, user: users })
         .from(userIdentities)
         .innerJoin(users, eq(userIdentities.userId, users.id))
-        .where(
-          and(
-            eq(userIdentities.provider, "google"),
-            eq(userIdentities.providerSubject, claims.sub),
-          ),
-        )
+        .where(and(eq(userIdentities.provider, "google"), eq(userIdentities.providerSubject, claims.sub)))
         .limit(1);
 
       if (existingIdentity) {
@@ -664,10 +662,7 @@ export class AuthService {
     await this.options.grantSignupMembership?.(userRow.id);
     if (isNewUser) await this.applyReferralForNewUser(userRow.id, attempt.referralCode ?? undefined);
     if (isFirstUser) {
-      await this.database
-        .update(dataRecords)
-        .set({ ownerUserId: userRow.id })
-        .where(isNull(dataRecords.ownerUserId));
+      await this.database.update(dataRecords).set({ ownerUserId: userRow.id }).where(isNull(dataRecords.ownerUserId));
     }
     return {
       ...(await this.createSession(userRow, now, loginIp)),
@@ -713,9 +708,13 @@ export class AuthService {
         // rate limit. Otherwise a temporary provider failure can lock the
         // account owner out for ten minutes without receiving a usable code.
         await this.database.delete(otpChallenges).where(eq(otpChallenges.id, challengeId));
-        const providerMessage = error instanceof Error
-          ? error.message.replace(/[\r\n]+/g, " ").trim().slice(0, 180)
-          : "";
+        const providerMessage =
+          error instanceof Error
+            ? error.message
+                .replace(/[\r\n]+/g, " ")
+                .trim()
+                .slice(0, 180)
+            : "";
         if (this.options.exposeOtpDeliveryError && providerMessage) {
           throw new AuthError(502, `ارسال پیامک ورود ناموفق بود: ${providerMessage}`);
         }
@@ -760,15 +759,10 @@ export class AuthService {
     }
 
     const now = new Date();
-    const [existingUser] = await this.database
-      .select()
-      .from(users)
-      .where(eq(users.phone, phone))
-      .limit(1);
+    const [existingUser] = await this.database.select().from(users).where(eq(users.phone, phone)).limit(1);
     const [{ value: usersCount }] = await this.database.select({ value: count() }).from(users);
     const bootstrap =
-      phone === this.options.bootstrapSuperadminPhone ||
-      (usersCount === 0 && this.options.allowFirstUserSuperadmin);
+      phone === this.options.bootstrapSuperadminPhone || (usersCount === 0 && this.options.allowFirstUserSuperadmin);
     const role: UserRole = bootstrap ? "superadmin" : "user";
 
     const [userRow] = existingUser
@@ -785,15 +779,9 @@ export class AuthService {
     await this.options.grantSignupMembership?.(userRow.id);
     if (!existingUser) await this.applyReferralForNewUser(userRow.id, referralCode);
 
-    await this.database
-      .update(otpChallenges)
-      .set({ consumed: true })
-      .where(eq(otpChallenges.id, challenge.id));
+    await this.database.update(otpChallenges).set({ consumed: true }).where(eq(otpChallenges.id, challenge.id));
     if (usersCount === 0) {
-      await this.database
-        .update(dataRecords)
-        .set({ ownerUserId: userRow.id })
-        .where(isNull(dataRecords.ownerUserId));
+      await this.database.update(dataRecords).set({ ownerUserId: userRow.id }).where(isNull(dataRecords.ownerUserId));
     }
 
     return this.createSession(userRow, now, loginIp);
@@ -835,13 +823,7 @@ export class AuthService {
     await this.database
       .update(authSessions)
       .set({ revokedAt: new Date(), logoutIp: logoutIp || null })
-      .where(
-        and(
-          eq(authSessions.id, sessionId),
-          eq(authSessions.userId, userId),
-          isNull(authSessions.revokedAt),
-        ),
-      );
+      .where(and(eq(authSessions.id, sessionId), eq(authSessions.userId, userId), isNull(authSessions.revokedAt)));
   }
 
   async listUserSessions(userId: string, currentSessionId: string): Promise<AccountSession[]> {
@@ -855,11 +837,7 @@ export class AuthService {
 
     return rows.map((session) => {
       const active = session.revokedAt == null && session.expiresAt > now;
-      const status: AccountSession["status"] = active
-        ? "active"
-        : session.revokedAt
-          ? "logged_out"
-          : "expired";
+      const status: AccountSession["status"] = active ? "active" : session.revokedAt ? "logged_out" : "expired";
       return {
         id: session.id,
         current: session.id === currentSessionId,
@@ -970,13 +948,7 @@ export class AuthService {
         .from(orders)
         .innerJoin(users, eq(orders.userId, users.id))
         .innerJoin(plans, eq(orders.planId, plans.id))
-        .where(
-          and(
-            ne(users.role, "superadmin"),
-            eq(orders.status, "paid"),
-            isNotNull(orders.paidAt),
-          ),
-        )
+        .where(and(ne(users.role, "superadmin"), eq(orders.status, "paid"), isNotNull(orders.paidAt)))
         .orderBy(desc(orders.paidAt))
         .limit(limit),
       this.database
@@ -991,12 +963,7 @@ export class AuthService {
         })
         .from(dataRecords)
         .innerJoin(users, eq(dataRecords.ownerUserId, users.id))
-        .where(
-          and(
-            ne(users.role, "superadmin"),
-            eq(dataRecords.collection, "resumes"),
-          ),
-        )
+        .where(and(ne(users.role, "superadmin"), eq(dataRecords.collection, "resumes")))
         .orderBy(desc(dataRecords.createdAt))
         .limit(limit),
     ]);
@@ -1011,29 +978,33 @@ export class AuthService {
       })),
       ...loginRows.flatMap((row) =>
         row.createdAt
-          ? [{
-              id: `login:${row.userId}:${row.createdAt.toISOString()}`,
-              type: "login" as const,
-              createdAt: row.createdAt.toISOString(),
-              user: { id: row.userId, phone: row.phone, email: row.email, fullName: row.fullName },
-              details: {},
-            }]
+          ? [
+              {
+                id: `login:${row.userId}:${row.createdAt.toISOString()}`,
+                type: "login" as const,
+                createdAt: row.createdAt.toISOString(),
+                user: { id: row.userId, phone: row.phone, email: row.email, fullName: row.fullName },
+                details: {},
+              },
+            ]
           : [],
       ),
       ...purchaseRows.flatMap((row) =>
         row.createdAt
-          ? [{
-              id: `purchase:${row.orderId}`,
-              type: "purchase" as const,
-              createdAt: row.createdAt.toISOString(),
-              user: { id: row.userId, phone: row.phone, email: row.email, fullName: row.fullName },
-              details: {
-                orderId: row.orderId,
-                planName: row.planName,
-                amountRials: row.amountRials,
-                refId: row.refId,
+          ? [
+              {
+                id: `purchase:${row.orderId}`,
+                type: "purchase" as const,
+                createdAt: row.createdAt.toISOString(),
+                user: { id: row.userId, phone: row.phone, email: row.email, fullName: row.fullName },
+                details: {
+                  orderId: row.orderId,
+                  planName: row.planName,
+                  amountRials: row.amountRials,
+                  refId: row.refId,
+                },
               },
-            }]
+            ]
           : [],
       ),
       ...resumeRows.map((row) => ({
@@ -1046,9 +1017,7 @@ export class AuthService {
     ];
 
     return {
-      items: events
-        .sort((first, second) => second.createdAt.localeCompare(first.createdAt))
-        .slice(0, limit),
+      items: events.sort((first, second) => second.createdAt.localeCompare(first.createdAt)).slice(0, limit),
     };
   }
 
@@ -1070,7 +1039,20 @@ export class AuthService {
       role ? eq(users.role, role) : undefined,
       status ? eq(users.status, status) : undefined,
     );
-    const sortColumn = sortBy === "user" ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})` : sortBy === "alias" ? users.adminAlias : sortBy === "role" ? users.role : sortBy === "status" ? users.status : sortBy === "records" ? sql`count(${dataRecords.id})` : sortBy === "login" ? users.lastLoginAt : users.createdAt;
+    const sortColumn =
+      sortBy === "user"
+        ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})`
+        : sortBy === "alias"
+          ? users.adminAlias
+          : sortBy === "role"
+            ? users.role
+            : sortBy === "status"
+              ? users.status
+              : sortBy === "records"
+                ? sql`count(${dataRecords.id})`
+                : sortBy === "login"
+                  ? users.lastLoginAt
+                  : users.createdAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [rows, totals] = await Promise.all([
       this.database
@@ -1098,7 +1080,14 @@ export class AuthService {
     return { items: rows, total: totals[0]?.total ?? 0, page, pageSize };
   }
 
-  async listAllRecords(page = 1, pageSize = 20, search = "", collection?: string, sortBy?: string, sortDirection: "asc" | "desc" = "desc") {
+  async listAllRecords(
+    page = 1,
+    pageSize = 20,
+    search = "",
+    collection?: string,
+    sortBy?: string,
+    sortDirection: "asc" | "desc" = "desc",
+  ) {
     const term = `%${search.trim()}%`;
     const filter = and(
       search.trim()
@@ -1111,7 +1100,16 @@ export class AuthService {
         : undefined,
       collection ? eq(dataRecords.collection, collection) : undefined,
     );
-    const sortColumn = sortBy === "collection" ? dataRecords.collection : sortBy === "id" ? dataRecords.id : sortBy === "owner" ? sql`coalesce(${users.phone}, ${users.email})` : sortBy === "workspace" ? dataRecords.profileId : dataRecords.updatedAt;
+    const sortColumn =
+      sortBy === "collection"
+        ? dataRecords.collection
+        : sortBy === "id"
+          ? dataRecords.id
+          : sortBy === "owner"
+            ? sql`coalesce(${users.phone}, ${users.email})`
+            : sortBy === "workspace"
+              ? dataRecords.profileId
+              : dataRecords.updatedAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [rows, totals] = await Promise.all([
       this.database
@@ -1160,16 +1158,8 @@ export class AuthService {
     return updated;
   }
 
-  async updateUser(
-    userId: string,
-    input: { role?: UserRole; status?: UserStatus },
-    actorUserId?: string,
-  ) {
-    const [current] = await this.database
-      .select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
+  async updateUser(userId: string, input: { role?: UserRole; status?: UserStatus }, actorUserId?: string) {
+    const [current] = await this.database.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!current) throw new AuthError(404, "کاربر پیدا نشد.");
 
     return this.database.transaction(async (tx) => {
@@ -1220,10 +1210,7 @@ export class AuthService {
     return toAuthUser(user);
   }
 
-  async updatePreferences(
-    userId: string,
-    input: { tablePageSize: AuthUser["tablePageSize"] },
-  ) {
+  async updatePreferences(userId: string, input: { tablePageSize: AuthUser["tablePageSize"] }) {
     const [user] = await this.database
       .update(users)
       .set({ tablePageSize: input.tablePageSize, updatedAt: new Date() })

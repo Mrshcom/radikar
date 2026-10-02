@@ -16,6 +16,9 @@ describe("job pool salary period detection", () => {
   });
 
   it("does not mistake unrelated year mentions in a job description for annual pay", () => {
-    assert.equal(detectSalaryPeriod(["$3217.00", "$4077.00"], null, null, null, "From year 4 onwards, tasks are transferred."), "monthly");
+    assert.equal(
+      detectSalaryPeriod(["$3217.00", "$4077.00"], null, null, null, "From year 4 onwards, tasks are transferred."),
+      "monthly",
+    );
   });
 });

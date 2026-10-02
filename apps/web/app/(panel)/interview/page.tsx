@@ -15,10 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { SectionTitle } from "../_components/ui";
-import {
-  FeedbackSkeleton,
-  InterviewSkeleton,
-} from "../_components/skeletons";
+import { FeedbackSkeleton, InterviewSkeleton } from "../_components/skeletons";
 import { useToast } from "@/app/_components/toast";
 import { useModelTasks } from "../_components/model-task-provider";
 import {
@@ -28,10 +25,7 @@ import {
   interviewSessionStore,
   knowledgeProfileStore,
 } from "@/lib/data/stores";
-import type {
-  InterviewFeedbackRecord,
-  InterviewSessionRecord,
-} from "@/lib/data/models";
+import type { InterviewFeedbackRecord, InterviewSessionRecord } from "@/lib/data/models";
 import { formatPersianNumber, toPersianDigits } from "@/lib/fa-number";
 import { apiRequest } from "@/lib/api-client";
 
@@ -49,8 +43,7 @@ const icons = [CircleUserRound, BriefcaseBusiness, FileCheck2];
 export default function InterviewPage() {
   const notify = useToast();
   const { isRunning, runModelTask } = useModelTasks();
-  const [sessionRecord, setSessionRecord] =
-    useState<InterviewSessionRecord | null>(null);
+  const [sessionRecord, setSessionRecord] = useState<InterviewSessionRecord | null>(null);
   const [hasResume, setHasResume] = useState(true);
   const [started, setStarted] = useState(false);
   const [mode, setMode] = useState("مصاحبه شخصی‌سازی‌شده");
@@ -61,8 +54,7 @@ export default function InterviewPage() {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [error, setError] = useState("");
   const sessionBuilding = loading || isRunning("interview-session");
-  const feedbackBusy =
-    feedbackLoading || isRunning("interview-feedback");
+  const feedbackBusy = feedbackLoading || isRunning("interview-feedback");
 
   useEffect(() => {
     let active = true;
@@ -80,10 +72,7 @@ export default function InterviewPage() {
         if (sessions[0]) setMode(sessions[0].mode);
       } catch (event) {
         if (active) {
-          const message =
-            event instanceof Error
-              ? event.message
-              : "خواندن جلسه‌های ذخیره‌شده ناموفق بود.";
+          const message = event instanceof Error ? event.message : "خواندن جلسه‌های ذخیره‌شده ناموفق بود.";
           setError(message);
           notify(message, "error");
         }
@@ -109,26 +98,17 @@ export default function InterviewPage() {
         href: "/interview",
         run: async () => {
           const profileId = await getActiveProfileId();
-          const [resume, knowledge] = await Promise.all([
-            getLatestResume(),
-            knowledgeProfileStore.get(profileId),
-          ]);
+          const [resume, knowledge] = await Promise.all([getLatestResume(), knowledgeProfileStore.get(profileId)]);
           const resumeData = resume?.data ?? knowledge?.resumeData;
-          if (!resumeData)
-            throw new Error(
-              "برای ساخت جلسه مصاحبه ابتدا پروفایل مسیر شغلی یا رزومه‌ات را تکمیل کن.",
-            );
-          const result = await apiRequest<SessionData & { error?: string }>(
-            "/api/interview/session",
-            {
-              method: "POST",
-              body: JSON.stringify({
-                resume: resumeData,
-                knowledge,
-                mode: selectedMode,
-              }),
-            },
-          );
+          if (!resumeData) throw new Error("برای ساخت جلسه مصاحبه ابتدا پروفایل مسیر شغلی یا رزومه‌ات را تکمیل کن.");
+          const result = await apiRequest<SessionData & { error?: string }>("/api/interview/session", {
+            method: "POST",
+            body: JSON.stringify({
+              resume: resumeData,
+              knowledge,
+              mode: selectedMode,
+            }),
+          });
           const now = new Date().toISOString();
           const record: InterviewSessionRecord = {
             id: createRecordId("interview"),
@@ -148,8 +128,7 @@ export default function InterviewPage() {
       setStarted(startAfterLoad);
       notify("جلسه مصاحبه با موفقیت ساخته شد.");
     } catch (event) {
-      const message =
-        event instanceof Error ? event.message : "مدل مصاحبه پاسخ نداد.";
+      const message = event instanceof Error ? event.message : "مدل مصاحبه پاسخ نداد.";
       setError(message);
       notify(message, "error");
     } finally {
@@ -181,13 +160,10 @@ export default function InterviewPage() {
         completedLabel: "بازخورد پاسخ آماده شد",
         href: "/interview",
         run: async () => {
-          const result = await apiRequest<Feedback & { error?: string }>(
-            "/api/interview/feedback",
-            {
-              method: "POST",
-              body: JSON.stringify({ question: currentQuestion, answer }),
-            },
-          );
+          const result = await apiRequest<Feedback & { error?: string }>("/api/interview/feedback", {
+            method: "POST",
+            body: JSON.stringify({ question: currentQuestion, answer }),
+          });
           const feedbackRecord: InterviewFeedbackRecord = {
             question: currentQuestion,
             answer: answer.trim(),
@@ -208,10 +184,7 @@ export default function InterviewPage() {
       setFeedback(result);
       notify("بازخورد پاسخ با موفقیت آماده شد.");
     } catch (event) {
-      notify(
-        event instanceof Error ? event.message : "مدل بازخورد پاسخ نداد.",
-        "error",
-      );
+      notify(event instanceof Error ? event.message : "مدل بازخورد پاسخ نداد.", "error");
     } finally {
       setFeedbackLoading(false);
     }
@@ -227,10 +200,7 @@ export default function InterviewPage() {
       <div className="flex min-h-[300px] flex-col items-center justify-center rounded-[15px] border border-dashed border-[#dce3dc] text-[#8b9996] [&_h3]:mb-[3px] [&_h3]:mt-3 [&_h3]:text-sm [&_h3]:text-[#19312f] [&_p]:mb-[14px] [&_p]:mt-0 [&_p]:text-[9px]">
         <FileCheck2 size={34} />
         <h3>اطلاعاتی برای تمرین وجود ندارد</h3>
-        <p>
-          ابتدا پروفایل مسیر شغلی را کامل کن تا سؤال‌ها براساس اطلاعات واقعی تو تولید
-          شوند.
-        </p>
+        <p>ابتدا پروفایل مسیر شغلی را کامل کن تا سؤال‌ها براساس اطلاعات واقعی تو تولید شوند.</p>
         <Link className={primaryButton} href="/knowledge-base">
           تکمیل پروفایل مسیر شغلی
         </Link>
@@ -256,10 +226,7 @@ export default function InterviewPage() {
             <strong className="text-[10px]">ساخت جلسه انجام نشد</strong>
             <span className="text-[8px]">{error}</span>
           </div>
-          <button
-            className="border-0 bg-transparent"
-            onClick={() => setError("")}
-          >
+          <button className="border-0 bg-transparent" onClick={() => setError("")}>
             <X size={18} />
           </button>
         </div>
@@ -273,30 +240,22 @@ export default function InterviewPage() {
             {sessionRecord?.title || "هنوز جلسه‌ای ساخته نشده است"}
           </h2>
           <p className="mb-3 mt-0 max-w-[500px] text-[10px] leading-[1.9] text-[#abc4be]">
-            {sessionRecord?.subtitle ||
-              "یک جلسه تازه بساز تا سؤال‌ها براساس رزومه واقعی تو تولید شوند."}
+            {sessionRecord?.subtitle || "یک جلسه تازه بساز تا سؤال‌ها براساس رزومه واقعی تو تولید شوند."}
           </p>
           <div className="mb-4 flex gap-4 text-[9px] text-[#bad0ca] [&_span]:flex [&_span]:items-center [&_span]:gap-1">
             <span>
-              <Clock3 size={15} />{" "}
-              {sessionRecord?.duration
-                ? toPersianDigits(sessionRecord.duration)
-                : "—"}
+              <Clock3 size={15} /> {sessionRecord?.duration ? toPersianDigits(sessionRecord.duration) : "—"}
             </span>
             <span>
-              <MessageSquareText size={15} />{" "}
-              {formatPersianNumber(sessionRecord?.feedbacks.length || 0)}{" "}
-              بازخورد ذخیره‌شده
+              <MessageSquareText size={15} /> {formatPersianNumber(sessionRecord?.feedbacks.length || 0)} بازخورد
+              ذخیره‌شده
             </span>
           </div>
           <button
             className="inline-flex min-h-10 w-fit items-center justify-center gap-2 rounded-[10px] border-0 bg-white px-[17px] text-[11px] font-bold text-[#123c37] transition hover:bg-[#f2f8f5]"
-            onClick={() =>
-              sessionRecord ? setStarted(true) : void loadSession()
-            }
+            onClick={() => (sessionRecord ? setStarted(true) : void loadSession())}
           >
-            {sessionRecord ? "شروع مصاحبه آزمایشی" : "ساخت جلسه مصاحبه"}{" "}
-            <ArrowLeft size={17} />
+            {sessionRecord ? "شروع مصاحبه آزمایشی" : "ساخت جلسه مصاحبه"} <ArrowLeft size={17} />
           </button>
         </div>
         <div className="relative z-2 mr-auto grid size-[132px] min-w-[132px] place-items-center rounded-full border-[8px] border-[#60c6a8] bg-[#153a36]/45 text-[#60c6a8] shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)] max-[560px]:absolute max-[560px]:bottom-[25px] max-[560px]:left-[25px] max-[560px]:size-[100px] max-[560px]:min-w-[100px]">
@@ -308,9 +267,7 @@ export default function InterviewPage() {
         <section className="mt-4 rounded-[17px] border border-[#e7ebe6] bg-white p-[22px] shadow-[0_12px_36px_rgba(27,55,50,.055)] max-[820px]:p-4">
           <div className="flex items-start justify-between">
             <div>
-              <span className="rounded-md bg-[#e6f4ee] px-2 py-1 text-[11px] font-bold text-[#0f7b62]">
-                جلسه فعال
-              </span>
+              <span className="rounded-md bg-[#e6f4ee] px-2 py-1 text-[11px] font-bold text-[#0f7b62]">جلسه فعال</span>
               <h3 className="mb-0 mt-[9px] text-[13px]">{mode}</h3>
             </div>
             <button
@@ -322,12 +279,9 @@ export default function InterviewPage() {
           </div>
           <div className="my-[18px] rounded-[13px] bg-[#f1f6f2] p-[18px]">
             <span className="text-[8px] font-bold text-[#0f7b62]">
-              سؤال {formatPersianNumber(questionIndex + 1)} از{" "}
-              {formatPersianNumber(sessionRecord.questions.length)}
+              سؤال {formatPersianNumber(questionIndex + 1)} از {formatPersianNumber(sessionRecord.questions.length)}
             </span>
-            <h2 className="mb-0 mt-2 text-[15px] leading-[1.9]">
-              {currentQuestion}
-            </h2>
+            <h2 className="mb-0 mt-2 text-[15px] leading-[1.9]">{currentQuestion}</h2>
           </div>
           <label className="grid gap-2 text-[11px] text-[#60716e]">
             پاسخ تو
@@ -347,9 +301,7 @@ export default function InterviewPage() {
               <CheckCircle2 size={19} />
               <div>
                 <strong className="text-[13px]">{feedback.title}</strong>
-                <p className="mb-0 mt-[3px] text-[12px] leading-[1.8] text-[#66847b]">
-                  {feedback.text}
-                </p>
+                <p className="mb-0 mt-[3px] text-[12px] leading-[1.8] text-[#66847b]">{feedback.text}</p>
               </div>
             </div>
           )}
@@ -357,9 +309,7 @@ export default function InterviewPage() {
             <button
               className={secondaryButton}
               onClick={() => {
-                setQuestionIndex((current) =>
-                  Math.min(current + 1, sessionRecord.questions.length - 1),
-                );
+                setQuestionIndex((current) => Math.min(current + 1, sessionRecord.questions.length - 1));
                 setAnswer("");
                 setFeedback(null);
                 notify("سؤال بعدی نمایش داده شد");
@@ -372,8 +322,7 @@ export default function InterviewPage() {
               disabled={!answer.trim() || feedbackBusy}
               onClick={() => void requestFeedback()}
             >
-              <Sparkles size={17} />{" "}
-              {feedbackBusy ? "در حال دریافت بازخورد..." : "دریافت بازخورد"}
+              <Sparkles size={17} /> {feedbackBusy ? "در حال دریافت بازخورد..." : "دریافت بازخورد"}
             </button>
           </div>
         </section>
@@ -392,9 +341,7 @@ export default function InterviewPage() {
                 <Icon size={22} />
               </div>
               <h3 className="mb-1 mt-4 text-[12px]">{item.title}</h3>
-              <p className="m-0 text-[9px] leading-[1.8] text-[#758582]">
-                {item.text}
-              </p>
+              <p className="m-0 text-[9px] leading-[1.8] text-[#758582]">{item.text}</p>
               <button
                 className="mt-3 flex items-center gap-[3px] border-0 bg-transparent p-1.5 text-[10px] font-bold text-[#0f7b62]"
                 onClick={() => startPractice(item.title)}

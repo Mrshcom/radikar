@@ -2,15 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import {
-  Bookmark,
-  Clock3,
-  Eye,
-  LoaderCircle,
-  MapPin,
-  Sparkles,
-  Target,
-} from "lucide-react";
+import { Bookmark, Clock3, Eye, LoaderCircle, MapPin, Sparkles, Target } from "lucide-react";
 import type { Job } from "../_data/jobs";
 import { Modal } from "./ui";
 import { PanelLink } from "./panel-link";
@@ -18,10 +10,7 @@ import { cn } from "@/lib/cn";
 import { formatPersianNumber, toPersianDigits } from "@/lib/fa-number";
 import { sanitizeRemoteImageSource } from "@radikar/validators";
 
-const toneStyles: Record<
-  Job["tone"],
-  { logo: string }
-> = {
+const toneStyles: Record<Job["tone"], { logo: string }> = {
   violet: {
     logo: "border-[#ded7eb] bg-[#f4f1f8] text-[#7057a6]",
   },
@@ -36,10 +25,7 @@ const toneStyles: Record<
   },
 };
 
-export type JobDetailsData = Pick<
-  Job,
-  "company" | "role" | "match" | "place" | "age" | "reason"
-> & {
+export type JobDetailsData = Pick<Job, "company" | "role" | "match" | "place" | "age" | "reason"> & {
   description?: string;
   sourceUrl?: string;
 };
@@ -72,9 +58,7 @@ export function JobLogo({
     <div
       className={cn(
         "grid shrink-0 place-items-center overflow-hidden border font-extrabold",
-        variant === "board"
-          ? "size-7 rounded-lg text-[9px]"
-          : "size-11 rounded-xl text-[16px]",
+        variant === "board" ? "size-7 rounded-lg text-[9px]" : "size-11 rounded-xl text-[16px]",
         toneStyles[tone].logo,
       )}
       aria-hidden={!showLogo}
@@ -98,13 +82,7 @@ export function JobLogo({
   );
 }
 
-export function JobDetailsModal({
-  job,
-  onClose,
-}: {
-  job: JobDetailsData;
-  onClose: () => void;
-}) {
+export function JobDetailsModal({ job, onClose }: { job: JobDetailsData; onClose: () => void }) {
   return (
     <Modal
       title={job.role}
@@ -130,10 +108,7 @@ export function JobDetailsModal({
             <h3 className="m-0 flex items-center gap-1.5 text-[11px] text-[#176f59]">
               <Sparkles size={15} /> خلاصهٔ تطابق
             </h3>
-            <p
-              className="mb-0 mt-2 whitespace-pre-wrap text-[10px] leading-[1.9] text-[#60756f]"
-              dir="auto"
-            >
+            <p className="mb-0 mt-2 whitespace-pre-wrap text-[10px] leading-[1.9] text-[#60756f]" dir="auto">
               {job.reason}
             </p>
           </section>
@@ -184,24 +159,13 @@ export function JobCard({
       <article className="group flex min-h-[255px] min-w-0 flex-col rounded-2xl border border-[#dde5df] bg-white p-5 transition-colors duration-200 hover:border-[#bcd2c8]">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <JobLogo
-              company={job.company}
-              letter={job.letter}
-              logoUrl={job.logoUrl}
-              tone={job.tone}
-            />
+            <JobLogo company={job.company} letter={job.letter} logoUrl={job.logoUrl} tone={job.tone} />
             <div className="min-w-0">
-              <strong
-                className="block truncate text-[10px] font-bold text-[#314943]"
-                dir="auto"
-              >
+              <strong className="block truncate text-[10px] font-bold text-[#314943]" dir="auto">
                 {job.company}
               </strong>
               {job.place && (
-                <span
-                  className="mt-1 flex items-center gap-1 truncate text-[8px] text-[#899791]"
-                  dir="auto"
-                >
+                <span className="mt-1 flex items-center gap-1 truncate text-[8px] text-[#899791]" dir="auto">
                   <MapPin size={11} />
                   {job.place}
                 </span>
@@ -212,19 +176,21 @@ export function JobCard({
             <span className="inline-flex min-h-7 items-center gap-1.5 rounded-lg bg-[#edf7f2] px-2.5 text-[8px] font-extrabold text-[#0b7b5e]">
               <Target size={13} /> {formatPersianNumber(job.match)}٪ تطابق
             </span>
-    {onSave && (
+            {onSave && (
               <button
                 className={cn(
                   "grid size-8 place-items-center rounded-lg border border-transparent bg-transparent transition-colors duration-200 hover:border-[#dce8e2] hover:bg-[#f5f8f6]",
-                  saved
-                    ? "text-[#0f7b62]"
-                    : "text-[#879793] hover:text-[#0f7b62]",
+                  saved ? "text-[#0f7b62]" : "text-[#879793] hover:text-[#0f7b62]",
                 )}
                 onClick={onSave}
                 disabled={saving}
                 aria-label={saved ? "حذف از ذخیره‌ها" : "ذخیره فرصت"}
               >
-                {saving ? <LoaderCircle className="animate-spin" size={17} /> : <Bookmark className={saved ? "fill-current" : undefined} size={17} />}
+                {saving ? (
+                  <LoaderCircle className="animate-spin" size={17} />
+                ) : (
+                  <Bookmark className={saved ? "fill-current" : undefined} size={17} />
+                )}
               </button>
             )}
           </div>
@@ -260,18 +226,14 @@ export function JobCard({
             </button>
             <PanelLink
               className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[8px] font-bold text-[#0b795d] no-underline transition-colors duration-200 hover:bg-[#edf7f2]"
-              href={
-                job.id ? `/match?job=${encodeURIComponent(job.id)}` : "/match"
-              }
+              href={job.id ? `/match?job=${encodeURIComponent(job.id)}` : "/match"}
             >
               تطبیق مجدد
             </PanelLink>
           </div>
         </div>
       </article>
-      {detailsOpen && (
-        <JobDetailsModal job={job} onClose={() => setDetailsOpen(false)} />
-      )}
+      {detailsOpen && <JobDetailsModal job={job} onClose={() => setDetailsOpen(false)} />}
     </>
   );
 }

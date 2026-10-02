@@ -33,9 +33,7 @@ test.describe("تعامل‌های اصلی پنل کاربر", () => {
     await submit.click();
 
     await expect(page.getByText("اپلای جدید ذخیره شد")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "مهندس فرانت‌اند در رادیکار" }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "مهندس فرانت‌اند در رادیکار" })).toBeVisible();
   });
 
   test("تب‌های پایگاه دانش با همان کنترل تب به‌روزرسانی می‌شوند", async ({ page }) => {
@@ -55,9 +53,7 @@ test.describe("تعامل‌های اصلی پنل کاربر", () => {
     await expect(page.getByText("فیلتر قالب‌ها")).toBeVisible();
     await page.getByRole("button", { name: "استفاده از قالب" }).first().click();
 
-    await expect(
-      page.getByRole("heading", { name: "پایگاه دانش هنوز کامل نیست" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "پایگاه دانش هنوز کامل نیست" })).toBeVisible();
     await expect(page.getByRole("button", { name: "تکمیل پایگاه دانش" })).toBeVisible();
   });
 

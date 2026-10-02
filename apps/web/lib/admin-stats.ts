@@ -49,9 +49,7 @@ export type AdminModelUsageStats = {
     averageDurationMs: number;
   };
   today: ModelUsageTotals;
-  byModel: Array<
-    ModelUsageTotals & { provider: string; model: string }
-  >;
+  byModel: Array<ModelUsageTotals & { provider: string; model: string }>;
   byOperation: Array<ModelUsageTotals & { operation: string }>;
   daily: Array<ModelUsageTotals & { date: string }>;
   recentRequests: {
@@ -206,8 +204,7 @@ export function useRunAdminJobPoolSync() {
         insertedCount: number;
         updatedCount: number;
       }>("/api/admin/job-pool/sync", { method: "POST" }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: adminJobPoolQueryKey }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: adminJobPoolQueryKey }),
   });
 }
 
@@ -222,12 +219,25 @@ export function useAdminJobPoolReport(enabled: boolean, days: number) {
 
 export function useAdminJobPoolListings(
   enabled: boolean,
-  filters: { query: string; location: string; salaryMin?: number; salaryMax?: number; salaryCurrency?: string; page: number; pageSize: number; sortBy?: string; sortDirection?: string },
+  filters: {
+    query: string;
+    location: string;
+    salaryMin?: number;
+    salaryMax?: number;
+    salaryCurrency?: string;
+    page: number;
+    pageSize: number;
+    sortBy?: string;
+    sortDirection?: string;
+  },
 ) {
   const query = buildQueryString(filters);
   return useQuery({
     queryKey: [...adminJobPoolQueryKey, "jobs", filters],
-    queryFn: () => apiRequest<{ items: AdminJobPoolListing[]; total: number; page: number; pageSize: number }>(`/api/admin/job-pool/jobs?${query}`),
+    queryFn: () =>
+      apiRequest<{ items: AdminJobPoolListing[]; total: number; page: number; pageSize: number }>(
+        `/api/admin/job-pool/jobs?${query}`,
+      ),
     enabled,
     staleTime: 30_000,
     placeholderData: keepPreviousData,

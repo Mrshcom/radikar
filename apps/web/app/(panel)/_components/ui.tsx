@@ -27,8 +27,7 @@ export function Modal({
   showCloseButton?: boolean;
 }) {
   useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) =>
-      event.key === "Escape" && onClose();
+    const closeOnEscape = (event: KeyboardEvent) => event.key === "Escape" && onClose();
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onClose]);
@@ -46,26 +45,16 @@ export function Modal({
         aria-label={title}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header
-          className={`flex flex-wrap items-center gap-3 ${headerClassName || ""}`}
-        >
+        <header className={`flex flex-wrap items-center gap-3 ${headerClassName || ""}`}>
           <div className="min-w-0 flex-1">
-            <h2
-              className={`mb-[7px] mt-0 text-[20px] leading-[1.5] max-[560px]:text-[16px] ${titleClassName || ""}`}
-            >
+            <h2 className={`mb-[7px] mt-0 text-[20px] leading-[1.5] max-[560px]:text-[16px] ${titleClassName || ""}`}>
               {title}
             </h2>
             {description && (
-              <p className="m-0 text-[12px] leading-[1.9] text-[#657672] max-[560px]:text-[10px]">
-                {description}
-              </p>
+              <p className="m-0 text-[12px] leading-[1.9] text-[#657672] max-[560px]:text-[10px]">{description}</p>
             )}
           </div>
-          {headerActions && (
-            <div className="flex flex-wrap items-center gap-2">
-              {headerActions}
-            </div>
-          )}
+          {headerActions && <div className="flex flex-wrap items-center gap-2">{headerActions}</div>}
           {showCloseButton && (
             <button
               className="grid size-9 shrink-0 place-items-center rounded-full border border-[#dfe5df] bg-white p-0 text-[#7d8b88] transition-colors hover:bg-[#f4f7f5] hover:text-[#19312f]"
@@ -156,11 +145,7 @@ export function ConfirmActionModal({
           type="button"
           onClick={onConfirm}
         >
-          {pending ? (
-            <LoaderCircle className="animate-spin" size={15} />
-          ) : (
-            confirmIcon
-          )}
+          {pending ? <LoaderCircle className="animate-spin" size={15} /> : confirmIcon}
           {confirmLabel}
         </button>
       </div>
@@ -182,21 +167,11 @@ export function SectionTitle({
   return (
     <div className="mb-[27px] flex min-h-16 items-start justify-between gap-5 max-[560px]:block">
       <div>
-        {eyebrow && (
-          <span className="text-[10px] text-[#9aa5a2]">{eyebrow}</span>
-        )}
-        <h1 className="mb-[7px] mt-[3px] text-[clamp(19px,2.2vw,27px)] leading-[1.35] tracking-[-.9px]">
-          {title}
-        </h1>
-        {description && (
-          <p className="m-0 text-xs text-[#758582]">{description}</p>
-        )}
+        {eyebrow && <span className="text-[10px] text-[#9aa5a2]">{eyebrow}</span>}
+        <h1 className="mb-[7px] mt-[3px] text-[clamp(19px,2.2vw,27px)] leading-[1.35] tracking-[-.9px]">{title}</h1>
+        {description && <p className="m-0 text-xs text-[#758582]">{description}</p>}
       </div>
-      {action && (
-        <div className="max-[560px]:mt-4 max-[560px]:w-full">
-          {action}
-        </div>
-      )}
+      {action && <div className="max-[560px]:mt-4 max-[560px]:w-full">{action}</div>}
     </div>
   );
 }

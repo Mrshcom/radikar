@@ -6,5 +6,9 @@ export function PersianDateTime({
   fallback = "—",
   ...props
 }: { value: string | Date; fallback?: string } & Omit<HTMLAttributes<HTMLElement>, "dir">) {
-  return <bdi dir="ltr" {...props}>{formatPersianDateTime(value, fallback)}</bdi>;
+  return (
+    <bdi dir="ltr" {...props}>
+      {formatPersianDateTime(value, fallback)}
+    </bdi>
+  );
 }

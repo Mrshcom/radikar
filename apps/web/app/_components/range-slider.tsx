@@ -39,9 +39,7 @@ export function RangeSlider({
   const formattedValue = valueFormatter(boundedValue);
 
   const updateValue = (nextValue: number) => {
-    const normalizedValue = Number(
-      clamp(nextValue, min, max).toFixed(stepPrecision(step)),
-    );
+    const normalizedValue = Number(clamp(nextValue, min, max).toFixed(stepPrecision(step)));
     onChange(normalizedValue);
   };
 
@@ -59,10 +57,7 @@ export function RangeSlider({
 
       <div className="relative h-12 min-w-0 flex-1">
         <div className="pointer-events-none absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 overflow-hidden rounded-full bg-[#f3f8f5]">
-          <span
-            className="block h-full rounded-full bg-[#27a17f]"
-            style={{ width: `${progress}%` }}
-          />
+          <span className="block h-full rounded-full bg-[#27a17f]" style={{ width: `${progress}%` }} />
         </div>
         <div
           className="pointer-events-none absolute top-1/2 z-[1] size-5 -translate-y-1/2 rounded-full bg-[#0f7b62]"

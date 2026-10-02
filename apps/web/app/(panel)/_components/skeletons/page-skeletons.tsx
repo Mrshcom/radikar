@@ -1,11 +1,6 @@
 import { cn } from "@/lib/cn";
 import { panelSurface } from "../panel-styles";
-import {
-  LoadingContext,
-  Skeleton,
-  SkeletonLines,
-  SkeletonTitle,
-} from "./primitives";
+import { LoadingContext, Skeleton, SkeletonLines, SkeletonTitle } from "./primitives";
 
 type SkeletonProps = { label?: string };
 
@@ -41,13 +36,7 @@ function SkeletonJobCard() {
   );
 }
 
-export function JobCardsSkeleton({
-  count = 8,
-  dashboard = false,
-}: {
-  count?: number;
-  dashboard?: boolean;
-}) {
+export function JobCardsSkeleton({ count = 8, dashboard = false }: { count?: number; dashboard?: boolean }) {
   return (
     <div
       className={cn(
@@ -67,20 +56,10 @@ export function JobCardsSkeleton({
 }
 
 export function DashboardSkeleton() {
-  const chartBars = [
-    "h-[45%]",
-    "h-[70%]",
-    "h-[35%]",
-    "h-[90%]",
-    "h-[55%]",
-    "h-[75%]",
-    "h-[40%]",
-  ];
+  const chartBars = ["h-[45%]", "h-[70%]", "h-[35%]", "h-[90%]", "h-[55%]", "h-[75%]", "h-[40%]"];
   return (
     <div role="status" aria-live="polite">
-      <LoadingContext>
-        در حال تحلیل رزومه و ساخت نمای کلی داشبورد
-      </LoadingContext>
+      <LoadingContext>در حال تحلیل رزومه و ساخت نمای کلی داشبورد</LoadingContext>
       <SkeletonTitle />
       <section className="grid gap-4 min-[1121px]:grid-cols-[minmax(0,1.9fr)_minmax(270px,.8fr)]">
         <div className="flex min-h-[265px] items-center rounded-[22px] bg-[#173f39] px-[clamp(24px,3vw,38px)] py-[34px]">
@@ -108,10 +87,7 @@ export function DashboardSkeleton() {
       <section className="my-4 grid grid-cols-2 gap-2 sm:gap-3 min-[1121px]:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <div
-            className={cn(
-              panelSurface,
-              "flex items-center gap-[13px] p-[17px] max-[699px]:gap-2 max-[699px]:p-3",
-            )}
+            className={cn(panelSurface, "flex items-center gap-[13px] p-[17px] max-[699px]:gap-2 max-[699px]:p-3")}
             key={index}
           >
             <Skeleton className="size-10 rounded-xl max-[699px]:size-[24px] max-[699px]:rounded-lg" />
@@ -136,10 +112,7 @@ export function DashboardSkeleton() {
           </div>
           <div className="mt-5 grid gap-3">
             {Array.from({ length: 4 }, (_, index) => (
-              <div
-                className="flex min-h-[50px] items-center gap-3 border-t border-[#eef1ed]"
-                key={index}
-              >
+              <div className="flex min-h-[50px] items-center gap-3 border-t border-[#eef1ed]" key={index}>
                 <Skeleton className="size-9" />
                 <div className="flex-1">
                   <Skeleton className="h-2.5 w-1/2" />
@@ -160,10 +133,7 @@ export function DashboardSkeleton() {
           </div>
           <div className="mt-8 flex h-[118px] items-end justify-between gap-2 border-b border-[#edf0ec]">
             {chartBars.map((height, index) => (
-              <Skeleton
-                className={cn("w-[9%] rounded-b-none", height)}
-                key={index}
-              />
+              <Skeleton className={cn("w-[9%] rounded-b-none", height)} key={index} />
             ))}
           </div>
         </div>
@@ -245,19 +215,13 @@ export function ApplicationsSkeleton() {
       </div>
       <div className="grid grid-cols-4 gap-3 overflow-x-auto max-[1120px]:grid-cols-[repeat(4,250px)]">
         {Array.from({ length: 4 }, (_, column) => (
-          <section
-            className="min-h-[440px] rounded-[15px] bg-[#eef1ed] p-[10px]"
-            key={column}
-          >
+          <section className="min-h-[440px] rounded-[15px] bg-[#eef1ed] p-[10px]" key={column}>
             <div className="mb-[10px] flex items-center justify-between px-1 py-1">
               <Skeleton className="h-3 w-20" />
               <Skeleton className="size-6" />
             </div>
             {Array.from({ length: 2 }, (_, card) => (
-              <div
-                className="mb-2 rounded-xl border border-[#e2e7e2] bg-white p-3"
-                key={card}
-              >
+              <div className="mb-2 rounded-xl border border-[#e2e7e2] bg-white p-3" key={card}>
                 <div className="flex items-center gap-2">
                   <Skeleton className="size-7" />
                   <Skeleton className="h-2.5 flex-1" />
@@ -278,9 +242,7 @@ export function ApplicationsSkeleton() {
 export function InterviewSkeleton() {
   return (
     <div role="status" aria-live="polite">
-      <LoadingContext>
-        در حال تولید جلسه و سؤال‌های مصاحبه متناسب با رزومه
-      </LoadingContext>
+      <LoadingContext>در حال تولید جلسه و سؤال‌های مصاحبه متناسب با رزومه</LoadingContext>
       <SkeletonTitle action={false} />
       <div className="relative flex min-h-[360px] items-center rounded-[22px] bg-[#173f39] px-[38px] py-[34px] max-[560px]:min-h-[350px] max-[560px]:items-start max-[560px]:p-7">
         <div className="min-w-0 flex-1">
@@ -312,9 +274,7 @@ export function InterviewSkeleton() {
   );
 }
 
-export function MatchAnalysisSkeleton({
-  label = "در حال مقایسه رزومه با نیازمندی‌های آگهی",
-}: SkeletonProps) {
+export function MatchAnalysisSkeleton({ label = "در حال مقایسه رزومه با نیازمندی‌های آگهی" }: SkeletonProps) {
   return (
     <div className="min-h-[420px] p-5" role="status" aria-live="polite">
       <LoadingContext>{label}</LoadingContext>
@@ -349,15 +309,9 @@ export function MatchAnalysisSkeleton({
   );
 }
 
-export function GenerationShimmer({
-  label = "در حال تولید محتوا با مدل",
-}: SkeletonProps) {
+export function GenerationShimmer({ label = "در حال تولید محتوا با مدل" }: SkeletonProps) {
   return (
-    <div
-      className="rounded-xl border border-[#d9e7df] bg-[#f2faf6] p-3"
-      role="status"
-      aria-live="polite"
-    >
+    <div className="rounded-xl border border-[#d9e7df] bg-[#f2faf6] p-3" role="status" aria-live="polite">
       <LoadingContext>{label}</LoadingContext>
       <SkeletonLines count={2} />
     </div>
@@ -389,9 +343,7 @@ export function ResumePreviewSkeleton() {
       aria-label="در حال تکمیل اطلاعات رزومه"
     >
       <div className="absolute top-4 right-4 left-4 z-2 rounded-lg bg-white/90 p-2 backdrop-blur">
-        <LoadingContext className="mb-0">
-          در حال بازنویسی اطلاعات و ساخت پیش‌نمایش رزومه
-        </LoadingContext>
+        <LoadingContext className="mb-0">در حال بازنویسی اطلاعات و ساخت پیش‌نمایش رزومه</LoadingContext>
       </div>
       <div className="flex h-[22%] items-center gap-4 bg-[#173f39] p-7">
         <Skeleton className="size-16 rounded-full bg-white/20" />
@@ -406,13 +358,7 @@ export function ResumePreviewSkeleton() {
         </div>
         <div className="p-7">
           {Array.from({ length: 12 }, (_, index) => (
-            <Skeleton
-              className={cn(
-                "mb-3",
-                index % 4 === 0 ? "h-5 w-1/2" : "h-3 w-full",
-              )}
-              key={index}
-            />
+            <Skeleton className={cn("mb-3", index % 4 === 0 ? "h-5 w-1/2" : "h-3 w-full")} key={index} />
           ))}
         </div>
       </div>

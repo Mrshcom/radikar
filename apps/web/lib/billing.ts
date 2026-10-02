@@ -42,14 +42,7 @@ export type Membership = {
 
 export type AdminMembershipEvent = {
   id: string;
-  type:
-    | "admin_grant"
-    | "admin_extend"
-    | "admin_adjust"
-    | "account_suspended"
-    | "account_activated"
-    | "cancel"
-    | string;
+  type: "admin_grant" | "admin_extend" | "admin_adjust" | "account_suspended" | "account_activated" | "cancel" | string;
   planId: string | null;
   plan: { id: string; name: string } | null;
   durationDays: number | null;
@@ -154,9 +147,10 @@ export function useAdminMembership(userId?: string) {
 export function useOrders(page = 1, pageSize = 20, search = "", status = "", sortBy = "", sortDirection = "") {
   return useQuery({
     queryKey: billingKeys.orders(page, pageSize, search, status, sortBy, sortDirection),
-    queryFn: () => apiRequest<OrdersResponse>(
-      `/api/billing/orders?${buildQueryString({ page, pageSize, search, status, sortBy, sortDirection })}`,
-    ),
+    queryFn: () =>
+      apiRequest<OrdersResponse>(
+        `/api/billing/orders?${buildQueryString({ page, pageSize, search, status, sortBy, sortDirection })}`,
+      ),
     staleTime: 15_000,
     placeholderData: keepPreviousData,
   });
@@ -166,10 +160,7 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateOrderInput) =>
-      apiRequest<CreateOrderResult>(
-        "/api/billing/orders",
-        { method: "POST", body: JSON.stringify(input) },
-      ),
+      apiRequest<CreateOrderResult>("/api/billing/orders", { method: "POST", body: JSON.stringify(input) }),
     onSuccess: async (result) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["billing", "orders"] }),

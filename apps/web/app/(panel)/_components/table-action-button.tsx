@@ -9,13 +9,7 @@ type TableActionButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "chi
 };
 
 /** Shared icon-only action control for every DataTable action column. */
-export function TableActionButton({
-  label,
-  children,
-  className,
-  type = "button",
-  ...props
-}: TableActionButtonProps) {
+export function TableActionButton({ label, children, className, type = "button", ...props }: TableActionButtonProps) {
   return (
     <button
       {...props}

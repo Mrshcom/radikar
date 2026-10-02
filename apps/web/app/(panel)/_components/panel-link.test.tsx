@@ -5,7 +5,9 @@ import { PanelLink } from "./panel-link";
 
 vi.mock("next/link", () => ({
   default: ({ href, children, ...props }: ComponentPropsWithoutRef<"a">) => (
-    <a href={href} {...props}>{children}</a>
+    <a href={href} {...props}>
+      {children}
+    </a>
   ),
 }));
 

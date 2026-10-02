@@ -19,17 +19,15 @@ const localizedNumericString = z.string().trim().transform(normalizeDigits);
 
 const phoneSchema = z.object({
   phone: localizedNumericString.pipe(
-    z.string().min(1, "شماره همراه را وارد کن.").regex(
-      /^09\d{9}$/,
-      "شماره همراه باید با ۰۹ شروع شود و ۱۱ رقم باشد.",
-    ),
+    z
+      .string()
+      .min(1, "شماره همراه را وارد کن.")
+      .regex(/^09\d{9}$/, "شماره همراه باید با ۰۹ شروع شود و ۱۱ رقم باشد."),
   ),
 });
 
 const otpSchema = z.object({
-  otp: localizedNumericString.pipe(
-    z.string().regex(/^\d{6}$/, "کد یک‌بارمصرف باید ۶ رقم باشد."),
-  ),
+  otp: localizedNumericString.pipe(z.string().regex(/^\d{6}$/, "کد یک‌بارمصرف باید ۶ رقم باشد.")),
 });
 
 type PhoneValues = z.infer<typeof phoneSchema>;
@@ -40,12 +38,7 @@ const fieldClass =
 
 function GoogleMark() {
   return (
-    <svg
-      aria-hidden="true"
-      className="size-5 shrink-0"
-      viewBox="0 0 18 18"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg aria-hidden="true" className="size-5 shrink-0" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
       <path
         fill="#EA4335"
         d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.715v2.258h2.909c1.702-1.567 2.684-3.875 2.684-6.614Z"
@@ -116,17 +109,23 @@ export default function LoginPage() {
 
   const startGoogleLogin = () => {
     const next = new URLSearchParams(window.location.search).get("next");
-    const referralCode = new URLSearchParams(window.location.search).get("ref") || window.localStorage.getItem("radikar_referral_code") || "";
-    const query = new URLSearchParams({ ...(next ? { next } : {}), ...(referralCode ? { ref: referralCode } : {}) }).toString();
+    const referralCode =
+      new URLSearchParams(window.location.search).get("ref") ||
+      window.localStorage.getItem("radikar_referral_code") ||
+      "";
+    const query = new URLSearchParams({
+      ...(next ? { next } : {}),
+      ...(referralCode ? { ref: referralCode } : {}),
+    }).toString();
     window.location.assign(apiUrl(`/api/auth/google/start${query ? `?${query}` : ""}`));
   };
 
   const requestOtp = useMutation({
     mutationFn: (phone: string) =>
-      apiRequest<{ challengeId: string; expiresInSeconds: number; devOtp?: string }>(
-        "/api/auth/request-otp",
-        { method: "POST", body: JSON.stringify({ phone }) },
-      ),
+      apiRequest<{ challengeId: string; expiresInSeconds: number; devOtp?: string }>("/api/auth/request-otp", {
+        method: "POST",
+        body: JSON.stringify({ phone }),
+      }),
   });
   const verifyOtpMutation = useMutation({
     mutationFn: (input: { phone: string; challengeId: string; code: string; referralCode?: string }) =>
@@ -160,7 +159,10 @@ export default function LoginPage() {
         phone: submittedPhone,
         challengeId,
         code: otp,
-        referralCode: new URLSearchParams(window.location.search).get("ref") || window.localStorage.getItem("radikar_referral_code") || undefined,
+        referralCode:
+          new URLSearchParams(window.location.search).get("ref") ||
+          window.localStorage.getItem("radikar_referral_code") ||
+          undefined,
       });
       queryClient.clear();
       queryClient.setQueryData(authQueryKey, { user: result.user });
@@ -205,9 +207,7 @@ export default function LoginPage() {
   };
 
   const handleOtpPaste = (event: ClipboardEvent<HTMLDivElement>) => {
-    const pastedCode = normalizeDigits(event.clipboardData.getData("text"))
-      .replace(/\D/g, "")
-      .slice(0, 6);
+    const pastedCode = normalizeDigits(event.clipboardData.getData("text")).replace(/\D/g, "").slice(0, 6);
     if (!pastedCode) return;
     event.preventDefault();
     setOtpDigits(Array.from({ length: 6 }, (_, index) => pastedCode[index] || ""));
@@ -259,7 +259,8 @@ export default function LoginPage() {
             </span>
             <h1 className="m-0 text-[34px] font-black leading-[1.55] tracking-[-.8px]">
               مسیر شغلی بعدی‌ات،
-              <br />از همین‌جا شروع می‌شود.
+              <br />
+              از همین‌جا شروع می‌شود.
             </h1>
             <p className="mb-0 mt-5 text-[13px] leading-[2] text-white/72">
               رزومه حرفه‌ای بساز، فرصت‌های مناسب را پیدا کن و روند اپلای‌هایت را یک‌جا مدیریت کن.
@@ -281,7 +282,9 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-6">
-            <h2 className="m-0 text-[25px] font-black tracking-[-.5px] text-[#19312f] sm:text-[27px]">ورود به حساب کاربری</h2>
+            <h2 className="m-0 text-[25px] font-black tracking-[-.5px] text-[#19312f] sm:text-[27px]">
+              ورود به حساب کاربری
+            </h2>
             <p className="mb-0 mt-2 text-[11px] leading-7 text-[#7b8b87] sm:mt-3 sm:leading-[1.9]">
               {step === "phone"
                 ? "شماره همراهت را وارد کن تا کد ورود برایت ارسال شود."
@@ -291,64 +294,62 @@ export default function LoginPage() {
 
           {step === "phone" ? (
             <div className="grid gap-4">
-            <form className="grid gap-4" onSubmit={handlePhoneSubmit(sendOtp)} noValidate>
-              <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
-                شماره همراه
-                <span className="relative block" dir="ltr">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#83928f]" size={17} />
-                  <input
-                    {...registerPhone("phone")}
-                    className={fieldClass}
-                    type="tel"
-                    inputMode="numeric"
-                    autoComplete="tel"
-                    maxLength={11}
-                    placeholder="09123456789"
-                    onInput={(event) => {
-                      event.currentTarget.value = normalizeDigits(event.currentTarget.value);
-                    }}
-                  />
-                </span>
-                {phoneErrors.phone && <span className="text-[10px] font-medium text-[#c64c54]">{phoneErrors.phone.message}</span>}
-              </label>
+              <form className="grid gap-4" onSubmit={handlePhoneSubmit(sendOtp)} noValidate>
+                <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
+                  شماره همراه
+                  <span className="relative block" dir="ltr">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#83928f]" size={17} />
+                    <input
+                      {...registerPhone("phone")}
+                      className={fieldClass}
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel"
+                      maxLength={11}
+                      placeholder="09123456789"
+                      onInput={(event) => {
+                        event.currentTarget.value = normalizeDigits(event.currentTarget.value);
+                      }}
+                    />
+                  </span>
+                  {phoneErrors.phone && (
+                    <span className="text-[10px] font-medium text-[#c64c54]">{phoneErrors.phone.message}</span>
+                  )}
+                </label>
 
-              <button
-                className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"
-                type="submit"
-                disabled={isSending}
-              >
-                {isSending ? "در حال ارسال..." : "دریافت کد ورود"}
-                {!isSending && <ArrowLeft size={17} />}
-              </button>
-            </form>
-            {providers.data?.google && (
-              <>
-                <div className="flex items-center gap-3 text-[9px] text-[#9aa6a3]">
-                  <span className="h-px flex-1 bg-[#e4e9e5]" />
-                  یا
-                  <span className="h-px flex-1 bg-[#e4e9e5]" />
-                </div>
                 <button
-                  className="inline-flex h-11 items-center justify-center gap-2.5 rounded-[12px] border border-[#dce4df] bg-white px-5 text-[11px] font-extrabold text-[#354b47] transition hover:border-[#b9cec4] hover:bg-[#f9fbfa] sm:h-12"
-                  type="button"
-                  onClick={startGoogleLogin}
+                  className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"
+                  type="submit"
+                  disabled={isSending}
                 >
-                  <GoogleMark />
-                  ادامه با Google
+                  {isSending ? "در حال ارسال..." : "دریافت کد ورود"}
+                  {!isSending && <ArrowLeft size={17} />}
                 </button>
-              </>
-            )}
+              </form>
+              {providers.data?.google && (
+                <>
+                  <div className="flex items-center gap-3 text-[9px] text-[#9aa6a3]">
+                    <span className="h-px flex-1 bg-[#e4e9e5]" />
+                    یا
+                    <span className="h-px flex-1 bg-[#e4e9e5]" />
+                  </div>
+                  <button
+                    className="inline-flex h-11 items-center justify-center gap-2.5 rounded-[12px] border border-[#dce4df] bg-white px-5 text-[11px] font-extrabold text-[#354b47] transition hover:border-[#b9cec4] hover:bg-[#f9fbfa] sm:h-12"
+                    type="button"
+                    onClick={startGoogleLogin}
+                  >
+                    <GoogleMark />
+                    ادامه با Google
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <form className="grid gap-4" onSubmit={handleOtpSubmit(verifyOtp)} noValidate>
               <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
                 کد یک‌بارمصرف
                 <input {...registerOtp("otp")} type="hidden" />
-                <div
-                  className="grid grid-cols-6 gap-2 sm:gap-3"
-                  dir="ltr"
-                  onPaste={handleOtpPaste}
-                >
+                <div className="grid grid-cols-6 gap-2 sm:gap-3" dir="ltr" onPaste={handleOtpPaste}>
                   {Array.from({ length: 6 }, (_, index) => (
                     <input
                       className="h-12 min-w-0 rounded-[12px] border border-[#d9dfda] bg-white !text-center text-[20px] font-bold text-[#233936] outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/12 sm:h-14 sm:rounded-[14px] sm:text-[21px]"
@@ -368,7 +369,9 @@ export default function LoginPage() {
                     />
                   ))}
                 </div>
-                {otpErrors.otp && <span className="text-[10px] font-medium text-[#c64c54]">{otpErrors.otp.message}</span>}
+                {otpErrors.otp && (
+                  <span className="text-[10px] font-medium text-[#c64c54]">{otpErrors.otp.message}</span>
+                )}
               </label>
 
               <div className="flex items-center justify-between gap-3 text-[10px]">
@@ -402,7 +405,10 @@ export default function LoginPage() {
           )}
 
           {serverError && (
-            <p className="mb-0 mt-4 rounded-[10px] bg-[#fff1ef] px-3 py-2 text-[10px] font-medium text-[#b34545]" role="alert">
+            <p
+              className="mb-0 mt-4 rounded-[10px] bg-[#fff1ef] px-3 py-2 text-[10px] font-medium text-[#b34545]"
+              role="alert"
+            >
               {serverError}
             </p>
           )}

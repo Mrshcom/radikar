@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  CalendarDays,
-  Download,
-  FileText,
-  MessagesSquare,
-  Sparkles,
-  Target,
-  type LucideIcon,
-} from "lucide-react";
+import { CalendarDays, Download, FileText, MessagesSquare, Sparkles, Target, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import type { Membership } from "@/lib/billing";
 import { PersianDateTime } from "@/lib/date-time-display";
@@ -32,21 +24,12 @@ function remainingDays(expiresAt: string) {
   return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000));
 }
 
-function UsageCard({
-  item,
-  membership,
-}: {
-  item: (typeof usageItems)[number];
-  membership: Membership;
-}) {
+function UsageCard({ item, membership }: { item: (typeof usageItems)[number]; membership: Membership }) {
   const value = membership.usage[item.key];
   const Icon = item.icon;
   const exhausted = value.remaining === 0;
-  const percent = value.total === null
-    ? 0
-    : value.total === 0
-      ? 100
-      : Math.min(100, Math.round((value.used / value.total) * 100));
+  const percent =
+    value.total === null ? 0 : value.total === 0 ? 100 : Math.min(100, Math.round((value.used / value.total) * 100));
 
   return (
     <article className="grid min-w-0 gap-4 rounded-[17px] border border-[#e2e9e4] bg-white p-4">
@@ -58,14 +41,27 @@ function UsageCard({
           <strong className="block text-[12px] text-[#233d38]">{item.label}</strong>
           <small className="mt-1 block text-[9px] leading-5 text-[#899792]">{item.description}</small>
         </span>
-        <span className={exhausted ? "rounded-full bg-[#fff0ed] px-2.5 py-1 text-[8px] font-bold text-[#b65343]" : "rounded-full bg-[#edf7f2] px-2.5 py-1 text-[8px] font-bold text-[#14705a]"}>
-          {value.remaining === null ? "نامحدود" : exhausted ? "تمام شده" : `${value.remaining.toLocaleString("fa-IR")} باقی‌مانده`}
+        <span
+          className={
+            exhausted
+              ? "rounded-full bg-[#fff0ed] px-2.5 py-1 text-[8px] font-bold text-[#b65343]"
+              : "rounded-full bg-[#edf7f2] px-2.5 py-1 text-[8px] font-bold text-[#14705a]"
+          }
+        >
+          {value.remaining === null
+            ? "نامحدود"
+            : exhausted
+              ? "تمام شده"
+              : `${value.remaining.toLocaleString("fa-IR")} باقی‌مانده`}
         </span>
       </div>
       {value.total !== null ? (
         <div className="grid gap-2">
           <div className="h-2 overflow-hidden rounded-full bg-[#edf1ed]">
-            <div className={exhausted ? "h-full rounded-full bg-[#d66f5c]" : "h-full rounded-full bg-[#2e9b7d]"} style={{ width: `${percent}%` }} />
+            <div
+              className={exhausted ? "h-full rounded-full bg-[#d66f5c]" : "h-full rounded-full bg-[#2e9b7d]"}
+              style={{ width: `${percent}%` }}
+            />
           </div>
           <div className="flex items-center justify-between text-[9px] text-[#73827e]">
             <span>{value.used.toLocaleString("fa-IR")} مصرف‌شده</span>
@@ -73,7 +69,9 @@ function UsageCard({
           </div>
         </div>
       ) : (
-        <p className="m-0 text-[9px] text-[#73827e]">تا امروز {value.used.toLocaleString("fa-IR")} مورد استفاده شده و سقف مصرف نامحدود است.</p>
+        <p className="m-0 text-[9px] text-[#73827e]">
+          تا امروز {value.used.toLocaleString("fa-IR")} مورد استفاده شده و سقف مصرف نامحدود است.
+        </p>
       )}
     </article>
   );
@@ -99,16 +97,27 @@ export function MembershipSummary({
         <div className="flex items-center gap-3 rounded-[14px] border border-[#d8e6de] bg-white px-4 py-3">
           <CalendarDays className="text-[#178066]" size={19} />
           <span>
-            <strong className="block text-[12px] text-[#27453e]">{remainingDays(membership.expiresAt).toLocaleString("fa-IR")} روز باقی‌مانده</strong>
-          <small className="mt-1 block text-[8px] text-[#82908c]">اعتبار تا <PersianDateTime value={membership.expiresAt} /></small>
+            <strong className="block text-[12px] text-[#27453e]">
+              {remainingDays(membership.expiresAt).toLocaleString("fa-IR")} روز باقی‌مانده
+            </strong>
+            <small className="mt-1 block text-[8px] text-[#82908c]">
+              اعتبار تا <PersianDateTime value={membership.expiresAt} />
+            </small>
           </span>
         </div>
         {showUpgradeAction && (
-          <Link className="inline-flex min-h-11 items-center rounded-[11px] bg-[#0f7b62] px-4 text-[10px] font-bold text-white no-underline" href="/upgrade">خرید یا ارتقای بسته</Link>
+          <Link
+            className="inline-flex min-h-11 items-center rounded-[11px] bg-[#0f7b62] px-4 text-[10px] font-bold text-white no-underline"
+            href="/upgrade"
+          >
+            خرید یا ارتقای بسته
+          </Link>
         )}
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {usageItems.map((item) => <UsageCard item={item} key={item.key} membership={membership} />)}
+        {usageItems.map((item) => (
+          <UsageCard item={item} key={item.key} membership={membership} />
+        ))}
       </div>
     </section>
   );

@@ -1,10 +1,16 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { emptyResumeData, paginateResumeData } from "./resume-data";
 import { getRenderedPageLayout } from "./resume-pagination-layout";
-import { getResumeFlowSections, getResumePaginationFlows, getResumePaginationProfile } from "./resume-pagination-profile";
+import {
+  getResumeFlowSections,
+  getResumePaginationFlows,
+  getResumePaginationProfile,
+} from "./resume-pagination-profile";
 
 describe("rendered resume pagination", () => {
-  afterEach(() => { document.body.innerHTML = ""; });
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
   it("uses the profile flow for main and sidebar columns", () => {
     const profile = getResumePaginationProfile("designer-sidebar");
     expect(getResumePaginationFlows(profile)).toEqual(["main", "sidebar"]);
@@ -15,8 +21,15 @@ describe("rendered resume pagination", () => {
     const data = {
       ...emptyResumeData,
       experiences: Array.from({ length: 12 }, (_, index) => ({
-        id: String(index), jobTitle: "Developer", company: "Radikar", location: "",
-        startDate: "", endDate: "", isCurrent: false, description: "شرح ".repeat(120), technologies: "React",
+        id: String(index),
+        jobTitle: "Developer",
+        company: "Radikar",
+        location: "",
+        startDate: "",
+        endDate: "",
+        isCurrent: false,
+        description: "شرح ".repeat(120),
+        technologies: "React",
       })),
     };
     expect(paginateResumeData(data, "simple-one-column").length).toBeGreaterThan(1);
@@ -26,7 +39,9 @@ describe("rendered resume pagination", () => {
     const page = document.createElement("article");
     const flow = document.createElement("main");
     const content = document.createElement("p");
-    flow.append(content); page.append(flow); document.body.append(page);
+    flow.append(content);
+    page.append(flow);
+    document.body.append(page);
     Object.defineProperty(page, "getBoundingClientRect", { value: () => ({ top: 0, bottom: 1122, height: 1122 }) });
     Object.defineProperty(flow, "offsetParent", { value: document.body });
     Object.defineProperty(content, "offsetParent", { value: flow });
@@ -46,13 +61,26 @@ describe("rendered resume pagination", () => {
   });
 
   it("preserves all resume experiences across pagination", () => {
-    const experiences = Array.from({ length: 8 }, (_, index) => ({ id: String(index), jobTitle: `کار ${index}`, company: "شرکت", location: "", startDate: "", endDate: "", isCurrent: false, description: "شرح", technologies: "" }));
+    const experiences = Array.from({ length: 8 }, (_, index) => ({
+      id: String(index),
+      jobTitle: `کار ${index}`,
+      company: "شرکت",
+      location: "",
+      startDate: "",
+      endDate: "",
+      isCurrent: false,
+      description: "شرح",
+      technologies: "",
+    }));
     const pages = paginateResumeData({ ...emptyResumeData, experiences }, "simple-one-column");
-    expect(pages.flatMap((page) => page.experiences).map((item) => item.id)).toEqual(experiences.map((item) => item.id));
+    expect(pages.flatMap((page) => page.experiences).map((item) => item.id)).toEqual(
+      experiences.map((item) => item.id),
+    );
   });
 
   it("supports every registered template profile", () => {
-    for (const id of ["sector-yellow", "designer-sidebar", "timeline-classic"]) expect(getResumePaginationProfile(id)).toBeTruthy();
+    for (const id of ["sector-yellow", "designer-sidebar", "timeline-classic"])
+      expect(getResumePaginationProfile(id)).toBeTruthy();
   });
 
   it("keeps print pages isolated from the interactive page", () => {

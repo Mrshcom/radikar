@@ -2,11 +2,7 @@
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { paginateResumeData, type ResumeData } from "./resume-data";
-import {
-  getRenderedPageLayout,
-  PAGE_BOTTOM_RESERVE,
-  PAGE_TOP_RESERVE,
-} from "./resume-pagination-layout";
+import { getRenderedPageLayout, PAGE_BOTTOM_RESERVE, PAGE_TOP_RESERVE } from "./resume-pagination-layout";
 import {
   getResumeFlowSections,
   getResumePaginationFlows,
@@ -33,10 +29,7 @@ function joinWords(items: string[]) {
   return items.join(" ").trim();
 }
 
-function sectionItems(
-  section: "summary" | "skills" | "languages",
-  value: string,
-) {
+function sectionItems(section: "summary" | "skills" | "languages", value: string) {
   if (section === "summary") return words(value);
   return value
     .split(section === "skills" ? /[،,]/ : /\r?\n|[|،,؛;]/)
@@ -44,10 +37,7 @@ function sectionItems(
     .filter(Boolean);
 }
 
-function joinSectionItems(
-  section: "summary" | "skills" | "languages",
-  items: string[],
-) {
+function joinSectionItems(section: "summary" | "skills" | "languages", items: string[]) {
   if (section === "summary") return joinWords(items);
   return items.join(section === "skills" ? ", " : " | ");
 }
@@ -60,22 +50,10 @@ function moveStringSectionForward(
   const currentItems = sectionItems(section, currentPage[section]);
   if (!currentItems.length) return false;
   const nextItems = sectionItems(section, nextPage[section]);
-  const moveCount =
-    section === "summary"
-      ? Math.min(
-          FORWARD_TEXT_CHUNK_SIZE,
-          Math.max(1, currentItems.length - 1),
-        )
-      : 1;
+  const moveCount = section === "summary" ? Math.min(FORWARD_TEXT_CHUNK_SIZE, Math.max(1, currentItems.length - 1)) : 1;
   const splitAt = Math.max(0, currentItems.length - moveCount);
-  currentPage[section] = joinSectionItems(
-    section,
-    currentItems.slice(0, splitAt),
-  );
-  nextPage[section] = joinSectionItems(section, [
-    ...currentItems.slice(splitAt),
-    ...nextItems,
-  ]);
+  currentPage[section] = joinSectionItems(section, currentItems.slice(0, splitAt));
+  nextPage[section] = joinSectionItems(section, [...currentItems.slice(splitAt), ...nextItems]);
   return true;
 }
 
@@ -87,10 +65,7 @@ function moveStringSectionBack(
   const nextItems = sectionItems(section, nextPage[section]);
   if (!nextItems.length) return false;
   const previousItems = sectionItems(section, previousPage[section]);
-  previousPage[section] = joinSectionItems(section, [
-    ...previousItems,
-    nextItems[0],
-  ]);
+  previousPage[section] = joinSectionItems(section, [...previousItems, nextItems[0]]);
   nextPage[section] = joinSectionItems(section, nextItems.slice(1));
   return true;
 }
@@ -125,32 +100,22 @@ type PaginationState = {
 function hasPageContent(page: ResumeData) {
   return Boolean(
     page.summary.trim() ||
-      page.experiences.length ||
-      page.educations.length ||
-      page.education.trim() ||
-      page.projects.length ||
-      page.skills.trim() ||
-      page.languages.trim(),
+    page.experiences.length ||
+    page.educations.length ||
+    page.education.trim() ||
+    page.projects.length ||
+    page.skills.trim() ||
+    page.languages.trim(),
   );
 }
 
 function getPageContentKey(page: ResumeData) {
   return [
     page.summary,
-    page.experiences
-      .map((item) => `${item.id}:${item.description}:${item.technologies}`)
-      .join(","),
-    page.projects
-      .map(
-        (item) =>
-          `${item.id}:${item.url}:${item.description}:${item.technologies}`,
-      )
-      .join(","),
+    page.experiences.map((item) => `${item.id}:${item.description}:${item.technologies}`).join(","),
+    page.projects.map((item) => `${item.id}:${item.url}:${item.description}:${item.technologies}`).join(","),
     page.educations
-      .map(
-        (item) =>
-          `${item.id}:${item.institution}:${item.credential}:${item.startDate}:${item.endDate}`,
-      )
+      .map((item) => `${item.id}:${item.institution}:${item.credential}:${item.startDate}:${item.endDate}`)
       .join(","),
     page.education,
     page.skills,
@@ -185,16 +150,8 @@ function clonePage(page: ResumeData): ResumeData {
   };
 }
 
-function moveSectionForward(
-  currentPage: ResumeData,
-  nextPage: ResumeData,
-  section: ResumePaginationSection,
-) {
-  if (
-    section === "summary" ||
-    section === "skills" ||
-    section === "languages"
-  ) {
+function moveSectionForward(currentPage: ResumeData, nextPage: ResumeData, section: ResumePaginationSection) {
+  if (section === "summary" || section === "skills" || section === "languages") {
     return moveStringSectionForward(currentPage, nextPage, section);
   }
   if (section === "experiences") {
@@ -202,10 +159,7 @@ function moveSectionForward(
     if (!item) return false;
     const descriptionWords = words(item.description);
     if (descriptionWords.length > BACKFILL_ITEM_WORD_COUNT + 1) {
-      const moveCount = Math.min(
-        FORWARD_TEXT_CHUNK_SIZE,
-        descriptionWords.length - BACKFILL_ITEM_WORD_COUNT,
-      );
+      const moveCount = Math.min(FORWARD_TEXT_CHUNK_SIZE, descriptionWords.length - BACKFILL_ITEM_WORD_COUNT);
       const splitAt = descriptionWords.length - moveCount;
       currentPage.experiences[currentPage.experiences.length - 1] = {
         ...item,
@@ -216,10 +170,7 @@ function moveSectionForward(
       if (existing?.id === item.id) {
         nextPage.experiences[0] = {
           ...existing,
-          description: appendText(
-            joinWords(descriptionWords.slice(splitAt)),
-            existing.description,
-          ),
+          description: appendText(joinWords(descriptionWords.slice(splitAt)), existing.description),
         };
       } else {
         nextPage.experiences.unshift({
@@ -238,10 +189,7 @@ function moveSectionForward(
     if (!item) return false;
     const descriptionWords = words(item.description);
     if (descriptionWords.length > BACKFILL_ITEM_WORD_COUNT + 1) {
-      const moveCount = Math.min(
-        FORWARD_TEXT_CHUNK_SIZE,
-        descriptionWords.length - BACKFILL_ITEM_WORD_COUNT,
-      );
+      const moveCount = Math.min(FORWARD_TEXT_CHUNK_SIZE, descriptionWords.length - BACKFILL_ITEM_WORD_COUNT);
       const splitAt = descriptionWords.length - moveCount;
       currentPage.projects[currentPage.projects.length - 1] = {
         ...item,
@@ -252,10 +200,7 @@ function moveSectionForward(
       if (existing?.id === item.id) {
         nextPage.projects[0] = {
           ...existing,
-          description: appendText(
-            joinWords(descriptionWords.slice(splitAt)),
-            existing.description,
-          ),
+          description: appendText(joinWords(descriptionWords.slice(splitAt)), existing.description),
         };
       } else {
         nextPage.projects.unshift({
@@ -283,24 +228,14 @@ function moveSectionForward(
     const legacyItem = legacyItems.pop();
     if (!legacyItem) return false;
     currentPage.education = legacyItems.join("\n");
-    nextPage.education = [legacyItem, nextPage.education.trim()]
-      .filter(Boolean)
-      .join("\n");
+    nextPage.education = [legacyItem, nextPage.education.trim()].filter(Boolean).join("\n");
     return true;
   }
   return false;
 }
 
-function moveSectionBack(
-  previousPage: ResumeData,
-  nextPage: ResumeData,
-  section: ResumePaginationSection,
-) {
-  if (
-    section === "summary" ||
-    section === "skills" ||
-    section === "languages"
-  ) {
+function moveSectionBack(previousPage: ResumeData, nextPage: ResumeData, section: ResumePaginationSection) {
+  if (section === "summary" || section === "skills" || section === "languages") {
     return moveStringSectionBack(previousPage, nextPage, section);
   }
   if (section === "experiences") {
@@ -313,8 +248,7 @@ function moveSectionBack(
       previousPage.experiences[previousPage.experiences.length - 1] = {
         ...previousItem,
         description: appendText(previousItem.description, word),
-        technologies:
-          remainingWords.length > 0 ? previousItem.technologies : item.technologies,
+        technologies: remainingWords.length > 0 ? previousItem.technologies : item.technologies,
       };
       if (remainingWords.length) {
         nextPage.experiences[0] = {
@@ -330,9 +264,7 @@ function moveSectionBack(
       const movedWords = descriptionWords.slice(0, BACKFILL_ITEM_WORD_COUNT);
       nextPage.experiences[0] = {
         ...item,
-        description: joinWords(
-          descriptionWords.slice(BACKFILL_ITEM_WORD_COUNT),
-        ),
+        description: joinWords(descriptionWords.slice(BACKFILL_ITEM_WORD_COUNT)),
       };
       previousPage.experiences.push({
         ...item,
@@ -355,8 +287,7 @@ function moveSectionBack(
       previousPage.projects[previousPage.projects.length - 1] = {
         ...previousItem,
         description: appendText(previousItem.description, word),
-        technologies:
-          remainingWords.length > 0 ? previousItem.technologies : item.technologies,
+        technologies: remainingWords.length > 0 ? previousItem.technologies : item.technologies,
       };
       if (remainingWords.length) {
         nextPage.projects[0] = {
@@ -373,9 +304,7 @@ function moveSectionBack(
       nextPage.projects[0] = {
         ...item,
         url: "",
-        description: joinWords(
-          descriptionWords.slice(BACKFILL_ITEM_WORD_COUNT),
-        ),
+        description: joinWords(descriptionWords.slice(BACKFILL_ITEM_WORD_COUNT)),
       };
       previousPage.projects.push({
         ...item,
@@ -400,9 +329,7 @@ function moveSectionBack(
       .filter(Boolean);
     const legacyItem = legacyItems.shift();
     if (!legacyItem) return false;
-    previousPage.education = [previousPage.education.trim(), legacyItem]
-      .filter(Boolean)
-      .join("\n");
+    previousPage.education = [previousPage.education.trim(), legacyItem].filter(Boolean).join("\n");
     nextPage.education = legacyItems.join("\n");
     return true;
   }
@@ -421,13 +348,8 @@ function moveFirstBlockBack(
 
   const previousPage = clonePage(current);
   const nextPage = clonePage(next);
-  const section = getResumeFlowSections(profile, flow).find((item) =>
-    hasSectionContent(nextPage, item),
-  );
-  if (
-    section === "educations" &&
-    pages.slice(boundary + 1).some(hasWorkContent)
-  ) {
+  const section = getResumeFlowSections(profile, flow).find((item) => hasSectionContent(nextPage, item));
+  if (section === "educations" && pages.slice(boundary + 1).some(hasWorkContent)) {
     return null;
   }
   if (!section || !moveSectionBack(previousPage, nextPage, section)) {
@@ -452,9 +374,7 @@ function moveLastBlockForward(
 
   const currentPage = clonePage(current);
   const existingNext = pages[pageIndex + 1];
-  const nextPage = existingNext
-    ? clonePage(existingNext)
-    : createContinuationResumePage(current);
+  const nextPage = existingNext ? clonePage(existingNext) : createContinuationResumePage(current);
   const section = [...getResumeFlowSections(profile, flow)]
     .reverse()
     .find((item) => hasSectionContent(currentPage, item));
@@ -478,12 +398,7 @@ function getCandidate(
     for (const flow of getResumePaginationFlows(profile)) {
       const blockKey = `${boundary}:${flow}`;
       if (blockedBoundaries.has(blockKey)) continue;
-      const candidatePages = moveFirstBlockBack(
-        pages,
-        boundary,
-        flow,
-        profile,
-      );
+      const candidatePages = moveFirstBlockBack(pages, boundary, flow, profile);
       if (!candidatePages) continue;
       if (getPagesLayoutKey(candidatePages) === getPagesLayoutKey(pages)) {
         continue;
@@ -502,10 +417,7 @@ function getCandidate(
   return null;
 }
 
-function getRenderedFlow(
-  page: HTMLElement,
-  element: HTMLElement,
-): ResumePaginationFlow {
+function getRenderedFlow(page: HTMLElement, element: HTMLElement): ResumePaginationFlow {
   if (element === page) return "page";
   const declaredFlow = element.dataset.resumeFlow;
   if (declaredFlow === "main" || declaredFlow === "sidebar") {
@@ -514,16 +426,10 @@ function getRenderedFlow(
   return element.tagName === "ASIDE" ? "sidebar" : "main";
 }
 
-export function useRenderedResumePagination(
-  data: ResumeData,
-  templateId: string,
-) {
+export function useRenderedResumePagination(data: ResumeData, templateId: string) {
   const sourceKey = JSON.stringify([templateId, data]);
   const profile = getResumePaginationProfile(templateId);
-  const initialPages = useMemo(
-    () => paginateResumeData(data, templateId),
-    [data, templateId],
-  );
+  const initialPages = useMemo(() => paginateResumeData(data, templateId), [data, templateId]);
   const [pagination, setPagination] = useState<PaginationState>(() => ({
     sourceKey,
     pages: initialPages,
@@ -533,33 +439,16 @@ export function useRenderedResumePagination(
     visitedLayouts: new Set([getPagesLayoutKey(initialPages)]),
   }));
   const [settledSourceKey, setSettledSourceKey] = useState("");
-  const pages =
-    pagination.sourceKey === sourceKey ? pagination.pages : initialPages;
+  const pages = pagination.sourceKey === sourceKey ? pagination.pages : initialPages;
   const probeRef = useRef<HTMLDivElement>(null);
   const pagesRef = useRef<HTMLDivElement>(null);
   const candidate = useMemo(
-    () =>
-      getCandidate(
-        pages,
-        pagination.sourceKey === sourceKey
-          ? pagination.blockedBoundaries
-          : new Set(),
-        profile,
-      ),
-    [
-      pages,
-      pagination.blockedBoundaries,
-      pagination.sourceKey,
-      profile,
-      sourceKey,
-    ],
+    () => getCandidate(pages, pagination.sourceKey === sourceKey ? pagination.blockedBoundaries : new Set(), profile),
+    [pages, pagination.blockedBoundaries, pagination.sourceKey, profile, sourceKey],
   );
 
   useLayoutEffect(() => {
-    if (
-      pagination.sourceKey === sourceKey &&
-      pagination.passCount >= MAX_PAGINATION_PASSES
-    ) {
+    if (pagination.sourceKey === sourceKey && pagination.passCount >= MAX_PAGINATION_PASSES) {
       return schedulePaginationUpdate(() => setSettledSourceKey(sourceKey));
     }
 
@@ -570,9 +459,7 @@ export function useRenderedResumePagination(
     );
     syncRenderedResumeSectionHeadings(renderedPages, pages);
     const blockedOverflowFlows =
-      pagination.sourceKey === sourceKey
-        ? pagination.blockedOverflowFlows
-        : new Set<string>();
+      pagination.sourceKey === sourceKey ? pagination.blockedOverflowFlows : new Set<string>();
     const overflow = renderedPages
       .flatMap((page, pageIndex) => {
         const layout = getRenderedPageLayout(page);
@@ -584,49 +471,25 @@ export function useRenderedResumePagination(
       .find(({ key }) => !blockedOverflowFlows.has(key));
 
     if (overflow) {
-      const nextPages = moveLastBlockForward(
-        pages,
-        overflow.pageIndex,
-        overflow.flow,
-        profile,
-      );
+      const nextPages = moveLastBlockForward(pages, overflow.pageIndex, overflow.flow, profile);
       const currentLayoutKey = getPagesLayoutKey(pages);
-      const orderedLayoutKey = nextPages
-        ? getPagesLayoutKey(nextPages)
-        : currentLayoutKey;
+      const orderedLayoutKey = nextPages ? getPagesLayoutKey(nextPages) : currentLayoutKey;
       const visitedLayouts =
-        pagination.sourceKey === sourceKey
-          ? pagination.visitedLayouts
-          : new Set([currentLayoutKey]);
+        pagination.sourceKey === sourceKey ? pagination.visitedLayouts : new Set([currentLayoutKey]);
 
-      if (
-        !nextPages ||
-        orderedLayoutKey === currentLayoutKey ||
-        visitedLayouts.has(orderedLayoutKey)
-      ) {
+      if (!nextPages || orderedLayoutKey === currentLayoutKey || visitedLayouts.has(orderedLayoutKey)) {
         return schedulePaginationUpdate(() =>
           setPagination((current) => {
-            const nextBlocked = new Set(
-              current.sourceKey === sourceKey
-                ? current.blockedOverflowFlows
-                : [],
-            );
+            const nextBlocked = new Set(current.sourceKey === sourceKey ? current.blockedOverflowFlows : []);
             if (nextBlocked.has(overflow.key)) return current;
             nextBlocked.add(overflow.key);
             return {
               sourceKey,
               pages,
-              blockedBoundaries:
-                current.sourceKey === sourceKey
-                  ? current.blockedBoundaries
-                  : new Set(),
+              blockedBoundaries: current.sourceKey === sourceKey ? current.blockedBoundaries : new Set(),
               blockedOverflowFlows: nextBlocked,
-              passCount:
-                current.sourceKey === sourceKey ? current.passCount + 1 : 1,
-              visitedLayouts:
-                current.sourceKey === sourceKey
-                  ? current.visitedLayouts
-                  : new Set([currentLayoutKey]),
+              passCount: current.sourceKey === sourceKey ? current.passCount + 1 : 1,
+              visitedLayouts: current.sourceKey === sourceKey ? current.visitedLayouts : new Set([currentLayoutKey]),
             };
           }),
         );
@@ -634,14 +497,10 @@ export function useRenderedResumePagination(
 
       return schedulePaginationUpdate(() =>
         setPagination((current) => {
-          const blockedBoundaries = new Set(
-            current.sourceKey === sourceKey ? current.blockedBoundaries : [],
-          );
+          const blockedBoundaries = new Set(current.sourceKey === sourceKey ? current.blockedBoundaries : []);
           blockedBoundaries.delete(`${overflow.pageIndex}:${overflow.flow}`);
           const nextVisitedLayouts = new Set(
-            current.sourceKey === sourceKey
-              ? current.visitedLayouts
-              : [currentLayoutKey],
+            current.sourceKey === sourceKey ? current.visitedLayouts : [currentLayoutKey],
           );
           nextVisitedLayouts.add(orderedLayoutKey);
           return {
@@ -649,8 +508,7 @@ export function useRenderedResumePagination(
             pages: nextPages,
             blockedBoundaries,
             blockedOverflowFlows: new Set(),
-            passCount:
-              current.sourceKey === sourceKey ? current.passCount + 1 : 1,
+            passCount: current.sourceKey === sourceKey ? current.passCount + 1 : 1,
             visitedLayouts: nextVisitedLayouts,
           };
         }),
@@ -666,43 +524,29 @@ export function useRenderedResumePagination(
       return;
     }
 
-    syncResumeSectionHeadingVisibility(
-      page,
-      candidate.pages.slice(0, candidate.boundary),
-    );
+    syncResumeSectionHeadingVisibility(page, candidate.pages.slice(0, candidate.boundary));
 
     const candidateLayout = getRenderedPageLayout(page);
     const candidateFlows = candidateLayout.flows.filter(
       ({ element }) => getRenderedFlow(page, element) === candidate.flow,
     );
-    const fits = candidateFlows.length
-      ? candidateFlows.every((flow) => flow.fits)
-      : candidateLayout.fits;
+    const fits = candidateFlows.length ? candidateFlows.every((flow) => flow.fits) : candidateLayout.fits;
     const candidateLayoutKey = getPagesLayoutKey(candidate.pages);
 
     return schedulePaginationUpdate(() =>
       setPagination((current) => {
         const currentLayoutKey = getPagesLayoutKey(pages);
-        const visitedLayouts =
-          current.sourceKey === sourceKey
-            ? current.visitedLayouts
-            : new Set([currentLayoutKey]);
+        const visitedLayouts = current.sourceKey === sourceKey ? current.visitedLayouts : new Set([currentLayoutKey]);
         if (!fits || visitedLayouts.has(candidateLayoutKey)) {
-          const blockedBoundaries = new Set(
-            current.sourceKey === sourceKey ? current.blockedBoundaries : [],
-          );
+          const blockedBoundaries = new Set(current.sourceKey === sourceKey ? current.blockedBoundaries : []);
           if (blockedBoundaries.has(candidate.blockKey)) return current;
           blockedBoundaries.add(candidate.blockKey);
           return {
             sourceKey,
             pages,
             blockedBoundaries,
-            blockedOverflowFlows:
-              current.sourceKey === sourceKey
-                ? current.blockedOverflowFlows
-                : new Set(),
-            passCount:
-              current.sourceKey === sourceKey ? current.passCount + 1 : 1,
+            blockedOverflowFlows: current.sourceKey === sourceKey ? current.blockedOverflowFlows : new Set(),
+            passCount: current.sourceKey === sourceKey ? current.passCount + 1 : 1,
             visitedLayouts,
           };
         }
@@ -712,13 +556,9 @@ export function useRenderedResumePagination(
         return {
           sourceKey,
           pages: candidate.pages,
-          blockedBoundaries:
-            current.sourceKey === sourceKey
-              ? current.blockedBoundaries
-              : new Set(),
+          blockedBoundaries: current.sourceKey === sourceKey ? current.blockedBoundaries : new Set(),
           blockedOverflowFlows: new Set(),
-          passCount:
-            current.sourceKey === sourceKey ? current.passCount + 1 : 1,
+          passCount: current.sourceKey === sourceKey ? current.passCount + 1 : 1,
           visitedLayouts: nextVisitedLayouts,
         };
       }),
