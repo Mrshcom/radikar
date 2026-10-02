@@ -16,6 +16,7 @@ import { ConfirmActionModal } from "../_components/ui";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { type AccountSession, useAccountSessions, useRevokeAccountSession } from "@/lib/account-security";
 import { DataTable, type DataTableColumn } from "../_components/data-table";
+import { PanelPageTitle } from "../_components/panel-page-title";
 import { TablePagination } from "../_components/table-pagination";
 
 const sessionStatus: Record<AccountSession["status"], string> = {
@@ -69,10 +70,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto grid max-w-4xl gap-6">
-      <header>
-        <span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]"><Settings size={18} /> تنظیمات</span>
-        <h1 className="mb-0 mt-3 text-[26px] font-black">امنیت و ورود</h1>
-      </header>
+      <PanelPageTitle icon={Settings} title="امنیت و ورود" />
 
       <section className="overflow-hidden rounded-[20px] border border-[#e3e9e3] bg-white">
         <div className="grid grid-cols-2 gap-1 border-b border-[#edf0ec] bg-[#f7faf8] p-2" role="tablist" aria-label="نشست‌ها و تاریخچه ورود">

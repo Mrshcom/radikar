@@ -4,6 +4,7 @@ import { updateAdminAliasSchema } from "@radikar/validators";
 import { z } from "zod";
 import { AuthError, AuthService } from "./service";
 import { can, type AuthUser, type OnboardingState, type Permission, type SessionIdentity } from "./types";
+import type { ProductEventService } from "../analytics/service";
 
 declare module "fastify" {
   interface FastifyRequest {
@@ -91,6 +92,7 @@ export type AuthRouteOptions = {
   secureCookies: boolean;
   sessionTtlDays: number;
   webAppUrl: string;
+  productEvents?: ProductEventService;
 };
 
 export type AuthServicePort = Pick<
@@ -160,12 +162,21 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
 
   app.post("/api/auth/request-otp", async (request, reply) => {
     const input = requestOtpSchema.parse(request.body);
-    return reply.code(201).send(await authService.requestOtp(input.phone));
+    await options.productEvents?.record("auth_otp_requested", `otp-request:${request.id}`, undefined, { auth_method: "phone" });
+    try {
+      const result = await authService.requestOtp(input.phone);
+      await options.productEvents?.record("auth_otp_delivery_result", `otp-delivery:${request.id}`, undefined, { auth_method: "phone", result: "success" });
+      return reply.code(201).send(result);
+    } catch (error) {
+      await options.productEvents?.record("auth_otp_delivery_result", `otp-delivery:${request.id}`, undefined, { auth_method: "phone", result: "failure" });
+      throw error;
+    }
   });
 
   app.post("/api/auth/verify-otp", async (request, reply) => {
     const input = verifyOtpSchema.parse(request.body);
     const result = await authService.verifyOtp(input.challengeId, input.phone, input.code, request.ip, input.referralCode);
+    await options.productEvents?.record("auth_signup_completed", `signup:phone:${input.challengeId}`, result.user.id, { auth_method: "phone", referral_present: Boolean(input.referralCode) });
     reply.setCookie(options.sessionCookieName, result.sessionToken, cookieOptions(options));
     return { user: result.user, expiresAt: result.sessionExpiresAt.toISOString() };
   });

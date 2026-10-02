@@ -10,6 +10,7 @@ import { adminUserEditSchema, type AdminUserEditInput } from "@radikar/validator
 import { useAuth, type UserRole } from "@/app/_components/auth";
 import { SearchableSelect } from "@/app/_components/searchable-select";
 import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
+import { TableActionButton } from "../../_components/table-action-button";
 import { ConfirmActionModal, Modal } from "../../_components/ui";
 import { apiRequest } from "@/lib/api-client";
 import { buildQueryString } from "@/lib/build-query-string";
@@ -158,7 +159,7 @@ export default function AdminUsersPage() {
     { key: "records", title: "رکوردها", render: (item) => Number(item.recordsCount).toLocaleString("fa-IR") },
     { key: "created", title: "تاریخ عضویت", className: "whitespace-nowrap", render: (item) => <PersianDateTime value={item.createdAt} /> },
     { key: "login", title: "آخرین ورود", className: "whitespace-nowrap", render: (item) => item.lastLoginAt ? <PersianDateTime value={item.lastLoginAt} /> : "—" },
-    { key: "manage", title: "عملیات", sortable: false, render: (item) => <button aria-label={`ویرایش ${userDisplayName(item)}`} className="inline-grid size-8 place-items-center rounded-[8px] border border-[#dfe5df] bg-white text-[#526461] transition hover:border-[#a8cdbd] hover:text-[#0f7b62] disabled:opacity-40" title="ویرایش" type="button" disabled={updateUser.isPending} onClick={() => { updateUser.reset(); setEditUser(item); }}><Pencil size={14} /></button> },
+    { key: "manage", title: "عملیات", sortable: false, render: (item) => <TableActionButton label={`ویرایش ${userDisplayName(item)}`} disabled={updateUser.isPending} onClick={() => { updateUser.reset(); setEditUser(item); }}><Pencil size={14} /></TableActionButton> },
   ];
   return (
     <div className="grid gap-6">

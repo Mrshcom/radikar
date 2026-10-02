@@ -123,7 +123,7 @@ export default function LoginPage() {
 
   const requestOtp = useMutation({
     mutationFn: (phone: string) =>
-      apiRequest<{ challengeId: string; expiresInSeconds: number }>(
+      apiRequest<{ challengeId: string; expiresInSeconds: number; devOtp?: string }>(
         "/api/auth/request-otp",
         { method: "POST", body: JSON.stringify({ phone }) },
       ),
@@ -140,6 +140,7 @@ export default function LoginPage() {
     setServerError("");
     try {
       const result = await requestOtp.mutateAsync(phone);
+      if (result.devOtp) console.info(`[radikar:dev-otp] ${result.devOtp}`);
       setSubmittedPhone(phone);
       setChallengeId(result.challengeId);
       resetOtp({ otp: "" });
@@ -177,6 +178,7 @@ export default function LoginPage() {
     setServerError("");
     try {
       const result = await requestOtp.mutateAsync(submittedPhone);
+      if (result.devOtp) console.info(`[radikar:dev-otp] ${result.devOtp}`);
       setChallengeId(result.challengeId);
       notify("کد ورود مجدداً ارسال شد.");
     } catch (error) {
@@ -279,7 +281,6 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-6">
-            <p className="mb-1.5 mt-0 text-[11px] font-bold text-[#0f7b62]">خوش آمدی</p>
             <h2 className="m-0 text-[25px] font-black tracking-[-.5px] text-[#19312f] sm:text-[27px]">ورود به حساب کاربری</h2>
             <p className="mb-0 mt-2 text-[11px] leading-7 text-[#7b8b87] sm:mt-3 sm:leading-[1.9]">
               {step === "phone"

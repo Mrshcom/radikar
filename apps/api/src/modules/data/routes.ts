@@ -8,6 +8,7 @@ import type { RecordRepository } from "./record-repository";
 import { requirePermission } from "../auth/routes";
 import type { BillingService } from "../billing/service";
 import type { RadicoinService } from "../radicoin/service";
+import type { ProductEventService } from "../analytics/service";
 
 type CollectionParams = { collection: string };
 type RecordParams = CollectionParams & { id: string };
@@ -21,6 +22,7 @@ export function registerDataRoutes(
   repository: RecordRepository,
   billing?: BillingService,
   radicoin?: RadicoinService,
+  productEvents?: ProductEventService,
 ) {
   app.get<{ Params: CollectionParams }>(
     "/v1/data/:collection",
@@ -54,9 +56,8 @@ export function registerDataRoutes(
           requestId: request.id,
         });
       }
-      const isNewResume =
-        collection === "resumes" &&
-        !(await repository.get(request.auth!.user.id, collection, record.id));
+      const existingRecord = await repository.get(request.auth!.user.id, collection, record.id);
+      const isNewResume = collection === "resumes" && !existingRecord;
       if (isNewResume && billing) {
         await billing.consumeUsage(
           request.auth!.user.id,
@@ -69,7 +70,11 @@ export function registerDataRoutes(
         const stored = await repository.put(request.auth!.user.id, collection, record);
         if (collection === "resumes") {
           await radicoin?.grantReferralActivation(request.auth!.user.id, request.id);
+          await productEvents?.record("resume_saved", `resume-saved:${request.auth!.user.id}:${record.id}:${record.updatedAt}`, request.auth!.user.id, { is_new: isNewResume });
+          if (typeof record.targetJobId === "string" && record.targetJobId) await productEvents?.record("tailored_resume_created", `tailored-resume:${request.auth!.user.id}:${record.id}:${record.updatedAt}`, request.auth!.user.id, { source: "match" });
         }
+        if (collection === "jobs") await productEvents?.record("job_input_submitted", `job-saved:${request.auth!.user.id}:${record.id}:${record.updatedAt}`, request.auth!.user.id, { source: "saved" });
+        if (collection === "applications") await productEvents?.record("application_changed", `application:${request.auth!.user.id}:${record.id}:${record.updatedAt}`, request.auth!.user.id, { action: existingRecord ? "stage_changed" : "created" });
         return stored;
       } catch (error) {
         if (isNewResume && billing) {

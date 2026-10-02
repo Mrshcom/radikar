@@ -604,7 +604,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
             </div>}
           </div>
         </aside>
-        <main className="ms-[248px] min-w-0 w-[calc(100%-248px)] max-[820px]:ms-0 max-[820px]:w-full">
+        <main className="ms-[248px] min-w-0 w-[calc(100%-248px)] [&_label]:!text-[11px] [&_label]:!font-normal max-[820px]:ms-0 max-[820px]:w-full">
           <header className="sticky top-0 z-12 flex h-[70px] items-center border-b border-[rgba(226,231,225,.85)] bg-[rgba(246,247,242,.9)] px-[clamp(24px,4vw,60px)] backdrop-blur-[14px] max-[820px]:h-[62px] max-[820px]:px-[18px]">
             <div className="hidden items-center gap-1 max-[820px]:flex">
               <button

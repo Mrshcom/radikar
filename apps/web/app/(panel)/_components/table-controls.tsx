@@ -15,6 +15,7 @@ type ToolbarProps = {
   search: string;
   searchPlaceholder?: string;
   activeFilterCount?: number;
+  showFilters?: boolean;
   onSearch: (value: string) => void;
   onResetFilters: () => void;
   children?: ReactNode;
@@ -24,9 +25,10 @@ export function TableToolbar({
   search,
   searchPlaceholder = "جست‌وجو...",
   activeFilterCount = 0,
+  children,
+  showFilters = Boolean(children),
   onSearch,
   onResetFilters,
-  children,
 }: ToolbarProps) {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const { register, control, reset } = useForm<SearchValues>({
@@ -36,7 +38,10 @@ export function TableToolbar({
   });
   const searchValue = useWatch({ control, name: "search" }) ?? "";
   const onSearchRef = useRef(onSearch);
-  onSearchRef.current = onSearch;
+
+  useEffect(() => {
+    onSearchRef.current = onSearch;
+  }, [onSearch]);
 
   useEffect(() => {
     if (searchValue.trim() === search.trim()) return;
@@ -67,25 +72,27 @@ export function TableToolbar({
             placeholder={searchPlaceholder}
           />
         </div>
-        <button
-          aria-expanded={advancedOpen}
-          className={cn(
-            "flex h-12 items-center justify-center gap-2 rounded-[11px] border px-3 text-[9px] font-bold min-[1024px]:h-10",
-            advancedOpen || activeFilterCount > 0
-              ? "border-[#9dcdbd] bg-[#eaf5f0] text-[#0f7b62]"
-              : "border-[#dfe6e0] bg-white text-[#657672]",
-          )}
-          onClick={() => setAdvancedOpen((value) => !value)}
-          type="button"
-        >
-          <Filter size={15} /> فیلتر پیشرفته
-          {activeFilterCount > 0 && (
-            <span className="grid size-5 place-items-center rounded-full bg-[#0f7b62] text-[8px] text-white">
-              {activeFilterCount.toLocaleString("fa-IR")}
-            </span>
-          )}
-          <ChevronDown className={cn("transition-transform", advancedOpen && "rotate-180")} size={14} />
-        </button>
+        {showFilters && (
+          <button
+            aria-expanded={advancedOpen}
+            className={cn(
+              "flex h-12 items-center justify-center gap-2 rounded-[11px] border px-3 text-[9px] font-bold min-[1024px]:h-10",
+              advancedOpen || activeFilterCount > 0
+                ? "border-[#9dcdbd] bg-[#eaf5f0] text-[#0f7b62]"
+                : "border-[#dfe6e0] bg-white text-[#657672]",
+            )}
+            onClick={() => setAdvancedOpen((value) => !value)}
+            type="button"
+          >
+            <Filter size={15} /> فیلتر پیشرفته
+            {activeFilterCount > 0 && (
+              <span className="grid size-5 place-items-center rounded-full bg-[#0f7b62] text-[8px] text-white">
+                {activeFilterCount.toLocaleString("fa-IR")}
+              </span>
+            )}
+            <ChevronDown className={cn("transition-transform", advancedOpen && "rotate-180")} size={14} />
+          </button>
+        )}
         {(search || activeFilterCount > 0) && (
           <button
             className="flex h-12 items-center justify-center gap-1.5 rounded-[11px] border border-[#ead8d5] bg-white px-3 text-[9px] font-bold text-[#a34e45] min-[1024px]:h-10"

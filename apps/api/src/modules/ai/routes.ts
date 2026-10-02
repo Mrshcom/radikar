@@ -24,6 +24,7 @@ import { requirePermission } from "../auth/routes";
 import type { ProviderName } from "@radikar/ai";
 import { eq } from "drizzle-orm";
 import { aiSettings, type Database } from "@radikar/database";
+import type { ProductEventService } from "../analytics/service";
 import {
   resumeGenerationSystemPrompt,
   resumeGenerationUserPrompt,
@@ -307,7 +308,7 @@ function modelRequestAbort(
   };
 }
 
-export function registerAiRoutes(app: FastifyInstance, billing?: BillingService, database?: Database) {
+export function registerAiRoutes(app: FastifyInstance, billing?: BillingService, database?: Database, productEvents?: ProductEventService) {
   app.get("/api/admin/ai-settings", async (request, reply) => {
     if (!requirePermission(request, reply, "ai-settings:manage:any")) return;
     let current: ReturnType<typeof getAnalyzeProviderSettings> & { dollarRateRials: number };
@@ -369,6 +370,7 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
       return reply.code(422).send({ error: validation.error });
     if (!hasResumeContent(resume))
       return reply.code(422).send({ error: "رزومه مبنا خالی است." });
+    await productEvents?.record("job_input_submitted", `job-input:${request.auth!.user.id}:${request.id}`, request.auth!.user.id, { source: "manual" });
 
     const usage = { ai: 2, match: 1 } satisfies UsageCosts;
     await consume(billing, request, usage, "match_analyze");
@@ -392,13 +394,16 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
         maxAttempts: 2,
         maxOutputTokens: 2_048,
       });
-      return normalizeAnalysis(result);
+      const analysis = normalizeAnalysis(result);
+      await productEvents?.record("match_analysis_result", `match-result:${request.auth!.user.id}:${request.id}`, request.auth!.user.id, { result: "success" });
+      return analysis;
     } catch (error) {
       request.log.error({ err: error }, "match analysis failed");
       await refund(billing, request, usage, "match_analyze");
       if (requestAbort.signal.aborted) return reply;
       const message =
         error instanceof Error ? error.message : "تحلیل مدل ناموفق بود.";
+      await productEvents?.record("match_analysis_result", `match-result:${request.auth!.user.id}:${request.id}`, request.auth!.user.id, { result: "failure", failure_class: message.includes("آگهی") ? "validation" : "provider" });
       return reply
         .code(message.includes("آگهی شغلی قابل تحلیل نیست") ? 422 : 502)
         .send({ error: message });

@@ -14,6 +14,7 @@ export {
   otpChallenges,
   payments,
   plans,
+  productEvents,
   radicoinSettings,
   radicoinTransactions,
   radicoinWallets,

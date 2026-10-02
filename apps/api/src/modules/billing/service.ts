@@ -15,6 +15,7 @@ import {
 } from "@radikar/database";
 import { ZarinpalClient, ZarinpalError } from "./zarinpal-client";
 import type { RadicoinService } from "../radicoin/service";
+import type { ProductEventService } from "../analytics/service";
 
 export class BillingError extends Error {
   constructor(
@@ -51,6 +52,7 @@ export type BillingServiceOptions = {
   zarinpalBaseUrl: string;
   zarinpalMerchantId: string;
   radicoinService?: RadicoinService;
+  productEvents?: ProductEventService;
 };
 
 export type UsageResource = "resume" | "pdf" | "ai" | "match" | "interview";
@@ -443,6 +445,7 @@ export class BillingService {
       availableCoins = wallet.wallet?.availableCoins ?? 0;
       if (availableCoins >= radicoinCost) {
         const activated = await this.redeemPlanWithRadicoins(userId, plan.id, idempotencyKey);
+        await this.options.productEvents?.record("membership_checkout_result", `checkout:${userId}:${idempotencyKey}`, userId, { plan_id: plan.id, payment_mode: "radicoin", result: "paid" });
         return { checkout: "activated" as const, ...activated };
       }
     }
@@ -501,6 +504,7 @@ export class BillingService {
           updatedAt: new Date(),
         });
       });
+      await this.options.productEvents?.record("membership_checkout_result", `checkout:${userId}:${idempotencyKey}`, userId, { plan_id: plan.id, payment_mode: reservedCoins ? "hybrid" : "cash", result: "started" });
       return { checkout: "gateway" as const, orderId: id, orderNumber: number, paymentUrl: result.paymentUrl, amountRials, appliedCoins: reservedCoins };
     } catch (error) {
       const failure = error instanceof ZarinpalError ? error : undefined;
@@ -690,6 +694,12 @@ export class BillingService {
           );
         }
       });
+      await this.options.productEvents?.record(
+        "membership_checkout_result",
+        `checkout-result:${row.order.id}`,
+        row.order.userId,
+        { plan_id: row.plan.id, payment_mode: row.order.gateway.includes("radicoin") ? "hybrid" : "cash", result: "paid" },
+      );
       resultUrl.searchParams.set("status", "success");
       return resultUrl.toString();
     } catch (error) {

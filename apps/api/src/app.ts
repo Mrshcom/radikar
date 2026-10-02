@@ -11,6 +11,7 @@ import { aiSettings } from "@radikar/database";
 import { eq } from "drizzle-orm";
 import { JobPoolService } from "./modules/job-pool/service";
 import { RadicoinService } from "./modules/radicoin/service";
+import { ProductEventService } from "./modules/analytics/service";
 import {
   createSmsIrOtpDelivery,
   createWebhookOtpDelivery,
@@ -26,7 +27,8 @@ const database = createDatabase(
 const [savedAiSettings] = await database.db.select().from(aiSettings).where(eq(aiSettings.id, "analysis-provider")).limit(1);
 if (savedAiSettings) setAnalyzeProvider(savedAiSettings.provider as Parameters<typeof setAnalyzeProvider>[0], savedAiSettings.model);
 const radicoinService = new RadicoinService(database.db);
-const deliverOtp = config.SMSIR_USERNAME && config.SMSIR_API_KEY && config.SMSIR_LINE_NUMBER
+const productEvents = new ProductEventService(database.db);
+const deliverOtp = config.NODE_ENV === "production" && config.SMSIR_USERNAME && config.SMSIR_API_KEY && config.SMSIR_LINE_NUMBER
   ? createSmsIrOtpDelivery(new SmsIrClient({
       username: config.SMSIR_USERNAME,
       apiKey: config.SMSIR_API_KEY,
@@ -34,7 +36,7 @@ const deliverOtp = config.SMSIR_USERNAME && config.SMSIR_API_KEY && config.SMSIR
       baseUrl: config.SMSIR_BASE_URL,
       timeoutMs: config.SMSIR_TIMEOUT_MS,
     }))
-  : config.OTP_WEBHOOK_URL
+  : config.NODE_ENV === "production" && config.OTP_WEBHOOK_URL
     ? createWebhookOtpDelivery(config.OTP_WEBHOOK_URL, config.OTP_WEBHOOK_TOKEN)
     : undefined;
 const billingService = new BillingService(database.db, {
@@ -43,6 +45,7 @@ const billingService = new BillingService(database.db, {
   zarinpalBaseUrl: config.ZARINPAL_BASE_URL,
   zarinpalMerchantId: config.ZARINPAL_MERCHANT_ID,
   radicoinService,
+  productEvents,
 });
 const jobPoolService = new JobPoolService(database.db, {
   enabled: config.JOB_POOL_ENABLED,
@@ -70,6 +73,7 @@ const app = buildApp({
     bootstrapSuperadminPhone: config.BOOTSTRAP_SUPERADMIN_PHONE,
     allowFirstUserSuperadmin: config.ALLOW_FIRST_USER_SUPERADMIN,
     exposeOtpDeliveryError: config.NODE_ENV !== "production",
+    logDevelopmentOtp: config.NODE_ENV !== "production",
     deliverOtp,
     googleClientId: config.GOOGLE_CLIENT_ID,
     googleClientSecret: config.GOOGLE_CLIENT_SECRET,
@@ -82,6 +86,7 @@ const app = buildApp({
   billingService,
   radicoinService,
   jobPoolService,
+  productEvents,
   database: database.db,
       sessionCookieName:
         config.NODE_ENV === "production" ? "__Host-radikar_session" : "radikar_session",

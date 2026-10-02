@@ -18,6 +18,7 @@ import type { BillingService } from "./modules/billing/service";
 import { handleRadicoinError, registerRadicoinRoutes } from "./modules/radicoin/routes";
 import type { RadicoinService } from "./modules/radicoin/service";
 import type { Database } from "@radikar/database";
+import type { ProductEventService } from "./modules/analytics/service";
 
 type BuildAppOptions = {
   fastifyFactory?: typeof Fastify;
@@ -37,6 +38,7 @@ type BuildAppOptions = {
   radicoinService?: RadicoinService;
   database?: Database;
   jobPoolService?: JobPoolService;
+  productEvents?: ProductEventService;
 };
 
 export function buildApp({
@@ -57,6 +59,7 @@ export function buildApp({
   radicoinService,
   database,
   jobPoolService,
+  productEvents,
 }: BuildAppOptions) {
   const app = fastifyFactory({
     logger,
@@ -98,6 +101,7 @@ export function buildApp({
     secureCookies,
     sessionTtlDays,
     webAppUrl,
+    productEvents,
   });
   app.addHook("preHandler", async (request, reply) => {
     const publicPaths = new Set([
@@ -121,10 +125,10 @@ export function buildApp({
       });
     }
   });
-  registerDataRoutes(app, repository, billingService, radicoinService);
+  registerDataRoutes(app, repository, billingService, radicoinService, productEvents);
   if (billingService) registerBillingRoutes(app, billingService);
   if (radicoinService) registerRadicoinRoutes(app, radicoinService);
-  registerAiRoutes(app, billingService, database);
+  registerAiRoutes(app, billingService, database, productEvents);
   registerImportRoutes(app, billingService, maxUploadSizeBytes, {
     apiToken: apifyApiToken,
     linkedInActorId: apifyLinkedInActorId,

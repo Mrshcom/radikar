@@ -11,6 +11,7 @@ import { z } from "zod";
 import { useAuth } from "@/app/_components/auth";
 import { SearchableSelect } from "@/app/_components/searchable-select";
 import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
+import { TableActionButton } from "../../_components/table-action-button";
 import { useToast } from "@/app/_components/toast";
 import { MembershipSummary } from "../../_components/membership-summary";
 import { MembershipSummarySkeleton } from "../../_components/skeletons";
@@ -194,7 +195,7 @@ export default function MembershipsAdminPage() {
     { key: "membership", title: "وضعیت عضویت", render: (item) => item.membership?.status === "active" ? "فعال" : item.membership?.status === "canceled" ? "لغوشده" : "منقضی" },
     { key: "expiry", title: "انقضا", className: "whitespace-nowrap", render: (item) => item.membership?.expiresAt ? <PersianDateTime value={item.membership.expiresAt} /> : "—" },
     { key: "ai", title: "اعتبار AI", render: (item) => item.membership?.aiCreditsRemaining?.toLocaleString("fa-IR") ?? "—" },
-    { key: "manage", title: "عملیات", sortable: false, render: (item) => <div className="flex flex-wrap gap-2"><button aria-label={`اطلاعات تکمیلی ${userDisplayName(item.user)}`} className="inline-grid size-8 place-items-center rounded-lg border border-[#dfe5df] bg-white text-[#526461] transition hover:border-[#a8cdbd] hover:text-[#0f7b62]" title="اطلاعات تکمیلی" type="button" onClick={() => { setDetailsUser(item); setDetailsTab("usage"); }}><Info size={14} /></button><button aria-label={`ویرایش ${userDisplayName(item.user)}`} className="inline-grid size-8 place-items-center rounded-lg border border-[#dfe5df] bg-white text-[#526461] transition hover:border-[#a8cdbd] hover:text-[#0f7b62]" title="ویرایش" type="button" onClick={() => setSelected(item)}><Pencil size={14} /></button></div> },
+    { key: "manage", title: "عملیات", sortable: false, render: (item) => <div className="flex flex-wrap gap-2"><TableActionButton label={`اطلاعات تکمیلی ${userDisplayName(item.user)}`} onClick={() => { setDetailsUser(item); setDetailsTab("usage"); }}><Info size={14} /></TableActionButton><TableActionButton label={`ویرایش ${userDisplayName(item.user)}`} onClick={() => setSelected(item)}><Pencil size={14} /></TableActionButton></div> },
   ];
   return (
     <div className="grid gap-6">

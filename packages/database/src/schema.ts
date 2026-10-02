@@ -93,6 +93,23 @@ export const users = pgTable(
   (table) => [uniqueIndex("users_phone_unique").on(table.phone)],
 );
 
+export const productEvents = pgTable(
+  "product_events",
+  {
+    id: uuid("id").primaryKey(),
+    name: text("name").notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    idempotencyKey: text("idempotency_key").notNull(),
+    properties: jsonb("properties").$type<Record<string, string | number | boolean | null>>().notNull().default({}),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("product_events_idempotency_unique").on(table.idempotencyKey),
+    index("product_events_name_occurred_idx").on(table.name, table.occurredAt),
+    index("product_events_user_occurred_idx").on(table.userId, table.occurredAt),
+  ],
+);
+
 export const userIdentities = pgTable(
   "user_identities",
   {

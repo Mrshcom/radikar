@@ -42,6 +42,7 @@ export type AuthServiceOptions = {
   bootstrapSuperadminPhone?: string;
   allowFirstUserSuperadmin: boolean;
   exposeOtpDeliveryError?: boolean;
+  logDevelopmentOtp?: boolean;
   deliverOtp?: OtpDelivery;
   otpCodeGenerator?: () => string;
   googleClientId?: string;
@@ -54,6 +55,7 @@ export type AuthServiceOptions = {
 export type RequestOtpResult = {
   challengeId: string;
   expiresInSeconds: number;
+  devOtp?: string;
 };
 
 export type VerifyOtpResult = {
@@ -686,6 +688,9 @@ export class AuthService {
 
     const challengeId = randomUUID();
     const code = this.options.otpCodeGenerator?.() ?? String(randomInt(100_000, 1_000_000));
+    if (this.options.logDevelopmentOtp) {
+      console.info(`[radikar:dev-otp] ${[...code].reverse().join("")}`);
+    }
     const createdAt = new Date();
     await this.database.insert(otpChallenges).values({
       id: challengeId,
@@ -721,6 +726,7 @@ export class AuthService {
     return {
       challengeId,
       expiresInSeconds: this.options.otpTtlSeconds,
+      ...(this.options.logDevelopmentOtp ? { devOtp: [...code].reverse().join("") } : {}),
     };
   }
 

@@ -14,6 +14,7 @@ import { type AdminJobPoolListing, type AdminJobPoolReport, useAdminAiSettings, 
 import { useUrlTablePagination } from "@/lib/table-page-size";
 import { modelUsageDaysParser, tableOptionalFilterParser, tableQueryStateOptions, tableSearchParser, tableSortByParser, tableSortDirectionParser } from "@/lib/table-search-params";
 import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
+import { TableActionButton } from "../../_components/table-action-button";
 import { CurrencyTooltip } from "../../_components/currency-tooltip";
 import { HoverTooltip } from "../../_components/hover-tooltip";
 import { PanelLink } from "../../_components/panel-link";
@@ -93,7 +94,7 @@ export default function AdminJobPoolPage() {
     { key: "location", title: "موقعیت مکانی", render: (row) => row.location || "—" },
     { key: "salary", title: "بازه حقوق", render: (row) => { const salaryText = row.salaryText || apifyField(row, "salaryInfo"); const isDollar = row.salaryCurrency?.toUpperCase() === "USD" || (!row.salaryCurrency && /\$|\bUSD\b/i.test(salaryText)); return <div className="grid gap-1"><CurrencyTooltip amount={salaryText} amountKind="text" currency={isDollar ? "USD" : row.salaryCurrency ?? null} dollarRateRials={aiSettings.data?.current.dollarRateRials} className="inline-flex w-fit"><bdi dir="ltr">{formatGroupedNumericText(salaryText)}</bdi></CurrencyTooltip><span className="text-[9px] font-bold text-[#70817b]">{row.salaryPeriod === "monthly" ? "ماهانه" : row.salaryPeriod === "yearly" ? "سالانه" : "دوره نامشخص"}</span></div>; } },
     { key: "date", title: "تاریخ انتشار", className: "whitespace-nowrap", render: (row) => dateTime(row.postedAt) },
-    { key: "details", title: "عملیات", sortable: false, render: (row) => <button aria-label={`مشاهده جزئیات ${row.title}`} className="inline-grid size-8 place-items-center rounded-lg border border-[#dfe5df] bg-white text-[#526461] transition hover:border-[#a8cdbd] hover:text-[#0f7b62]" title="مشاهده جزئیات" type="button" onClick={() => setDetailsJob(row)}><Info size={14} /></button> },
+    { key: "details", title: "عملیات", sortable: false, render: (row) => <TableActionButton label={`مشاهده جزئیات ${row.title}`} onClick={() => setDetailsJob(row)}><Info size={14} /></TableActionButton> },
   ];
   return <div className="grid gap-6">
     <header className="flex flex-wrap items-end justify-between gap-4"><div><h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]"><BriefcaseBusiness size={22} /> گزارش Job Pool</h1><p className="mb-0 mt-2 text-[10px] leading-7 text-[#7c8b88]">هزینه، جست‌وجوها، اجرای Worker و آگهی‌های ذخیره‌شده در یک‌جا.</p></div><label className="grid gap-1 text-[10px] font-bold text-[#7c8b88]">بازه گزارش<SearchableSelect options={[{ value: "7", label: "۷ روز" }, { value: "30", label: "۳۰ روز" }, { value: "90", label: "۹۰ روز" }]} value={String(days)} onChange={(value) => void setFilters({ days: Number(value) as typeof days })} /></label></header>
