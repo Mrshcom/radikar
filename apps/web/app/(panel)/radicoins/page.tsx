@@ -16,7 +16,7 @@ import Link from "next/link";
 import { usePlans } from "@/lib/billing";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { useRadicoinWallet } from "@/lib/radicoins";
-import { RadicoinCoinIcon } from "../_components/radicoin-coin-icon";
+import { RadicoinIcon } from "../_components/radicoin-icon";
 
 const sourceLabels: Record<string, string> = {
   daily_login: "ورود روزانه",
@@ -60,7 +60,7 @@ export default function RadicoinsPage() {
               نمی‌شوند.
             </p>
             <div className="mt-6 flex w-fit min-w-56 items-center gap-4 rounded-[18px] bg-white/95 px-5 py-4 shadow-[0_16px_45px_rgba(31,76,64,.12)] backdrop-blur-md">
-              <RadicoinCoinIcon className="size-14 drop-shadow-[0_8px_18px_rgba(199,145,20,.22)]" size={56} />
+              <RadicoinIcon className="size-14 drop-shadow-[0_8px_18px_rgba(199,145,20,.22)]" size={56} />
               <div>
                 <span className="block text-[9px] text-[#7b8c87]">موجودی قابل‌استفاده</span>
                 <strong className="mt-1 block text-[27px] font-black leading-none text-[#19312f]">

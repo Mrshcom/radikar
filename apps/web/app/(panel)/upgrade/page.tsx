@@ -21,7 +21,7 @@ import { ApiError } from "@/lib/api-client";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { formatLimit, formatTomans, type Plan, useCreateOrder, useMembership, usePlans } from "@/lib/billing";
 import { useRadicoinWallet } from "@/lib/radicoins";
-import { RadicoinCoinIcon } from "../_components/radicoin-coin-icon";
+import { RadicoinIcon } from "../_components/radicoin-icon";
 import { Modal } from "../_components/ui";
 
 const checkoutSchema = z.object({
@@ -195,7 +195,7 @@ export default function UpgradePage() {
                 {plan.priceRials > 0 && <span className="mr-1 text-[10px] text-[#7d8c89]">تومان / ۳۰ روز</span>}
                 {plan.radicoinCost && (
                   <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-[#8c6812]">
-                    <RadicoinCoinIcon size={22} />
+                    <RadicoinIcon size={22} />
                     یا {plan.radicoinCost.toLocaleString("fa-IR")} رادیکوین
                   </div>
                 )}
@@ -308,7 +308,7 @@ export default function UpgradePage() {
                   {...checkout.register("paymentMethod")}
                 />
                 <span className="grid size-10 shrink-0 place-items-center rounded-[11px] bg-[#fff5cf]">
-                  <RadicoinCoinIcon size={34} />
+                  <RadicoinIcon size={34} />
                 </span>
                 <span className="min-w-0 flex-1">
                   <strong className="block text-[12px] text-[#19312f]">
@@ -335,7 +335,7 @@ export default function UpgradePage() {
                 <div className="flex items-center justify-between gap-4">
                   <dt className="text-[#71827e]">رادیکوین مصرفی</dt>
                   <dd className="m-0 flex items-center gap-1.5 font-black text-[#8c6812]">
-                    <RadicoinCoinIcon size={20} />
+                    <RadicoinIcon size={20} />
                     {appliedCoins.toLocaleString("fa-IR")}
                   </dd>
                 </div>

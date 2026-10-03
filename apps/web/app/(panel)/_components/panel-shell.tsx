@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import {
   BarChart3,
   Bell,
@@ -16,6 +16,7 @@ import {
   FileText,
   LayoutDashboard,
   LoaderCircle,
+  LogIn,
   Menu,
   MessageSquareText,
   Pencil,
@@ -34,12 +35,9 @@ import {
   UserPlus,
   Users,
   X,
-  ShoppingBag,
   FilePlus2,
-  Activity,
   Bot,
   Gift,
-  Coins,
 } from "lucide-react";
 import {
   appProfileStore,
@@ -62,12 +60,12 @@ import { PersianDateTime } from "@/lib/date-time-display";
 import { userDisplayName, userIdentifier } from "@/lib/user-identity";
 import { OnboardingLauncher, OnboardingProvider } from "./onboarding/onboarding-provider";
 import { useRadicoinWallet } from "@/lib/radicoins";
-import { RadicoinCoinIcon } from "./radicoin-coin-icon";
+import { RadicoinIcon } from "./radicoin-icon";
 
 type MenuItem = {
   href: string;
   label: string;
-  icon: typeof LayoutDashboard;
+  icon: ComponentType<{ className?: string; size?: number }>;
   roles: readonly UserRole[];
 };
 
@@ -79,7 +77,7 @@ const menuItems: MenuItem[] = [
   { href: "/resumes", label: "رزومه‌های هدفمند", icon: FileText, roles: ["user"] },
   { href: "/applications", label: "پیگیری اپلای‌ها", icon: BarChart3, roles: ["user"] },
   { href: "/interview", label: "آمادگی مصاحبه", icon: MessageSquareText, roles: ["user"] },
-  { href: "/radicoins", label: "کیف پول رادیکوین", icon: Coins, roles: ["user"] },
+  { href: "/radicoins", label: "کیف پول رادیکوین", icon: RadicoinIcon, roles: ["user"] },
   { href: "/admin", label: "داشبورد مدیریتی", icon: LayoutDashboard, roles: ["admin", "superadmin"] },
   { href: "/admin/users", label: "کاربران و دسترسی‌ها", icon: Users, roles: ["superadmin"] },
   { href: "/admin/memberships", label: "عضویت و اعتبار", icon: ShieldCheck, roles: ["admin", "superadmin"] },
@@ -89,7 +87,7 @@ const menuItems: MenuItem[] = [
   { href: "/admin/model-usage", label: "مصرف و هزینه مدل‌ها", icon: Bot, roles: ["superadmin"] },
   { href: "/admin/job-pool", label: "گزارش Job Pool", icon: BriefcaseBusiness, roles: ["superadmin"] },
   { href: "/admin/referrals", label: "ریفرال و دعوت", icon: Gift, roles: ["superadmin"] },
-  { href: "/admin/radicoins", label: "مدیریت رادیکوین", icon: Coins, roles: ["superadmin"] },
+  { href: "/admin/radicoins", label: "مدیریت رادیکوین", icon: RadicoinIcon, roles: ["superadmin"] },
   { href: "/admin/settings", label: "تنظیمات", icon: Settings, roles: ["superadmin"] },
 ];
 
@@ -619,10 +617,10 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   )}
                 </button>
                 {noticeOpen && isSuperadmin && (
-                  <div className="absolute left-0 top-[46px] z-40 w-[360px] overflow-hidden rounded-[16px] border border-[#dfe6e1] bg-white shadow-[0_18px_50px_rgba(25,57,50,.18)] max-[420px]:fixed max-[420px]:inset-x-3 max-[420px]:top-[68px] max-[420px]:w-auto">
+                  <div className="absolute left-0 top-[46px] z-40 w-[300px] overflow-hidden rounded-[16px] border border-[#dfe6e1] bg-white shadow-[0_18px_50px_rgba(25,57,50,.18)] max-[420px]:fixed max-[420px]:left-3 max-[420px]:right-auto max-[420px]:top-[68px] max-[420px]:w-[calc(100vw-48px)]">
                     <div className="border-b border-[#edf0ec] px-4 py-3.5">
                       <strong className="block text-[12px] text-[#19312f]">رویدادهای جدید سامانه</strong>
-                      <small className="mt-1 block text-[8px] text-[#91a09c]">
+                      <small className="mt-1 block text-[9px] text-[#91a09c]">
                         ثبت‌نام، ورود، خرید و ساخت رزومه · به‌روزرسانی هر ۱۵ ثانیه
                       </small>
                     </div>
@@ -632,9 +630,9 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                           event.type === "signup"
                             ? UserPlus
                             : event.type === "login"
-                              ? Activity
+                              ? LogIn
                               : event.type === "purchase"
-                                ? ShoppingBag
+                                ? CreditCard
                                 : FilePlus2;
                         return (
                           <Link
@@ -647,10 +645,10 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                               <Icon size={17} />
                             </span>
                             <span className="min-w-0 flex-1">
-                              <strong className="block text-[9px] leading-6 text-[#334c48]">
+                              <strong className="block text-[10px] leading-6 text-[#334c48]">
                                 {adminEventMessage(event)}
                               </strong>
-                              <small className="mt-0.5 block text-[7px] text-[#93a19e]">
+                              <small className="mt-0.5 block text-[9px] text-[#93a19e]">
                                 <span dir="ltr">{userIdentifier(event.user)}</span> · {adminEventTime(event.createdAt)}
                               </small>
                             </span>
@@ -740,7 +738,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                       href="/radicoins"
                       onClick={() => setUserMenuOpen(false)}
                     >
-                      <RadicoinCoinIcon className="size-11 drop-shadow-[0_5px_9px_rgba(199,145,20,.22)]" size={44} />
+                      <RadicoinIcon className="size-11 drop-shadow-[0_5px_9px_rgba(199,145,20,.22)]" size={44} />
                       <div className="min-w-0">
                         <span className="block text-[9px] font-semibold text-[#8a7641]">موجودی رادیکوین</span>
                         <strong className="mt-0.5 block text-[17px] font-black leading-none text-[#5d4a18]">

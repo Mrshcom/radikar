@@ -2,7 +2,6 @@
 
 import {
   BadgeCheck,
-  Coins,
   Copy,
   Gift,
   Link2,
@@ -16,13 +15,18 @@ import {
 import Image from "next/image";
 import { useMemo } from "react";
 import { useToast } from "@/app/_components/toast";
+import { RadicoinIcon } from "../_components/radicoin-icon";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { useReferralDashboard, useReferralLeaderboard } from "@/lib/referrals";
 
 const inviteSteps = [
   { title: "لینکت را بفرست", description: "لینک اختصاصی را برای دوستانت بفرست.", icon: Send },
   { title: "ثبت‌نام تأیید شود", description: "بعد از تأیید حساب، هدیه اولیه ثبت می‌شود.", icon: BadgeCheck },
-  { title: "باهم رادیکوین بگیرید", description: "فعالیت واقعی دوستت، پاداش بیشتری آزاد می‌کند.", icon: Coins },
+  {
+    title: "باهم رادیکوین بگیرید",
+    description: "فعالیت واقعی دوستت، پاداش بیشتری آزاد می‌کند.",
+    icon: RadicoinIcon,
+  },
 ];
 
 export default function ReferralsPage() {
@@ -161,7 +165,7 @@ export default function ReferralsPage() {
       <section className="grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
         <article className="overflow-hidden rounded-[20px] bg-white shadow-[0_12px_38px_rgba(31,76,64,.055)]">
           <h2 className="m-0 flex items-center gap-2 border-b border-[#edf0ec] px-5 py-4 text-[13px] font-extrabold text-[#19312f]">
-            <Coins className="text-[#d49d20]" size={18} /> گردش رادیکوین دعوت
+            <RadicoinIcon size={18} /> گردش رادیکوین دعوت
           </h2>
           <div className="divide-y divide-[#edf0ec]">
             {referral.events.length ? (
@@ -184,7 +188,7 @@ export default function ReferralsPage() {
             ) : (
               <div className="grid min-h-40 place-items-center px-6 text-center">
                 <div>
-                  <Coins className="mx-auto text-[#d8dfdc]" size={28} />
+                  <RadicoinIcon className="mx-auto opacity-35" size={28} />
                   <p className="mb-0 mt-3 text-[10px] text-[#82908d]">
                     اولین دعوتت را بفرست؛ رادیکوین‌های این بخش خیلی زود جان می‌گیرند.
                   </p>

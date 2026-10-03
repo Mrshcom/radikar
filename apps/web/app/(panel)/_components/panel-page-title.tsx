@@ -1,4 +1,6 @@
-import type { LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
+
+type PageTitleIcon = ComponentType<{ className?: string; size?: number }>;
 
 export function PanelPageTitle({
   title,
@@ -6,7 +8,7 @@ export function PanelPageTitle({
   description,
 }: {
   title: string;
-  icon: LucideIcon;
+  icon: PageTitleIcon;
   description?: string;
 }) {
   return (

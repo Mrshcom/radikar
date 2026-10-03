@@ -1,9 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Coins, Gift, LoaderCircle, Pencil, Settings2, WalletCards } from "lucide-react";
+import { Gift, Pencil, WalletCards } from "lucide-react";
 import { useQueryStates } from "nuqs";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { TextField } from "@/app/_components/text-field";
@@ -13,31 +13,17 @@ import { JalaliDatePicker } from "../../_components/jalali-date-picker";
 import { TableActionButton } from "../../_components/table-action-button";
 import { PanelPageTitle } from "../../_components/panel-page-title";
 import { ConfirmActionModal } from "../../_components/ui";
-import { RadicoinCoinIcon } from "../../_components/radicoin-coin-icon";
+import { RadicoinIcon } from "../../_components/radicoin-icon";
 import {
   type AdminWalletItem,
   useAdjustRadicoins,
   useAdminRadicoinWallets,
   useGrantPromotionalRadicoins,
-  useRadicoinAdminSettings,
-  useUpdateRadicoinSettings,
 } from "@/lib/radicoins";
 import { useUrlTablePagination } from "@/lib/table-page-size";
 import { tableQueryStateOptions, tableSearchParser } from "@/lib/table-search-params";
 import { AdminTablePagination, AdminTableToolbar } from "../_components/admin-table-controls";
 
-const settingsSchema = z.object({
-  dailyLoginCoins: z.number().int().min(0),
-  dailyActivityCoinCap: z.number().int().min(0),
-  activityCoins: z.number().int().min(0),
-  referrerSignupCoins: z.number().int().min(0),
-  referredSignupCoins: z.number().int().min(0),
-  referrerActivationCoins: z.number().int().min(0),
-  referredActivationCoins: z.number().int().min(0),
-  referrerUpgradeCoins: z.number().int().min(0),
-  purchaserCoins: z.number().int().min(0),
-  planCosts: z.record(z.string(), z.number().int().min(0)),
-});
 const actionSchema = z.object({
   amount: z
     .number()
@@ -46,15 +32,12 @@ const actionSchema = z.object({
   description: z.string().trim().min(3, "دلیل را بنویس.").max(200),
   expiresAt: z.string().optional(),
 });
-type SettingsForm = z.infer<typeof settingsSchema>;
 type ActionForm = z.infer<typeof actionSchema>;
 const numberValue = { setValueAs: (value: string) => Number(value) };
 const userName = (item: AdminWalletItem) => item.user.fullName || item.user.phone || item.user.email || "کاربر رادیکار";
 
 export default function AdminRadicoinsPage() {
   const notify = useToast();
-  const settings = useRadicoinAdminSettings();
-  const update = useUpdateRadicoinSettings();
   const [{ search }, setFilters] = useQueryStates(
     { search: tableSearchParser },
     { ...tableQueryStateOptions, urlKeys: { search: "q" } },
@@ -65,43 +48,9 @@ export default function AdminRadicoinsPage() {
   const [mode, setMode] = useState<"adjust" | "gift">("gift");
   const grant = useGrantPromotionalRadicoins();
   const adjust = useAdjustRadicoins();
-  const form = useForm<SettingsForm>({
-    resolver: zodResolver(settingsSchema),
-    defaultValues: {
-      dailyLoginCoins: 2,
-      dailyActivityCoinCap: 15,
-      activityCoins: 3,
-      referrerSignupCoins: 40,
-      referredSignupCoins: 30,
-      referrerActivationCoins: 80,
-      referredActivationCoins: 50,
-      referrerUpgradeCoins: 200,
-      purchaserCoins: 30,
-      planCosts: {},
-    },
-  });
   const action = useForm<ActionForm>({
     resolver: zodResolver(actionSchema),
     defaultValues: { amount: 50, description: "", expiresAt: "" },
-  });
-  useEffect(() => {
-    if (!settings.data) return;
-    form.reset({
-      ...settings.data.settings,
-      planCosts: Object.fromEntries(settings.data.plans.map((plan) => [plan.id, plan.radicoinCost ?? 0])),
-    });
-  }, [form, settings.data]);
-  const save = form.handleSubmit(async (values) => {
-    try {
-      const { planCosts, ...input } = values;
-      await update.mutateAsync({
-        ...input,
-        planCosts: Object.entries(planCosts).map(([id, cost]) => ({ id, radicoinCost: cost > 0 ? cost : null })),
-      });
-      notify("تنظیمات رادیکوین ذخیره شد.");
-    } catch (error) {
-      notify(error instanceof Error ? error.message : "ذخیره ناموفق بود.", "error");
-    }
   });
   const submitAction = action.handleSubmit(async (values) => {
     if (!target) return;
@@ -127,17 +76,6 @@ export default function AdminRadicoinsPage() {
     setMode(nextMode);
     action.reset({ amount: nextMode === "gift" ? 50 : 0, description: "", expiresAt: "" });
   };
-  const fields: Array<[keyof Omit<SettingsForm, "planCosts">, string]> = [
-    ["dailyLoginCoins", "پاداش ورود روزانه"],
-    ["activityCoins", "پاداش هر فعالیت هزینه‌بر"],
-    ["dailyActivityCoinCap", "سقف روزانه فعالیت"],
-    ["referrerSignupCoins", "دعوت‌کننده پس از ثبت‌نام"],
-    ["referredSignupCoins", "هدیه ثبت‌نام دعوت‌شونده"],
-    ["referrerActivationCoins", "دعوت‌کننده پس از فعالیت جدی"],
-    ["referredActivationCoins", "هدیه فعالیت جدی دعوت‌شونده"],
-    ["referrerUpgradeCoins", "دعوت‌کننده پس از ارتقا"],
-    ["purchaserCoins", "هدیه خرید کاربر"],
-  ];
   const columns: DataTableColumn<AdminWalletItem>[] = [
     {
       key: "user",
@@ -154,7 +92,7 @@ export default function AdminRadicoinsPage() {
       title: "موجودی",
       render: (item) => (
         <span className="inline-flex items-center gap-2">
-          <RadicoinCoinIcon className="size-6 drop-shadow-[0_3px_6px_rgba(199,145,20,.18)]" size={24} />
+          <RadicoinIcon className="text-[#526461]" size={20} />
           <strong className="text-[#0f7b62]">{(item.wallet?.availableCoins ?? 0).toLocaleString("fa-IR")}</strong>
         </span>
       ),
@@ -188,44 +126,10 @@ export default function AdminRadicoinsPage() {
   return (
     <div className="grid gap-6">
       <PanelPageTitle
-        icon={Coins}
+        icon={RadicoinIcon}
         title="اقتصاد وفاداری رادیکار"
-        description="نرخ پاداش‌ها، فروشگاه، موجودی کاربران و هدیه‌های زمان‌دار را از یک نقطه مدیریت کن."
+        description="موجودی کاربران، گردش کیف پول و هدیه‌های زمان‌دار را بررسی و مدیریت کن."
       />
-      <section className="rounded-[20px] border border-[#dfe8e2] bg-white p-6">
-        <h2 className="m-0 flex items-center gap-2 text-[14px] font-black text-[#19312f]">
-          <Settings2 className="text-[#0f7b62]" size={18} /> موتور پاداش
-        </h2>
-        <form className="mt-5 grid gap-5" onSubmit={save}>
-          <div className="grid gap-4 md:grid-cols-3">
-            {fields.map(([name, label]) => (
-              <label className="grid gap-2 text-[9px] font-bold text-[#596c67]" key={name}>
-                {label}
-                <TextField inputMode="numeric" {...form.register(name, numberValue)} />
-              </label>
-            ))}
-          </div>
-          <div className="border-t border-[#edf1ee] pt-5">
-            <h3 className="m-0 text-[11px] font-black text-[#405753]">قیمت فروشگاه</h3>
-            <div className="mt-3 grid gap-4 md:grid-cols-3">
-              {(settings.data?.plans ?? []).map((plan) => (
-                <label className="grid gap-2 text-[9px] font-bold text-[#596c67]" key={plan.id}>
-                  {plan.name}
-                  <TextField inputMode="numeric" {...form.register(`planCosts.${plan.id}`, numberValue)} />
-                  <span className="font-normal text-[#8b9894]">صفر یعنی غیرفعال</span>
-                </label>
-              ))}
-            </div>
-          </div>
-          <button
-            className="inline-flex min-h-10 w-fit items-center gap-2 rounded-[10px] bg-[#0f7b62] px-5 text-[10px] font-bold text-white disabled:opacity-50"
-            disabled={update.isPending}
-            type="submit"
-          >
-            {update.isPending && <LoaderCircle className="animate-spin" size={14} />}ذخیره تنظیمات
-          </button>
-        </form>
-      </section>
       <section className="overflow-hidden rounded-[20px] border border-[#dfe8e2] bg-white">
         <h2 className="m-0 flex items-center gap-2 border-b border-[#edf1ee] px-5 py-4 text-[13px] font-black text-[#19312f]">
           <WalletCards className="text-[#0f7b62]" size={18} /> کیف پول کاربران

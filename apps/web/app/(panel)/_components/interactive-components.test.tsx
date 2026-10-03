@@ -11,7 +11,15 @@ describe("interactive panel controls", () => {
     const change = vi.fn();
     render(<JalaliDatePicker value="2026-03-21" onChange={change} ariaLabel="تاریخ" />);
     fireEvent.click(screen.getByLabelText("تاریخ"));
-    expect(screen.getByRole("dialog")).toBeVisible();
+    const calendar = screen.getByRole("dialog");
+    expect(calendar).toBeVisible();
+    expect(screen.getByLabelText("تاریخ")).toHaveClass(
+      "border-[#0f7b62]",
+      "ring-4",
+      "ring-[#0f7b62]/10",
+    );
+    expect(calendar).toHaveClass("fixed", "z-100");
+    expect(screen.getByLabelText("تاریخ").parentElement).not.toContainElement(calendar);
     fireEvent.click(screen.getByLabelText("پاک‌کردن تاریخ"));
     expect(change).toHaveBeenCalledWith("");
     fireEvent.keyDown(document, { key: "Escape" });

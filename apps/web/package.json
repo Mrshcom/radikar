@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbopack -p 3161",
-    "build": "next build --turbopack",
+    "dev": "next dev --webpack -p 3161",
+    "build": "next build --webpack",
     "start": "next start -p 3161",
     "lint": "eslint . --ignore-pattern .next --ignore-pattern .next-dev",
     "typecheck": "tsc --noEmit",

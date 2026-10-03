@@ -1,23 +1,18 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Coins, Gift, Pencil, Trophy } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Gift, Pencil, Trophy } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Checkbox } from "@/app/_components/checkbox";
 import { TextField } from "@/app/_components/text-field";
 import { useToast } from "@/app/_components/toast";
 import { PersianDateTime } from "@/lib/date-time-display";
 import {
   type AdminReferral,
-  type ReferralSettings,
   useAdjustReferralPoints,
   useAdminReferrals,
   useReferralLeaderboard,
-  useReferralSettings,
-  useUpdateReferralSettings,
 } from "@/lib/referrals";
 import { useUrlTablePagination } from "@/lib/table-page-size";
 import { DataTable, type DataTableColumn } from "../../_components/data-table";
@@ -27,11 +22,6 @@ import { TablePagination } from "../../_components/table-pagination";
 import { TableActionButton } from "../../_components/table-action-button";
 import { ConfirmActionModal } from "../../_components/ui";
 
-const settingsSchema = z.object({
-  isActive: z.boolean(),
-  referrerPoints: z.number().int().min(0).max(10_000),
-  referredPoints: z.number().int().min(0).max(10_000),
-});
 const adjustmentSchema = z.object({
   points: z
     .number()
@@ -41,7 +31,6 @@ const adjustmentSchema = z.object({
     .refine((value) => value !== 0),
   description: z.string().trim().min(3).max(200),
 });
-type SettingsValues = z.infer<typeof settingsSchema>;
 type AdjustmentValues = z.infer<typeof adjustmentSchema>;
 
 function userName(user: AdminReferral["referrer"]) {
@@ -51,42 +40,14 @@ function userName(user: AdminReferral["referrer"]) {
 export default function AdminReferralsPage() {
   const notify = useToast();
   const { page, pageSize, setPage, setPageSize, isSaving } = useUrlTablePagination();
-  const settings = useReferralSettings();
   const leaderboard = useReferralLeaderboard();
   const report = useAdminReferrals(page, pageSize);
-  const update = useUpdateReferralSettings();
   const adjust = useAdjustReferralPoints();
   const [selectedUser, setSelectedUser] = useState<AdminReferral["referrer"] | null>(null);
-  const [activeChange, setActiveChange] = useState<boolean | null>(null);
-  const settingsForm = useForm<SettingsValues>({
-    resolver: zodResolver(settingsSchema),
-    defaultValues: { isActive: true, referrerPoints: 100, referredPoints: 50 },
-  });
   const adjustmentForm = useForm<AdjustmentValues>({
     resolver: zodResolver(adjustmentSchema),
     defaultValues: { points: 0, description: "" },
   });
-  const isReferralActive = useWatch({ control: settingsForm.control, name: "isActive" });
-
-  useEffect(() => {
-    if (settings.data?.settings) settingsForm.reset(settings.data.settings);
-  }, [settings.data, settingsForm]);
-
-  const confirmActiveChange = async () => {
-    if (activeChange == null) return;
-    try {
-      const response = await update.mutateAsync({
-        ...settingsForm.getValues(),
-        isActive: activeChange,
-      } as ReferralSettings);
-      settingsForm.reset(response.settings);
-      notify(activeChange ? "سیستم ریفرال فعال شد." : "سیستم ریفرال غیرفعال شد.");
-      setActiveChange(null);
-    } catch (error) {
-      notify(error instanceof Error ? error.message : "تغییر وضعیت ناموفق بود.", "error");
-    }
-  };
-
   const columns: DataTableColumn<AdminReferral>[] = [
     { key: "referrer", title: "دعوت‌کننده", render: (item) => <span>{userName(item.referrer)}</span> },
     { key: "referred", title: "کاربر دعوت‌شده", render: (item) => <span>{userName(item.referred)}</span> },
@@ -140,31 +101,11 @@ export default function AdminReferralsPage() {
 
   return (
     <div className="grid gap-6">
-      <PanelPageTitle icon={Gift} title="دعوت‌های رادیکار" />
-      <section className="grid gap-4 rounded-[18px] border border-[#e3e9e3] bg-white p-6 md:grid-cols-[1fr_auto] md:items-center">
-        <div>
-          <div className="inline-flex items-center gap-3">
-            <Checkbox
-              checked={isReferralActive}
-              id="referral-active"
-              name="isActive"
-              onChange={(event) => setActiveChange(event.target.checked)}
-            />
-            <label className="cursor-pointer text-[10px] font-bold text-[#526461]" htmlFor="referral-active">
-              فعال‌بودن سیستم ریفرال
-            </label>
-          </div>
-          <p className="mb-0 mt-3 text-[9px] leading-6 text-[#7b8986]">
-            مقادیر پاداش دعوت‌کننده و دعوت‌شونده از مرکز مدیریت رادیکوین تنظیم می‌شوند.
-          </p>
-        </div>
-        <Link
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] bg-[#e8f5ef] px-4 text-[10px] font-bold text-[#0f705a]"
-          href="/admin/radicoins"
-        >
-          <Coins size={16} /> مدیریت پاداش‌ها <ArrowLeft size={14} />
-        </Link>
-      </section>
+      <PanelPageTitle
+        icon={Gift}
+        title="دعوت‌های رادیکار"
+        description="دعوت‌های ثبت‌شده، وضعیت تأیید و عملکرد دعوت‌کنندگان را بررسی کن."
+      />
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
         <h2 className="m-0 flex items-center gap-2 border-b border-[#edf0ec] px-5 py-4 text-[13px] font-extrabold text-[#19312f]">
           <Gift className="text-[#0f7b62]" size={18} /> دعوت‌های ثبت‌شده
@@ -223,21 +164,6 @@ export default function AdminReferralsPage() {
             <TextField placeholder="دلیل اصلاح" {...adjustmentForm.register("description")} />
           </div>
         </ConfirmActionModal>
-      )}
-      {activeChange != null && (
-        <ConfirmActionModal
-          title="تأیید تغییر وضعیت ریفرال"
-          description={
-            activeChange
-              ? "سیستم ریفرال فعال شود؟ دعوت‌های تأییدشده مطابق قوانین رادیکوین پاداش می‌گیرند."
-              : "سیستم ریفرال غیرفعال شود؟ لینک‌ها همچنان باز می‌شوند اما دعوت جدیدی ثبت نخواهد شد."
-          }
-          confirmLabel={activeChange ? "بله، فعال شود" : "بله، غیرفعال شود"}
-          pending={update.isPending}
-          tone={activeChange ? "primary" : "danger"}
-          onCancel={() => setActiveChange(null)}
-          onConfirm={() => void confirmActiveChange()}
-        />
       )}
     </div>
   );
