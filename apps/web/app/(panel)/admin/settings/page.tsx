@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Bot, BriefcaseBusiness, CheckCircle2, DollarSign, Gift, LoaderCircle, Settings } from "lucide-react";
+import { Bot, BriefcaseBusiness, CheckCircle2, DollarSign, Gift, LoaderCircle } from "lucide-react";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
@@ -19,8 +19,9 @@ import {
   useRunAdminJobPoolSync,
 } from "@/lib/admin-stats";
 import { SettingsSkeleton } from "../../_components/skeletons";
-import { ConfirmActionModal } from "../../_components/ui";
+import { ConfirmActionModal, SectionTitle } from "../../_components/ui";
 import { RadicoinIcon } from "../../_components/radicoin-icon";
+import { FormField } from "../../_components/form-field";
 import { RadicoinSettingsForm } from "./_components/radicoin-settings-form";
 import { ReferralSettingsForm } from "./_components/referral-settings-form";
 
@@ -48,8 +49,16 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 const jobPoolSchema = z.object({
   enabled: z.boolean(),
-  dailyLimit: z.number().int().min(150).max(500),
-  intervalHours: z.number().int().min(1).max(24),
+  dailyLimit: z
+    .number({ error: "حداکثر نتیجه روزانه الزامی است." })
+    .int("مقدار باید عدد صحیح باشد.")
+    .min(150, "حداقل ۱۵۰ نتیجه وارد کن.")
+    .max(500, "حداکثر ۵۰۰ نتیجه مجاز است."),
+  intervalHours: z
+    .number({ error: "فاصله اجرای Worker الزامی است." })
+    .int("مقدار باید عدد صحیح باشد.")
+    .min(1, "حداقل یک ساعت وارد کن.")
+    .max(24, "حداکثر ۲۴ ساعت مجاز است."),
   publishedAt: z.enum(["r86400", "r604800", "r2592000"]),
   locations: z.string().trim().min(2, "حداقل یک موقعیت جست‌وجو وارد کن.").max(500),
 });
@@ -215,14 +224,10 @@ export default function AdminSettingsPage() {
   };
   return (
     <div className="grid w-full gap-6">
-      <header>
-        <h1 className="mb-0 flex items-center gap-2 text-[26px] font-black text-[#19312f]">
-          <Settings size={22} /> تنظیمات
-        </h1>
-        <p className="mb-0 mt-2 text-[10px] leading-7 text-[#7c8b88]">
-          تنظیمات مرکزی تحلیل، دریافت آگهی، اقتصاد رادیکوین و سیستم ریفرال را از اینجا مدیریت کن.
-        </p>
-      </header>
+      <SectionTitle
+        description="تنظیمات مرکزی تحلیل، دریافت آگهی، اقتصاد رادیکوین و سیستم ریفرال را از اینجا مدیریت کن."
+        title="تنظیمات"
+      />
 
       <div className="grid items-start gap-6 min-[900px]:grid-cols-[220px_minmax(0,1fr)]">
         <nav className="grid gap-1.5 rounded-[20px] border border-[#e1e8e2] bg-white p-2.5 shadow-[0_12px_30px_rgba(31,76,64,.04)] min-[900px]:sticky min-[900px]:top-6">
@@ -284,8 +289,11 @@ export default function AdminSettingsPage() {
                       onChange={(event) => setJobPoolEnabledChange(event.target.checked)}
                     />
                   </label>
-                  <div className="grid gap-2 text-[10px] font-bold text-[#536562]">
-                    <label htmlFor="job-pool-location">موقعیت‌های جست‌وجو</label>
+                  <FormField
+                    error={jobPoolForm.formState.errors.locations?.message}
+                    label="موقعیت‌های جست‌وجو"
+                    required
+                  >
                     <input type="hidden" {...jobPoolForm.register("locations")} />
                     <SearchableSelect
                       allowCustom
@@ -302,41 +310,44 @@ export default function AdminSettingsPage() {
                       }
                       placeholder="موقعیت‌ها را انتخاب یا جست‌وجو کن"
                       searchPlaceholder="نام شهر یا کشور..."
+                      invalid={Boolean(jobPoolForm.formState.errors.locations)}
                     />
                     <span className="font-normal text-[10px] text-[#899793]">
                       نام Location در Actor متن آزاد انگلیسی است. از فهرست جست‌وجو کن یا شهر/کشور دیگری را وارد کن؛ بدون
                       انتخاب موقعیت، Apify اجرا نمی‌شود.
                     </span>
-                    {jobPoolForm.formState.errors.locations && (
-                      <small className="font-normal text-[#c44d4d]">
-                        {jobPoolForm.formState.errors.locations.message}
-                      </small>
-                    )}
-                  </div>
+                  </FormField>
                   <div className="grid gap-4 min-[700px]:grid-cols-2">
-                    <label className="grid gap-2 text-[10px] font-bold text-[#536562]">
-                      حداکثر نتیجه روزانه
+                    <FormField
+                      error={jobPoolForm.formState.errors.dailyLimit?.message}
+                      hint="بین ۱۵۰ تا ۵۰۰ نتیجه"
+                      label="حداکثر نتیجه روزانه"
+                      required
+                    >
                       <TextField
+                        aria-invalid={Boolean(jobPoolForm.formState.errors.dailyLimit)}
                         type="number"
                         min="150"
                         max="500"
                         {...jobPoolForm.register("dailyLimit", { valueAsNumber: true })}
                       />
-                      <small className="font-normal text-[#899793]">بین ۱۵۰ تا ۵۰۰ نتیجه</small>
-                    </label>
-                    <label className="grid gap-2 text-[10px] font-bold text-[#536562]">
-                      فاصله اجرای Worker (ساعت)
+                    </FormField>
+                    <FormField
+                      error={jobPoolForm.formState.errors.intervalHours?.message}
+                      hint="حداکثر هر ۲۴ ساعت یک اجرا"
+                      label="فاصله اجرای Worker (ساعت)"
+                      required
+                    >
                       <TextField
+                        aria-invalid={Boolean(jobPoolForm.formState.errors.intervalHours)}
                         type="number"
                         min="1"
                         max="24"
                         {...jobPoolForm.register("intervalHours", { valueAsNumber: true })}
                       />
-                      <small className="font-normal text-[#899793]">حداکثر هر ۲۴ ساعت یک اجرا</small>
-                    </label>
+                    </FormField>
                   </div>
-                  <label className="grid gap-2 text-[10px] font-bold text-[#536562]">
-                    بازه انتشار آگهی
+                  <FormField label="بازه انتشار آگهی" required>
                     <SearchableSelect
                       options={[
                         { value: "r86400", label: "۲۴ ساعت گذشته" },
@@ -351,7 +362,7 @@ export default function AdminSettingsPage() {
                         })
                       }
                     />
-                  </label>
+                  </FormField>
                   {jobPool.data && (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#f4f8f5] px-4 py-3 text-[9px] leading-6 text-[#667773]">
                       <span>

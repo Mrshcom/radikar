@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { LoaderCircle, Save, UserRound } from "lucide-react";
+import { LoaderCircle, Save } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -13,11 +13,16 @@ import { useMembership } from "@/lib/billing";
 import { MembershipSummary } from "../_components/membership-summary";
 import { MembershipSummarySkeleton } from "../_components/skeletons";
 import { TextField } from "@/app/_components/text-field";
+import { FormField } from "../_components/form-field";
+import { SectionTitle } from "../_components/ui";
 
 const schema = z.object({
   fullName: z.string().trim().min(2, "نام باید حداقل دو حرف باشد.").max(100),
 });
 type Values = z.infer<typeof schema>;
+const knowledgeBaseControlClass =
+  "h-[42px] min-h-[42px] bg-[#fbfcfa] text-[12px] text-[#19312f] focus:border-[#79b8a5] focus:ring-3 focus:ring-[#e5f2ed]";
+
 export default function AccountPage() {
   const { user } = useAuth();
   const membership = useMembership();
@@ -41,15 +46,11 @@ export default function AccountPage() {
 
   return (
     <div className="mx-auto grid w-full max-w-5xl gap-6">
-      <header>
-        <span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]">
-          <UserRound size={18} /> حساب کاربری
-        </span>
-        <h1 className="mb-0 mt-3 text-[26px] font-black">اطلاعات حساب و میزان مصرف</h1>
-        <p className="mb-0 mt-2 text-[10px] leading-6 text-[#7c8c87]">
-          وضعیت عضویت، زمان و اعتبار باقی‌مانده را یکجا ببین.
-        </p>
-      </header>
+      <SectionTitle
+        className="max-w-5xl"
+        description="وضعیت عضویت، زمان و اعتبار باقی‌مانده را یکجا ببین."
+        title="اطلاعات حساب و میزان مصرف"
+      />
 
       {membership.isPending && <MembershipSummarySkeleton />}
       {membership.isError && (
@@ -65,22 +66,30 @@ export default function AccountPage() {
       >
         <h2 className="m-0 text-[16px] font-black text-[#263d38]">اطلاعات فردی</h2>
         <div className="grid items-start gap-5 md:grid-cols-2">
-          <label className="grid gap-2 text-[10px] font-bold">
-            نام و نام خانوادگی
-            <TextField {...form.register("fullName")} />
-            {form.formState.errors.fullName && (
-              <span className="text-[10px] font-medium text-[#b14848]">{form.formState.errors.fullName.message}</span>
-            )}
-          </label>
-          <div className="grid gap-2">
-            <label className="grid gap-2 text-[10px] font-bold">
-              {loginMethod}
-              <TextField className="bg-[#f5f7f4] text-[#72817e]" dir="ltr" readOnly value={loginIdentifier} />
-            </label>
-            <p className="m-0 text-[9px] leading-6 text-[#87938f]">
-              این شناسه از روش ورود تأییدشده حساب گرفته شده و در این بخش قابل تغییر نیست.
-            </p>
-          </div>
+          <FormField
+            className="gap-1.5 text-[10px] font-normal text-[#19312f]"
+            error={form.formState.errors.fullName?.message}
+            label="نام و نام خانوادگی"
+            required
+          >
+            <TextField
+              aria-invalid={Boolean(form.formState.errors.fullName)}
+              className={`${knowledgeBaseControlClass} text-right`}
+              {...form.register("fullName")}
+            />
+          </FormField>
+          <FormField
+            className="gap-1.5 text-[10px] font-normal text-[#19312f]"
+            hint="این شناسه از روش ورود تأییدشده حساب گرفته شده و در این بخش قابل تغییر نیست."
+            label={loginMethod}
+          >
+            <TextField
+              className={`${knowledgeBaseControlClass} text-left`}
+              dir="ltr"
+              readOnly
+              value={loginIdentifier}
+            />
+          </FormField>
         </div>
         <button
           className="inline-flex min-h-11 w-fit items-center gap-2 rounded-[11px] border-0 bg-[#0f7b62] px-5 text-[11px] font-bold text-white disabled:opacity-40"

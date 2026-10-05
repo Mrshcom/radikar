@@ -47,11 +47,11 @@ export function Modal({
       >
         <header className={`flex flex-wrap items-center gap-3 ${headerClassName || ""}`}>
           <div className="min-w-0 flex-1">
-            <h2 className={`mb-[7px] mt-0 text-[20px] leading-[1.5] max-[560px]:text-[16px] ${titleClassName || ""}`}>
+            <h2 className={`mb-[5px] mt-0 text-[18px] leading-[1.5] max-[560px]:text-[16px] ${titleClassName || ""}`}>
               {title}
             </h2>
             {description && (
-              <p className="m-0 text-[12px] leading-[1.9] text-[#657672] max-[560px]:text-[10px]">{description}</p>
+              <p className="m-0 text-[11px] leading-[1.9] text-[#657672] max-[560px]:text-[10px]">{description}</p>
             )}
           </div>
           {headerActions && <div className="flex flex-wrap items-center gap-2">{headerActions}</div>}
@@ -154,22 +154,21 @@ export function ConfirmActionModal({
 }
 
 export function SectionTitle({
-  eyebrow,
   title,
   description,
   action,
+  className,
 }: {
-  eyebrow?: string;
   title: string;
-  description?: string;
+  description: string;
   action?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="mb-[27px] flex min-h-16 items-start justify-between gap-5 max-[560px]:block">
+    <div className={`mb-8 flex items-start justify-between gap-5 max-[560px]:block ${className || ""}`}>
       <div>
-        {eyebrow && <span className="text-[10px] text-[#9aa5a2]">{eyebrow}</span>}
-        <h1 className="mb-[7px] mt-[3px] text-[clamp(19px,2.2vw,27px)] leading-[1.35] tracking-[-.9px]">{title}</h1>
-        {description && <p className="m-0 text-xs text-[#758582]">{description}</p>}
+        <h1 className="m-0 text-[30px] font-black leading-[1.4] tracking-[-1px] text-[#19312f]">{title}</h1>
+        <p className="m-0 mt-1 text-[12px] leading-7 text-[#758582]">{description}</p>
       </div>
       {action && <div className="max-[560px]:mt-4 max-[560px]:w-full">{action}</div>}
     </div>

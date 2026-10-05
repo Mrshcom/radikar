@@ -242,7 +242,7 @@ export default function ApplicationsPage() {
           </button>
         }
       />
-      <div className="mb-4 flex items-center gap-7 rounded-[13px] border border-[#e7ebe6] bg-white px-4 py-3 text-[10px] text-[#71817e] max-[560px]:overflow-x-auto [&_span]:whitespace-nowrap">
+      <div className="mb-4 flex items-center gap-7 rounded-[13px] border border-[#e7ebe6] bg-white px-4 py-3 text-[12px] text-[#71817e] max-[560px]:overflow-x-auto [&_span]:whitespace-nowrap">
         <span>
           <i className="ml-1 inline-block size-1.5 rounded-full bg-[#5a8bb5]" />{" "}
           {formatPersianNumber(responseStats.sentCount)} اپلای ثبت‌شده
@@ -254,7 +254,7 @@ export default function ApplicationsPage() {
           میانگین پاسخ <strong className="text-[#19312f]">{responseStats.average}</strong>
         </span>
       </div>
-      <div className="grid grid-cols-4 gap-3 overflow-x-auto max-[1120px]:grid-cols-[repeat(4,250px)]">
+      <div className="grid grid-cols-4 gap-1.5 overflow-x-auto max-[1120px]:grid-cols-[repeat(4,250px)]">
         {applicationPipelineStages.map((stage) => (
           <section
             aria-label={`ستون ${stage.title}`}
@@ -271,8 +271,8 @@ export default function ApplicationsPage() {
             onDrop={(event) => dropOnStage(event, stage.id)}
           >
             <div className="mb-[10px] flex items-center justify-between px-1 py-1">
-              <strong className="text-[10px]">{stage.title}</strong>
-              <span className="grid size-6 place-items-center rounded-lg bg-white text-[8px] text-[#758582]">
+              <strong className="text-[12px]">{stage.title}</strong>
+              <span className="grid size-6 place-items-center rounded-lg bg-white text-[10px] text-[#758582]">
                 {formatPersianNumber(groupedApplications[stage.id].length)}
               </span>
             </div>
@@ -315,16 +315,16 @@ export default function ApplicationsPage() {
                     tone={application.jobId ? jobsById.get(application.jobId)?.tone : undefined}
                     variant="board"
                   />
-                  <small className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[8px] text-[#7b8986]">
+                  <small className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[10px] text-[#7b8986]">
                     {application.company}
                   </small>
                   {typeof application.match === "number" && (
-                    <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[#e8f4ef] px-2 py-1 text-[8px] font-bold text-[#0f7b62]">
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-[#e8f4ef] px-2 py-1 text-[10px] text-[#0f7b62]">
                       <Target size={12} /> تطابق {formatPersianNumber(application.match)}٪
                     </span>
                   )}
                 </div>
-                <h3 className="mb-2 mt-3 text-[10px]">{application.role}</h3>
+                <h3 className="mb-2 mt-3 text-[12px]">{application.role}</h3>
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <button
                     aria-label="بازگشت به مرحله قبل"
@@ -340,7 +340,7 @@ export default function ApplicationsPage() {
                   >
                     <ArrowRight size={14} />
                   </button>
-                  <span className="text-[7px] text-[#9aa5a2]">کارت را برای جابه‌جایی بکشید</span>
+                  <span className="text-[9px] text-[#9aa5a2]">کارت را برای جابه‌جایی بکشید</span>
                   <button
                     aria-label="انتقال به مرحله بعد"
                     className="grid size-7 place-items-center rounded-lg border border-[#d9e9e2] bg-[#edf7f2] text-[#0f7b62] disabled:cursor-not-allowed disabled:opacity-30"
@@ -356,7 +356,7 @@ export default function ApplicationsPage() {
                     <ArrowLeft size={14} />
                   </button>
                 </div>
-                <footer className="mt-3 flex items-center justify-between gap-2 border-t border-[#edf0ec] pt-2 text-[8px] text-[#9aa5a2]">
+                <footer className="mt-3 flex items-center justify-between gap-2 border-t border-[#edf0ec] pt-2 text-[10px] text-[#9aa5a2]">
                   <span className="flex min-w-0 items-center gap-1">
                     <Clock3 size={13} /> آخرین تغییر <PersianDateTime value={application.updatedAt} />
                   </span>

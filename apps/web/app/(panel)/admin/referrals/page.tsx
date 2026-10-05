@@ -16,6 +16,7 @@ import {
 } from "@/lib/referrals";
 import { useUrlTablePagination } from "@/lib/table-page-size";
 import { DataTable, type DataTableColumn } from "../../_components/data-table";
+import { FormField } from "../../_components/form-field";
 import { HoverTooltip } from "../../_components/hover-tooltip";
 import { PanelPageTitle } from "../../_components/panel-page-title";
 import { TablePagination } from "../../_components/table-pagination";
@@ -24,12 +25,12 @@ import { ConfirmActionModal } from "../../_components/ui";
 
 const adjustmentSchema = z.object({
   points: z
-    .number()
+    .number({ error: "مقدار رادیکوین الزامی است." })
     .int()
-    .min(-10_000)
-    .max(10_000)
-    .refine((value) => value !== 0),
-  description: z.string().trim().min(3).max(200),
+    .min(-10_000, "مقدار کمتر از حد مجاز است.")
+    .max(10_000, "مقدار بیشتر از حد مجاز است.")
+    .refine((value) => value !== 0, "مقدار نمی‌تواند صفر باشد."),
+  description: z.string().trim().min(3, "دلیل را بنویس.").max(200, "دلیل نباید بیش از ۲۰۰ نویسه باشد."),
 });
 type AdjustmentValues = z.infer<typeof adjustmentSchema>;
 
@@ -102,7 +103,6 @@ export default function AdminReferralsPage() {
   return (
     <div className="grid gap-6">
       <PanelPageTitle
-        icon={Gift}
         title="دعوت‌های رادیکار"
         description="دعوت‌های ثبت‌شده، وضعیت تأیید و عملکرد دعوت‌کنندگان را بررسی کن."
       />
@@ -156,12 +156,21 @@ export default function AdminReferralsPage() {
           onConfirm={() => void submitAdjustment()}
         >
           <div className="grid gap-3">
-            <TextField
-              inputMode="numeric"
-              placeholder="مثلاً ۵۰ یا -۵۰"
-              {...adjustmentForm.register("points", { setValueAs: (value) => Number(value) })}
-            />
-            <TextField placeholder="دلیل اصلاح" {...adjustmentForm.register("description")} />
+            <FormField label="مقدار رادیکوین" required error={adjustmentForm.formState.errors.points?.message}>
+              <TextField
+                aria-invalid={Boolean(adjustmentForm.formState.errors.points)}
+                inputMode="numeric"
+                placeholder="مثلاً ۵۰ یا -۵۰"
+                {...adjustmentForm.register("points", { setValueAs: (value) => Number(value) })}
+              />
+            </FormField>
+            <FormField label="دلیل اصلاح" required error={adjustmentForm.formState.errors.description?.message}>
+              <TextField
+                aria-invalid={Boolean(adjustmentForm.formState.errors.description)}
+                placeholder="دلیل اصلاح"
+                {...adjustmentForm.register("description")}
+              />
+            </FormField>
           </div>
         </ConfirmActionModal>
       )}

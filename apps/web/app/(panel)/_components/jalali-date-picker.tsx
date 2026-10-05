@@ -20,6 +20,7 @@ type JalaliDatePickerProps = {
   ariaLabel: string;
   min?: string;
   max?: string;
+  invalid?: boolean;
 };
 
 const weekDays = ["ش", "ی", "د", "س", "چ", "پ", "ج"];
@@ -32,7 +33,7 @@ type CalendarPosition = {
   top: number;
 };
 
-export function JalaliDatePicker({ value, onChange, ariaLabel, min, max }: JalaliDatePickerProps) {
+export function JalaliDatePicker({ value, onChange, ariaLabel, min, max, invalid = false }: JalaliDatePickerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
   const selectedDate = parseLocalIsoDate(value);
@@ -100,13 +101,15 @@ export function JalaliDatePicker({ value, onChange, ariaLabel, min, max }: Jalal
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="dialog"
+        data-invalid={invalid}
         onClick={() => {
           if (!open && selectedDate) setViewDate(selectedDate);
           setOpen((current) => !current);
         }}
         className={cn(
           "flex min-h-10 w-full items-center justify-between gap-2 rounded-[10px] border border-[#dfe6e0] bg-white px-3 py-2 text-right text-[11px] !font-normal text-[#405753] outline-none transition hover:border-[#a8cdbd] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10",
-          open && "border-[#0f7b62] ring-4 ring-[#0f7b62]/10",
+          open && !invalid && "border-[#0f7b62] ring-4 ring-[#0f7b62]/10",
+          invalid && "border-[#c44d4d] ring-4 ring-[#c44d4d]/10",
         )}
       >
         <span className={cn("min-w-0 flex-1 truncate !font-normal", !selectedDate && "text-[#91a09b]")}>
@@ -149,7 +152,7 @@ export function JalaliDatePicker({ value, onChange, ariaLabel, min, max }: Jalal
               >
                 <ChevronRight size={16} />
               </button>
-              <strong className="text-[10px] text-[#29433d]">{formatPersianCalendarMonth(viewDate)}</strong>
+              <strong className="text-[12px] text-[#29433d]">{formatPersianCalendarMonth(viewDate)}</strong>
               <button
                 type="button"
                 aria-label="ماه قبل"
@@ -161,7 +164,7 @@ export function JalaliDatePicker({ value, onChange, ariaLabel, min, max }: Jalal
             </div>
             <div className="grid grid-cols-7 gap-1 text-center">
               {weekDays.map((day) => (
-                <span key={day} className="py-1 text-[8px] font-bold text-[#91a09c]">
+                <span key={day} className="py-1 text-[10px] font-bold text-[#91a09c]">
                   {day}
                 </span>
               ))}
@@ -185,7 +188,7 @@ export function JalaliDatePicker({ value, onChange, ariaLabel, min, max }: Jalal
                       setOpen(false);
                     }}
                     className={cn(
-                      "grid aspect-square place-items-center rounded-lg text-[9px] transition-colors",
+                      "grid aspect-square place-items-center rounded-lg text-[11px] transition-colors",
                       selected
                         ? "bg-[#0f7b62] font-bold text-white"
                         : "text-[#415650] hover:bg-[#edf6f2] hover:text-[#0f7b62]",

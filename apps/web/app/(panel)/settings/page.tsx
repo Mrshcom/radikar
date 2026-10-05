@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Clock3, History, LogIn, LogOut, MapPin, MonitorSmartphone, RefreshCw, Settings } from "lucide-react";
+import { Clock3, History, LogIn, LogOut, MapPin, MonitorSmartphone, RefreshCw } from "lucide-react";
 import { useAuth } from "@/app/_components/auth";
 import { ConfirmActionModal } from "../_components/ui";
 import { PersianDateTime } from "@/lib/date-time-display";
@@ -92,7 +92,7 @@ export default function SettingsPage() {
 
   return (
     <div className="mx-auto grid max-w-4xl gap-6">
-      <PanelPageTitle icon={Settings} title="امنیت و ورود" />
+      <PanelPageTitle description="نشست‌های فعال و تاریخچه ورود به حساب خودت را مدیریت کن." title="امنیت و ورود" />
 
       <section className="overflow-hidden rounded-[20px] border border-[#e3e9e3] bg-white">
         <div

@@ -2,20 +2,21 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, Info, Pencil, ShieldCheck, UserCog } from "lucide-react";
+import { ClipboardList, Info, MoreHorizontal, ShieldCheck } from "lucide-react";
 import { useQueryStates } from "nuqs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { normalizeDigits } from "@radikar/validators";
 import { z } from "zod";
 import { useAuth } from "@/app/_components/auth";
 import { SearchableSelect } from "@/app/_components/searchable-select";
 import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
+import { FormField } from "../../_components/form-field";
 import { TableActionButton } from "../../_components/table-action-button";
 import { useToast } from "@/app/_components/toast";
 import { MembershipSummary } from "../../_components/membership-summary";
 import { MembershipSummarySkeleton } from "../../_components/skeletons";
-import { ConfirmActionModal, Modal } from "../../_components/ui";
+import { ConfirmActionModal, Modal, SectionTitle } from "../../_components/ui";
 import { apiRequest } from "@/lib/api-client";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { buildQueryString } from "@/lib/build-query-string";
@@ -54,6 +55,7 @@ type PendingMembershipAction = {
   path?: string;
   body?: unknown;
 };
+type MembershipAction = "grant" | "switch" | "extend" | "credit" | "cancel";
 const grantSchema = z.object({ planId: z.string().min(1) });
 function localizedNumber<T extends z.ZodType>(schema: T) {
   return z.preprocess((value) => (typeof value === "string" ? normalizeDigits(value) : value), schema);
@@ -157,6 +159,26 @@ export default function MembershipsAdminPage() {
   );
   const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } = useUrlTablePagination();
   const [selected, setSelected] = useState<MembershipUser | null>(null);
+  const [selectedAction, setSelectedAction] = useState<MembershipAction | null>(null);
+  const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
+  useEffect(() => {
+    if (!openActionMenu) return;
+
+    const closeOnOutsidePointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Element && !event.target.closest("[data-membership-action-menu]")) {
+        setOpenActionMenu(null);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenActionMenu(null);
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePointerDown);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePointerDown);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [openActionMenu]);
   const sort: SortState =
     sortBy && (sortDirection === "asc" || sortDirection === "desc") ? { key: sortBy, direction: sortDirection } : null;
   const [detailsUser, setDetailsUser] = useState<MembershipUser | null>(null);
@@ -188,6 +210,7 @@ export default function MembershipsAdminPage() {
       notify(variables.successMessage);
       setPendingAction(null);
       setSelected(null);
+      setSelectedAction(null);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin", "memberships"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "membership-details"] }),
@@ -237,7 +260,7 @@ export default function MembershipsAdminPage() {
       title: "عملیات",
       sortable: false,
       render: (item) => (
-        <div className="flex flex-wrap gap-2">
+        <div className="relative flex gap-2" data-membership-action-menu>
           <TableActionButton
             label={`اطلاعات تکمیلی ${userDisplayName(item.user)}`}
             onClick={() => {
@@ -247,20 +270,43 @@ export default function MembershipsAdminPage() {
           >
             <Info size={14} />
           </TableActionButton>
-          <TableActionButton label={`ویرایش ${userDisplayName(item.user)}`} onClick={() => setSelected(item)}>
-            <Pencil size={14} />
+          <TableActionButton
+            label={`عملیات عضویت ${userDisplayName(item.user)}`}
+            onClick={() => setOpenActionMenu((current) => (current === item.user.id ? null : item.user.id))}
+          >
+            <MoreHorizontal size={15} />
           </TableActionButton>
+          {openActionMenu === item.user.id && (
+            <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-44 rounded-[12px] border border-[#dfe8e2] bg-white p-1.5 shadow-[0_12px_30px_rgba(25,57,50,.14)]">
+              {([
+                ["grant", "اعطای پلن"],
+                ["switch", "تعویض پلن"],
+                ["extend", "تمدید عضویت"],
+                ["credit", "تغییر اعتبار"],
+                ["cancel", "لغو عضویت"],
+              ] as const).map(([actionName, label]) => (
+                <button
+                  className={`flex min-h-9 w-full items-center rounded-lg px-2.5 text-right text-[12px] font-normal hover:bg-[#f1f6f3] ${actionName === "cancel" ? "text-[#b14848] hover:bg-[#fff0ed]" : "text-[#405753]"}`}
+                  key={actionName}
+                  onClick={() => {
+                    setSelected(item);
+                    setSelectedAction(actionName);
+                    setOpenActionMenu(null);
+                  }}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       ),
     },
   ];
   return (
     <div className="grid gap-6">
-      <header>
-        <h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]">
-          <UserCog size={22} /> عضویت و اعتبار
-        </h1>
-      </header>
+      <SectionTitle description="پلن فعال، اعتبارها و تاریخچه عضویت کاربران را مدیریت کن." title="عضویت و اعتبار" />
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
         <AdminTableToolbar
           search={search}
@@ -329,17 +375,20 @@ export default function MembershipsAdminPage() {
           }
         />
       </section>
-      {selected && (
+      {selected && selectedAction && (
         <Modal
-          title={`ویرایش عضویت ${userDisplayName(selected.user)}`}
-          description={`${userIdentifier(selected.user)} — پلن فعلی: ${selected.plan?.name || "بدون عضویت"}`}
-          document
+          title={{ grant: "اعطای پلن", switch: "تعویض پلن", extend: "تمدید عضویت", credit: "تغییر اعتبار", cancel: "لغو عضویت" }[selectedAction]}
+          description={userDisplayName(selected.user)}
           showCloseButton
-          onClose={() => setSelected(null)}
+          onClose={() => {
+            setSelected(null);
+            setSelectedAction(null);
+          }}
         >
-          <div className="mt-5 grid grid-cols-2 gap-4 pb-[22px] max-[800px]:grid-cols-1 max-[560px]:pb-[17px]">
+          <div className="mt-5 grid gap-3">
+            {selectedAction === "grant" && (
             <form
-              className="grid gap-3 rounded-xl bg-white p-4"
+              className="grid gap-4"
               onSubmit={grantForm.handleSubmit((body) =>
                 setPendingAction({
                   kind: "membership",
@@ -352,25 +401,19 @@ export default function MembershipsAdminPage() {
                 }),
               )}
             >
-              <strong className="text-[11px]">اعطای پلن و افزودن مدت</strong>
-              <Controller
-                control={grantForm.control}
-                name="planId"
-                render={({ field }) => (
-                  <SearchableSelect
-                    options={(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))}
-                    value={field.value}
-                    onChange={(value) => field.onChange(String(value))}
-                    placeholder="انتخاب پلن"
-                  />
-                )}
-              />
-              <button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">
+              <FormField label="پلن" required error={grantForm.formState.errors.planId?.message}>
+                <Controller control={grantForm.control} name="planId" render={({ field }) => (
+                  <SearchableSelect invalid={Boolean(grantForm.formState.errors.planId)} options={(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))} value={field.value} onChange={(value) => field.onChange(String(value))} placeholder="انتخاب پلن" />
+                )} />
+              </FormField>
+              <button className="min-h-10 rounded-[10px] bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">
                 اعطا و افزودن مدت
               </button>
             </form>
+            )}
+            {selectedAction === "switch" && (
             <form
-              className="grid gap-3 rounded-xl border border-[#dce9e2] bg-[#f8fcf9] p-4"
+              className="grid gap-4"
               onSubmit={switchForm.handleSubmit((body) =>
                 setPendingAction({
                   kind: "membership",
@@ -383,25 +426,19 @@ export default function MembershipsAdminPage() {
                 }),
               )}
             >
-              <strong className="text-[11px] text-[#0f705a]">تعویض پلن بدون تمدید</strong>
-              <Controller
-                control={switchForm.control}
-                name="planId"
-                render={({ field }) => (
-                  <SearchableSelect
-                    options={(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))}
-                    value={field.value}
-                    onChange={(value) => field.onChange(String(value))}
-                    placeholder="انتخاب پلن"
-                  />
-                )}
-              />
+              <FormField label="پلن" required error={switchForm.formState.errors.planId?.message}>
+                <Controller control={switchForm.control} name="planId" render={({ field }) => (
+                  <SearchableSelect invalid={Boolean(switchForm.formState.errors.planId)} options={(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))} value={field.value} onChange={(value) => field.onChange(String(value))} placeholder="انتخاب پلن" />
+                )} />
+              </FormField>
               <button className="rounded-lg border border-[#94c9b1] bg-white px-3 py-2 text-[10px] font-bold text-[#0f7b62]">
                 اصلاح پلن
               </button>
             </form>
+            )}
+            {selectedAction === "extend" && (
             <form
-              className="grid gap-3 rounded-xl bg-white p-4"
+              className="grid gap-4"
               onSubmit={extendForm.handleSubmit((body) =>
                 setPendingAction({
                   kind: "membership",
@@ -414,16 +451,15 @@ export default function MembershipsAdminPage() {
                 }),
               )}
             >
-              <strong className="text-[11px]">تمدید زمان عضویت</strong>
-              <input
-                className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]"
-                type="number"
-                {...extendForm.register("days")}
-              />
+              <FormField label="تعداد روز" required error={extendForm.formState.errors.days?.message}>
+                <input aria-invalid={Boolean(extendForm.formState.errors.days)} className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px] aria-[invalid=true]:border-[#c44d4d] aria-[invalid=true]:ring-4 aria-[invalid=true]:ring-[#c44d4d]/10" type="number" {...extendForm.register("days")} />
+              </FormField>
               <button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">افزودن روز</button>
             </form>
+            )}
+            {selectedAction === "credit" && (
             <form
-              className="grid gap-3 rounded-xl bg-white p-4"
+              className="grid gap-4"
               onSubmit={creditForm.handleSubmit((body) =>
                 setPendingAction({
                   kind: "membership",
@@ -437,13 +473,13 @@ export default function MembershipsAdminPage() {
                 }),
               )}
             >
-              <strong className="text-[11px]">افزایش یا کاهش اعتبار</strong>
               <div className="grid grid-cols-2 gap-2">
                 <Controller
                   control={creditForm.control}
                   name="resource"
                   render={({ field }) => (
                     <SearchableSelect
+                      invalid={Boolean(creditForm.formState.errors.resource)}
                       options={[
                         { value: "ai", label: "هوش مصنوعی" },
                         { value: "match", label: "تطبیق" },
@@ -457,11 +493,14 @@ export default function MembershipsAdminPage() {
                   )}
                 />
                 <input
-                  className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]"
+                  aria-invalid={Boolean(creditForm.formState.errors.units)}
+                  className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px] aria-[invalid=true]:border-[#c44d4d] aria-[invalid=true]:ring-4 aria-[invalid=true]:ring-[#c44d4d]/10"
                   type="number"
                   {...creditForm.register("units")}
                 />
               </div>
+              {creditForm.formState.errors.resource?.message && <small className="text-[#c44d4d]">{creditForm.formState.errors.resource.message}</small>}
+              {creditForm.formState.errors.units?.message && <small className="text-[#c44d4d]">{creditForm.formState.errors.units.message}</small>}
               <input
                 className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]"
                 placeholder="دلیل تغییر (اختیاری)"
@@ -469,8 +508,10 @@ export default function MembershipsAdminPage() {
               />
               <button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">ثبت اعتبار</button>
             </form>
+            )}
+            {selectedAction === "cancel" && (
             <form
-              className="grid gap-3 rounded-xl border border-[#efd8d4] bg-white p-4"
+              className="grid gap-4"
               onSubmit={cancelForm.handleSubmit((body) =>
                 setPendingAction({
                   kind: "membership",
@@ -484,7 +525,6 @@ export default function MembershipsAdminPage() {
                 }),
               )}
             >
-              <strong className="text-[11px] text-[#a13f37]">لغو عضویت</strong>
               <input
                 className="h-10 rounded-lg border border-[#e8d5d1] px-3 text-[10px]"
                 placeholder="دلیل لغو (اختیاری)"
@@ -494,6 +534,7 @@ export default function MembershipsAdminPage() {
                 لغو فوری و حذف اعتبار باقی‌مانده
               </button>
             </form>
+            )}
           </div>
         </Modal>
       )}

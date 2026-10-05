@@ -5,8 +5,20 @@ import { RangeSlider } from "@/app/_components/range-slider";
 import { TableFilterSelect, TableToolbar } from "./table-controls";
 import { TableActionButton } from "./table-action-button";
 import { MembershipSummary } from "./membership-summary";
+import { FormField } from "./form-field";
+import { TextField } from "@/app/_components/text-field";
 
 describe("interactive panel controls", () => {
+  it("marks required fields and exposes their inline validation state", () => {
+    render(
+      <FormField label="نام" required error="این فیلد الزامی است.">
+        <TextField aria-invalid />
+      </FormField>,
+    );
+    expect(screen.getByText("*")).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent("این فیلد الزامی است.");
+    expect(screen.getByRole("textbox")).toHaveClass("aria-[invalid=true]:border-[#c44d4d]");
+  });
   it("opens, selects and clears Jalali dates", () => {
     const change = vi.fn();
     render(<JalaliDatePicker value="2026-03-21" onChange={change} ariaLabel="تاریخ" />);

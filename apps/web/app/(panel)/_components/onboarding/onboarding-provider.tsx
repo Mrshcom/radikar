@@ -102,7 +102,7 @@ function TourTooltip({
     <section
       {...tooltipProps}
       dir="rtl"
-      className="w-[min(340px,calc(100vw-32px))] rounded-[18px] border border-[#d8e7e0] bg-white p-4 text-right shadow-[0_20px_55px_rgba(13,53,44,.24)]"
+      className={`w-[min(340px,calc(100vw-32px))] rounded-[18px] border border-[#d8e7e0] bg-white p-4 text-right shadow-[0_20px_55px_rgba(13,53,44,.24)] ${step.placement === "top" ? "border-b-0" : "border-r-0"}`}
     >
       <div className="flex items-start gap-3">
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#e5f4ed] text-[#0f7b62]">
@@ -263,12 +263,12 @@ export function OnboardingLauncher() {
   return (
     <button
       aria-label="باز کردن راهنمای رادیکار"
-      className="fixed bottom-5 left-5 z-70 grid size-12 place-items-center rounded-full border border-[#d5e8df] bg-white text-[#0f7b62] shadow-[0_10px_28px_rgba(13,53,44,.18)] transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0f7b62] max-[620px]:bottom-[72px] max-[620px]:left-3"
+      className="fixed bottom-5 left-5 z-70 grid size-14 place-items-center rounded-full bg-[#0f7b62] text-white shadow-[0_14px_32px_rgba(15,123,98,.38)] ring-4 ring-[#0f7b62]/15 transition hover:scale-105 hover:bg-[#0b684f] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0f7b62] max-[620px]:bottom-[72px] max-[620px]:left-3"
       data-tour="help-launcher"
       onClick={openChecklist}
       type="button"
     >
-      <CircleHelp aria-hidden="true" size={22} strokeWidth={2} />
+      <CircleHelp aria-hidden="true" size={26} strokeWidth={2.25} />
     </button>
   );
 }

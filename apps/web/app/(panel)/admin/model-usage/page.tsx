@@ -7,6 +7,7 @@ import { SearchableSelect } from "@/app/_components/searchable-select";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
 import { CurrencyTooltip } from "../../_components/currency-tooltip";
+import { SectionTitle } from "../../_components/ui";
 import { AdminTablePagination } from "../_components/admin-table-controls";
 import { useAdminAiSettings, useAdminModelUsage, type AdminModelUsageStats } from "@/lib/admin-stats";
 import { useUrlTablePagination } from "@/lib/table-page-size";
@@ -170,16 +171,11 @@ export default function AdminModelUsagePage() {
 
   return (
     <div className="grid gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]">
-            <Bot size={22} /> مصرف و هزینه مدل‌ها
-          </h1>
-          <p className="mb-0 mt-2 text-[10px] leading-7 text-[#7c8b88]">
-            هر تماس واقعی با سرویس مدل، شامل تلاش‌های مجدد و درخواست‌های ناموفق، در این گزارش ثبت می‌شود.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+      <SectionTitle
+        description="هر تماس واقعی با سرویس مدل، شامل تلاش‌های مجدد و درخواست‌های ناموفق، در این گزارش ثبت می‌شود."
+        title="مصرف و هزینه مدل‌ها"
+        action={
+          <div className="flex flex-wrap items-center gap-2">
           <label className="grid gap-1 text-[10px] font-bold text-[#7c8b88]">
             بازه گزارش
             <SearchableSelect
@@ -221,8 +217,9 @@ export default function AdminModelUsagePage() {
               <Download size={14} /> فایل CSV
             </button>
           </label>
-        </div>
-      </header>
+          </div>
+        }
+      />
 
       {query.isError ? (
         <section className="rounded-[16px] border border-[#f2d4d0] bg-[#fff8f7] p-5 text-[11px] text-[#9b3f35]">
@@ -350,7 +347,7 @@ function UsageTable({
       <h2 className="m-0 border-b border-[#edf1ee] px-5 py-4 text-[13px] font-extrabold text-[#19312f]">{title}</h2>
       {rows.length ? (
         <div className="grid gap-3 p-3 min-[681px]:block min-[681px]:divide-y min-[681px]:divide-[#edf1ee] min-[681px]:p-0">
-          <div className="hidden grid-cols-[1.4fr_.8fr_1fr_.7fr] items-center gap-2 bg-[#f8faf8] px-5 py-2 text-[9px] font-bold text-[#84918e] min-[681px]:grid">
+          <div className="hidden grid-cols-[1.4fr_.8fr_1fr_.7fr] items-center gap-2 bg-[#f8faf8] px-5 py-2 text-[10px] font-bold text-[#84918e] min-[681px]:grid">
             <span>مدل / عملیات</span>
             <span className="text-center">درخواست</span>
             <span className="text-center">توکن</span>
@@ -362,27 +359,27 @@ function UsageTable({
               key={row.key}
             >
               <div className="col-span-2 flex min-w-0 items-baseline gap-2 min-[681px]:col-span-1">
-                <strong className="min-w-0 truncate text-[11px] text-[#253d39]">{row.label}</strong>
-                <small className="min-w-0 truncate text-[9px] text-[#8b9895]" dir="ltr">
+                <strong className="min-w-0 truncate text-[12px] text-[#253d39]">{row.label}</strong>
+                <small className="min-w-0 truncate text-[10px] text-[#8b9895]" dir="ltr">
                   {row.detail}
                 </small>
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-[#edf1ee] pt-3 min-[681px]:block min-[681px]:border-0 min-[681px]:pt-0 min-[681px]:text-center">
-                <small className="text-[9px] font-bold text-[#84918e] min-[681px]:hidden">درخواست</small>
-                <span className="whitespace-nowrap text-[10px] text-[#63736f]">{number(row.requests)} درخواست</span>
+                <small className="text-[10px] font-bold text-[#84918e] min-[681px]:hidden">درخواست</small>
+                <span className="whitespace-nowrap text-[11px] text-[#63736f]">{number(row.requests)} درخواست</span>
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-[#edf1ee] pt-3 min-[681px]:block min-[681px]:border-0 min-[681px]:pt-0 min-[681px]:text-center">
-                <small className="text-[9px] font-bold text-[#84918e] min-[681px]:hidden">توکن</small>
-                <span className="whitespace-nowrap text-[10px] text-[#63736f]">{number(row.totalTokens)} توکن</span>
+                <small className="text-[10px] font-bold text-[#84918e] min-[681px]:hidden">توکن</small>
+                <span className="whitespace-nowrap text-[11px] text-[#63736f]">{number(row.totalTokens)} توکن</span>
               </div>
               <div className="col-span-2 flex items-center justify-between gap-2 border-t border-[#edf1ee] pt-3 min-[681px]:col-span-1 min-[681px]:block min-[681px]:border-0 min-[681px]:pt-0 min-[681px]:text-left">
-                <small className="text-[9px] font-bold text-[#84918e] min-[681px]:hidden">هزینه</small>
+                <small className="text-[10px] font-bold text-[#84918e] min-[681px]:hidden">هزینه</small>
                 <CurrencyTooltip
                   amount={row.estimatedCostMicros}
                   dollarRateRials={dollarRateRials}
                   className="inline-flex"
                 >
-                  <strong className="whitespace-nowrap text-[11px] text-[#0f7b62]" dir="ltr">
+                  <strong className="whitespace-nowrap text-[12px] text-[#0f7b62]" dir="ltr">
                     {usd(row.estimatedCostMicros)}
                   </strong>
                 </CurrencyTooltip>

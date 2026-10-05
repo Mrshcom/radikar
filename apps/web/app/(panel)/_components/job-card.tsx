@@ -90,11 +90,11 @@ export function JobDetailsModal({ job, onClose }: { job: JobDetailsData; onClose
       headerClassName="!items-start border-b border-[#e7ece8] pb-4"
       headerActions={
         <>
-          <span className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-[#edf7f2] px-3 text-[9px] font-extrabold whitespace-nowrap text-[#0b7b5e]">
+          <span className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-[#edf7f2] px-3 text-[10px] whitespace-nowrap text-[#0b7b5e]">
             <Target size={14} /> {formatPersianNumber(job.match)}٪ تطابق
           </span>
           {job.age && (
-            <span className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-[#f2f5f2] px-3 text-[8px] whitespace-nowrap text-[#71817e]">
+            <span className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-[#f2f5f2] px-3 text-[10px] whitespace-nowrap text-[#71817e]">
               <Clock3 size={13} /> {toPersianDigits(job.age)}
             </span>
           )}
@@ -118,7 +118,7 @@ export function JobDetailsModal({ job, onClose }: { job: JobDetailsData; onClose
             <span className="min-w-0 flex-1">متن کامل آگهی</span>
             {job.sourceUrl && (
               <PanelLink
-                className="inline-flex min-h-8 w-fit items-center gap-2 rounded-[8px] px-2 text-[9px] font-bold text-[#0f7b62] no-underline transition-colors duration-200 hover:bg-[#dfeee7]"
+                className="inline-flex min-h-8 w-fit items-center gap-2 rounded-[8px] px-2 text-[10px] font-bold text-[#0f7b62] no-underline transition-colors duration-200 hover:bg-[#dfeee7]"
                 href={job.sourceUrl}
                 target="_blank"
                 rel="noreferrer"
@@ -129,7 +129,7 @@ export function JobDetailsModal({ job, onClose }: { job: JobDetailsData; onClose
             )}
           </h3>
           <p
-            className="mb-0 mt-3 max-h-[45vh] overflow-y-auto whitespace-pre-wrap pl-2 text-[10px] text-justify leading-[2] text-[#526662]"
+            className="mb-0 mt-3 max-h-[45vh] overflow-y-auto whitespace-pre-wrap pl-2 text-[12px] text-justify leading-[2] text-[#526662]"
             dir="auto"
           >
             {job.description?.trim() || "متن کامل این آگهی ذخیره نشده است."}
@@ -156,16 +156,16 @@ export function JobCard({
 
   return (
     <>
-      <article className="group flex min-h-[255px] min-w-0 flex-col rounded-2xl border border-[#dde5df] bg-white p-5 transition-colors duration-200 hover:border-[#bcd2c8]">
+      <article className="group flex min-h-[250px] min-w-0 flex-col rounded-2xl border border-[#dde5df] bg-white p-5 pb-4 transition-colors duration-200 hover:border-[#bcd2c8]">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <JobLogo company={job.company} letter={job.letter} logoUrl={job.logoUrl} tone={job.tone} />
             <div className="min-w-0">
-              <strong className="block truncate text-[10px] font-bold text-[#314943]" dir="auto">
+              <strong className="block truncate text-[12px] font-bold text-[#314943]" dir="auto">
                 {job.company}
               </strong>
               {job.place && (
-                <span className="mt-1 flex items-center gap-1 truncate text-[8px] text-[#899791]" dir="auto">
+                <span className="mt-1 flex items-center gap-1 truncate text-[10px] text-[#899791]" dir="auto">
                   <MapPin size={11} />
                   {job.place}
                 </span>
@@ -173,7 +173,7 @@ export function JobCard({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            <span className="inline-flex min-h-7 items-center gap-1.5 rounded-lg bg-[#edf7f2] px-2.5 text-[8px] font-extrabold text-[#0b7b5e]">
+            <span className="inline-flex min-h-7 items-center gap-1.5 rounded-lg bg-[#edf7f2] px-2.5 text-[10px] text-[#0b7b5e]">
               <Target size={13} /> {formatPersianNumber(job.match)}٪ تطابق
             </span>
             {onSave && (
@@ -203,7 +203,7 @@ export function JobCard({
           {job.role}
         </h4>
         {insight && (
-          <div className="mt-3 flex items-start gap-2 border-r-2 border-[#78bba5] bg-[#f7faf8] px-3 py-2.5 text-[8px] leading-[1.8] text-[#687a75]">
+          <div className="mt-3 flex items-start gap-2 border-r-2 border-[#78bba5] bg-[#f7faf8] px-3 py-2.5 text-[10px] leading-[1.8] text-[#687a75]">
             <Sparkles className="mt-0.5 shrink-0 text-[#45987d]" size={13} />
             <p className="m-0 line-clamp-2" dir="auto">
               {insight}
@@ -212,20 +212,20 @@ export function JobCard({
         )}
 
         <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[#e7ece8] pt-4">
-          <small className="flex items-center gap-1.5 text-[8px] text-[#8c9a97]">
+          <small className="flex items-center gap-1.5 text-[10px] text-[#8c9a97]">
             <Clock3 size={12} />
             {job.age ? toPersianDigits(job.age) : "تازه ثبت‌شده"}
           </small>
           <div className="flex flex-wrap items-center gap-1.5">
             <button
-              className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[8px] font-bold text-[#60716e] transition-colors duration-200 hover:bg-[#f3f6f4] hover:text-[#0f7b62]"
+              className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[10px] text-[#60716e] transition-colors duration-200 hover:bg-[#f3f6f4] hover:text-[#0f7b62]"
               type="button"
               onClick={() => setDetailsOpen(true)}
             >
               <Eye size={14} /> نمایش کامل آگهی
             </button>
             <PanelLink
-              className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[8px] font-bold text-[#0b795d] no-underline transition-colors duration-200 hover:bg-[#edf7f2]"
+              className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[10px] text-[#0b795d] no-underline transition-colors duration-200 hover:bg-[#edf7f2]"
               href={job.id ? `/match?job=${encodeURIComponent(job.id)}` : "/match"}
             >
               تطبیق مجدد

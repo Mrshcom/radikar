@@ -1,23 +1,14 @@
-import type { ComponentType } from "react";
-
-type PageTitleIcon = ComponentType<{ className?: string; size?: number }>;
-
 export function PanelPageTitle({
   title,
-  icon: Icon,
   description,
 }: {
   title: string;
-  icon: PageTitleIcon;
-  description?: string;
+  description: string;
 }) {
   return (
     <header>
-      <h1 className="mb-0 flex items-center gap-2 text-[26px] font-black text-[#19312f]">
-        <Icon size={22} />
-        {title}
-      </h1>
-      {description && <p className="mb-0 mt-2 text-[10px] leading-6 text-[#788783]">{description}</p>}
+      <h1 className="m-0 text-[30px] font-black leading-[1.4] tracking-[-1px] text-[#19312f]">{title}</h1>
+      <p className="m-0 mt-1 text-[12px] leading-7 text-[#758582]">{description}</p>
     </header>
   );
 }

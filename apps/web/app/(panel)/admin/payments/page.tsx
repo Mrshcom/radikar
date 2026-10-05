@@ -1,7 +1,6 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { CreditCard } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { useAuth } from "@/app/_components/auth";
 import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
@@ -19,6 +18,7 @@ import {
   tableSortDirectionParser,
 } from "@/lib/table-search-params";
 import { AdminFilterSelect, AdminTablePagination, AdminTableToolbar } from "../_components/admin-table-controls";
+import { SectionTitle } from "../../_components/ui";
 
 type Payment = {
   id: string;
@@ -100,11 +100,7 @@ export default function AdminPaymentsPage() {
   ];
   return (
     <div className="grid gap-6">
-      <header>
-        <h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]">
-          <CreditCard size={22} /> تراکنش‌ها و واریزی‌ها
-        </h1>
-      </header>
+      <SectionTitle description="تراکنش‌های درگاه، واریزی‌ها و نتیجه پرداخت‌ها را پیگیری کن." title="تراکنش‌ها و واریزی‌ها" />
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
         <AdminTableToolbar
           search={search}

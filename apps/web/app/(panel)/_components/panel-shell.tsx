@@ -61,6 +61,7 @@ import { userDisplayName, userIdentifier } from "@/lib/user-identity";
 import { OnboardingLauncher, OnboardingProvider } from "./onboarding/onboarding-provider";
 import { useRadicoinWallet } from "@/lib/radicoins";
 import { RadicoinIcon } from "./radicoin-icon";
+import { PanelNavigationProgress } from "./panel-navigation-progress";
 
 type MenuItem = {
   href: string;
@@ -127,16 +128,6 @@ const primaryButtonClass =
   "inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border-0 bg-[#0f7b62] px-[15px] text-[11px] font-bold text-white no-underline shadow-[0_7px_17px_rgba(15,123,98,.17)] disabled:cursor-not-allowed disabled:opacity-45";
 const secondaryButtonClass =
   "inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border border-[#e1e6e0] bg-white px-[15px] text-[11px] font-bold text-[#526461]";
-
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return parts.length
-    ? parts
-        .slice(0, 2)
-        .map((part) => Array.from(part)[0])
-        .join("\u200c")
-    : "—";
-}
 
 function adminEventHref(type: AdminEvent["type"]) {
   if (type === "purchase") return "/admin/orders";
@@ -417,6 +408,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
       className="min-h-screen print:hidden [&_a]:cursor-pointer [&_button:not(:disabled)]:cursor-pointer [&_button:not(:disabled)]:transition-[opacity,filter,background-color,border-color,color,box-shadow] [&_button:not(:disabled):hover]:opacity-80 [&_button:disabled]:cursor-not-allowed [&_input[type=checkbox]]:cursor-pointer [&_input[type=radio]]:cursor-pointer [&_input[type=range]]:cursor-pointer [&_select]:cursor-pointer [&_select]:transition-colors [&_select:hover]:border-[#9ccbbb] [&_summary]:cursor-pointer [&_summary]:transition-opacity [&_summary:hover]:opacity-80"
       dir="rtl"
     >
+      <PanelNavigationProgress />
       <aside className="fixed inset-y-0 start-0 z-20 flex w-[248px] flex-col border-e border-[#e7ebe6] bg-white px-4 pb-[18px] pt-6 max-[820px]:hidden">
         <Link
           className="flex items-center gap-1 border-0 bg-transparent px-[9px] pb-6 text-right text-[#19312f] no-underline"
@@ -611,7 +603,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 >
                   <Bell size={19} />
                   {(latestJob || unreadAdminEvents.length > 0) && (
-                    <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full border border-white bg-[#e7835c] px-1 text-[7px] font-bold leading-none text-white">
+                    <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full border border-white bg-[#e7835c] px-1 text-[9px] font-bold leading-none text-white">
                       {isSuperadmin ? Math.min(unreadAdminEvents.length, 99).toLocaleString("fa-IR") : ""}
                     </span>
                   )}
@@ -672,21 +664,47 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   </div>
                 )}
                 {noticeOpen && userRole === "user" && (
-                  <div className="absolute left-0 top-[46px] w-[255px] rounded-[14px] border border-[#e7ebe6] bg-white p-4 shadow-[0_18px_45px_rgba(28,54,50,.15)]">
-                    <strong className="text-xs">{latestJob?.role || "اعلان تازه‌ای نیست"}</strong>
-                    <p className="my-[5px] text-[10px] leading-[1.8] text-[#758582]">
-                      {latestJob
-                        ? `${latestJob.company}${latestJob.match > 0 ? ` · تطابق ${latestJob.match.toLocaleString("fa-IR")}٪` : ""}`
-                        : "فرصت‌های واردشده و رویدادهای واقعی اینجا نمایش داده می‌شوند."}
-                    </p>
-                    {latestJob && (
-                      <Link
-                        className="p-0 text-[10px] font-bold text-[#0f7b62] no-underline"
-                        href="/jobs"
-                        onClick={() => setNoticeOpen(false)}
-                      >
-                        مشاهده فرصت
-                      </Link>
+                  <div className="absolute left-0 top-[46px] z-40 w-[320px] overflow-hidden rounded-[20px] border border-[#dfe6e1] bg-white p-2.5 shadow-[0_22px_54px_rgba(25,57,50,.2)] max-[420px]:fixed max-[420px]:left-3 max-[420px]:right-auto max-[420px]:top-[68px] max-[420px]:w-[calc(100vw-48px)]">
+                    <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3">
+                      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#d9f0e6] text-[#0f7b62] ring-2 ring-[#c9e7da]">
+                        <Bell size={19} />
+                      </span>
+                      <div className="min-w-0">
+                        <strong className="block text-[12px] text-[#19312f]">اعلان‌ها</strong>
+                        <small className="mt-0.5 block text-[9px] text-[#7b8b86]">فرصت‌ها و رویدادهای تازه مسیر شغلی</small>
+                      </div>
+                      {latestJob && <span className="mr-auto size-2.5 rounded-full bg-[#25a56f] shadow-[0_0_0_3px_#d8f0e4]" />}
+                    </div>
+                    {latestJob ? (
+                      <div className="mt-2 rounded-[14px] border border-[#e4efe9] bg-[#f7fbf8] p-3">
+                        <div className="flex items-start gap-3">
+                          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#e1f3eb] text-[#0f7b62]">
+                            <BriefcaseBusiness size={17} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <span className="mb-1 inline-flex rounded-full bg-[#dff2e9] px-2 py-0.5 text-[8px] font-bold text-[#0f7b62]">فرصت جدید</span>
+                            <strong className="block truncate text-[11px] text-[#19312f]">{latestJob.role}</strong>
+                            <p className="m-0 mt-1 truncate text-[9px] text-[#758582]">
+                              {latestJob.company}
+                              {latestJob.match > 0 ? ` · تطابق ${latestJob.match.toLocaleString("fa-IR")}٪` : ""}
+                            </p>
+                          </div>
+                        </div>
+                        <Link
+                          className="mt-3 flex min-h-9 items-center justify-center gap-2 rounded-[10px] bg-[#0f7b62] text-[10px] font-bold text-white no-underline shadow-[0_7px_17px_rgba(15,123,98,.14)] transition hover:bg-[#0c6c56]"
+                          href="/jobs"
+                          onClick={() => setNoticeOpen(false)}
+                        >
+                          مشاهده فرصت‌ها
+                          <ChevronLeft size={14} />
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="mt-2 rounded-[14px] border border-dashed border-[#dfe9e3] px-3 py-8 text-center">
+                        <Bell className="mx-auto mb-2 text-[#9bb0a9]" size={21} />
+                        <strong className="block text-[10px] text-[#536762]">اعلان تازه‌ای نیست</strong>
+                        <p className="m-0 mt-1 text-[9px] leading-6 text-[#91a09c]">فرصت‌ها و رویدادهای واقعی اینجا نمایش داده می‌شوند.</p>
+                      </div>
                     )}
                   </div>
                 )}
@@ -696,26 +714,30 @@ function PanelShellContent({ children }: { children: ReactNode }) {
               <button
                 aria-expanded={userMenuOpen}
                 aria-label="منوی حساب کاربری"
-                className="grid size-[38px] place-items-center rounded-[11px] border border-[#e4e8e3] bg-white text-[#526762] shadow-none transition-colors hover:border-[#cfdad4] hover:bg-[#edf6f1]"
+                className="relative grid size-[38px] place-items-center rounded-[11px] border border-[#e4e8e3] bg-[#e5e5e7] text-[#526762] shadow-none transition-colors hover:border-[#cfdad4] hover:bg-[#dedee1]"
                 onClick={() => {
                   setNoticeOpen(false);
                   setUserMenuOpen((value) => !value);
                 }}
                 type="button"
               >
-                <span className="relative grid size-8 shrink-0 place-items-center rounded-[10px] bg-[#0f7b62] text-[10px] font-bold text-white">
-                  {initials(user ? userDisplayName(user) : "")}
-                  <span
-                    aria-hidden="true"
-                    className="absolute -bottom-0.5 -left-0.5 size-2.5 rounded-full bg-[#36b77d] ring-2 ring-white"
-                  />
-                </span>
+                <Image
+                  alt="آواتار پیش‌فرض حساب کاربری"
+                  className="size-full rounded-[10px] object-cover"
+                  height={38}
+                  src="/illustrations/default-profile-avatar.svg"
+                  width={38}
+                />
+                <span
+                  aria-hidden="true"
+                  className="absolute -bottom-0.5 -left-0.5 size-3 rounded-full bg-[#36b77d] ring-2 ring-white"
+                />
               </button>
               {userMenuOpen && (
-                <div className="absolute left-0 top-[46px] z-40 w-[270px] overflow-hidden rounded-[16px] border border-[#dfe6e1] bg-white p-2 shadow-[0_18px_50px_rgba(25,57,50,.18)]">
-                  <div className="mb-1 flex items-center gap-3 rounded-[12px] bg-gradient-to-l from-[#edf8f3] to-[#fbfcfa] px-3 py-3">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#176b59] text-[11px] font-black text-white ring-2 ring-[#c9e7da]">
-                      {initials(user ? userDisplayName(user) : "")}
+                <div className="absolute left-0 top-[46px] z-40 w-[292px] overflow-hidden rounded-[20px] border border-[#dfe6e1] bg-white p-2.5 shadow-[0_22px_54px_rgba(25,57,50,.2)]">
+                  <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3">
+                    <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#e7f5ee] ring-2 ring-[#c9e7da]">
+                      <Image alt="آواتار پیش‌فرض حساب کاربری" className="size-full" height={40} src="/illustrations/default-profile-avatar.svg" width={40} />
                     </span>
                     <div className="min-w-0">
                       <strong className="block truncate text-[11px] text-[#19312f]">
@@ -729,16 +751,23 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                     </div>
                     <span
                       aria-hidden="true"
-                      className="mr-auto size-2 rounded-full bg-[#25a56f] shadow-[0_0_0_3px_#d8f0e4]"
+                      className="mr-auto size-2.5 rounded-full bg-[#25a56f] shadow-[0_0_0_3px_#d8f0e4]"
                     />
                   </div>
                   {userRole === "user" && (
                     <Link
-                      className="mb-1 flex items-center gap-3 rounded-[12px] bg-gradient-to-l from-[#fff8df] to-[#fffdf7] px-3 py-2.5 text-[#5d4a18] no-underline transition hover:from-[#fff3c7] hover:to-[#fffaf0]"
+                      className="mt-2 flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#fff6d7] to-[#fffdf7] px-3.5 py-2.5 text-[#5d4a18] no-underline shadow-[inset_0_0_0_1px_rgba(205,157,43,.08)] transition hover:from-[#fff0bd] hover:to-[#fffaf0]"
                       href="/radicoins"
                       onClick={() => setUserMenuOpen(false)}
                     >
-                      <RadicoinIcon className="size-11 drop-shadow-[0_5px_9px_rgba(199,145,20,.22)]" size={44} />
+                      <Image
+                        alt=""
+                        aria-hidden="true"
+                        className="size-11 shrink-0 object-contain drop-shadow-[0_5px_9px_rgba(199,145,20,.22)]"
+                        height={44}
+                        src="/illustrations/radicoin-coin-m-v3.png"
+                        width={44}
+                      />
                       <div className="min-w-0">
                         <span className="block text-[9px] font-semibold text-[#8a7641]">موجودی رادیکوین</span>
                         <strong className="mt-0.5 block text-[17px] font-black leading-none text-[#5d4a18]">
@@ -749,35 +778,45 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                       <ChevronLeft className="mr-auto text-[#b3974b]" size={15} />
                     </Link>
                   )}
-                  {(isManagement
-                    ? [{ href: "/settings", label: "امنیت", icon: Settings }]
-                    : [
-                        { href: "/account", label: "حساب کاربری", icon: UserRound },
-                        { href: "/settings", label: "تنظیمات", icon: Settings },
-                        { href: "/orders", label: "سفارش‌ها", icon: ReceiptText },
-                        { href: "/referrals", label: "دعوت دوستان", icon: Gift },
-                        { href: "/upgrade", label: "خرید و ارتقای بسته", icon: CreditCard },
-                      ]
-                  ).map(({ href, label, icon: Icon }) => (
-                    <Link
-                      className="flex min-h-11 items-center gap-3 rounded-[10px] px-3 text-[11px] font-semibold text-[#536762] no-underline hover:bg-[#edf6f1] hover:text-[#0f7b62]"
-                      href={href}
-                      key={href}
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <Icon size={18} /> {label}
-                    </Link>
-                  ))}
-                  <div className="my-1 border-t border-[#edf0ec]" />
+                  <nav aria-label="دسترسی‌های حساب" className="mt-2 grid gap-0.5">
+                    {(isManagement
+                      ? [{ href: "/settings", label: "امنیت", icon: Settings }]
+                      : [
+                          { href: "/account", label: "حساب کاربری", icon: UserRound },
+                          { href: "/settings", label: "تنظیمات", icon: Settings },
+                          { href: "/orders", label: "سفارش‌ها", icon: ReceiptText },
+                          { href: "/referrals", label: "دعوت دوستان", icon: Gift },
+                          { href: "/upgrade", label: "خرید و ارتقای بسته", icon: CreditCard },
+                        ]
+                    ).map(({ href, label, icon: Icon }) => (
+                      <Link
+                        className="group flex min-h-10 items-center gap-3 rounded-[11px] px-2.5 text-[11px] font-semibold text-[#536762] no-underline transition hover:bg-[#edf7f2] hover:text-[#0f7b62]"
+                        href={href}
+                        key={href}
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[#f2f6f4] text-[#61756f] transition group-hover:bg-white group-hover:text-[#0f7b62] group-hover:shadow-sm">
+                          <Icon size={17} />
+                        </span>
+                        <span className="min-w-0 flex-1">{label}</span>
+                        <ChevronLeft className="shrink-0 text-[#a5b2ad] transition group-hover:-translate-x-0.5 group-hover:text-[#0f7b62]" size={14} />
+                      </Link>
+                    ))}
+                  </nav>
+                  <div className="mt-2 border-t border-[#edf0ec] pt-2" />
                   <button
-                    className="flex min-h-11 w-full items-center gap-3 rounded-[10px] border-0 bg-transparent px-3 text-right text-[11px] font-semibold text-[#a13f37] hover:bg-[#fff1ef]"
+                    className="group flex min-h-10 w-full items-center gap-3 rounded-[11px] border-0 bg-transparent px-2.5 text-right text-[11px] font-semibold text-[#a13f37] transition hover:bg-[#fff1ef]"
                     onClick={() => {
                       setUserMenuOpen(false);
                       void logout().catch(() => notify("خروج از حساب ناموفق بود؛ دوباره تلاش کن.", "error"));
                     }}
                     type="button"
                   >
-                    <LogOut size={18} /> خروج از حساب
+                    <span className="grid size-8 place-items-center rounded-[9px] bg-[#fff4f2] text-[#b14b43] transition group-hover:bg-white group-hover:shadow-sm">
+                      <LogOut size={17} />
+                    </span>
+                    <span className="flex-1">خروج از حساب</span>
+                    <ChevronLeft className="text-[#d9aaa4] transition group-hover:-translate-x-0.5" size={14} />
                   </button>
                 </div>
               )}

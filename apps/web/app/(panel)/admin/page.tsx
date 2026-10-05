@@ -5,7 +5,6 @@ import {
   BadgeDollarSign,
   CircleDollarSign,
   FileText,
-  LayoutDashboard,
   ReceiptText,
   UserCheck,
   UserPlus,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/app/_components/auth";
 import { useAdminBillingStats, useAdminStats } from "@/lib/admin-stats";
+import { SectionTitle } from "../_components/ui";
 
 const collectionLabels: Record<string, string> = {
   profiles: "فضاهای کاری",
@@ -38,13 +38,10 @@ export default function AdminPage() {
   if (user.role === "admin") {
     return (
       <section className="rounded-[18px] border border-[#d8e7df] bg-white p-7">
-        <h1 className="m-0 flex items-center gap-2 text-[23px] font-black text-[#19312f]">
-          <LayoutDashboard size={22} /> داشبورد مدیریتی
-        </h1>
-        <p className="mb-0 mt-3 text-[11px] leading-8 text-[#748582]">
-          مدیریت عضویت و اعتبار کاربران، سفارش‌ها و تراکنش‌ها از منوی کناری در دسترس است. گزارش‌های کلان سامانه و مدیریت
-          نقش‌ها فقط برای سوپرادمین نمایش داده می‌شود.
-        </p>
+        <SectionTitle
+          description="مدیریت عضویت و اعتبار کاربران، سفارش‌ها و تراکنش‌ها از منوی کناری در دسترس است. گزارش‌های کلان سامانه و مدیریت نقش‌ها فقط برای سوپرادمین نمایش داده می‌شود."
+          title="داشبورد مدیریتی"
+        />
       </section>
     );
   }
@@ -74,14 +71,10 @@ export default function AdminPage() {
 
   return (
     <div className="grid gap-6">
-      <header>
-        <h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]">
-          <LayoutDashboard size={22} /> داشبورد مدیریتی
-        </h1>
-        <p className="mb-0 mt-2 text-[11px] leading-7 text-[#7c8b88]">
-          وضعیت کاربران، تولید رزومه و فروش سامانه بر اساس روز جاری به وقت تهران نمایش داده می‌شود.
-        </p>
-      </header>
+      <SectionTitle
+        description="وضعیت کاربران، تولید رزومه و فروش سامانه بر اساس روز جاری به وقت تهران نمایش داده می‌شود."
+        title="داشبورد مدیریتی"
+      />
 
       <section className="grid grid-cols-4 gap-4 max-[1050px]:grid-cols-2">
         {cards.map(({ label, value, icon: Icon }) => (

@@ -21,8 +21,7 @@ import { ApiError } from "@/lib/api-client";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { formatLimit, formatTomans, type Plan, useCreateOrder, useMembership, usePlans } from "@/lib/billing";
 import { useRadicoinWallet } from "@/lib/radicoins";
-import { RadicoinIcon } from "../_components/radicoin-icon";
-import { Modal } from "../_components/ui";
+import { Modal, SectionTitle } from "../_components/ui";
 
 const checkoutSchema = z.object({
   paymentMethod: z.enum(["gateway", "radicoin"]),
@@ -97,15 +96,11 @@ export default function UpgradePage() {
 
   return (
     <div className="grid gap-7">
-      <header className="max-w-2xl">
-        <span className="inline-flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]">
-          <Crown size={18} /> خرید و ارتقا بسته
-        </span>
-        <h1 className="mb-0 mt-3 text-[28px] font-black text-[#19312f]">پلن مناسب مسیر شغلی‌ات را انتخاب کن</h1>
-        <p className="mb-0 mt-3 text-[12px] leading-8 text-[#748582]">
-          همه پلن‌ها ۳۰ روزه‌اند. تمدید همان پلن به زمان و اعتبار فعلی اضافه می‌شود و ارتقا بلافاصله فعال خواهد شد.
-        </p>
-      </header>
+      <SectionTitle
+        className="max-w-2xl"
+        description="همه پلن‌ها ۳۰ روزه‌اند. تمدید همان پلن به زمان و اعتبار فعلی اضافه می‌شود و ارتقا بلافاصله فعال خواهد شد."
+        title="پلن مناسب مسیر شغلی‌ات را انتخاب کن"
+      />
 
       {membership.data && (
         <section className="relative isolate overflow-hidden rounded-[22px] border border-[#c9e3d7] bg-[linear-gradient(110deg,#f7fcf9_0%,#e9f6f0_58%,#f8fbf7_100%)] px-5 py-5 shadow-[0_14px_36px_rgba(24,91,72,.07)] md:px-6">
@@ -195,7 +190,14 @@ export default function UpgradePage() {
                 {plan.priceRials > 0 && <span className="mr-1 text-[10px] text-[#7d8c89]">تومان / ۳۰ روز</span>}
                 {plan.radicoinCost && (
                   <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-[#8c6812]">
-                    <RadicoinIcon size={22} />
+                    <Image
+                      alt=""
+                      aria-hidden="true"
+                      className="size-[22px] shrink-0 object-contain"
+                      height={22}
+                      src="/illustrations/radicoin-coin-m-v3.png"
+                      width={22}
+                    />
                     یا {plan.radicoinCost.toLocaleString("fa-IR")} رادیکوین
                   </div>
                 )}
@@ -254,9 +256,9 @@ export default function UpgradePage() {
                 <span className="grid size-10 shrink-0 place-items-center rounded-[11px] bg-white text-[#0f7b62] shadow-sm">
                   <ReceiptText size={20} />
                 </span>
-                <div>
+                <div className="flex min-w-0 flex-1 items-center justify-between gap-4 whitespace-nowrap">
                   <p className="m-0 text-[11px] text-[#71827e]">بسته انتخابی</p>
-                  <strong className="mt-1 block text-[15px] text-[#19312f]">{invoicePlan.name}</strong>
+                  <strong className="text-[15px] text-[#19312f]">{invoicePlan.name}</strong>
                 </div>
               </div>
               <dl className="m-0 grid gap-0 px-4 text-[11px]">
@@ -308,7 +310,14 @@ export default function UpgradePage() {
                   {...checkout.register("paymentMethod")}
                 />
                 <span className="grid size-10 shrink-0 place-items-center rounded-[11px] bg-[#fff5cf]">
-                  <RadicoinIcon size={34} />
+                  <Image
+                    alt=""
+                    aria-hidden="true"
+                    className="size-9 object-contain"
+                    height={36}
+                    src="/illustrations/radicoin-coin-m-v3.png"
+                    width={36}
+                  />
                 </span>
                 <span className="min-w-0 flex-1">
                   <strong className="block text-[12px] text-[#19312f]">
@@ -335,7 +344,14 @@ export default function UpgradePage() {
                 <div className="flex items-center justify-between gap-4">
                   <dt className="text-[#71827e]">رادیکوین مصرفی</dt>
                   <dd className="m-0 flex items-center gap-1.5 font-black text-[#8c6812]">
-                    <RadicoinIcon size={20} />
+                    <Image
+                      alt=""
+                      aria-hidden="true"
+                      className="size-5 object-contain"
+                      height={20}
+                      src="/illustrations/radicoin-coin-m-v3.png"
+                      width={20}
+                    />
                     {appliedCoins.toLocaleString("fa-IR")}
                   </dd>
                 </div>

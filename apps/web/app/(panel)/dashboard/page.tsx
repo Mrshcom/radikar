@@ -90,12 +90,12 @@ function JobPoolPreview() {
       <div className="flex items-start justify-between gap-5">
         <div>
           <h3 className="m-0 mb-[5px] text-[13px]">پیشنهادهای امروز برای شما</h3>
-          <p className="m-0 text-[9px] text-[#99a4a1]">
+          <p className="m-0 text-[10px] text-[#99a4a1]">
             {formatPersianNumber(listings.data.total)} آگهی فعال در Job Pool
           </p>
         </div>
         <Link
-          className="flex items-center gap-[3px] p-1.5 text-[10px] font-bold text-[#0f7b62] no-underline"
+          className="flex items-center gap-[3px] p-1.5 text-[11px] font-bold text-[#0f7b62] no-underline"
           href="/jobs"
         >
           همه فرصت‌ها <ChevronLeft size={16} />
@@ -110,10 +110,10 @@ function JobPoolPreview() {
           >
             <JobLogo company={listing.companyName} logoUrl={listing.companyLogoUrl || undefined} variant="board" />
             <span className="min-w-0">
-              <strong className="block truncate text-[10px] text-[#19312f]" dir="auto">
+              <strong className="block truncate text-[12px] text-[#19312f]" dir="auto">
                 {listing.title}
               </strong>
-              <span className="mt-1 block truncate text-[8px] text-[#71817d]" dir="auto">
+              <span className="mt-1 block truncate text-[10px] text-[#71817d]" dir="auto">
                 {[listing.companyName, listing.location].filter(Boolean).join(" · ")}
               </span>
             </span>
@@ -394,7 +394,6 @@ export default function DashboardPage() {
   return (
     <>
       <SectionTitle
-        eyebrow="دستیار هوشمند کاریابی"
         title={dashboardTitle(data.displayName)}
         description={data.snapshot.subtitle}
         action={
@@ -577,10 +576,10 @@ export default function DashboardPage() {
         <div className="flex items-start justify-between gap-5">
           <div>
             <h3 className="m-0 mb-[5px] text-[13px]">فرصت‌های ذخیره‌شده</h3>
-            <p className="m-0 text-[9px] text-[#99a4a1]">آگهی‌هایی که وارد یا تحلیل کرده‌ای</p>
+            <p className="m-0 text-[10px] text-[#99a4a1]">آگهی‌هایی که وارد یا تحلیل کرده‌ای</p>
           </div>
           <Link
-            className="flex items-center gap-[3px] p-1.5 text-[10px] font-bold text-[#0f7b62] no-underline"
+            className="flex items-center gap-[3px] p-1.5 text-[11px] font-bold text-[#0f7b62] no-underline"
             href="/jobs"
           >
             همه فرصت‌ها <ChevronLeft size={16} />
@@ -595,7 +594,7 @@ export default function DashboardPage() {
               ))}
           </div>
         ) : (
-          <div className="grid min-h-[118px] place-items-center rounded-xl border border-dashed border-[#d9e2dd] bg-[#fbfcfa] p-6 text-center text-[9px] text-[#86938f] mt-3">
+          <div className="grid min-h-[118px] place-items-center rounded-xl border border-dashed border-[#d9e2dd] bg-[#fbfcfa] p-6 text-center text-[10px] text-[#86938f] mt-3">
             هنوز فرصت شغلی وارد نشده است.
           </div>
         )}

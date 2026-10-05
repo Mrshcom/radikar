@@ -93,20 +93,20 @@ export function OnboardingChecklistModal({ onClose }: { onClose: () => void }) {
             aria-hidden="true"
             className="pointer-events-none absolute bottom-0 left-0 top-0 hidden w-[36%] overflow-hidden min-[781px]:block"
           >
-            <span className="absolute left-1/2 top-[16%] size-[280px] -translate-x-1/2 rounded-full bg-[#d8f0e6]" />
+            <span className="absolute left-1/2 top-[13%] size-[310px] -translate-x-1/2 rounded-full bg-[#d8f0e6]" />
             <span className="absolute left-[15%] top-[12%] flex items-center gap-1.5 rounded-full bg-[#e5f5ed] px-3 py-1.5 text-[9px] font-bold text-[#0f7b62]">
               <Sparkles size={14} /> همراه مسیر شغلی
             </span>
             <Image
               alt=""
-              className="absolute bottom-[-18px] left-1/2 h-[460px] w-auto max-w-none -translate-x-1/2 object-contain drop-shadow-[0_22px_22px_rgba(19,72,59,.18)]"
-              height={460}
+              className="absolute bottom-[-22px] left-1/2 h-[515px] w-auto max-w-none -translate-x-1/2 object-contain drop-shadow-[0_22px_22px_rgba(19,72,59,.18)]"
+              height={515}
               priority
               src="/illustrations/radikar-mascot-guide-v1.png"
-              width={460}
+              width={515}
             />
           </aside>
-          <div className="relative z-[1] ml-[36%] flex min-w-0 flex-col py-2 pl-2 max-[780px]:ml-0 max-[780px]:p-0">
+          <div className="relative z-[1] ml-[36%] flex min-h-[554px] min-w-0 flex-col py-2 pl-2 max-[780px]:ml-0 max-[780px]:min-h-0 max-[780px]:p-0">
             <header className="flex items-start gap-3 border-b border-[#dfeae4] pb-5">
               <span className="grid size-11 shrink-0 place-items-center rounded-[14px] bg-[#dff3e9] text-[#0f7b62]">
                 <Sparkles size={22} />
@@ -155,18 +155,18 @@ export function OnboardingChecklistModal({ onClose }: { onClose: () => void }) {
             </div>
             <footer className="mt-auto flex flex-wrap items-center gap-3 border-t border-[#dfeae4] pt-5 max-[780px]:mt-5">
               <button
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-[10px] bg-[#0f7b62] px-4 text-[10px] font-bold text-white shadow-[0_8px_18px_rgba(15,123,98,.2)] hover:bg-[#0b684f]"
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-[10px] bg-[#0f7b62] px-4 text-[12px] font-bold text-white shadow-[0_8px_18px_rgba(15,123,98,.2)] hover:bg-[#0b684f]"
                 onClick={startTour}
                 type="button"
               >
                 تور کوتاه پنل <ChevronLeft size={15} />
               </button>
               <button
-                className="min-h-10 border-0 bg-transparent px-2 text-[10px] text-[#72827e] hover:text-[#19312f]"
+                className="min-h-10 border-0 bg-transparent px-2 text-[12px] text-[#72827e] hover:text-[#19312f]"
                 onClick={onClose}
                 type="button"
               >
-                فعلاً بعداً
+                هنوز زوده!
               </button>
             </footer>
           </div>

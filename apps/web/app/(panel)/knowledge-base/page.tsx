@@ -1040,7 +1040,6 @@ export default function KnowledgeBasePage() {
   return (
     <>
       <SectionTitle
-        eyebrow="منبع واحد اطلاعات حرفه‌ای"
         title="پروفایل مسیر شغلی من"
         description="اطلاعاتت را یک‌بار کامل کن تا در ساخت رزومه، تطبیق شغلی و آمادگی مصاحبه از آن استفاده شود."
       />
@@ -1818,7 +1817,7 @@ function KnowledgeSectionTabs({
   return (
     <aside className="min-w-0 rounded-[18px] border border-[#dce7e1] bg-white p-2 shadow-[0_12px_36px_rgba(27,55,50,.055)] max-[1099px]:shadow-none min-[1100px]:sticky min-[1100px]:top-4">
       <header className="hidden px-3 pb-3 pt-2 min-[1100px]:block">
-        <strong className="text-[11px] text-[#19312f]">بخش‌های پایگاه دانش</strong>
+        <strong className="text-[13px] text-[#19312f]">بخش‌های پایگاه دانش</strong>
         <p className="mb-0 mt-1 text-[9px] leading-[1.7] text-[#83918e]">برای تکمیل اطلاعات بین بخش‌ها جابه‌جا شو.</p>
       </header>
       <div className="relative min-[1100px]:block">
@@ -1891,7 +1890,7 @@ function KnowledgeSectionTabs({
                   <Icon size={19} />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <strong className="truncate text-[9px]">{tab.label}</strong>
+                  <strong className="truncate text-[11px]">{tab.label}</strong>
                   <small className={cn("mt-1 truncate text-[9px]", active ? "text-white/70" : "text-[#83918e]")}>
                     {tab.description}
                   </small>

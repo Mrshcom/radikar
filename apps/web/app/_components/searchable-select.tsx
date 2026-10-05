@@ -21,6 +21,7 @@ type SearchableSelectProps = {
   emptyLabel?: string;
   disabled?: boolean;
   className?: string;
+  invalid?: boolean;
   ariaLabel?: string;
   allowCustom?: boolean;
   maxSelected?: number;
@@ -37,6 +38,7 @@ export function SearchableSelect({
   emptyLabel = "موردی پیدا نشد",
   disabled = false,
   className,
+  invalid = false,
   ariaLabel,
   allowCustom = false,
   maxSelected,
@@ -76,10 +78,7 @@ export function SearchableSelect({
   }, []);
 
   useEffect(() => {
-    if (!open) {
-      setMenuPosition(null);
-      return;
-    }
+    if (!open) return;
     const updatePosition = () => {
       const trigger = triggerRef.current;
       if (!trigger) return;
@@ -146,7 +145,8 @@ export function SearchableSelect({
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={ariaLabel}
-        className="flex min-h-10 w-full items-center gap-2 rounded-[10px] border border-[#dfe6e0] bg-white px-3 py-2 text-right text-[11px] !font-normal text-[#405753] outline-none transition hover:border-[#a8cdbd] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 disabled:cursor-not-allowed disabled:opacity-60"
+        data-invalid={invalid}
+        className="flex min-h-10 w-full items-center gap-2 rounded-[10px] border border-[#dfe6e0] bg-white px-3 py-2 text-right text-[11px] !font-normal text-[#405753] outline-none transition hover:border-[#a8cdbd] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 data-[invalid=true]:border-[#c44d4d] data-[invalid=true]:ring-4 data-[invalid=true]:ring-[#c44d4d]/10 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={disabled}
         ref={triggerRef}
         onClick={() => {

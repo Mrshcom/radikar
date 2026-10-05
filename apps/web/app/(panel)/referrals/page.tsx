@@ -8,7 +8,6 @@ import {
   Medal,
   MousePointerClick,
   Send,
-  Sparkles,
   Trophy,
   UsersRound,
 } from "lucide-react";
@@ -79,13 +78,10 @@ export default function ReferralsPage() {
       <section className="relative isolate px-2 pb-7 pt-8 md:px-5 lg:mb-6 lg:min-h-[535px] lg:px-7 lg:py-10">
         <div className="relative grid items-center gap-5 lg:grid-cols-[1fr_1.05fr] lg:gap-8">
           <div className="relative z-20 max-w-xl lg:py-4">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/75 px-3 py-1.5 text-[11px] font-bold text-[#0f7b62] shadow-[0_6px_20px_rgba(15,123,98,.08)]">
-              <Sparkles size={14} /> دعوت کن، باهم رشد کنید
-            </span>
-            <h1 className="mb-0 mt-5 text-[29px] font-black leading-[1.55] text-[#19312f] md:text-[36px]">
+            <h1 className="m-0 text-[30px] font-black leading-[1.55] text-[#19312f]">
               دوستت را به رادیکار دعوت کن، <span className="text-[#0f7b62]">هر دو رادیکوین بگیرید</span>
             </h1>
-            <p className="mb-0 mt-3 max-w-lg text-[11px] leading-8 text-[#61746f]">
+            <p className="mb-0 mt-3 max-w-lg text-[12px] leading-8 text-[#61746f]">
               از ثبت‌نام تأییدشده تا اولین فعالیت واقعی و ارتقای حساب، هر قدم دوستت می‌تواند برای هر دوی شما پاداش
               تازه‌ای بسازد.
             </p>
@@ -135,11 +131,11 @@ export default function ReferralsPage() {
                 <span className="grid size-10 shrink-0 place-items-center rounded-[13px] bg-[#f5fbf8] text-[#0f7b62]">
                   <Icon size={18} />
                 </span>
-                <strong className="text-[12px] text-[#314b46]">
+                <strong className="text-[13px] text-[#314b46]">
                   {index + 1}. {title}
                 </strong>
               </div>
-              <p className="mb-0 mt-3 text-[10px] leading-6 text-[#71847f]">{description}</p>
+              <p className="mb-0 mt-2 text-[11px] leading-6 text-[#71847f]">{description}</p>
             </article>
           ))}
         </div>
@@ -156,7 +152,7 @@ export default function ReferralsPage() {
             </span>
             <div>
               <strong className="block text-[20px] font-black text-[#19312f]">{value.toLocaleString("fa-IR")}</strong>
-              <span className="mt-1 block text-[9px] text-[#7c8b88]">{label}</span>
+              <span className="mt-1 block text-[11px] text-[#7c8b88]">{label}</span>
             </div>
           </article>
         ))}
@@ -164,21 +160,29 @@ export default function ReferralsPage() {
 
       <section className="grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
         <article className="overflow-hidden rounded-[20px] bg-white shadow-[0_12px_38px_rgba(31,76,64,.055)]">
-          <h2 className="m-0 flex items-center gap-2 border-b border-[#edf0ec] px-5 py-4 text-[13px] font-extrabold text-[#19312f]">
-            <RadicoinIcon size={18} /> گردش رادیکوین دعوت
+          <h2 className="m-0 flex items-center gap-2 border-b border-[#edf0ec] px-5 py-4 text-[15px] font-extrabold text-[#19312f]">
+            <Image
+              alt=""
+              aria-hidden="true"
+              className="size-[18px] shrink-0 object-contain"
+              height={18}
+              src="/illustrations/radicoin-coin-m-v3.png"
+              width={18}
+            />
+            گردش رادیکوین دعوت
           </h2>
           <div className="divide-y divide-[#edf0ec]">
             {referral.events.length ? (
               referral.events.map((event) => (
                 <div className="flex items-center justify-between gap-3 px-5 py-4" key={event.id}>
                   <div>
-                    <strong className="block text-[10px] text-[#405753]">{event.description}</strong>
-                    <span className="mt-1 block text-[9px] text-[#82908d]">
+                    <strong className="block text-[12px] text-[#405753]">{event.description}</strong>
+                    <span className="mt-1 block text-[11px] text-[#82908d]">
                       <PersianDateTime value={event.createdAt} />
                     </span>
                   </div>
                   <span
-                    className={`rounded-full px-3 py-1.5 text-[9px] font-bold ${event.points >= 0 ? "bg-[#eaf5f0] text-[#0f705a]" : "bg-[#fff1ef] text-[#b14848]"}`}
+                    className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${event.points >= 0 ? "bg-[#eaf5f0] text-[#0f705a]" : "bg-[#fff1ef] text-[#b14848]"}`}
                   >
                     {event.points > 0 ? "+" : ""}
                     {event.points.toLocaleString("fa-IR")} رادیکوین
@@ -189,7 +193,7 @@ export default function ReferralsPage() {
               <div className="grid min-h-40 place-items-center px-6 text-center">
                 <div>
                   <RadicoinIcon className="mx-auto opacity-35" size={28} />
-                  <p className="mb-0 mt-3 text-[10px] text-[#82908d]">
+                  <p className="mb-0 mt-3 text-[12px] text-[#82908d]">
                     اولین دعوتت را بفرست؛ رادیکوین‌های این بخش خیلی زود جان می‌گیرند.
                   </p>
                 </div>
@@ -198,7 +202,7 @@ export default function ReferralsPage() {
           </div>
         </article>
         <article className="overflow-hidden rounded-[20px] bg-[linear-gradient(155deg,#153f36,#0f705a)] text-white shadow-[0_16px_42px_rgba(15,112,90,.14)]">
-          <h2 className="m-0 flex items-center gap-2 border-b border-white/10 px-5 py-4 text-[13px] font-extrabold">
+          <h2 className="m-0 flex items-center gap-2 border-b border-white/10 px-5 py-4 text-[15px] font-extrabold">
             <Trophy className="text-[#ffd66b]" size={18} /> برترین دعوت‌کنندگان
           </h2>
           <div className="divide-y divide-white/10">
@@ -206,18 +210,18 @@ export default function ReferralsPage() {
               <div className="flex items-center justify-between gap-3 px-5 py-3.5" key={item.userId}>
                 <div className="flex items-center gap-3">
                   <span
-                    className={`grid size-7 place-items-center rounded-full text-[9px] font-black ${index < 3 ? "bg-[#ffd66b] text-[#634b0c]" : "bg-white/10 text-white/80"}`}
+                    className={`grid size-8 place-items-center rounded-full text-[11px] font-black ${index < 3 ? "bg-[#ffd66b] text-[#634b0c]" : "bg-white/10 text-white/80"}`}
                   >
                     {(index + 1).toLocaleString("fa-IR")}
                   </span>
-                  <span className="text-[10px] text-white/85">{item.displayName}</span>
+                  <span className="text-[12px] text-white/85">{item.displayName}</span>
                 </div>
-                <span className="text-[9px] text-[#9ee0c7]">{item.referrals.toLocaleString("fa-IR")} دعوت</span>
+                <span className="text-[11px] text-[#9ee0c7]">{item.referrals.toLocaleString("fa-IR")} دعوت</span>
               </div>
             ))}
             {!leaderboard.data?.items.length ? (
               <div className="grid min-h-40 place-items-center px-6 text-center">
-                <p className="m-0 text-[10px] leading-6 text-white/60">رتبه‌بندی پس از اولین دعوت موفق شکل می‌گیرد.</p>
+                <p className="m-0 text-[12px] leading-6 text-white/60">رتبه‌بندی پس از اولین دعوت موفق شکل می‌گیرد.</p>
               </div>
             ) : null}
           </div>

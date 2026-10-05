@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ReceiptText } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { DataTable, type DataTableColumn, type SortState } from "../_components/data-table";
 import { TableFilterSelect, TableToolbar } from "../_components/table-controls";
 import { TablePagination } from "../_components/table-pagination";
+import { SectionTitle } from "../_components/ui";
 import { formatTomans, useOrders, type Order, type Plan } from "@/lib/billing";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { useUrlTablePagination } from "@/lib/table-page-size";
@@ -65,20 +65,18 @@ export default function OrdersPage() {
   ];
   return (
     <div className="grid gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <span className="flex items-center gap-2 text-[12px] font-bold text-[#0f7b62]">
-            <ReceiptText size={18} /> سفارش‌ها
-          </span>
-          <h1 className="mb-0 mt-3 text-[26px] font-black">سفارش‌ها و پرداخت‌های من</h1>
-        </div>
-        <Link
-          className="rounded-[11px] bg-[#0f7b62] px-4 py-3 text-[10px] font-bold text-white no-underline"
-          href="/upgrade"
-        >
-          خرید یا ارتقای بسته
-        </Link>
-      </header>
+      <SectionTitle
+        description="سفارش‌ها، پرداخت‌ها و وضعیت بسته‌های فعال خودت را یکجا پیگیری کن."
+        title="سفارش‌ها و پرداخت‌های من"
+        action={
+          <Link
+            className="rounded-[11px] bg-[#0f7b62] px-4 py-3 text-[10px] font-bold text-white no-underline"
+            href="/upgrade"
+          >
+            خرید یا ارتقای بسته
+          </Link>
+        }
+      />
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
         <TableToolbar
           search={search}

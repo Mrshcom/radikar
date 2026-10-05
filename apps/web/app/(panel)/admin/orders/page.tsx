@@ -1,7 +1,6 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ReceiptText } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { useAuth } from "@/app/_components/auth";
 import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
@@ -20,6 +19,7 @@ import {
   tableSortDirectionParser,
 } from "@/lib/table-search-params";
 import { AdminFilterSelect, AdminTablePagination, AdminTableToolbar } from "../_components/admin-table-controls";
+import { SectionTitle } from "../../_components/ui";
 
 type Response = {
   items: Array<{
@@ -93,11 +93,7 @@ export default function AdminOrdersPage() {
   ];
   return (
     <div className="grid gap-6">
-      <header>
-        <h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]">
-          <ReceiptText size={22} /> سفارش‌های سامانه
-        </h1>
-      </header>
+      <SectionTitle description="سفارش‌ها، وضعیت پرداخت و اطلاعات پیگیری کاربران را بررسی کن." title="سفارش‌های سامانه" />
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
         <AdminTableToolbar
           search={search}

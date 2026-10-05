@@ -31,7 +31,7 @@ import { TableActionButton } from "../../_components/table-action-button";
 import { CurrencyTooltip } from "../../_components/currency-tooltip";
 import { HoverTooltip } from "../../_components/hover-tooltip";
 import { PanelLink } from "../../_components/panel-link";
-import { Modal } from "../../_components/ui";
+import { Modal, SectionTitle } from "../../_components/ui";
 import { AdminFilterSelect, AdminTablePagination, AdminTableToolbar } from "../_components/admin-table-controls";
 
 const parsers = {
@@ -306,28 +306,24 @@ export default function AdminJobPoolPage() {
   ];
   return (
     <div className="grid gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]">
-            <BriefcaseBusiness size={22} /> گزارش Job Pool
-          </h1>
-          <p className="mb-0 mt-2 text-[10px] leading-7 text-[#7c8b88]">
-            هزینه، جست‌وجوها، اجرای Worker و آگهی‌های ذخیره‌شده در یک‌جا.
-          </p>
-        </div>
-        <label className="grid gap-1 text-[10px] font-bold text-[#7c8b88]">
-          بازه گزارش
-          <SearchableSelect
-            options={[
-              { value: "7", label: "۷ روز" },
-              { value: "30", label: "۳۰ روز" },
-              { value: "90", label: "۹۰ روز" },
-            ]}
-            value={String(days)}
-            onChange={(value) => void setFilters({ days: Number(value) as typeof days })}
-          />
-        </label>
-      </header>
+      <SectionTitle
+        description="هزینه، جست‌وجوها، اجرای Worker و آگهی‌های ذخیره‌شده را یکجا ببین."
+        title="گزارش Job Pool"
+        action={
+          <label className="grid gap-1 text-[10px] font-bold text-[#7c8b88]">
+            بازه گزارش
+            <SearchableSelect
+              options={[
+                { value: "7", label: "۷ روز" },
+                { value: "30", label: "۳۰ روز" },
+                { value: "90", label: "۹۰ روز" },
+              ]}
+              value={String(days)}
+              onChange={(value) => void setFilters({ days: Number(value) as typeof days })}
+            />
+          </label>
+        }
+      />
       <section className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-2 max-[520px]:grid-cols-1">
         {cards.map(([label, value, Icon]) => (
           <CurrencyTooltip

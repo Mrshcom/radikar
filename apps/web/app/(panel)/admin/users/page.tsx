@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Users } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -10,8 +10,9 @@ import { adminUserEditSchema, type AdminUserEditInput } from "@radikar/validator
 import { useAuth, type UserRole } from "@/app/_components/auth";
 import { SearchableSelect } from "@/app/_components/searchable-select";
 import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
+import { FormField } from "../../_components/form-field";
 import { TableActionButton } from "../../_components/table-action-button";
-import { ConfirmActionModal, Modal } from "../../_components/ui";
+import { ConfirmActionModal, Modal, SectionTitle } from "../../_components/ui";
 import { apiRequest } from "@/lib/api-client";
 import { buildQueryString } from "@/lib/build-query-string";
 import { PersianDateTime } from "@/lib/date-time-display";
@@ -75,21 +76,18 @@ function UserEditModal({
             {userIdentifier(user)}
           </span>
         </div>
-        <label className="grid gap-2 text-[11px] font-bold text-[#536562]">
-          نام مستعار
+        <FormField error={form.formState.errors.adminAlias?.message} label="نام مستعار" className="text-[11px]">
           <input
             {...form.register("adminAlias")}
             autoFocus
-            className="h-11 rounded-[10px] border border-[#dfe5df] bg-white px-3 text-[11px] font-normal outline-none focus:border-[#0f7b62]"
+            aria-invalid={Boolean(form.formState.errors.adminAlias)}
+            className="h-11 rounded-[10px] border border-[#dfe5df] bg-white px-3 text-[11px] font-normal outline-none focus:border-[#0f7b62] aria-[invalid=true]:border-[#c44d4d] aria-[invalid=true]:ring-4 aria-[invalid=true]:ring-[#c44d4d]/10"
             placeholder="مثلاً علی رضایی — مشتری قدیمی"
           />
-          {form.formState.errors.adminAlias && (
-            <span className="text-[10px] text-[#b14848]">{form.formState.errors.adminAlias.message}</span>
-          )}
-        </label>
-        <div className="grid gap-2 text-[11px] font-bold text-[#536562]">
-          نقش
+        </FormField>
+        <FormField error={form.formState.errors.role?.message} label="نقش" required className="text-[11px]">
           <SearchableSelect
+            invalid={Boolean(form.formState.errors.role)}
             options={[
               { value: "user", label: "کاربر" },
               { value: "admin", label: "ادمین" },
@@ -100,10 +98,10 @@ function UserEditModal({
               form.setValue("role", String(value) as UserRole, { shouldDirty: true, shouldValidate: true })
             }
           />
-        </div>
-        <div className="grid gap-2 text-[11px] font-bold text-[#536562]">
-          وضعیت حساب
+        </FormField>
+        <FormField error={form.formState.errors.status?.message} label="وضعیت حساب" required className="text-[11px]">
           <SearchableSelect
+            invalid={Boolean(form.formState.errors.status)}
             options={[
               { value: "active", label: "فعال" },
               { value: "suspended", label: "تعلیق‌شده" },
@@ -116,7 +114,7 @@ function UserEditModal({
               })
             }
           />
-        </div>
+        </FormField>
         <p className="m-0 text-[10px] leading-6 text-[#71817e]">
           خالی گذاشتن نام مستعار، آن را حذف می‌کند و نام ثبت‌شده‌ی خود کاربر تغییر نمی‌کند.
         </p>
@@ -271,11 +269,7 @@ export default function AdminUsersPage() {
   ];
   return (
     <div className="grid gap-6">
-      <header>
-        <h1 className="mb-0 flex items-center gap-2 text-[25px] font-black text-[#19312f]">
-          <Users size={22} /> کاربران و دسترسی‌ها
-        </h1>
-      </header>
+      <SectionTitle description="کاربران، نقش‌ها و وضعیت دسترسی آن‌ها را مدیریت کن." title="کاربران و دسترسی‌ها" />
       <section className="overflow-hidden rounded-[18px] border border-[#e3e9e3] bg-white">
         <AdminTableToolbar
           search={search}

@@ -9,6 +9,7 @@ import { z } from "zod";
 import { TextField } from "@/app/_components/text-field";
 import { useToast } from "@/app/_components/toast";
 import { DataTable, type DataTableColumn } from "../../_components/data-table";
+import { FormField } from "../../_components/form-field";
 import { JalaliDatePicker } from "../../_components/jalali-date-picker";
 import { TableActionButton } from "../../_components/table-action-button";
 import { PanelPageTitle } from "../../_components/panel-page-title";
@@ -126,7 +127,6 @@ export default function AdminRadicoinsPage() {
   return (
     <div className="grid gap-6">
       <PanelPageTitle
-        icon={RadicoinIcon}
         title="اقتصاد وفاداری رادیکار"
         description="موجودی کاربران، گردش کیف پول و هدیه‌های زمان‌دار را بررسی و مدیریت کن."
       />
@@ -177,17 +177,18 @@ export default function AdminRadicoinsPage() {
           onConfirm={() => void submitAction()}
         >
           <div className="grid gap-3">
-            <label className="grid gap-2 text-[9px] font-bold text-[#596c67]">
-              مقدار رادیکوین
-              <TextField inputMode="numeric" {...action.register("amount", numberValue)} />
-            </label>
-            <label className="grid gap-2 text-[9px] font-bold text-[#596c67]">
-              دلیل
-              <TextField {...action.register("description")} />
-            </label>
+            <FormField label="مقدار رادیکوین" required error={action.formState.errors.amount?.message}>
+              <TextField
+                aria-invalid={Boolean(action.formState.errors.amount)}
+                inputMode="numeric"
+                {...action.register("amount", numberValue)}
+              />
+            </FormField>
+            <FormField label="دلیل" required error={action.formState.errors.description?.message}>
+              <TextField aria-invalid={Boolean(action.formState.errors.description)} {...action.register("description")} />
+            </FormField>
             {mode === "gift" && (
-              <label className="grid gap-2 text-[9px] font-bold text-[#596c67]">
-                تاریخ انقضا (اختیاری)
+              <FormField label="تاریخ انقضا (اختیاری)">
                 <Controller
                   control={action.control}
                   name="expiresAt"
@@ -199,7 +200,7 @@ export default function AdminRadicoinsPage() {
                     />
                   )}
                 />
-              </label>
+              </FormField>
             )}
           </div>
         </ConfirmActionModal>

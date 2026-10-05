@@ -8,6 +8,7 @@ import { z } from "zod";
 import { TextField } from "@/app/_components/text-field";
 import { useToast } from "@/app/_components/toast";
 import { RadicoinIcon } from "@/app/(panel)/_components/radicoin-icon";
+import { FormField } from "@/app/(panel)/_components/form-field";
 import { useRadicoinAdminSettings, useUpdateRadicoinSettings } from "@/lib/radicoins";
 
 const radicoinSettingsSchema = z.object({
@@ -94,10 +95,13 @@ export function RadicoinSettingsForm() {
 
       <div className="grid gap-4 md:grid-cols-3">
         {rewardFields.map(([name, label]) => (
-          <label className="grid gap-2 text-[11px] font-normal text-[#596c67]" key={name}>
-            {label}
-            <TextField inputMode="numeric" {...form.register(name, numberValue)} />
-          </label>
+          <FormField error={form.formState.errors[name]?.message} key={name} label={label} required>
+            <TextField
+              aria-invalid={Boolean(form.formState.errors[name])}
+              inputMode="numeric"
+              {...form.register(name, numberValue)}
+            />
+          </FormField>
         ))}
       </div>
 
@@ -110,10 +114,18 @@ export function RadicoinSettingsForm() {
         </p>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           {(settings.data?.plans ?? []).map((plan) => (
-            <label className="grid gap-2 text-[11px] font-normal text-[#596c67]" key={plan.id}>
-              {plan.name}
-              <TextField inputMode="numeric" {...form.register(`planCosts.${plan.id}`, numberValue)} />
-            </label>
+            <FormField
+              error={form.formState.errors.planCosts?.[plan.id]?.message}
+              key={plan.id}
+              label={plan.name}
+              required
+            >
+              <TextField
+                aria-invalid={Boolean(form.formState.errors.planCosts?.[plan.id])}
+                inputMode="numeric"
+                {...form.register(`planCosts.${plan.id}`, numberValue)}
+              />
+            </FormField>
           ))}
         </div>
       </div>

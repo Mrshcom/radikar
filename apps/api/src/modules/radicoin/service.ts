@@ -43,6 +43,19 @@ type CreditInput = {
 
 export type RadicoinSettingsInput = Omit<typeof radicoinSettings.$inferInsert, "id" | "updatedAt">;
 
+const activityOperationLabels: Record<string, string> = {
+  resume_create: "ساخت رزومه",
+  resume_generate: "تولید رزومه",
+  resume_pdf_export: "دریافت PDF رزومه",
+  match_analyze: "تحلیل تطابق با آگهی",
+  match_tailor: "ساخت رزومه اختصاصی شغلی",
+  interview_session: "ساخت جلسه مصاحبه",
+};
+
+function activityOperationLabel(operation: string) {
+  return activityOperationLabels[operation] ?? operation.replaceAll("_", " ");
+}
+
 function tehranDay(now: Date) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Tehran",
@@ -297,7 +310,13 @@ export class RadicoinService {
     );
   }
 
-  async grantUsageActivityInTransaction(executor: Executor, userId: string, requestId: string, now = new Date()) {
+  async grantUsageActivityInTransaction(
+    executor: Executor,
+    userId: string,
+    requestId: string,
+    operation: string,
+    now = new Date(),
+  ) {
     const settings = await this.settings(executor);
     const awardDay = tehranDay(now);
     const [total] = await executor
@@ -321,7 +340,7 @@ export class RadicoinService {
         source: "activity",
         idempotencyKey: `activity:${requestId}`,
         awardDay,
-        description: "رادیکوین فعالیت هزینه‌بر",
+        description: `رادیکوین هدیه فعالیت - ${activityOperationLabel(operation)}`,
       },
       now,
     );

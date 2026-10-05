@@ -235,7 +235,7 @@ export class BillingService {
           createdAt: new Date(),
         })),
       );
-      await this.options.radicoinService?.grantUsageActivityInTransaction(tx, userId, requestId);
+      await this.options.radicoinService?.grantUsageActivityInTransaction(tx, userId, requestId, operation);
     });
   }
 

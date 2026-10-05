@@ -358,12 +358,12 @@ export default function ResumesPage() {
         <section className="mb-6 min-w-0 overflow-hidden rounded-[18px] border border-[#dfe8e2] bg-white p-5 shadow-[0_12px_36px_rgba(27,55,50,.055)]">
           <header className="mb-4 flex items-start justify-between gap-4">
             <div>
-              <h2 className="m-0 text-[14px]">رزومه‌های هدفمند من</h2>
-              <p className="mb-0 mt-1 text-[8px] text-[#84928f]">
+              <h2 className="m-0 text-[16px]">رزومه‌های هدفمند من</h2>
+              <p className="mb-0 mt-1 text-[10px] text-[#84928f]">
                 نسخه‌های ذخیره‌شده و رزومه‌هایی که برای فرصت‌های مشخص ساخته‌ای.
               </p>
             </div>
-            <span className="rounded-full bg-[#edf7f2] px-2.5 py-1 text-[8px] font-bold text-[#0f7b62]">
+            <span className="rounded-full bg-[#edf7f2] px-2.5 py-1 text-[10px] font-bold text-[#0f7b62]">
               {formatPersianNumber(savedResumes.length)} نسخه
             </span>
           </header>
@@ -373,7 +373,7 @@ export default function ResumesPage() {
               const tailored = resume.source === "tailored";
               return (
                 <article
-                  className="group min-w-0 overflow-hidden rounded-[16px] border border-[#e1e8e2] bg-[#fbfcfa] transition-shadow duration-200 hover:shadow-[0_14px_30px_rgba(27,55,50,.09)]"
+                  className="group flex min-w-0 flex-col overflow-hidden rounded-[16px] border border-[#e1e8e2] bg-[#fbfcfa] transition-shadow duration-200 hover:shadow-[0_14px_30px_rgba(27,55,50,.09)]"
                   key={resume.id}
                 >
                   <button
@@ -395,39 +395,39 @@ export default function ResumesPage() {
                     </div>
                     <span className="absolute inset-0 z-10 cursor-pointer" aria-hidden="true" />
                   </button>
-                  <div className="grid min-w-0 gap-3 border-t border-[#e5ebe6] p-4 text-right" dir="rtl">
+                  <div className="flex min-w-0 flex-1 flex-col gap-3 border-t border-[#e5ebe6] p-4 text-right" dir="rtl">
                     <div className="flex min-w-0 items-start justify-between gap-3">
                       <span
                         className={cn(
-                          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[7px] font-bold",
+                          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-bold",
                           tailored ? "bg-[#e8e1f5] text-[#725aa7]" : "bg-[#e6f4ee] text-[#0f7b62]",
                         )}
                       >
                         {tailored ? <Sparkles size={11} /> : <FilePlus2 size={11} />}
                         {tailored ? "نسخه اختصاصی" : "رزومه شخصی"}
                       </span>
-                      <span className="max-w-[38%] shrink-0 truncate text-[7px] text-[#899692]">
+                      <span className="max-w-[38%] shrink-0 truncate text-[9px] text-[#899692]">
                         {template?.name || "قالب ذخیره‌شده"}
                       </span>
                     </div>
-                    <h3 className="m-0 block w-full overflow-hidden text-ellipsis whitespace-nowrap text-right text-[11px]">
+                    <h3 className="m-0 block w-full overflow-hidden text-ellipsis whitespace-nowrap text-right text-[13px]">
                       {resume.name}
                     </h3>
                     {tailored && (
                       <div className="min-w-0 overflow-hidden rounded-xl border border-[#d9e8e1] bg-[#eff8f4] p-3">
-                        <span className="flex items-center gap-1 text-[7px] font-bold text-[#43816f]">
+                        <span className="flex items-center gap-1 text-[9px] font-bold text-[#43816f]">
                           <BriefcaseBusiness size={12} /> ساخته‌شده برای فرصت
                         </span>
-                        <strong className="mt-1.5 block truncate text-[9px] leading-[1.7] text-[#19312f]" dir="auto">
+                        <strong className="mt-1.5 block truncate text-[11px] leading-[1.7] text-[#19312f]" dir="auto">
                           {resume.targetJobTitle || "عنوان فرصت ثبت نشده"}
                         </strong>
-                        <small className="mt-0.5 block truncate text-[8px] text-[#758783]" dir="auto">
+                        <small className="mt-0.5 block truncate text-[10px] text-[#758783]" dir="auto">
                           {resume.targetCompany || "نام شرکت ثبت نشده"}
                         </small>
                       </div>
                     )}
-                    <div className="flex min-w-0 items-center justify-between gap-2 border-t border-[#e8ede9] pt-3">
-                      <small className="flex min-w-0 items-center gap-1 truncate text-[7px] text-[#8b9895]">
+                    <div className="mt-auto flex min-w-0 items-center justify-between gap-2 border-t border-[#e8ede9] pt-3">
+                      <small className="flex min-w-0 items-center gap-1 truncate text-[9px] text-[#8b9895]">
                         <CalendarDays className="shrink-0" size={12} />
                         <span className="truncate">
                           <PersianDateTime value={resume.updatedAt} />
@@ -450,7 +450,7 @@ export default function ResumesPage() {
                           <Star className={resume.pinnedAt ? "fill-current" : undefined} size={14} />
                         </button>
                         <button
-                          className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg bg-[#edf7f2] px-2.5 text-[8px] font-bold text-[#0f7b62] transition-colors duration-200 hover:bg-[#dceee6]"
+                          className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg bg-[#edf7f2] px-2.5 text-[10px] font-bold text-[#0f7b62] transition-colors duration-200 hover:bg-[#dceee6]"
                           onClick={() => openSavedResume(resume)}
                         >
                           <Pencil size={13} /> مشاهده و ویرایش
