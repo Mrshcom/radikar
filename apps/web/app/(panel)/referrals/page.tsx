@@ -182,10 +182,19 @@ export default function ReferralsPage() {
                     </span>
                   </div>
                   <span
-                    className={`rounded-full px-3 py-1.5 text-[11px] font-bold ${event.points >= 0 ? "bg-[#eaf5f0] text-[#0f705a]" : "bg-[#fff1ef] text-[#b14848]"}`}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-bold ${event.points >= 0 ? "bg-[#ffedb5] text-[#8d6814]" : "bg-[#fff1ef] text-[#b14848]"}`}
+                    dir="ltr"
                   >
                     {event.points > 0 ? "+" : ""}
-                    {event.points.toLocaleString("fa-IR")} رادیکوین
+                    {event.points.toLocaleString("fa-IR")}
+                    <Image
+                      alt=""
+                      aria-hidden="true"
+                      className="size-5 shrink-0 object-contain"
+                      height={20}
+                      src="/illustrations/radicoin-coin-m-v3.png"
+                      width={20}
+                    />
                   </span>
                 </div>
               ))
