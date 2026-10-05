@@ -24,6 +24,7 @@
 **/.next-dev/
 /out/
 /.turbo/
+**/.turbo/
 
 # misc
 .DS_Store
