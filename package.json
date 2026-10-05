@@ -32,7 +32,7 @@
     "test:all": "turbo run test",
     "test:e2e": "npm run test:e2e --workspace @radikar/web",
     "test:e2e:ui": "npm run test:e2e:ui --workspace @radikar/web",
-    "verify:push": "npm run infra:up && npm run typecheck --workspace @radikar/web && npm run typecheck --workspace @radikar/api && npm run lint --workspace @radikar/web && npm run test:web && npm test --workspace @radikar/api && npm run test:e2e",
+    "verify:push": "node scripts/verify-push.mjs",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "infra:up": "docker compose up -d postgres",
