@@ -12,7 +12,7 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "prepare": "husky",
+    "prepare": "node scripts/install-git-hooks.mjs",
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=@radikar/web",
     "dev:api": "turbo run dev --filter=@radikar/api",
