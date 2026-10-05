@@ -29,12 +29,6 @@ test("localizes technical service and model failures", () => {
 });
 
 test("preserves Persian API messages and hides unknown English details", () => {
-  assert.equal(
-    toPersianServiceErrorMessage("شماره همراه معتبر نیست."),
-    "شماره همراه معتبر نیست.",
-  );
-  assert.equal(
-    toPersianServiceErrorMessage("ECONNRESET at upstream socket"),
-    "ارتباط با سرویس ناموفق بود.",
-  );
+  assert.equal(toPersianServiceErrorMessage("شماره همراه معتبر نیست."), "شماره همراه معتبر نیست.");
+  assert.equal(toPersianServiceErrorMessage("ECONNRESET at upstream socket"), "ارتباط با سرویس ناموفق بود.");
 });

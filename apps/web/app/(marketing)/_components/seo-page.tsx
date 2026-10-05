@@ -59,8 +59,12 @@ export function SeoPage({
       {faqSchema ? <JsonLd data={faqSchema} /> : null}
       <article className="mx-auto w-full max-w-[960px] px-5 pb-24 pt-32 sm:px-8 sm:pt-40">
         <nav aria-label="مسیر صفحه" className="mb-8 text-xs text-[#52645e]">
-          <Link href="/" className="hover:text-[#0f6b4c]">رادیکار</Link>
-          <span aria-hidden="true" className="mx-2">/</span>
+          <Link href="/" className="hover:text-[#0f6b4c]">
+            رادیکار
+          </Link>
+          <span aria-hidden="true" className="mx-2">
+            /
+          </span>
           <span aria-current="page">{eyebrow}</span>
         </nav>
         <header className="rounded-[32px] border border-[#d8e8df] bg-white p-7 shadow-[0_24px_70px_rgba(20,70,52,.08)] sm:p-12">
@@ -78,12 +82,17 @@ export function SeoPage({
             <section key={section.heading}>
               <h2 className="text-2xl font-black leading-[1.6] text-[#17201e]">{section.heading}</h2>
               {section.paragraphs?.map((paragraph) => (
-                <p key={paragraph} className="mt-4 text-sm leading-8 text-[#465a53]">{paragraph}</p>
+                <p key={paragraph} className="mt-4 text-sm leading-8 text-[#465a53]">
+                  {paragraph}
+                </p>
               ))}
               {section.bullets?.length ? (
                 <ul className="mt-5 grid gap-3 p-0">
                   {section.bullets.map((bullet) => (
-                    <li key={bullet} className="flex items-start gap-3 rounded-2xl border border-[#dce8e1] bg-white p-4 text-sm leading-7 text-[#344b43]">
+                    <li
+                      key={bullet}
+                      className="flex items-start gap-3 rounded-2xl border border-[#dce8e1] bg-white p-4 text-sm leading-7 text-[#344b43]"
+                    >
                       <CheckCircle2 aria-hidden="true" className="mt-1 shrink-0 text-[#14805a]" size={18} />
                       {bullet}
                     </li>
@@ -96,7 +105,9 @@ export function SeoPage({
 
         {faqs.length ? (
           <section className="mt-14" aria-labelledby="page-faq-title">
-            <h2 id="page-faq-title" className="text-2xl font-black text-[#17201e]">سؤال‌های پرتکرار</h2>
+            <h2 id="page-faq-title" className="text-2xl font-black text-[#17201e]">
+              سؤال‌های پرتکرار
+            </h2>
             <div className="mt-6 space-y-3">
               {faqs.map((faq) => (
                 <details key={faq.question} className="rounded-2xl border border-[#dce8e1] bg-white p-5">
@@ -109,8 +120,19 @@ export function SeoPage({
         ) : null}
 
         <aside className="mt-16 rounded-[28px] bg-[#0b3d2e] p-8 text-white sm:flex sm:items-center sm:justify-between">
-          <div><h2 className="text-2xl font-black">مسیر شغلی‌ات را هدفمندتر ادامه بده</h2><p className="mt-3 text-sm leading-7 text-white/80">پروفایل حرفه‌ای بساز و ابزارهای رادیکار را در یک جریان یکپارچه امتحان کن.</p></div>
-          <Link href="/login" className="mt-6 inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full bg-[#b9f2d3] px-6 text-sm font-black text-[#0b3c2d] sm:mt-0">{cta}<ArrowLeft size={16} /></Link>
+          <div>
+            <h2 className="text-2xl font-black">مسیر شغلی‌ات را هدفمندتر ادامه بده</h2>
+            <p className="mt-3 text-sm leading-7 text-white/80">
+              پروفایل حرفه‌ای بساز و ابزارهای رادیکار را در یک جریان یکپارچه امتحان کن.
+            </p>
+          </div>
+          <Link
+            href="/login"
+            className="mt-6 inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full bg-[#b9f2d3] px-6 text-sm font-black text-[#0b3c2d] sm:mt-0"
+          >
+            {cta}
+            <ArrowLeft size={16} />
+          </Link>
         </aside>
       </article>
     </>

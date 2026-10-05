@@ -1,10 +1,4 @@
-export type ResumePaginationSection =
-  | "summary"
-  | "experiences"
-  | "projects"
-  | "educations"
-  | "skills"
-  | "languages";
+export type ResumePaginationSection = "summary" | "experiences" | "projects" | "educations" | "skills" | "languages";
 
 export type ResumePaginationFlow = "main" | "sidebar" | "page";
 
@@ -60,16 +54,11 @@ export function getResumePaginationProfile(templateId?: string) {
   return templateId ? profiles[templateId] : undefined;
 }
 
-export function getResumePaginationFlows(
-  profile: ResumePaginationProfile | undefined,
-): ResumePaginationFlow[] {
+export function getResumePaginationFlows(profile: ResumePaginationProfile | undefined): ResumePaginationFlow[] {
   return profile ? ["main", "sidebar"] : ["page"];
 }
 
-export function getResumeFlowSections(
-  profile: ResumePaginationProfile | undefined,
-  flow: ResumePaginationFlow,
-) {
+export function getResumeFlowSections(profile: ResumePaginationProfile | undefined, flow: ResumePaginationFlow) {
   if (!profile || flow === "page") return DEFAULT_SECTION_ORDER;
   return profile[flow];
 }

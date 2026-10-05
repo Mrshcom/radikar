@@ -48,16 +48,11 @@ test("parses OpenAI-compatible text, content-part, and encoded JSON wrappers", (
     ],
   });
   const encodedResponse = JSON.stringify({
-    choices: [
-      { message: { content: JSON.stringify(JSON.stringify(extractedResume)) } },
-    ],
+    choices: [{ message: { content: JSON.stringify(JSON.stringify(extractedResume)) } }],
   });
 
   for (const response of [textResponse, partResponse, encodedResponse]) {
-    assert.equal(
-      parseLlmJsonResponse(response).resumeData.fullName,
-      "Mohammad Reza Shariatzadeh",
-    );
+    assert.equal(parseLlmJsonResponse(response).resumeData.fullName, "Mohammad Reza Shariatzadeh");
   }
 });
 
@@ -96,17 +91,11 @@ test("reassembles JSON from an SSE response even when stream=false is ignored", 
     "data: [DONE]",
   ].join("\n\n");
 
-  assert.equal(
-    parseLlmJsonResponse(response).resumeData.fullName,
-    "Mohammad Reza Shariatzadeh",
-  );
+  assert.equal(parseLlmJsonResponse(response).resumeData.fullName, "Mohammad Reza Shariatzadeh");
 });
 
 test("does not mistake an empty provider envelope for extracted resume data", () => {
-  assert.equal(
-    parseLlmJsonResponse(JSON.stringify({ choices: [{ message: { content: "" } }] })),
-    undefined,
-  );
+  assert.equal(parseLlmJsonResponse(JSON.stringify({ choices: [{ message: { content: "" } }] })), undefined);
   assert.equal(parseLlmJsonResponse(""), undefined);
 });
 
@@ -128,18 +117,14 @@ test("chatJson isolates proxy sessions and switches models after an empty respon
               {
                 message: {
                   content: null,
-                  tool_calls: [
-                    { function: { name: "English", arguments: "{}" } },
-                  ],
+                  tool_calls: [{ function: { name: "English", arguments: "{}" } }],
                 },
                 finish_reason: "tool_calls",
               },
             ],
           }
         : {
-            choices: [
-              { message: { content: JSON.stringify(extractedResume) } },
-            ],
+            choices: [{ message: { content: JSON.stringify(extractedResume) } }],
           };
     payload.usage = {
       prompt_tokens: callCount === 1 ? 100 : 120,
@@ -198,10 +183,10 @@ test("chatJson bounds retries and attaches a request timeout", async () => {
   globalThis.fetch = async (_url, init) => {
     callCount += 1;
     signals.push(init.signal);
-    return new Response(
-      JSON.stringify({ choices: [{ message: { content: "" } }] }),
-      { status: 200, headers: { "content-type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ choices: [{ message: { content: "" } }] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
   };
 
   try {
@@ -239,10 +224,10 @@ test("chatJson retries a transient provider connection failure", async () => {
         cause: { code: "UND_ERR_CONNECT_TIMEOUT" },
       });
     }
-    return new Response(
-      JSON.stringify({ choices: [{ message: { content: '{"ok":true}' } }] }),
-      { status: 200, headers: { "content-type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ choices: [{ message: { content: '{"ok":true}' } }] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
   };
 
   try {
@@ -279,11 +264,7 @@ test("chatJson forwards caller cancellation to the provider request", async () =
   const controller = new AbortController();
   globalThis.fetch = async (_url, init) =>
     new Promise((_resolve, reject) => {
-      init.signal.addEventListener(
-        "abort",
-        () => reject(init.signal.reason),
-        { once: true },
-      );
+      init.signal.addEventListener("abort", () => reject(init.signal.reason), { once: true });
     });
 
   try {

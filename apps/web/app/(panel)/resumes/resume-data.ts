@@ -1,8 +1,5 @@
 import { enforceResumeSectionFlow } from "./resume-section-flow.ts";
-import {
-  getResumePaginationProfile,
-  getResumeSectionFlow,
-} from "./resume-pagination-profile.ts";
+import { getResumePaginationProfile, getResumeSectionFlow } from "./resume-pagination-profile.ts";
 
 export type ResumeExperience = {
   id: string;
@@ -59,16 +56,7 @@ export type ResumeData = {
 };
 
 export type ResumeLanguage = "fa" | "en";
-export type ResumeColorId =
-  | "mint"
-  | "yellow"
-  | "cyan"
-  | "sand"
-  | "gray"
-  | "coral"
-  | "blue"
-  | "purple"
-  | "black";
+export type ResumeColorId = "mint" | "yellow" | "cyan" | "sand" | "gray" | "coral" | "blue" | "purple" | "black";
 
 export const resumeColorOptions: Array<{
   id: ResumeColorId;
@@ -426,9 +414,7 @@ const selectableTemplateIds = new Set([
   "sector-yellow",
 ]);
 
-export const selectableResumeTemplates = resumeTemplates.filter((template) =>
-  selectableTemplateIds.has(template.id),
-);
+export const selectableResumeTemplates = resumeTemplates.filter((template) => selectableTemplateIds.has(template.id));
 
 export const emptyResumeData: ResumeData = {
   fullName: "",
@@ -465,17 +451,9 @@ export function getResumeExperiences(data: ResumeData): ResumeExperience[] {
       )
     : [];
   if (structuredExperiences.length) return structuredExperiences;
-  if (
-    !data.experienceTitle.trim() &&
-    !data.company.trim() &&
-    !data.experienceDate.trim() &&
-    !data.experience.trim()
-  )
+  if (!data.experienceTitle.trim() && !data.company.trim() && !data.experienceDate.trim() && !data.experience.trim())
     return [];
-  const [startDate = "", endDate = ""] = data.experienceDate.split(
-    /\s+(?:تا|–|—|-)\s+/,
-    2,
-  );
+  const [startDate = "", endDate = ""] = data.experienceDate.split(/\s+(?:تا|–|—|-)\s+/, 2);
   const isCurrent = /(?:امروز|اکنون|حال حاضر|present|current)/i.test(endDate);
   return [
     {
@@ -533,9 +511,7 @@ export function getResumeProjects(data: ResumeData): ResumeProject[] {
 }
 
 function experienceWeight(experience: ResumeExperience) {
-  const descriptionLines = experience.description
-    .split("\n")
-    .filter((line) => line.trim()).length;
+  const descriptionLines = experience.description.split("\n").filter((line) => line.trim()).length;
   return (
     2 +
     Math.max(descriptionLines, Math.ceil(experience.description.length / 180)) +
@@ -544,9 +520,7 @@ function experienceWeight(experience: ResumeExperience) {
 }
 
 function projectWeight(project: ResumeProject) {
-  const descriptionLines = project.description
-    .split("\n")
-    .filter((line) => line.trim()).length;
+  const descriptionLines = project.description.split("\n").filter((line) => line.trim()).length;
   return (
     2 +
     Math.max(descriptionLines, Math.ceil(project.description.length / 180)) +
@@ -570,9 +544,7 @@ function paginateOneColumnResume(data: ResumeData): ResumeData[] {
   const experiences = getResumeExperiences(data);
   const educations = getResumeEducations(data);
   const projects = getResumeProjects(data);
-  const summaryWeight = data.summary.trim()
-    ? 2 + Math.ceil(data.summary.length / 350)
-    : 0;
+  const summaryWeight = data.summary.trim() ? 2 + Math.ceil(data.summary.length / 350) : 0;
   const pages: OneColumnPageDraft[] = [
     {
       experiences: [],
@@ -584,8 +556,7 @@ function paginateOneColumnResume(data: ResumeData): ResumeData[] {
     },
   ];
   const currentPage = () => pages.at(-1)!;
-  const currentCapacity = () =>
-    pages.length === 1 ? firstPageCapacity : continuationPageCapacity;
+  const currentCapacity = () => (pages.length === 1 ? firstPageCapacity : continuationPageCapacity);
   const startPage = () => {
     pages.push({
       experiences: [],
@@ -654,14 +625,8 @@ function paginateOneColumnResume(data: ResumeData): ResumeData[] {
   }));
 }
 
-export function paginateResumeData(
-  data: ResumeData,
-  templateId?: string,
-): ResumeData[] {
-  const isOneColumnTemplate = [
-    "simple-one-column",
-    "navy-reference-simple",
-  ].includes(templateId || "");
+export function paginateResumeData(data: ResumeData, templateId?: string): ResumeData[] {
+  const isOneColumnTemplate = ["simple-one-column", "navy-reference-simple"].includes(templateId || "");
   if (isOneColumnTemplate) {
     return enforceResumeSectionFlow(paginateOneColumnResume(data));
   }
@@ -675,45 +640,29 @@ export function paginateResumeData(
       ? 27
       : isOrangePillTemplate
         ? 30
-      : isProfileBandTemplate
+        : isProfileBandTemplate
           ? 30
           : 22;
-  const continuationPageCapacity =
-    isEditorialTemplate ||
-    isOrangePillTemplate ||
-    isProfileBandTemplate
-      ? 32
-      : 30;
+  const continuationPageCapacity = isEditorialTemplate || isOrangePillTemplate || isProfileBandTemplate ? 32 : 30;
   const paginationProfile = getResumePaginationProfile(templateId);
   const experiences = getResumeExperiences(data);
   const educations = getResumeEducations(data);
   const projects = getResumeProjects(data);
-  const summaryWeight = data.summary.trim()
-    ? 2 + Math.ceil(data.summary.length / 350)
-    : 0;
-  const summaryIsInMain =
-    getResumeSectionFlow(paginationProfile, "summary") !== "sidebar";
-  const educationsAreInMain =
-    getResumeSectionFlow(paginationProfile, "educations") !== "sidebar";
-  const skillsAreInMain =
-    getResumeSectionFlow(paginationProfile, "skills") !== "sidebar";
-  const languagesAreInMain =
-    getResumeSectionFlow(paginationProfile, "languages") !== "sidebar";
+  const summaryWeight = data.summary.trim() ? 2 + Math.ceil(data.summary.length / 350) : 0;
+  const summaryIsInMain = getResumeSectionFlow(paginationProfile, "summary") !== "sidebar";
+  const educationsAreInMain = getResumeSectionFlow(paginationProfile, "educations") !== "sidebar";
+  const skillsAreInMain = getResumeSectionFlow(paginationProfile, "skills") !== "sidebar";
+  const languagesAreInMain = getResumeSectionFlow(paginationProfile, "languages") !== "sidebar";
   const mainSummaryWeight = summaryIsInMain ? summaryWeight : 0;
   const trailingContentWeight =
-    (educationsAreInMain && educations.length
-      ? Math.min(5, educations.length * 1.5)
-      : 0) +
+    (educationsAreInMain && educations.length ? Math.min(5, educations.length * 1.5) : 0) +
     (skillsAreInMain && data.skills.trim() ? 2 : 0) +
     (languagesAreInMain && data.languages.trim() ? 1 : 0);
   const totalWeight =
     mainSummaryWeight +
     trailingContentWeight +
     projects.reduce((total, project) => total + projectWeight(project), 0) +
-    experiences.reduce(
-      (total, experience) => total + experienceWeight(experience),
-      0,
-    );
+    experiences.reduce((total, experience) => total + experienceWeight(experience), 0);
 
   if (totalWeight <= firstPageCapacity) return [data];
 
@@ -722,10 +671,7 @@ export function paginateResumeData(
   let currentWeight = 0;
   for (const experience of experiences) {
     const weight = experienceWeight(experience);
-    const capacity =
-      pages.length === 0
-        ? firstPageCapacity - mainSummaryWeight
-        : continuationPageCapacity;
+    const capacity = pages.length === 0 ? firstPageCapacity - mainSummaryWeight : continuationPageCapacity;
     if (currentPage.length && currentWeight + weight > capacity) {
       pages.push(currentPage);
       currentPage = [];
@@ -739,14 +685,11 @@ export function paginateResumeData(
   const pageProjects: ResumeProject[][] = pages.map(() => []);
   let projectPageIndex = pages.length - 1;
   let projectPageWeight =
-    pages[projectPageIndex].reduce(
-      (total, experience) => total + experienceWeight(experience),
-      0,
-    ) + (projectPageIndex === 0 ? mainSummaryWeight : 0);
+    pages[projectPageIndex].reduce((total, experience) => total + experienceWeight(experience), 0) +
+    (projectPageIndex === 0 ? mainSummaryWeight : 0);
   for (const project of projects) {
     const weight = projectWeight(project);
-    const capacity =
-      projectPageIndex === 0 ? firstPageCapacity : continuationPageCapacity;
+    const capacity = projectPageIndex === 0 ? firstPageCapacity : continuationPageCapacity;
     if (projectPageWeight && projectPageWeight + weight > capacity) {
       pages.push([]);
       pageProjects.push([]);
@@ -756,21 +699,12 @@ export function paginateResumeData(
     pageProjects[projectPageIndex].push(project);
     projectPageWeight += weight;
   }
-  const lastPageExperienceWeight = pages.at(-1)!.reduce(
-    (total, experience) => total + experienceWeight(experience),
-    0,
-  ) + pageProjects.at(-1)!.reduce(
-    (total, project) => total + projectWeight(project),
-    0,
-  );
-  const lastPageBaseWeight =
-    lastPageExperienceWeight + (pages.length === 1 ? mainSummaryWeight : 0);
-  const lastPageCapacity =
-    pages.length === 1 ? firstPageCapacity : continuationPageCapacity;
-  if (
-    trailingContentWeight &&
-    lastPageBaseWeight + trailingContentWeight > lastPageCapacity
-  ) {
+  const lastPageExperienceWeight =
+    pages.at(-1)!.reduce((total, experience) => total + experienceWeight(experience), 0) +
+    pageProjects.at(-1)!.reduce((total, project) => total + projectWeight(project), 0);
+  const lastPageBaseWeight = lastPageExperienceWeight + (pages.length === 1 ? mainSummaryWeight : 0);
+  const lastPageCapacity = pages.length === 1 ? firstPageCapacity : continuationPageCapacity;
+  if (trailingContentWeight && lastPageBaseWeight + trailingContentWeight > lastPageCapacity) {
     pages.push([]);
     pageProjects.push([]);
   }
@@ -787,46 +721,21 @@ export function paginateResumeData(
       company: "",
       experienceDate: "",
       experience: "",
-      education:
-        educationsAreInMain && isLast
-          ? data.education
-          : !educationsAreInMain && isFirst
-            ? data.education
-            : "",
-      educations:
-        educationsAreInMain && isLast
-          ? educations
-          : !educationsAreInMain && isFirst
-            ? educations
-            : [],
-      skills:
-        skillsAreInMain && isLast
-          ? data.skills
-          : !skillsAreInMain && isFirst
-            ? data.skills
-            : "",
-      languages:
-        languagesAreInMain && isLast
-          ? data.languages
-          : !languagesAreInMain && isFirst
-            ? data.languages
-            : "",
+      education: educationsAreInMain && isLast ? data.education : !educationsAreInMain && isFirst ? data.education : "",
+      educations: educationsAreInMain && isLast ? educations : !educationsAreInMain && isFirst ? educations : [],
+      skills: skillsAreInMain && isLast ? data.skills : !skillsAreInMain && isFirst ? data.skills : "",
+      languages: languagesAreInMain && isLast ? data.languages : !languagesAreInMain && isFirst ? data.languages : "",
     };
   });
 
-  return educationsAreInMain
-    ? enforceResumeSectionFlow(paginated)
-    : paginated;
+  return educationsAreInMain ? enforceResumeSectionFlow(paginated) : paginated;
 }
 
-export function hasResumeContent(
-  resume: Partial<ResumeData> | undefined,
-): resume is ResumeData {
+export function hasResumeContent(resume: Partial<ResumeData> | undefined): resume is ResumeData {
   if (!resume) return false;
   return Object.entries(resume).some(
     ([key, value]) =>
       key !== "photoUrl" &&
-      ((typeof value === "string" && value.trim().length > 0) ||
-        (Array.isArray(value) && value.length > 0)),
+      ((typeof value === "string" && value.trim().length > 0) || (Array.isArray(value) && value.length > 0)),
   );
 }

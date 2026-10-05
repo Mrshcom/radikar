@@ -7,14 +7,8 @@ export function PageLoader() {
       aria-busy="true"
       aria-live="polite"
     >
-      <div
-        aria-hidden="true"
-        className="absolute -right-24 -top-24 size-72 rounded-full bg-[#dff1e9]/70 blur-3xl"
-      />
-      <div
-        aria-hidden="true"
-        className="absolute -bottom-28 -left-20 size-80 rounded-full bg-[#e7f5ef]/80 blur-3xl"
-      />
+      <div aria-hidden="true" className="absolute -right-24 -top-24 size-72 rounded-full bg-[#dff1e9]/70 blur-3xl" />
+      <div aria-hidden="true" className="absolute -bottom-28 -left-20 size-80 rounded-full bg-[#e7f5ef]/80 blur-3xl" />
 
       <section className="relative w-full max-w-[370px] px-5 py-9 text-center">
         <div className="mx-auto grid size-[82px] place-items-center rounded-[26px] bg-[#e9f6f0]">
@@ -28,9 +22,7 @@ export function PageLoader() {
           />
         </div>
 
-        <h1 className="mt-5 text-xs font-normal text-[#193936]">
-          در حال بارگذاری
-        </h1>
+        <h1 className="mt-5 text-xs font-normal text-[#193936]">در حال بارگذاری</h1>
 
         <div
           className="mx-auto mt-3 h-[3px] w-full max-w-[220px] overflow-hidden rounded-full bg-[#e8f1ed]"

@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { JsonLd } from "../_components/json-ld";
 import { createPageMetadata, siteConfig } from "@/lib/site";
-import {
-  MarketingFooter,
-  MarketingHeader,
-} from "./_components/marketing-sections";
+import { MarketingFooter, MarketingHeader } from "./_components/marketing-sections";
 import { Providers } from "../providers";
 
 export const metadata: Metadata = createPageMetadata({

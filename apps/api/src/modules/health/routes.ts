@@ -1,9 +1,6 @@
 import type { FastifyInstance } from "fastify";
 
-export function registerHealthRoutes(
-  app: FastifyInstance,
-  readinessCheck: () => Promise<void>,
-) {
+export function registerHealthRoutes(app: FastifyInstance, readinessCheck: () => Promise<void>) {
   app.get("/health", async () => ({
     status: "ok",
     service: "radikar-api",

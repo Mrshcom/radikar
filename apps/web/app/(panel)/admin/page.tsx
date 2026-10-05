@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/app/_components/auth";
 import { useAdminBillingStats, useAdminStats } from "@/lib/admin-stats";
+import { SectionTitle } from "../_components/ui";
 
 const collectionLabels: Record<string, string> = {
   profiles: "فضاهای کاری",
@@ -37,11 +38,10 @@ export default function AdminPage() {
   if (user.role === "admin") {
     return (
       <section className="rounded-[18px] border border-[#d8e7df] bg-white p-7">
-        <h1 className="m-0 text-[23px] font-black text-[#19312f]">مدیریت عملیات سامانه</h1>
-        <p className="mb-0 mt-3 text-[11px] leading-8 text-[#748582]">
-          مدیریت عضویت و اعتبار کاربران، سفارش‌ها و تراکنش‌ها از منوی کناری در دسترس است.
-          گزارش‌های کلان سامانه و مدیریت نقش‌ها فقط برای سوپرادمین نمایش داده می‌شود.
-        </p>
+        <SectionTitle
+          description="مدیریت عضویت و اعتبار کاربران، سفارش‌ها و تراکنش‌ها از منوی کناری در دسترس است. گزارش‌های کلان سامانه و مدیریت نقش‌ها فقط برای سوپرادمین نمایش داده می‌شود."
+          title="داشبورد مدیریتی"
+        />
       </section>
     );
   }
@@ -71,13 +71,10 @@ export default function AdminPage() {
 
   return (
     <div className="grid gap-6">
-      <header>
-        <p className="m-0 text-[11px] font-bold text-[#0f7b62]">نمای لحظه‌ای کسب‌وکار</p>
-        <h1 className="mb-0 mt-2 text-[25px] font-black text-[#19312f]">داشبورد مدیریتی سامانه</h1>
-        <p className="mb-0 mt-2 text-[11px] leading-7 text-[#7c8b88]">
-          وضعیت کاربران، تولید رزومه و فروش سامانه بر اساس روز جاری به وقت تهران نمایش داده می‌شود.
-        </p>
-      </header>
+      <SectionTitle
+        description="وضعیت کاربران، تولید رزومه و فروش سامانه بر اساس روز جاری به وقت تهران نمایش داده می‌شود."
+        title="داشبورد مدیریتی"
+      />
 
       <section className="grid grid-cols-4 gap-4 max-[1050px]:grid-cols-2">
         {cards.map(({ label, value, icon: Icon }) => (
@@ -88,8 +85,15 @@ export default function AdminPage() {
             <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#eaf5f0] text-[#0f7b62] max-[520px]:size-8">
               <Icon className="max-[520px]:size-4" size={18} />
             </span>
-            <small className="min-w-0 flex-1 truncate whitespace-nowrap text-[9px] font-semibold text-[#81908d] max-[520px]:flex-none max-[520px]:overflow-visible max-[520px]:whitespace-normal max-[520px]:text-clip max-[520px]:leading-5" title={label}>{label}</small>
-            <strong className="shrink-0 text-[18px] font-black text-[#19312f] max-[520px]:col-span-2 max-[520px]:justify-self-center">{formatNumber(value)}</strong>
+            <small
+              className="min-w-0 flex-1 truncate whitespace-nowrap text-[9px] font-semibold text-[#81908d] max-[520px]:flex-none max-[520px]:overflow-visible max-[520px]:whitespace-normal max-[520px]:text-clip max-[520px]:leading-5"
+              title={label}
+            >
+              {label}
+            </small>
+            <strong className="shrink-0 text-[18px] font-black text-[#19312f] max-[520px]:col-span-2 max-[520px]:justify-self-center">
+              {formatNumber(value)}
+            </strong>
           </article>
         ))}
       </section>
@@ -101,9 +105,19 @@ export default function AdminPage() {
         </p>
         <div className="grid grid-cols-4 gap-3 max-[1050px]:grid-cols-2">
           {(stats.data?.records.byCollection ?? []).map((item) => (
-            <div className="group flex min-h-14 items-center justify-between gap-3 rounded-[14px] border border-[#e2eee7] bg-gradient-to-l from-[#f0f8f4] to-[#fbfdfb] px-4 py-3 text-[10px] text-[#526762] shadow-[0_6px_18px_rgba(30,86,68,.05)] transition-transform hover:-translate-y-0.5 max-[520px]:flex-col max-[520px]:items-center max-[520px]:text-center" key={item.collection}>
-              <span className="min-w-0 truncate font-semibold max-[520px]:overflow-visible max-[520px]:whitespace-normal max-[520px]:text-clip max-[520px]:leading-5" title={collectionLabels[item.collection] ?? item.collection}>{collectionLabels[item.collection] ?? item.collection}</span>
-              <strong className="shrink-0 rounded-full border border-[#e2eee7] bg-white px-3 py-1 text-[16px] leading-none text-[#19312f]">{formatNumber(item.total)}</strong>
+            <div
+              className="group flex min-h-14 items-center justify-between gap-3 rounded-[14px] border border-[#e2eee7] bg-gradient-to-l from-[#f0f8f4] to-[#fbfdfb] px-4 py-3 text-[10px] text-[#526762] shadow-[0_6px_18px_rgba(30,86,68,.05)] transition-transform hover:-translate-y-0.5 max-[520px]:flex-col max-[520px]:items-center max-[520px]:text-center"
+              key={item.collection}
+            >
+              <span
+                className="min-w-0 truncate font-semibold max-[520px]:overflow-visible max-[520px]:whitespace-normal max-[520px]:text-clip max-[520px]:leading-5"
+                title={collectionLabels[item.collection] ?? item.collection}
+              >
+                {collectionLabels[item.collection] ?? item.collection}
+              </span>
+              <strong className="shrink-0 rounded-full border border-[#e2eee7] bg-white px-3 py-1 text-[16px] leading-none text-[#19312f]">
+                {formatNumber(item.total)}
+              </strong>
             </div>
           ))}
         </div>

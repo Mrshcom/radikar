@@ -24,11 +24,7 @@ const watchedRootFiles = new Set([
 
 const watchedPrefixes = ["apps/", "packages/", "deploy/"];
 
-const stagedFiles = execFileSync(
-  "git",
-  ["diff", "--cached", "--name-only", "--diff-filter=ACMR"],
-  { encoding: "utf8" },
-)
+const stagedFiles = execFileSync("git", ["diff", "--cached", "--name-only", "--diff-filter=ACMR"], { encoding: "utf8" })
   .split("\n")
   .map((file) => file.trim())
   .filter(Boolean);
@@ -41,12 +37,8 @@ const requiresKnowledgeBaseUpdate = stagedFiles.some(
 );
 
 const commitMessagePath = process.argv[2];
-const commitMessage = commitMessagePath
-  ? readFileSync(commitMessagePath, "utf8")
-  : "";
-const hasNotApplicableReview = /^Knowledge-Base:\s*n\/a\s*[-–—:]\s*\S+/im.test(
-  commitMessage,
-);
+const commitMessage = commitMessagePath ? readFileSync(commitMessagePath, "utf8") : "";
+const hasNotApplicableReview = /^Knowledge-Base:\s*n\/a\s*[-–—:]\s*\S+/im.test(commitMessage);
 
 if (requiresKnowledgeBaseUpdate && !hasKnowledgeBaseUpdate && !hasNotApplicableReview) {
   appendFileSync(

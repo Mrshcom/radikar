@@ -8,10 +8,7 @@ import {
 } from "@radikar/validators";
 import { normalizeResumeDataInput } from "../lib/resume-input.ts";
 import { calculateKnowledgeCompletion } from "../lib/knowledge-completion.ts";
-import {
-  getResumeEducations,
-  getResumeExperiences,
-} from "../app/(panel)/resumes/resume-data.ts";
+import { getResumeEducations, getResumeExperiences } from "../app/(panel)/resumes/resume-data.ts";
 
 test("normalizes array and non-string fields returned by resume extraction", () => {
   const result = normalizeResumeImportPayload({
@@ -131,15 +128,9 @@ test("rejects unsafe links and strips hidden control characters", () => {
   assert.equal(sanitizeImportedUrl("example.com/profile"), "https://example.com/profile");
   assert.equal(sanitizeImportedUrl("LinkedIn Profile"), "");
   assert.equal(sanitizeImportedUrl("https://linkedinprofile/"), "");
-  assert.equal(
-    sanitizeImportedUrl("https://www.linkedin.com/in/mampel88/"),
-    "https://www.linkedin.com/in/mampel88/",
-  );
+  assert.equal(sanitizeImportedUrl("https://www.linkedin.com/in/mampel88/"), "https://www.linkedin.com/in/mampel88/");
   assert.equal(sanitizeImportedUrl("https://www.linkedin.com/in/m…"), "");
-  assert.equal(
-    sanitizeImportedUrl("https://www.linkedin.com/in/m%E2%80%A6"),
-    "",
-  );
+  assert.equal(sanitizeImportedUrl("https://www.linkedin.com/in/m%E2%80%A6"), "");
 });
 
 test("keeps sanitized optional resume fields render-safe", () => {
@@ -157,10 +148,7 @@ test("keeps sanitized optional resume fields render-safe", () => {
 });
 
 test("preserves safe local template avatars and rejects protocol-relative images", () => {
-  assert.equal(
-    sanitizeImportedImageSource("/images/default-resume-profile.png"),
-    "/images/default-resume-profile.png",
-  );
+  assert.equal(sanitizeImportedImageSource("/images/default-resume-profile.png"), "/images/default-resume-profile.png");
   assert.equal(sanitizeImportedImageSource("//attacker.example/avatar.png"), "");
   assert.equal(
     normalizeResumeDataInput({

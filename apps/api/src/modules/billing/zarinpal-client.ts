@@ -48,12 +48,7 @@ export class ZarinpalClient {
     return payload;
   }
 
-  async requestPayment(input: {
-    amountRials: number;
-    callbackUrl: string;
-    description: string;
-    mobile?: string;
-  }) {
+  async requestPayment(input: { amountRials: number; callbackUrl: string; description: string; mobile?: string }) {
     const response = await this.post("/pg/v4/payment/request.json", {
       merchant_id: this.merchantId,
       amount: input.amountRials,

@@ -3,14 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import {
   BarChart3,
   Bell,
@@ -23,6 +16,7 @@ import {
   FileText,
   LayoutDashboard,
   LoaderCircle,
+  LogIn,
   Menu,
   MessageSquareText,
   Pencil,
@@ -41,10 +35,9 @@ import {
   UserPlus,
   Users,
   X,
-  ShoppingBag,
   FilePlus2,
-  Activity,
   Bot,
+  Gift,
 } from "lucide-react";
 import {
   appProfileStore,
@@ -59,18 +52,21 @@ import type { AppProfileRecord, JobRecord } from "@/lib/data/models";
 import { DeleteConfirmModal, Modal } from "./ui";
 import { useFieldDirectionManager } from "@/lib/field-direction";
 import { cn } from "@/lib/cn";
-import {
-  ModelTaskProvider,
-  useModelTasks,
-} from "./model-task-provider";
+import { ModelTaskProvider, useModelTasks } from "./model-task-provider";
 import { useAuth, useLogout, type UserRole } from "@/app/_components/auth";
 import { useToast } from "@/app/_components/toast";
 import { useAdminEvents, type AdminEvent } from "@/lib/admin-stats";
+import { PersianDateTime } from "@/lib/date-time-display";
+import { userDisplayName, userIdentifier } from "@/lib/user-identity";
+import { OnboardingLauncher, OnboardingProvider } from "./onboarding/onboarding-provider";
+import { useRadicoinWallet } from "@/lib/radicoins";
+import { RadicoinIcon } from "./radicoin-icon";
+import { PanelNavigationProgress } from "./panel-navigation-progress";
 
 type MenuItem = {
   href: string;
   label: string;
-  icon: typeof LayoutDashboard;
+  icon: ComponentType<{ className?: string; size?: number }>;
   roles: readonly UserRole[];
 };
 
@@ -82,6 +78,7 @@ const menuItems: MenuItem[] = [
   { href: "/resumes", label: "رزومه‌های هدفمند", icon: FileText, roles: ["user"] },
   { href: "/applications", label: "پیگیری اپلای‌ها", icon: BarChart3, roles: ["user"] },
   { href: "/interview", label: "آمادگی مصاحبه", icon: MessageSquareText, roles: ["user"] },
+  { href: "/radicoins", label: "کیف پول رادیکوین", icon: RadicoinIcon, roles: ["user"] },
   { href: "/admin", label: "داشبورد مدیریتی", icon: LayoutDashboard, roles: ["admin", "superadmin"] },
   { href: "/admin/users", label: "کاربران و دسترسی‌ها", icon: Users, roles: ["superadmin"] },
   { href: "/admin/memberships", label: "عضویت و اعتبار", icon: ShieldCheck, roles: ["admin", "superadmin"] },
@@ -89,6 +86,9 @@ const menuItems: MenuItem[] = [
   { href: "/admin/payments", label: "تراکنش‌ها و واریزی‌ها", icon: CreditCard, roles: ["admin", "superadmin"] },
   { href: "/admin/records", label: "داده‌های سامانه", icon: Database, roles: ["superadmin"] },
   { href: "/admin/model-usage", label: "مصرف و هزینه مدل‌ها", icon: Bot, roles: ["superadmin"] },
+  { href: "/admin/job-pool", label: "گزارش Job Pool", icon: BriefcaseBusiness, roles: ["superadmin"] },
+  { href: "/admin/referrals", label: "ریفرال و دعوت", icon: Gift, roles: ["superadmin"] },
+  { href: "/admin/radicoins", label: "مدیریت رادیکوین", icon: RadicoinIcon, roles: ["superadmin"] },
   { href: "/admin/settings", label: "تنظیمات", icon: Settings, roles: ["superadmin"] },
 ];
 
@@ -98,29 +98,36 @@ const pageTitles: Record<string, string> = {
   "/orders": "سفارش‌ها",
   "/upgrade": "خرید و ارتقای بسته",
   "/billing/result": "نتیجه پرداخت",
+  "/referrals": "دعوت دوستان",
+  "/radicoins": "کیف پول رادیکوین",
   "/admin/memberships": "کاربران و عضویت‌ها",
   "/admin/users": "کاربران و دسترسی‌ها",
   "/admin/orders": "سفارش‌های سامانه",
   "/admin/payments": "واریزی‌های سامانه",
   "/admin/records": "داده‌های سامانه",
   "/admin/model-usage": "مصرف و هزینه مدل‌ها",
+  "/admin/job-pool": "گزارش Job Pool",
+  "/admin/referrals": "ریفرال و دعوت",
+  "/admin/radicoins": "مدیریت رادیکوین",
   "/admin/settings": "تنظیمات",
 };
+
+function tourTarget(href: string) {
+  return (
+    {
+      "/dashboard": "nav-dashboard",
+      "/knowledge-base": "nav-profile",
+      "/jobs": "nav-jobs",
+      "/match": "nav-match",
+      "/resumes": "nav-resumes",
+    } as Record<string, string>
+  )[href];
+}
 
 const primaryButtonClass =
   "inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border-0 bg-[#0f7b62] px-[15px] text-[11px] font-bold text-white no-underline shadow-[0_7px_17px_rgba(15,123,98,.17)] disabled:cursor-not-allowed disabled:opacity-45";
 const secondaryButtonClass =
   "inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border border-[#e1e6e0] bg-white px-[15px] text-[11px] font-bold text-[#526461]";
-
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return parts.length
-    ? parts
-        .slice(0, 2)
-        .map((part) => Array.from(part)[0])
-        .join("\u200c")
-    : "—";
-}
 
 function adminEventHref(type: AdminEvent["type"]) {
   if (type === "purchase") return "/admin/orders";
@@ -129,7 +136,7 @@ function adminEventHref(type: AdminEvent["type"]) {
 }
 
 function adminEventMessage(event: AdminEvent) {
-  const userName = event.user.fullName || event.user.phone;
+  const userName = userDisplayName(event.user);
   if (event.type === "signup") return `${userName} در سامانه ثبت‌نام کرد.`;
   if (event.type === "login") return `${userName} وارد سامانه شد.`;
   if (event.type === "resume") return `${userName} یک رزومه جدید ساخت.`;
@@ -138,18 +145,15 @@ function adminEventMessage(event: AdminEvent) {
 }
 
 function adminEventTime(value: string) {
-  const date = new Date(value);
-  const today = new Date();
-  const sameDay = date.toLocaleDateString("fa-IR") === today.toLocaleDateString("fa-IR");
-  return sameDay
-    ? `امروز، ${date.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })}`
-    : date.toLocaleString("fa-IR", { dateStyle: "short", timeStyle: "short" });
+  return <PersianDateTime value={value} />;
 }
 
 export function PanelShell({ children }: { children: ReactNode }) {
   return (
     <ModelTaskProvider>
-      <PanelShellContent>{children}</PanelShellContent>
+      <OnboardingProvider>
+        <PanelShellContent>{children}</PanelShellContent>
+      </OnboardingProvider>
     </ModelTaskProvider>
   );
 }
@@ -173,14 +177,14 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const [editingWorkspaceId, setEditingWorkspaceId] = useState("");
   const [editingWorkspaceName, setEditingWorkspaceName] = useState("");
   const [savingWorkspaceId, setSavingWorkspaceId] = useState("");
-  const [pendingWorkspaceDelete, setPendingWorkspaceDelete] =
-    useState<AppProfileRecord | null>(null);
+  const [pendingWorkspaceDelete, setPendingWorkspaceDelete] = useState<AppProfileRecord | null>(null);
   const [armedWorkspaceDeleteId, setArmedWorkspaceDeleteId] = useState("");
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const noticeRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuCloseTimerRef = useRef<number | null>(null);
   const userRole = user?.role;
+  const radicoinWallet = useRadicoinWallet(userRole === "user");
   const isManagement = userRole === "admin" || userRole === "superadmin";
   const isSuperadmin = userRole === "superadmin";
   const adminEvents = useAdminEvents(isSuperadmin);
@@ -191,20 +195,8 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   );
   const mobilePrimaryMenuItems = useMemo(() => {
     const preferredHrefs = isManagement
-      ? [
-          "/admin/users",
-          "/admin/memberships",
-          "/admin",
-          "/admin/orders",
-          "/admin/payments",
-        ]
-      : [
-          "/jobs",
-          "/match",
-          "/dashboard",
-          "/resumes",
-          "/applications",
-        ];
+      ? ["/admin/users", "/admin/memberships", "/admin", "/admin/orders", "/admin/payments"]
+      : ["/jobs", "/match", "/dashboard", "/resumes", "/applications"];
 
     return preferredHrefs
       .map((href) => visibleMenuItems.find((item) => item.href === href))
@@ -212,17 +204,12 @@ function PanelShellContent({ children }: { children: ReactNode }) {
       .slice(0, 5);
   }, [isManagement, visibleMenuItems]);
   const title = useMemo(
-    () =>
-      pageTitles[pathname] ??
-      visibleMenuItems.find((item) => item.href === pathname)?.label ??
-      "نمای کلی",
+    () => pageTitles[pathname] ?? visibleMenuItems.find((item) => item.href === pathname)?.label ?? "نمای کلی",
     [pathname, visibleMenuItems],
   );
   const latestJob = jobs[0];
   const activeWorkspace = profiles.find((item) => item.id === activeProfileId);
-  const unreadAdminEvents = (adminEvents.data?.items ?? []).filter(
-    (event) => !seenAdminEventIds.has(event.id),
-  );
+  const unreadAdminEvents = (adminEvents.data?.items ?? []).filter((event) => !seenAdminEventIds.has(event.id));
 
   const openMobileMenu = useCallback(() => {
     if (mobileMenuCloseTimerRef.current !== null) {
@@ -269,8 +256,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!noticeOpen) return;
     const closeOnOutsideInteraction = (event: PointerEvent) => {
-      if (!noticeRef.current?.contains(event.target as Node))
-        setNoticeOpen(false);
+      if (!noticeRef.current?.contains(event.target as Node)) setNoticeOpen(false);
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setNoticeOpen(false);
@@ -347,11 +333,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
     try {
       const updatedWorkspace = { ...workspace, workspaceName, updatedAt: now };
       await appProfileStore.put(updatedWorkspace);
-      setProfiles((items) =>
-        items.map((item) =>
-          item.id === workspace.id ? updatedWorkspace : item,
-        ),
-      );
+      setProfiles((items) => items.map((item) => (item.id === workspace.id ? updatedWorkspace : item)));
       setEditingWorkspaceId("");
       setEditingWorkspaceName("");
       notify("نام فضای کاری تغییر کرد.");
@@ -423,141 +405,135 @@ function PanelShellContent({ children }: { children: ReactNode }) {
 
   return (
     <div
-        className="min-h-screen print:hidden [&_a]:cursor-pointer [&_a]:transition-opacity [&_a:hover]:opacity-80 [&_button:not(:disabled)]:cursor-pointer [&_button:not(:disabled)]:transition-[opacity,filter,background-color,border-color,color,box-shadow] [&_button:not(:disabled):hover]:opacity-80 [&_button:disabled]:cursor-not-allowed [&_input[type=checkbox]]:cursor-pointer [&_input[type=radio]]:cursor-pointer [&_input[type=range]]:cursor-pointer [&_select]:cursor-pointer [&_select]:transition-colors [&_select:hover]:border-[#9ccbbb] [&_summary]:cursor-pointer [&_summary]:transition-opacity [&_summary:hover]:opacity-80"
-        dir="rtl"
-      >
-        <aside className="fixed inset-y-0 start-0 z-20 flex w-[248px] flex-col border-e border-[#e7ebe6] bg-white px-4 pb-[18px] pt-6 max-[820px]:hidden">
-          <Link
-            className="flex items-center gap-1 border-0 bg-transparent px-[9px] pb-6 text-right text-[#19312f] no-underline"
-            href={isManagement ? "/admin" : "/dashboard"}
-          >
-            <Image
-              className="block size-9 shrink-0 object-contain"
-              src="/radikar-logo.png"
-              width={36}
-              height={36}
-              alt=""
-              priority
-            />
-            <div className="flex flex-col">
-              <strong className="text-[16px] tracking-[-.4px]">رادیکار</strong>
-              <small className="mt-0.5 text-[10px] text-[#93a09d]">
-                همراه حرفه‌ای تو کار
-              </small>
-            </div>
-          </Link>
-          <nav
-            className="flex min-h-0 flex-1 flex-col gap-[5px] overflow-y-auto"
-            aria-label="منوی اصلی"
-          >
-            {visibleMenuItems.map((item) => {
-              const Icon = item.icon;
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  className={cn(
-                    "relative flex min-h-[43px] items-center gap-3 rounded-[11px] border-0 px-[13px] text-right text-[13px] no-underline transition-colors hover:bg-[#f5f8f5] hover:text-[#19312f]",
-                    active
-                      ? "bg-[#e6f4ee] font-bold text-[#0c7058] after:absolute after:-right-4 after:h-[21px] after:w-[3px] after:rounded-l-sm after:bg-[#0f7b62] after:content-['']"
-                      : "bg-transparent text-[#697a77]",
-                  )}
-                  href={item.href}
-                >
-                  <Icon size={19} />
-                  <span>{item.label}</span>
-                  {item.href === "/jobs" && jobs.length > 0 && (
-                    <em
-                      className={cn(
-                        "mr-auto grid h-[21px] min-w-[23px] place-items-center rounded-[7px] text-[10px] not-italic transition-colors",
-                        active
-                          ? "bg-[#0f7b62] text-white"
-                          : "bg-[#eff1ee] text-[#61716e]",
-                      )}
-                    >
-                      {jobs.length.toLocaleString("fa-IR")}
-                    </em>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-          <div className="mt-auto grid w-full min-w-0 gap-3">
-            {!isManagement && modelTasks.length > 0 && (
-              <section
-                aria-label="فعالیت‌های مدل"
-                aria-live="polite"
-                className="grid max-h-[210px] gap-1.5 overflow-y-auto rounded-[14px] border border-[#d7e8e1] bg-[#f5faf7] p-2 shadow-[0_10px_28px_rgba(24,73,60,.09)]"
+      className="min-h-screen print:hidden [&_a]:cursor-pointer [&_button:not(:disabled)]:cursor-pointer [&_button:not(:disabled)]:transition-[opacity,filter,background-color,border-color,color,box-shadow] [&_button:not(:disabled):hover]:opacity-80 [&_button:disabled]:cursor-not-allowed [&_input[type=checkbox]]:cursor-pointer [&_input[type=radio]]:cursor-pointer [&_input[type=range]]:cursor-pointer [&_select]:cursor-pointer [&_select]:transition-colors [&_select:hover]:border-[#9ccbbb] [&_summary]:cursor-pointer [&_summary]:transition-opacity [&_summary:hover]:opacity-80"
+      dir="rtl"
+    >
+      <PanelNavigationProgress />
+      <aside className="fixed inset-y-0 start-0 z-20 flex w-[248px] flex-col border-e border-[#e7ebe6] bg-white px-4 pb-[18px] pt-6 max-[820px]:hidden">
+        <Link
+          className="flex items-center gap-1 border-0 bg-transparent px-[9px] pb-6 text-right text-[#19312f] no-underline"
+          href={isManagement ? "/admin" : "/dashboard"}
+        >
+          <Image
+            className="block size-9 shrink-0 object-contain"
+            src="/radikar-logo.png"
+            width={36}
+            height={36}
+            alt=""
+            priority
+          />
+          <div className="flex flex-col">
+            <strong className="text-[16px] tracking-[-.4px]">رادیکار</strong>
+            <small className="mt-0.5 text-[10px] text-[#93a09d]">همراه حرفه‌ای تو کار</small>
+          </div>
+        </Link>
+        <nav className="flex min-h-0 flex-1 flex-col gap-[5px] overflow-y-auto" aria-label="منوی اصلی">
+          {visibleMenuItems.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                className={cn(
+                  "relative flex min-h-[43px] items-center gap-3 rounded-[11px] border-0 px-[13px] text-right text-[13px] no-underline transition-colors hover:bg-[#f5f8f5] hover:text-[#19312f]",
+                  active
+                    ? "bg-[#e6f4ee] font-bold text-[#0c7058] after:absolute after:-right-4 after:h-[21px] after:w-[3px] after:rounded-l-sm after:bg-[#0f7b62] after:content-['']"
+                    : "bg-transparent text-[#697a77]",
+                )}
+                href={item.href}
+                data-tour={tourTarget(item.href)}
               >
-                <div className="flex items-center gap-1.5 px-1 pb-0.5 text-[#1b5145]">
-                  <WandSparkles size={14} />
-                  <strong className="text-[9px]">فعالیت‌های مدل</strong>
-                </div>
-                {modelTasks.map((task) => (
-                  <div
+                <Icon size={19} />
+                <span>{item.label}</span>
+                {item.href === "/jobs" && jobs.length > 0 && (
+                  <em
                     className={cn(
-                      "flex min-w-0 cursor-pointer items-center gap-2 rounded-[10px] border p-2 text-right",
-                      task.status === "running"
-                        ? "border-[#c9e3d9] bg-white text-[#176b57]"
-                        : task.status === "completed"
-                          ? "border-[#cce4d9] bg-[#e9f6f0] text-[#12664f]"
-                          : task.status === "canceled"
-                            ? "border-[#e3e6e4] bg-[#f5f6f5] text-[#74827e]"
-                            : "border-[#efd9b2] bg-[#fff7e8] text-[#966925]",
+                      "mr-auto grid h-[21px] min-w-[23px] place-items-center rounded-[7px] text-[10px] not-italic transition-colors",
+                      active ? "bg-[#0f7b62] text-white" : "bg-[#eff1ee] text-[#61716e]",
                     )}
-                    key={task.id}
-                    onClick={() => openTask(task)}
-                    onKeyDown={(event) => {
-                      if (event.key !== "Enter" && event.key !== " ") return;
-                      event.preventDefault();
-                      openTask(task);
-                    }}
-                    role="button"
-                    tabIndex={0}
                   >
-                    <span className="grid size-7 shrink-0 place-items-center rounded-full bg-current/10">
-                      {task.status === "running" ? (
-                        <LoaderCircle className="animate-spin" size={14} />
-                      ) : task.status === "completed" ? (
-                        <CheckCircle2 size={14} />
-                      ) : (
-                        <CircleAlert size={14} />
-                      )}
-                    </span>
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <strong className="truncate text-[8px]">
-                        {task.title}
-                      </strong>
-                      <small className="mt-0.5 line-clamp-2 text-[7px] leading-[1.55] opacity-75">
-                        {task.status === "running"
-                          ? task.pendingLabel
-                          : task.status === "completed"
-                            ? `${task.completedLabel}؛ برای مشاهده کلیک کن.`
-                            : task.status === "canceled"
-                              ? "عملیات توسط شما لغو شد."
-                              : task.error || "عملیات مدل ناموفق بود."}
-                      </small>
-                    </span>
+                    {jobs.length.toLocaleString("fa-IR")}
+                  </em>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="mt-auto grid w-full min-w-0 gap-3">
+          {!isManagement && modelTasks.length > 0 && (
+            <section
+              aria-label="فعالیت‌های مدل"
+              aria-live="polite"
+              className="grid max-h-[210px] gap-1.5 overflow-y-auto rounded-[14px] border border-[#d7e8e1] bg-[#f5faf7] p-2 shadow-[0_10px_28px_rgba(24,73,60,.09)]"
+            >
+              <div className="flex items-center gap-1.5 px-1 pb-0.5 text-[#1b5145]">
+                <WandSparkles size={14} />
+                <strong className="text-[9px]">فعالیت‌های مدل</strong>
+              </div>
+              {modelTasks.map((task) => (
+                <div
+                  className={cn(
+                    "flex min-w-0 cursor-pointer items-center gap-2 rounded-[10px] border p-2 text-right",
+                    task.status === "running"
+                      ? "border-[#c9e3d9] bg-white text-[#176b57]"
+                      : task.status === "completed"
+                        ? "border-[#cce4d9] bg-[#e9f6f0] text-[#12664f]"
+                        : task.status === "canceled"
+                          ? "border-[#e3e6e4] bg-[#f5f6f5] text-[#74827e]"
+                          : "border-[#efd9b2] bg-[#fff7e8] text-[#966925]",
+                  )}
+                  key={task.id}
+                  onClick={() => openTask(task)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter" && event.key !== " ") return;
+                    event.preventDefault();
+                    openTask(task);
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-current/10">
                     {task.status === "running" ? (
-                      <button
-                        type="button"
-                        className="grid size-6 shrink-0 place-items-center rounded-md text-[#a5483e] hover:bg-[#fff1ef]"
-                        aria-label={`لغو ${task.title}`}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          cancelTask(task.id);
-                        }}
-                      >
-                        <X size={13} />
-                      </button>
+                      <LoaderCircle className="animate-spin" size={14} />
+                    ) : task.status === "completed" ? (
+                      <CheckCircle2 size={14} />
                     ) : (
-                      <ChevronLeft className="shrink-0 opacity-55" size={13} />
+                      <CircleAlert size={14} />
                     )}
-                  </div>
-                ))}
-              </section>
-            )}
-            {!isManagement && <div className="-mx-1 -mb-1 min-w-0 max-w-full border-t border-[#e7ebe6] px-[5px] pt-[17px]">
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <strong className="truncate text-[8px]">{task.title}</strong>
+                    <small className="mt-0.5 line-clamp-2 text-[7px] leading-[1.55] opacity-75">
+                      {task.status === "running"
+                        ? task.pendingLabel
+                        : task.status === "completed"
+                          ? `${task.completedLabel}؛ برای مشاهده کلیک کن.`
+                          : task.status === "canceled"
+                            ? "عملیات توسط شما لغو شد."
+                            : task.error || "عملیات مدل ناموفق بود."}
+                    </small>
+                  </span>
+                  {task.status === "running" ? (
+                    <button
+                      type="button"
+                      className="grid size-6 shrink-0 place-items-center rounded-md text-[#a5483e] hover:bg-[#fff1ef]"
+                      aria-label={`لغو ${task.title}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        cancelTask(task.id);
+                      }}
+                    >
+                      <X size={13} />
+                    </button>
+                  ) : (
+                    <ChevronLeft className="shrink-0 opacity-55" size={13} />
+                  )}
+                </div>
+              ))}
+            </section>
+          )}
+          {!isManagement && (
+            <div className="-mx-1 -mb-1 min-w-0 max-w-full border-t border-[#e7ebe6] px-[5px] pt-[17px]">
               <button
                 className="m-0 flex w-full min-w-0 items-center gap-[9px] overflow-hidden border-0 bg-transparent p-0 text-right"
                 onClick={() => setDialog("profiles")}
@@ -570,196 +546,289 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   >
                     {activeWorkspace?.workspaceName || "فضای کاری شخصی"}
                   </strong>
-                  <small className="mt-0.5 block w-full truncate text-[9px] text-[#9aa4a2]">
-                    مدیریت فضاهای کاری
-                  </small>
+                  <small className="mt-0.5 block w-full truncate text-[9px] text-[#9aa4a2]">مدیریت فضاهای کاری</small>
                 </span>
                 <ChevronLeft className="shrink-0" size={15} />
               </button>
-            </div>}
+            </div>
+          )}
+        </div>
+      </aside>
+      <main className="ms-[248px] min-w-0 w-[calc(100%-248px)] [&_label]:!text-[11px] [&_label]:!font-normal max-[820px]:ms-0 max-[820px]:w-full">
+        <header className="sticky top-0 z-12 flex h-[70px] items-center border-b border-[rgba(226,231,225,.85)] bg-[rgba(246,247,242,.9)] px-[clamp(24px,4vw,60px)] backdrop-blur-[14px] max-[820px]:h-[62px] max-[820px]:px-[18px]">
+          <div className="hidden items-center gap-1 max-[820px]:flex">
+            <button
+              aria-controls="mobile-panel-menu"
+              aria-expanded={mobileMenuOpen}
+              aria-label="بازکردن منوی اصلی"
+              className="grid size-9 place-items-center rounded-[10px] border border-[#dce6e0] bg-white text-[#31534c]"
+              onClick={() => {
+                setNoticeOpen(false);
+                setUserMenuOpen(false);
+                openMobileMenu();
+              }}
+              type="button"
+            >
+              <Menu size={20} />
+            </button>
+            <Image className="size-9 shrink-0 object-contain" src="/radikar-logo.png" width={36} height={36} alt="" />
+            <strong className="text-[16px] tracking-[-.4px]">رادیکار</strong>
           </div>
-        </aside>
-        <main className="ms-[248px] min-w-0 w-[calc(100%-248px)] max-[820px]:ms-0 max-[820px]:w-full">
-          <header className="sticky top-0 z-12 flex h-[70px] items-center border-b border-[rgba(226,231,225,.85)] bg-[rgba(246,247,242,.9)] px-[clamp(24px,4vw,60px)] backdrop-blur-[14px] max-[820px]:h-[62px] max-[820px]:px-[18px]">
-            <div className="hidden items-center gap-1 max-[820px]:flex">
+          <span className="text-[11px] text-[#8c9996] max-[820px]:hidden">{title}</span>
+          <div className="mr-auto flex items-center gap-[10px]">
+            {!isManagement && (
               <button
-                aria-controls="mobile-panel-menu"
-                aria-expanded={mobileMenuOpen}
-                aria-label="بازکردن منوی اصلی"
-                className="grid size-9 place-items-center rounded-[10px] border border-[#dce6e0] bg-white text-[#31534c]"
+                aria-label="جست‌وجوی سریع"
+                className="grid size-[38px] place-items-center rounded-[11px] border border-[#e4e8e3] bg-white text-[#60716e] max-[820px]:hidden"
+                onClick={() => setDialog("search")}
+                title="جست‌وجوی سریع (⌘ K)"
+                type="button"
+              >
+                <Search size={18} />
+              </button>
+            )}
+            {(userRole === "user" || isSuperadmin) && (
+              <div className="relative" ref={noticeRef}>
+                <button
+                  className="relative grid size-[38px] place-items-center rounded-[11px] border border-[#e4e8e3] bg-white text-[#60716e]"
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    if (!noticeOpen && isSuperadmin) {
+                      setSeenAdminEventIds(new Set((adminEvents.data?.items ?? []).map((event) => event.id)));
+                    }
+                    setNoticeOpen((value) => !value);
+                  }}
+                  aria-label={isSuperadmin ? "اعلان‌های آماری مدیریت" : "اعلان‌ها"}
+                  aria-expanded={noticeOpen}
+                >
+                  <Bell size={19} />
+                  {(latestJob || unreadAdminEvents.length > 0) && (
+                    <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full border border-white bg-[#e7835c] px-1 text-[9px] font-bold leading-none text-white">
+                      {isSuperadmin ? Math.min(unreadAdminEvents.length, 99).toLocaleString("fa-IR") : ""}
+                    </span>
+                  )}
+                </button>
+                {noticeOpen && isSuperadmin && (
+                  <div className="absolute left-0 top-[46px] z-40 w-[300px] overflow-hidden rounded-[16px] border border-[#dfe6e1] bg-white shadow-[0_18px_50px_rgba(25,57,50,.18)] max-[420px]:fixed max-[420px]:left-3 max-[420px]:right-auto max-[420px]:top-[68px] max-[420px]:w-[calc(100vw-48px)]">
+                    <div className="border-b border-[#edf0ec] px-4 py-3.5">
+                      <strong className="block text-[12px] text-[#19312f]">رویدادهای جدید سامانه</strong>
+                      <small className="mt-1 block text-[9px] text-[#91a09c]">
+                        ثبت‌نام، ورود، خرید و ساخت رزومه · به‌روزرسانی هر ۱۵ ثانیه
+                      </small>
+                    </div>
+                    <div className="grid max-h-[420px] gap-1 overflow-y-auto p-2">
+                      {(adminEvents.data?.items ?? []).map((event) => {
+                        const Icon =
+                          event.type === "signup"
+                            ? UserPlus
+                            : event.type === "login"
+                              ? LogIn
+                              : event.type === "purchase"
+                                ? CreditCard
+                                : FilePlus2;
+                        return (
+                          <Link
+                            className="flex min-h-[58px] items-start gap-3 rounded-[11px] px-2.5 py-2 text-[#536762] no-underline hover:bg-[#edf6f1]"
+                            href={adminEventHref(event.type)}
+                            key={event.id}
+                            onClick={() => setNoticeOpen(false)}
+                          >
+                            <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#eaf5f0] text-[#0f7b62]">
+                              <Icon size={17} />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <strong className="block text-[10px] leading-6 text-[#334c48]">
+                                {adminEventMessage(event)}
+                              </strong>
+                              <small className="mt-0.5 block text-[9px] text-[#93a19e]">
+                                <span dir="ltr">{userIdentifier(event.user)}</span> · {adminEventTime(event.createdAt)}
+                              </small>
+                            </span>
+                          </Link>
+                        );
+                      })}
+                      {!adminEvents.isLoading && (adminEvents.data?.items.length ?? 0) === 0 && (
+                        <p className="m-0 px-3 py-8 text-center text-[9px] text-[#8b9996]">
+                          هنوز رویدادی ثبت نشده است.
+                        </p>
+                      )}
+                      {adminEvents.isLoading && (
+                        <p className="m-0 px-3 py-8 text-center text-[9px] text-[#8b9996]">در حال دریافت رویدادها...</p>
+                      )}
+                    </div>
+                    {adminEvents.isError && (
+                      <p className="m-0 border-t border-[#f0dfdb] bg-[#fff7f5] px-4 py-2 text-[8px] text-[#a13f37]">
+                        دریافت رویدادها ناموفق بود؛ چند لحظه دیگر دوباره بررسی می‌شود.
+                      </p>
+                    )}
+                  </div>
+                )}
+                {noticeOpen && userRole === "user" && (
+                  <div className="absolute left-0 top-[46px] z-40 w-[320px] overflow-hidden rounded-[20px] border border-[#dfe6e1] bg-white p-2.5 shadow-[0_22px_54px_rgba(25,57,50,.2)] max-[420px]:fixed max-[420px]:left-3 max-[420px]:right-auto max-[420px]:top-[68px] max-[420px]:w-[calc(100vw-48px)]">
+                    <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3">
+                      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#d9f0e6] text-[#0f7b62] ring-2 ring-[#c9e7da]">
+                        <Bell size={19} />
+                      </span>
+                      <div className="min-w-0">
+                        <strong className="block text-[12px] text-[#19312f]">اعلان‌ها</strong>
+                        <small className="mt-0.5 block text-[9px] text-[#7b8b86]">فرصت‌ها و رویدادهای تازه مسیر شغلی</small>
+                      </div>
+                      {latestJob && <span className="mr-auto size-2.5 rounded-full bg-[#25a56f] shadow-[0_0_0_3px_#d8f0e4]" />}
+                    </div>
+                    {latestJob ? (
+                      <div className="mt-2 rounded-[14px] border border-[#e4efe9] bg-[#f7fbf8] p-3">
+                        <div className="flex items-start gap-3">
+                          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#e1f3eb] text-[#0f7b62]">
+                            <BriefcaseBusiness size={17} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <span className="mb-1 inline-flex rounded-full bg-[#dff2e9] px-2 py-0.5 text-[8px] font-bold text-[#0f7b62]">فرصت جدید</span>
+                            <strong className="block truncate text-[11px] text-[#19312f]">{latestJob.role}</strong>
+                            <p className="m-0 mt-1 truncate text-[9px] text-[#758582]">
+                              {latestJob.company}
+                              {latestJob.match > 0 ? ` · تطابق ${latestJob.match.toLocaleString("fa-IR")}٪` : ""}
+                            </p>
+                          </div>
+                        </div>
+                        <Link
+                          className="mt-3 flex min-h-9 items-center justify-center gap-2 rounded-[10px] bg-[#0f7b62] text-[10px] font-bold text-white no-underline shadow-[0_7px_17px_rgba(15,123,98,.14)] transition hover:bg-[#0c6c56]"
+                          href="/jobs"
+                          onClick={() => setNoticeOpen(false)}
+                        >
+                          مشاهده فرصت‌ها
+                          <ChevronLeft size={14} />
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="mt-2 rounded-[14px] border border-dashed border-[#dfe9e3] px-3 py-8 text-center">
+                        <Bell className="mx-auto mb-2 text-[#9bb0a9]" size={21} />
+                        <strong className="block text-[10px] text-[#536762]">اعلان تازه‌ای نیست</strong>
+                        <p className="m-0 mt-1 text-[9px] leading-6 text-[#91a09c]">فرصت‌ها و رویدادهای واقعی اینجا نمایش داده می‌شوند.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="relative" ref={userMenuRef}>
+              <button
+                aria-expanded={userMenuOpen}
+                aria-label="منوی حساب کاربری"
+                className="relative grid size-[38px] place-items-center rounded-[11px] border border-[#e4e8e3] bg-[#e5e5e7] text-[#526762] shadow-none transition-colors hover:border-[#cfdad4] hover:bg-[#dedee1]"
                 onClick={() => {
                   setNoticeOpen(false);
-                  setUserMenuOpen(false);
-                  openMobileMenu();
+                  setUserMenuOpen((value) => !value);
                 }}
                 type="button"
               >
-                <Menu size={20} />
+                <Image
+                  alt="آواتار پیش‌فرض حساب کاربری"
+                  className="size-full rounded-[10px] object-cover"
+                  height={38}
+                  src="/illustrations/default-profile-avatar.svg"
+                  width={38}
+                />
+                <span
+                  aria-hidden="true"
+                  className="absolute -bottom-0.5 -left-0.5 size-3 rounded-full bg-[#36b77d] ring-2 ring-white"
+                />
               </button>
-              <Image
-                className="size-9 shrink-0 object-contain"
-                src="/radikar-logo.png"
-                width={36}
-                height={36}
-                alt=""
-              />
-              <strong className="text-[16px] tracking-[-.4px]">رادیکار</strong>
-            </div>
-            <span className="text-[11px] text-[#8c9996] max-[820px]:hidden">
-              {title}
-            </span>
-            <div className="mr-auto flex items-center gap-[10px]">
-              {!isManagement && <button
-                className="flex h-[38px] w-[210px] items-center gap-2 rounded-[11px] border border-[#e4e8e3] bg-white/85 px-[11px] text-[11px] text-[#8a9693] max-[820px]:hidden"
-                onClick={() => setDialog("search")}
-              >
-                <Search size={18} />
-                <span>جست‌وجو...</span>
-                <kbd className="mr-auto rounded-[5px] border border-[#e1e5e0] bg-[#f7f8f5] px-1.5 py-0.5 font-[inherit] text-[#a5aeac]">
-                  ⌘ K
-                </kbd>
-              </button>}
-              {(userRole === "user" || isSuperadmin) && (
-                <div className="relative" ref={noticeRef}>
-                  <button
-                    className="relative grid size-[38px] place-items-center rounded-[11px] border border-[#e4e8e3] bg-white text-[#60716e]"
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      if (!noticeOpen && isSuperadmin) {
-                        setSeenAdminEventIds(
-                          new Set((adminEvents.data?.items ?? []).map((event) => event.id)),
-                        );
-                      }
-                      setNoticeOpen((value) => !value);
-                    }}
-                    aria-label={isSuperadmin ? "اعلان‌های آماری مدیریت" : "اعلان‌ها"}
-                    aria-expanded={noticeOpen}
-                  >
-                    <Bell size={19} />
-                    {(latestJob || unreadAdminEvents.length > 0) && (
-                      <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full border border-white bg-[#e7835c] px-1 text-[7px] font-bold leading-none text-white">
-                        {isSuperadmin
-                          ? Math.min(unreadAdminEvents.length, 99).toLocaleString("fa-IR")
-                          : ""}
-                      </span>
-                    )}
-                  </button>
-                  {noticeOpen && isSuperadmin && (
-                    <div className="absolute left-0 top-[46px] z-40 w-[360px] overflow-hidden rounded-[16px] border border-[#dfe6e1] bg-white shadow-[0_18px_50px_rgba(25,57,50,.18)] max-[420px]:fixed max-[420px]:inset-x-3 max-[420px]:top-[68px] max-[420px]:w-auto">
-                      <div className="border-b border-[#edf0ec] px-4 py-3.5">
-                        <strong className="block text-[12px] text-[#19312f]">رویدادهای جدید سامانه</strong>
-                        <small className="mt-1 block text-[8px] text-[#91a09c]">ثبت‌نام، ورود، خرید و ساخت رزومه · به‌روزرسانی هر ۱۵ ثانیه</small>
-                      </div>
-                      <div className="grid max-h-[420px] gap-1 overflow-y-auto p-2">
-                        {(adminEvents.data?.items ?? []).map((event) => {
-                          const Icon =
-                            event.type === "signup"
-                              ? UserPlus
-                              : event.type === "login"
-                                ? Activity
-                                : event.type === "purchase"
-                                  ? ShoppingBag
-                                  : FilePlus2;
-                          return (
-                            <Link
-                              className="flex min-h-[58px] items-start gap-3 rounded-[11px] px-2.5 py-2 text-[#536762] no-underline hover:bg-[#edf6f1]"
-                              href={adminEventHref(event.type)}
-                              key={event.id}
-                              onClick={() => setNoticeOpen(false)}
-                            >
-                              <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#eaf5f0] text-[#0f7b62]"><Icon size={17} /></span>
-                              <span className="min-w-0 flex-1">
-                                <strong className="block text-[9px] leading-6 text-[#334c48]">{adminEventMessage(event)}</strong>
-                                <small className="mt-0.5 block text-[7px] text-[#93a19e]">
-                                  <span dir="ltr">{event.user.phone}</span> · {adminEventTime(event.createdAt)}
-                                </small>
-                              </span>
-                            </Link>
-                          );
-                        })}
-                        {!adminEvents.isLoading && (adminEvents.data?.items.length ?? 0) === 0 && (
-                          <p className="m-0 px-3 py-8 text-center text-[9px] text-[#8b9996]">هنوز رویدادی ثبت نشده است.</p>
-                        )}
-                        {adminEvents.isLoading && (
-                          <p className="m-0 px-3 py-8 text-center text-[9px] text-[#8b9996]">در حال دریافت رویدادها...</p>
-                        )}
-                      </div>
-                      {adminEvents.isError && (
-                        <p className="m-0 border-t border-[#f0dfdb] bg-[#fff7f5] px-4 py-2 text-[8px] text-[#a13f37]">دریافت رویدادها ناموفق بود؛ چند لحظه دیگر دوباره بررسی می‌شود.</p>
+              {userMenuOpen && (
+                <div className="absolute left-0 top-[46px] z-40 w-[292px] overflow-hidden rounded-[20px] border border-[#dfe6e1] bg-white p-2.5 shadow-[0_22px_54px_rgba(25,57,50,.2)]">
+                  <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3">
+                    <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#e7f5ee] ring-2 ring-[#c9e7da]">
+                      <Image alt="آواتار پیش‌فرض حساب کاربری" className="size-full" height={40} src="/illustrations/default-profile-avatar.svg" width={40} />
+                    </span>
+                    <div className="min-w-0">
+                      <strong className="block truncate text-[11px] text-[#19312f]">
+                        {user ? userDisplayName(user) : "حساب کاربری"}
+                      </strong>
+                      {user && (
+                        <small className="mt-0.5 block truncate text-[9px] text-[#7b8b86]" dir="ltr">
+                          {userIdentifier(user)}
+                        </small>
                       )}
                     </div>
+                    <span
+                      aria-hidden="true"
+                      className="mr-auto size-2.5 rounded-full bg-[#25a56f] shadow-[0_0_0_3px_#d8f0e4]"
+                    />
+                  </div>
+                  {userRole === "user" && (
+                    <Link
+                      className="mt-2 flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#fff6d7] to-[#fffdf7] px-3.5 py-2.5 text-[#5d4a18] no-underline shadow-[inset_0_0_0_1px_rgba(205,157,43,.08)] transition hover:from-[#fff0bd] hover:to-[#fffaf0]"
+                      href="/radicoins"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Image
+                        alt=""
+                        aria-hidden="true"
+                        className="size-11 shrink-0 object-contain drop-shadow-[0_5px_9px_rgba(199,145,20,.22)]"
+                        height={44}
+                        src="/illustrations/radicoin-coin-m-v3.png"
+                        width={44}
+                      />
+                      <div className="min-w-0">
+                        <span className="block text-[9px] font-semibold text-[#8a7641]">موجودی رادیکوین</span>
+                        <strong className="mt-0.5 block text-[17px] font-black leading-none text-[#5d4a18]">
+                          {(radicoinWallet.data?.wallet?.availableCoins ?? 0).toLocaleString("fa-IR")}{" "}
+                          <small className="text-[8px] font-semibold text-[#9a8650]">سکه</small>
+                        </strong>
+                      </div>
+                      <ChevronLeft className="mr-auto text-[#b3974b]" size={15} />
+                    </Link>
                   )}
-                  {noticeOpen && userRole === "user" && (
-                    <div className="absolute left-0 top-[46px] w-[255px] rounded-[14px] border border-[#e7ebe6] bg-white p-4 shadow-[0_18px_45px_rgba(28,54,50,.15)]">
-                      <strong className="text-xs">{latestJob?.role || "اعلان تازه‌ای نیست"}</strong>
-                      <p className="my-[5px] text-[10px] leading-[1.8] text-[#758582]">
-                        {latestJob ? `${latestJob.company}${latestJob.match > 0 ? ` · تطابق ${latestJob.match.toLocaleString("fa-IR")}٪` : ""}` : "فرصت‌های واردشده و رویدادهای واقعی اینجا نمایش داده می‌شوند."}
-                      </p>
-                      {latestJob && <Link className="p-0 text-[10px] font-bold text-[#0f7b62] no-underline" href="/jobs" onClick={() => setNoticeOpen(false)}>مشاهده فرصت</Link>}
-                    </div>
-                  )}
-                </div>
-              )}
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  aria-expanded={userMenuOpen}
-                  aria-label="منوی حساب کاربری"
-                  className="flex h-[38px] min-w-0 items-center gap-2 rounded-[11px] border border-[#e4e8e3] bg-white px-1.5 pe-2.5 text-[#526762]"
-                  onClick={() => {
-                    setNoticeOpen(false);
-                    setUserMenuOpen((value) => !value);
-                  }}
-                  type="button"
-                >
-                  <span className="grid size-7 shrink-0 place-items-center rounded-[8px] bg-[#c98465] text-[9px] font-bold text-white">
-                    {initials(user?.fullName || user?.phone || "")}
-                  </span>
-                  <span className="max-w-[110px] truncate text-[9px] font-bold max-[820px]:hidden">
-                    {user?.fullName || "حساب کاربری"}
-                  </span>
-                  <ChevronLeft className={`shrink-0 transition-transform max-[820px]:hidden ${userMenuOpen ? "-rotate-90" : ""}`} size={13} />
-                </button>
-                {userMenuOpen && (
-                  <div className="absolute left-0 top-[46px] z-40 w-[270px] overflow-hidden rounded-[16px] border border-[#dfe6e1] bg-white p-2 shadow-[0_18px_50px_rgba(25,57,50,.18)]">
+                  <nav aria-label="دسترسی‌های حساب" className="mt-2 grid gap-0.5">
                     {(isManagement
-                      ? [{ href: "/settings", label: "تنظیمات و امنیت", icon: Settings }]
+                      ? [{ href: "/settings", label: "امنیت", icon: Settings }]
                       : [
                           { href: "/account", label: "حساب کاربری", icon: UserRound },
                           { href: "/settings", label: "تنظیمات", icon: Settings },
                           { href: "/orders", label: "سفارش‌ها", icon: ReceiptText },
+                          { href: "/referrals", label: "دعوت دوستان", icon: Gift },
                           { href: "/upgrade", label: "خرید و ارتقای بسته", icon: CreditCard },
                         ]
                     ).map(({ href, label, icon: Icon }) => (
                       <Link
-                        className="flex min-h-11 items-center gap-3 rounded-[10px] px-3 text-[11px] font-semibold text-[#536762] no-underline hover:bg-[#edf6f1] hover:text-[#0f7b62]"
+                        className="group flex min-h-10 items-center gap-3 rounded-[11px] px-2.5 text-[11px] font-semibold text-[#536762] no-underline transition hover:bg-[#edf7f2] hover:text-[#0f7b62]"
                         href={href}
                         key={href}
                         onClick={() => setUserMenuOpen(false)}
                       >
-                        <Icon size={18} /> {label}
+                        <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[#f2f6f4] text-[#61756f] transition group-hover:bg-white group-hover:text-[#0f7b62] group-hover:shadow-sm">
+                          <Icon size={17} />
+                        </span>
+                        <span className="min-w-0 flex-1">{label}</span>
+                        <ChevronLeft className="shrink-0 text-[#a5b2ad] transition group-hover:-translate-x-0.5 group-hover:text-[#0f7b62]" size={14} />
                       </Link>
                     ))}
-                    <div className="my-1 border-t border-[#edf0ec]" />
-                    <button
-                      className="flex min-h-11 w-full items-center gap-3 rounded-[10px] border-0 bg-transparent px-3 text-right text-[11px] font-semibold text-[#a13f37] hover:bg-[#fff1ef]"
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        void logout().catch(() => notify("خروج از حساب ناموفق بود؛ دوباره تلاش کن.", "error"));
-                      }}
-                      type="button"
-                    >
-                      <LogOut size={18} /> خروج از حساب
-                    </button>
-                  </div>
-                )}
-              </div>
+                  </nav>
+                  <div className="mt-2 border-t border-[#edf0ec] pt-2" />
+                  <button
+                    className="group flex min-h-10 w-full items-center gap-3 rounded-[11px] border-0 bg-transparent px-2.5 text-right text-[11px] font-semibold text-[#a13f37] transition hover:bg-[#fff1ef]"
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      void logout().catch(() => notify("خروج از حساب ناموفق بود؛ دوباره تلاش کن.", "error"));
+                    }}
+                    type="button"
+                  >
+                    <span className="grid size-8 place-items-center rounded-[9px] bg-[#fff4f2] text-[#b14b43] transition group-hover:bg-white group-hover:shadow-sm">
+                      <LogOut size={17} />
+                    </span>
+                    <span className="flex-1">خروج از حساب</span>
+                    <ChevronLeft className="text-[#d9aaa4] transition group-hover:-translate-x-0.5" size={14} />
+                  </button>
+                </div>
+              )}
             </div>
-          </header>
-          <div className="mx-auto max-w-[1460px] px-[clamp(24px,4vw,60px)] pb-[70px] pt-[38px] max-[820px]:px-4 max-[820px]:pb-[90px] max-[820px]:pt-[25px]">
-            {children}
           </div>
-        </main>
-        {mobileMenuMounted && <div
+        </header>
+        <div className="mx-auto max-w-[1460px] px-[clamp(24px,4vw,60px)] pb-[70px] pt-[38px] max-[820px]:px-4 max-[820px]:pb-[90px] max-[820px]:pt-[25px]">
+          {children}
+        </div>
+      </main>
+      {mobileMenuMounted && (
+        <div
           aria-hidden={!mobileMenuOpen}
           className={cn(
             "fixed inset-0 z-50 hidden max-[820px]:block",
@@ -797,9 +866,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
               />
               <span className="flex min-w-0 flex-1 flex-col">
                 <strong className="text-[16px] text-[#19312f]">رادیکار</strong>
-                <small className="mt-0.5 text-[9px] text-[#93a09d]">
-                  منوی کامل پنل
-                </small>
+                <small className="mt-0.5 text-[9px] text-[#93a09d]">منوی کامل پنل</small>
               </span>
               <button
                 aria-label="بستن منو"
@@ -829,6 +896,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                     href={item.href}
                     key={item.href}
                     onClick={closeMobileMenu}
+                    data-tour={tourTarget(item.href)}
                   >
                     <span
                       className={cn(
@@ -861,259 +929,239 @@ function PanelShellContent({ children }: { children: ReactNode }) {
               >
                 <UserRound size={18} />
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <strong className="truncate">
-                    {activeWorkspace?.workspaceName || "فضای کاری شخصی"}
-                  </strong>
-                  <small className="mt-0.5 text-[8px] text-[#95a09d]">
-                    مدیریت فضاهای کاری
-                  </small>
+                  <strong className="truncate">{activeWorkspace?.workspaceName || "فضای کاری شخصی"}</strong>
+                  <small className="mt-0.5 text-[8px] text-[#95a09d]">مدیریت فضاهای کاری</small>
                 </span>
                 <ChevronLeft size={15} />
               </button>
             )}
           </aside>
-        </div>}
-        <nav
-          className="fixed inset-x-0 bottom-0 z-30 hidden h-16 grid-cols-5 overflow-visible max-[820px]:grid"
-          aria-label="منوی موبایل"
-        >
-          <div aria-hidden="true" dir="ltr" className="pointer-events-none absolute inset-0 flex">
-            <span className="h-full flex-1 rounded-l-[22px] border-t border-[#e1ebe5] bg-white" />
-            <svg className="h-16 w-[104px] flex-none fill-white" viewBox="0 0 104 64">
-              <path d="M0 0 C14 0 15 7 21 20 C27 34 37 40 52 40 C67 40 77 34 83 20 C89 7 90 0 104 0 V64 H0 Z" />
-              <path
-                d="M0 0 C14 0 15 7 21 20 C27 34 37 40 52 40 C67 40 77 34 83 20 C89 7 90 0 104 0"
-                fill="none"
-                stroke="#e1ebe5"
-                strokeWidth="1.2"
-              />
-            </svg>
-            <span className="h-full flex-1 rounded-r-[22px] border-t border-[#e1ebe5] bg-white" />
-          </div>
-          {mobilePrimaryMenuItems.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href;
-            const dashboardItem = item.href === (isManagement ? "/admin" : "/dashboard");
-            return (
-              <Link
-                key={item.href}
-                className={cn(
-                  "flex min-w-0 flex-1 flex-col items-center justify-center gap-[3px] rounded-[9px] border-0 px-1 text-[8px] no-underline",
-                  "relative z-10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0f7b62]",
-                  dashboardItem
-                    ? "-translate-y-6 size-14 justify-self-center rounded-full bg-[#0f7b62] text-white"
-                    : active
+        </div>
+      )}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-30 hidden h-16 grid-cols-5 overflow-visible max-[820px]:grid"
+        aria-label="منوی موبایل"
+      >
+        <div aria-hidden="true" dir="ltr" className="pointer-events-none absolute inset-0 flex">
+          <span className="h-full flex-1 rounded-l-[22px] border-t border-[#e1ebe5] bg-white" />
+          <svg className="h-16 w-[104px] flex-none fill-white" viewBox="0 0 104 64">
+            <path d="M0 0 C14 0 15 7 21 20 C27 34 37 40 52 40 C67 40 77 34 83 20 C89 7 90 0 104 0 V64 H0 Z" />
+            <path
+              d="M0 0 C14 0 15 7 21 20 C27 34 37 40 52 40 C67 40 77 34 83 20 C89 7 90 0 104 0"
+              fill="none"
+              stroke="#e1ebe5"
+              strokeWidth="1.2"
+            />
+          </svg>
+          <span className="h-full flex-1 rounded-r-[22px] border-t border-[#e1ebe5] bg-white" />
+        </div>
+        {mobilePrimaryMenuItems.map((item) => {
+          const Icon = item.icon;
+          const active = pathname === item.href;
+          const dashboardItem = item.href === (isManagement ? "/admin" : "/dashboard");
+          return (
+            <Link
+              key={item.href}
+              className={cn(
+                "flex min-w-0 flex-1 flex-col items-center justify-center gap-[3px] rounded-[9px] border-0 px-1 text-[8px] no-underline",
+                "relative z-10 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0f7b62]",
+                dashboardItem
+                  ? "-translate-y-6 size-14 justify-self-center rounded-full bg-[#0f7b62] text-white"
+                  : active
                     ? "bg-transparent pb-2 text-[#0f7b62]"
                     : "bg-transparent pb-2 text-[#b7c1bd]",
-                )}
-                href={item.href}
-                aria-label={item.label}
-                aria-current={active ? "page" : undefined}
-              >
-                <Icon size={dashboardItem ? 23 : 19} />
-                {active && (
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "absolute left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-[#0f7b62]",
-                      dashboardItem ? "-bottom-6" : "bottom-2",
-                    )}
-                  />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-        {dialog === "search" && (
-          <Modal
-            title="جست‌وجوی سریع"
-            description="مستقیم به هر بخش یا اقدام برو."
-            onClose={() => setDialog(null)}
-          >
-            <div className="pt-4">
-              <div className="mb-[9px] flex h-[46px] items-center gap-[9px] rounded-[11px] border border-[#dfe5df] bg-[#fafbf9] px-3">
-                <Search size={18} />
-                <input
-                  className="flex-1 border-0 bg-transparent text-[10px] outline-0 placeholder:text-right"
-                  autoFocus
-                  placeholder="مثلاً رزومه، فرصت شغلی یا مصاحبه..."
-                />
-              </div>
-              {visibleMenuItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    className="flex min-h-[43px] w-full items-center gap-[10px] rounded-[9px] px-[10px] text-right text-[10px] text-[#60716e] no-underline hover:bg-[#edf6f1] hover:text-[#0f7b62]"
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setDialog(null)}
-                  >
-                    <Icon size={18} />
-                    <span>{item.label}</span>
-                    <ChevronLeft className="mr-auto" size={16} />
-                  </Link>
-                );
-              })}
-            </div>
-          </Modal>
-        )}
-        {dialog === "profiles" && (
-          <Modal
-            title="فضاهای کاری"
-            description="هر فضای کاری رزومه‌ها، فرصت‌ها، اپلای‌ها و جلسه‌های مستقل خودش را دارد و نام آن به اطلاعات پایگاه دانش ارتباطی ندارد."
-            onClose={() => setDialog(null)}
-          >
-            <div className="grid gap-2 pt-4">
-              {profiles.map((item) => {
-                const active = item.id === activeProfileId;
-                const editing = item.id === editingWorkspaceId;
-                return (
-                  <div
-                    key={item.id}
-                    className={cn(
-                      "flex min-h-[62px] w-full items-center gap-[10px] rounded-xl border p-[10px] transition-[border-color,background-color,box-shadow]",
-                      active
-                        ? "border-[#8fc8b7] border-r-[5px] border-r-[#0f7b62] bg-[#edf7f2] shadow-[0_8px_20px_rgba(15,123,98,.1)]"
-                        : "border-[#e7ebe6] bg-[#fbfcfa]",
-                    )}
-                  >
-                    {editing ? (
-                      <>
-                        <input
-                          className="min-h-10 min-w-0 flex-1 rounded-[9px] border border-[#c9ddd4] bg-white px-3 text-[10px] outline-none focus:border-[#79b8a5] focus:ring-3 focus:ring-[#e5f2ed]"
-                          autoFocus
-                          value={editingWorkspaceName}
-                          onChange={(event) =>
-                            setEditingWorkspaceName(event.target.value)
-                          }
-                          onKeyDown={(event) =>
-                            event.key === "Enter" && void saveWorkspaceName()
-                          }
-                        />
-                        <button
-                          className={secondaryButtonClass}
-                          type="button"
-                          onClick={() => {
-                            setEditingWorkspaceId("");
-                            setEditingWorkspaceName("");
-                          }}
-                        >
-                          انصراف
-                        </button>
-                        <button
-                          className={primaryButtonClass}
-                          type="button"
-                          disabled={savingWorkspaceId === item.id}
-                          onClick={() => void saveWorkspaceName()}
-                        >
-                          {savingWorkspaceId === item.id && <LoaderCircle className="animate-spin" size={14} />} ذخیره
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          className="flex min-w-0 flex-1 items-center gap-[10px] border-0 bg-transparent p-0 text-right"
-                          type="button"
-                          onClick={() => void switchProfile(item.id)}
-                        >
-                          <span className="min-w-0 flex-1 truncate text-[10px] font-bold text-[#19312f]">
-                            {item.workspaceName}
-                          </span>
-                        </button>
-                        <button
-                          className="grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#71817e] transition-colors hover:text-[#0f7b62]"
-                          type="button"
-                          aria-label={`ویرایش ${item.workspaceName}`}
-                          onClick={() => {
-                            setEditingWorkspaceId(item.id);
-                            setEditingWorkspaceName(item.workspaceName);
-                          }}
-                        >
-                          <Pencil size={13} />
-                        </button>
-                        <button
-                          className="-mr-2 grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#c25b50] transition-colors hover:text-[#a93f36]"
-                          type="button"
-                          aria-label={`حذف ${item.workspaceName}`}
-                          onClick={() => {
-                            setArmedWorkspaceDeleteId("");
-                            setPendingWorkspaceDelete(item);
-                          }}
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                        {active && (
-                          <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#0f7b62] text-white shadow-[0_5px_12px_rgba(15,123,98,.22)]">
-                            <Check size={15} strokeWidth={2.5} />
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-              {addingProfile ? (
-                <div className="mt-[3px] grid gap-3 rounded-xl border border-[#d8e6df] bg-[#f7faf8] p-[14px] [&_label]:grid [&_label]:gap-1.5 [&_label]:text-[9px] [&_label]:font-bold [&_label]:text-[#536562] [&_input]:w-full [&_input]:rounded-[9px] [&_input]:border [&_input]:border-[#dfe5df] [&_input]:bg-white [&_input]:p-[10px] [&_input]:text-[10px] [&_input]:outline-0">
-                  <label>
-                    نام فضای کاری
-                    <input
-                      autoFocus
-                      value={newWorkspaceName}
-                      onChange={(event) =>
-                        setNewWorkspaceName(event.target.value)
-                      }
-                      onKeyDown={(event) =>
-                        event.key === "Enter" && void addProfile()
-                      }
-                    />
-                  </label>
-                  <div className="flex justify-end gap-2 pt-[5px] max-[560px]:flex-col-reverse">
-                    <button
-                      className={secondaryButtonClass}
-                      onClick={() => {
-                        setAddingProfile(false);
-                        setNewWorkspaceName("");
-                      }}
-                    >
-                      انصراف
-                    </button>
-                    <button
-                      className={primaryButtonClass}
-                      onClick={() => void addProfile()}
-                    >
-                      ساخت و ورود به فضا
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  className="flex min-h-[58px] w-full items-center gap-[10px] rounded-xl border border-dashed border-[#e7ebe6] bg-[#fbfcfa] p-[10px] text-right text-[#0f7b62]"
-                  onClick={() => setAddingProfile(true)}
-                >
-                  <Plus size={18} />
-                  <span className="flex flex-1 flex-col">
-                    <strong className="text-[10px] text-[#19312f]">
-                      افزودن فضای کاری جدید
-                    </strong>
-                    <small className="mt-[3px] text-[8px] text-[#758582]">
-                      یک فضای مستقل با نام دلخواه بساز.
-                    </small>
-                  </span>
-                </button>
               )}
+              href={item.href}
+              data-tour={tourTarget(item.href)}
+              aria-label={item.label}
+              aria-current={active ? "page" : undefined}
+            >
+              <Icon size={dashboardItem ? 23 : 19} />
+              {active && (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "absolute left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-[#0f7b62]",
+                    dashboardItem ? "-bottom-6" : "bottom-2",
+                  )}
+                />
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+      {userRole === "user" && <OnboardingLauncher />}
+      {dialog === "search" && (
+        <Modal title="جست‌وجوی سریع" description="مستقیم به هر بخش یا اقدام برو." onClose={() => setDialog(null)}>
+          <div className="pt-4">
+            <div className="mb-[9px] flex h-[46px] items-center gap-[9px] rounded-[11px] border border-[#dfe5df] bg-[#fafbf9] px-3">
+              <Search size={18} />
+              <input
+                className="flex-1 border-0 bg-transparent text-[10px] outline-0 placeholder:text-right"
+                autoFocus
+                placeholder="مثلاً رزومه، فرصت شغلی یا مصاحبه..."
+              />
             </div>
-          </Modal>
-        )}
-        {pendingWorkspaceDelete && (
-          <DeleteConfirmModal
-            itemName={`فضای کاری ${pendingWorkspaceDelete.workspaceName} و تمام اطلاعات داخل آن`}
-            onCancel={() => {
-              setArmedWorkspaceDeleteId("");
-              setPendingWorkspaceDelete(null);
-            }}
-            onConfirm={() => void confirmWorkspaceDelete()}
-          />
-        )}
+            {visibleMenuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  className="flex min-h-[43px] w-full items-center gap-[10px] rounded-[9px] px-[10px] text-right text-[10px] text-[#60716e] no-underline hover:bg-[#edf6f1] hover:text-[#0f7b62]"
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setDialog(null)}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                  <ChevronLeft className="mr-auto" size={16} />
+                </Link>
+              );
+            })}
+          </div>
+        </Modal>
+      )}
+      {dialog === "profiles" && (
+        <Modal
+          title="فضاهای کاری"
+          description="هر فضای کاری رزومه‌ها، فرصت‌ها، اپلای‌ها و جلسه‌های مستقل خودش را دارد و نام آن به اطلاعات پایگاه دانش ارتباطی ندارد."
+          onClose={() => setDialog(null)}
+        >
+          <div className="grid gap-2 pt-4">
+            {profiles.map((item) => {
+              const active = item.id === activeProfileId;
+              const editing = item.id === editingWorkspaceId;
+              return (
+                <div
+                  key={item.id}
+                  className={cn(
+                    "flex min-h-[62px] w-full items-center gap-[10px] rounded-xl border p-[10px] transition-[border-color,background-color,box-shadow]",
+                    active
+                      ? "border-[#8fc8b7] border-r-[5px] border-r-[#0f7b62] bg-[#edf7f2] shadow-[0_8px_20px_rgba(15,123,98,.1)]"
+                      : "border-[#e7ebe6] bg-[#fbfcfa]",
+                  )}
+                >
+                  {editing ? (
+                    <>
+                      <input
+                        className="min-h-10 min-w-0 flex-1 rounded-[9px] border border-[#c9ddd4] bg-white px-3 text-[10px] outline-none focus:border-[#79b8a5] focus:ring-3 focus:ring-[#e5f2ed]"
+                        autoFocus
+                        value={editingWorkspaceName}
+                        onChange={(event) => setEditingWorkspaceName(event.target.value)}
+                        onKeyDown={(event) => event.key === "Enter" && void saveWorkspaceName()}
+                      />
+                      <button
+                        className={secondaryButtonClass}
+                        type="button"
+                        onClick={() => {
+                          setEditingWorkspaceId("");
+                          setEditingWorkspaceName("");
+                        }}
+                      >
+                        انصراف
+                      </button>
+                      <button
+                        className={primaryButtonClass}
+                        type="button"
+                        disabled={savingWorkspaceId === item.id}
+                        onClick={() => void saveWorkspaceName()}
+                      >
+                        {savingWorkspaceId === item.id && <LoaderCircle className="animate-spin" size={14} />} ذخیره
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className="flex min-w-0 flex-1 items-center gap-[10px] border-0 bg-transparent p-0 text-right"
+                        type="button"
+                        onClick={() => void switchProfile(item.id)}
+                      >
+                        <span className="min-w-0 flex-1 truncate text-[10px] font-bold text-[#19312f]">
+                          {item.workspaceName}
+                        </span>
+                      </button>
+                      <button
+                        className="grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#71817e] transition-colors hover:text-[#0f7b62]"
+                        type="button"
+                        aria-label={`ویرایش ${item.workspaceName}`}
+                        onClick={() => {
+                          setEditingWorkspaceId(item.id);
+                          setEditingWorkspaceName(item.workspaceName);
+                        }}
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        className="-mr-2 grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#c25b50] transition-colors hover:text-[#a93f36]"
+                        type="button"
+                        aria-label={`حذف ${item.workspaceName}`}
+                        onClick={() => {
+                          setArmedWorkspaceDeleteId("");
+                          setPendingWorkspaceDelete(item);
+                        }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                      {active && (
+                        <span className="grid size-7 shrink-0 place-items-center rounded-full bg-[#0f7b62] text-white shadow-[0_5px_12px_rgba(15,123,98,.22)]">
+                          <Check size={15} strokeWidth={2.5} />
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
+            {addingProfile ? (
+              <div className="mt-[3px] grid gap-3 rounded-xl border border-[#d8e6df] bg-[#f7faf8] p-[14px] [&_label]:grid [&_label]:gap-1.5 [&_label]:text-[9px] [&_label]:font-bold [&_label]:text-[#536562] [&_input]:w-full [&_input]:rounded-[9px] [&_input]:border [&_input]:border-[#dfe5df] [&_input]:bg-white [&_input]:p-[10px] [&_input]:text-[10px] [&_input]:outline-0">
+                <label>
+                  نام فضای کاری
+                  <input
+                    autoFocus
+                    value={newWorkspaceName}
+                    onChange={(event) => setNewWorkspaceName(event.target.value)}
+                    onKeyDown={(event) => event.key === "Enter" && void addProfile()}
+                  />
+                </label>
+                <div className="flex justify-end gap-2 pt-[5px] max-[560px]:flex-col-reverse">
+                  <button
+                    className={secondaryButtonClass}
+                    onClick={() => {
+                      setAddingProfile(false);
+                      setNewWorkspaceName("");
+                    }}
+                  >
+                    انصراف
+                  </button>
+                  <button className={primaryButtonClass} onClick={() => void addProfile()}>
+                    ساخت و ورود به فضا
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                className="flex min-h-[58px] w-full items-center gap-[10px] rounded-xl border border-dashed border-[#e7ebe6] bg-[#fbfcfa] p-[10px] text-right text-[#0f7b62]"
+                onClick={() => setAddingProfile(true)}
+              >
+                <Plus size={18} />
+                <span className="flex flex-1 flex-col">
+                  <strong className="text-[10px] text-[#19312f]">افزودن فضای کاری جدید</strong>
+                  <small className="mt-[3px] text-[8px] text-[#758582]">یک فضای مستقل با نام دلخواه بساز.</small>
+                </span>
+              </button>
+            )}
+          </div>
+        </Modal>
+      )}
+      {pendingWorkspaceDelete && (
+        <DeleteConfirmModal
+          itemName={`فضای کاری ${pendingWorkspaceDelete.workspaceName} و تمام اطلاعات داخل آن`}
+          onCancel={() => {
+            setArmedWorkspaceDeleteId("");
+            setPendingWorkspaceDelete(null);
+          }}
+          onConfirm={() => void confirmWorkspaceDelete()}
+        />
+      )}
     </div>
   );
 }

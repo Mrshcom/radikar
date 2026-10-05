@@ -1,6 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatGroupedNumber } from "@/lib/fa-number";
 import { apiRequest } from "./api-client";
 import { buildQueryString } from "./build-query-string";
 
@@ -9,6 +10,7 @@ export type Plan = {
   name: string;
   description: string;
   priceRials: number;
+  radicoinCost: number | null;
   durationDays: number;
   resumeLimit: number | null;
   pdfDownloadLimit: number | null;
@@ -40,14 +42,7 @@ export type Membership = {
 
 export type AdminMembershipEvent = {
   id: string;
-  type:
-    | "admin_grant"
-    | "admin_extend"
-    | "admin_adjust"
-    | "account_suspended"
-    | "account_activated"
-    | "cancel"
-    | string;
+  type: "admin_grant" | "admin_extend" | "admin_adjust" | "account_suspended" | "account_activated" | "cancel" | string;
   planId: string | null;
   plan: { id: string; name: string } | null;
   durationDays: number | null;
@@ -55,7 +50,8 @@ export type AdminMembershipEvent = {
   createdAt: string;
   actor: {
     id: string;
-    phone: string;
+    phone: string | null;
+    email: string | null;
     fullName: string | null;
     role: "user" | "admin" | "superadmin";
   } | null;
@@ -64,7 +60,8 @@ export type AdminMembershipEvent = {
 export type AdminMembershipDetails = {
   user: {
     id: string;
-    phone: string;
+    phone: string | null;
+    email: string | null;
     fullName: string | null;
     status: "active" | "suspended";
   };
@@ -91,12 +88,35 @@ export type OrdersResponse = {
   pageSize: number;
 };
 
+export type CheckoutPaymentMethod = "gateway" | "radicoin";
+export type CreateOrderInput = {
+  planId: string;
+  paymentMethod: CheckoutPaymentMethod;
+  idempotencyKey: string;
+};
+export type CreateOrderResult =
+  | {
+      checkout: "gateway";
+      orderId: string;
+      orderNumber: string;
+      paymentUrl: string;
+      amountRials: number;
+      appliedCoins: number;
+    }
+  | {
+      checkout: "activated";
+      planId: string;
+      planName: string;
+      spentCoins: number;
+      expiresAt: string;
+    };
+
 export const billingKeys = {
   plans: ["billing", "plans"] as const,
   membership: ["billing", "membership"] as const,
   adminMembership: (userId: string) => ["admin", "membership-details", userId] as const,
-  orders: (page: number, pageSize: number, search: string, status: string) =>
-    ["billing", "orders", page, pageSize, search, status] as const,
+  orders: (page: number, pageSize: number, search: string, status: string, sortBy = "", sortDirection = "") =>
+    ["billing", "orders", page, pageSize, search, status, sortBy, sortDirection] as const,
 };
 
 export function usePlans() {
@@ -124,12 +144,13 @@ export function useAdminMembership(userId?: string) {
   });
 }
 
-export function useOrders(page = 1, pageSize = 20, search = "", status = "") {
+export function useOrders(page = 1, pageSize = 20, search = "", status = "", sortBy = "", sortDirection = "") {
   return useQuery({
-    queryKey: billingKeys.orders(page, pageSize, search, status),
-    queryFn: () => apiRequest<OrdersResponse>(
-      `/api/billing/orders?${buildQueryString({ page, pageSize, search, status })}`,
-    ),
+    queryKey: billingKeys.orders(page, pageSize, search, status, sortBy, sortDirection),
+    queryFn: () =>
+      apiRequest<OrdersResponse>(
+        `/api/billing/orders?${buildQueryString({ page, pageSize, search, status, sortBy, sortDirection })}`,
+      ),
     staleTime: 15_000,
     placeholderData: keepPreviousData,
   });
@@ -138,20 +159,21 @@ export function useOrders(page = 1, pageSize = 20, search = "", status = "") {
 export function useCreateOrder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (planId: string) =>
-      apiRequest<{ orderId: string; orderNumber: string; paymentUrl: string }>(
-        "/api/billing/orders",
-        { method: "POST", body: JSON.stringify({ planId }) },
-      ),
-    onSuccess: async ({ paymentUrl }) => {
-      await queryClient.invalidateQueries({ queryKey: ["billing", "orders"] });
-      window.location.assign(paymentUrl);
+    mutationFn: (input: CreateOrderInput) =>
+      apiRequest<CreateOrderResult>("/api/billing/orders", { method: "POST", body: JSON.stringify(input) }),
+    onSuccess: async (result) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["billing", "orders"] }),
+        queryClient.invalidateQueries({ queryKey: billingKeys.membership }),
+        queryClient.invalidateQueries({ queryKey: ["radicoin", "wallet"] }),
+      ]);
+      if (result.checkout === "gateway") window.location.assign(result.paymentUrl);
     },
   });
 }
 
 export function formatTomans(priceRials: number) {
-  return (priceRials / 10).toLocaleString("fa-IR");
+  return formatGroupedNumber(Math.round(priceRials / 10), "fa-IR");
 }
 
 export function formatLimit(value: number | null) {

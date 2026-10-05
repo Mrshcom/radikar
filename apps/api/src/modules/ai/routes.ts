@@ -13,17 +13,20 @@ import {
   normalizeImportedTextArray,
   normalizeStoredResumeData,
 } from "@radikar/validators";
-import {
-  asObject,
-  hasResumeContent,
-  type JsonObject,
-  validateJobDescription,
-} from "./helpers";
+import { asObject, hasResumeContent, type JsonObject, validateJobDescription } from "./helpers";
 import type { BillingService, UsageCosts } from "../billing/service";
 import { requirePermission } from "../auth/routes";
 import type { ProviderName } from "@radikar/ai";
 import { eq } from "drizzle-orm";
 import { aiSettings, type Database } from "@radikar/database";
+import type { ProductEventService } from "../analytics/service";
+import {
+  resumeGenerationSystemPrompt,
+  resumeGenerationUserPrompt,
+  resumeTailoringSystemPrompt,
+  resumeTailoringUserPrompt,
+  type ResumeOutputLanguage,
+} from "./resume-prompts";
 
 const aiSettingsId = "analysis-provider";
 
@@ -79,6 +82,12 @@ type DashboardData = {
   aiText: string;
 };
 
+type AtsMatchSummary = {
+  estimatedKeywordCoverage: number | null;
+  strongMatches: string[];
+  keywordGaps: string[];
+};
+
 const breakdownWeights = [0.3, 0.35, 0.25, 0.1] as const;
 
 function bodyOf(value: unknown) {
@@ -93,6 +102,16 @@ function stringArray(value: unknown) {
   return normalizeImportedTextArray(value);
 }
 
+function normalizeAtsMatchSummary(value: unknown): AtsMatchSummary {
+  const summary = asObject(value);
+  const coverage = Number(summary.estimatedKeywordCoverage);
+  return {
+    estimatedKeywordCoverage: Number.isFinite(coverage) ? Math.min(100, Math.max(0, Math.round(coverage))) : null,
+    strongMatches: stringArray(summary.strongMatches).slice(0, 8),
+    keywordGaps: stringArray(summary.keywordGaps).slice(0, 8),
+  };
+}
+
 function clampScore(value: unknown) {
   const score = Number(value);
   if (!Number.isFinite(score)) return 0;
@@ -102,10 +121,7 @@ function clampScore(value: unknown) {
 function normalizeAnalysis(result: ModelAnalysis): Analysis {
   const safeResult = asObject(result);
   if (!normalizeImportedBoolean(safeResult.isJobPosting)) {
-    throw new Error(
-      textOf(safeResult.invalidReason) ||
-        "متن واردشده یک آگهی شغلی قابل تحلیل نیست.",
-    );
+    throw new Error(textOf(safeResult.invalidReason) || "متن واردشده یک آگهی شغلی قابل تحلیل نیست.");
   }
   if (!Array.isArray(safeResult.breakdown) || safeResult.breakdown.length < 4) {
     throw new Error("مدل شواهد کافی برای محاسبه امتیاز تطبیق ارائه نکرد.");
@@ -115,23 +131,14 @@ function normalizeAnalysis(result: ModelAnalysis): Analysis {
     return {
       label:
         textOf(safeItem.label) ||
-        [
-          "تناسب عنوان و حوزه شغلی",
-          "همپوشانی مهارت‌های الزامی",
-          "ارتباط سابقه و مسئولیت‌ها",
-          "تحصیلات و شرایط تکمیلی",
-        ][index],
+        ["تناسب عنوان و حوزه شغلی", "همپوشانی مهارت‌های الزامی", "ارتباط سابقه و مسئولیت‌ها", "تحصیلات و شرایط تکمیلی"][
+          index
+        ],
       value: clampScore(safeItem.value),
     };
   });
   return {
-    score: Math.round(
-      breakdown.reduce(
-        (total, item, index) =>
-          total + item.value * breakdownWeights[index],
-        0,
-      ),
-    ),
+    score: Math.round(breakdown.reduce((total, item, index) => total + item.value * breakdownWeights[index], 0)),
     jobTitle: textOf(safeResult.jobTitle) || "عنوان شغل در آگهی مشخص نشده",
     company: textOf(safeResult.company) || "نام شرکت در آگهی مشخص نشده",
     breakdown,
@@ -150,15 +157,9 @@ function preserveResumeArrays(base: JsonObject, generated: JsonObject) {
   return normalizeStoredResumeData({
     ...base,
     ...generated,
-    experiences: Array.isArray(generated.experiences)
-      ? generated.experiences
-      : base.experiences,
-    projects: Array.isArray(generated.projects)
-      ? generated.projects
-      : base.projects,
-    educations: Array.isArray(generated.educations)
-      ? generated.educations
-      : base.educations,
+    experiences: Array.isArray(generated.experiences) ? generated.experiences : base.experiences,
+    projects: Array.isArray(generated.projects) ? generated.projects : base.projects,
+    educations: Array.isArray(generated.educations) ? generated.educations : base.educations,
     photoUrl: base.photoUrl,
     email: base.email,
     phone: base.phone,
@@ -184,9 +185,9 @@ function mergeDescriptionPatches(baseValue: unknown, patchValue: unknown) {
 function hasTailoredPatch(value: JsonObject) {
   return Boolean(
     textOf(value.summary) ||
-      stringArray(value.skills).length ||
-      (Array.isArray(value.experiences) && value.experiences.length) ||
-      (Array.isArray(value.projects) && value.projects.length),
+    stringArray(value.skills).length ||
+    (Array.isArray(value.experiences) && value.experiences.length) ||
+    (Array.isArray(value.projects) && value.projects.length),
   );
 }
 
@@ -199,20 +200,14 @@ export function mergeTailoredResume(base: JsonObject, patch: JsonObject) {
     ...base,
     summary: textOf(patch.summary) || base.summary,
     skills: skills || base.skills,
-    experiences: mergeDescriptionPatches(
-      base.experiences,
-      patch.experiences,
-    ),
+    experiences: mergeDescriptionPatches(base.experiences, patch.experiences),
     projects: mergeDescriptionPatches(base.projects, patch.projects),
   });
 }
 
 function getTailorWriteConfig() {
   const config = getWriteConfig();
-  if (
-    config.provider === "freeDeepseekAPI" &&
-    /(?:reasoner|r1)/i.test(config.model)
-  ) {
+  if (config.provider === "freeDeepseekAPI" && /(?:reasoner|r1)/i.test(config.model)) {
     return { ...config, model: "deepseek-chat" };
   }
   return config;
@@ -220,10 +215,7 @@ function getTailorWriteConfig() {
 
 export function getMatchAnalyzeConfig() {
   const config = getAnalyzeConfig();
-  if (
-    config.provider === "freeDeepseekAPI" &&
-    /(?:reasoner|r1)/i.test(config.model)
-  ) {
+  if (config.provider === "freeDeepseekAPI" && /(?:reasoner|r1)/i.test(config.model)) {
     return { ...config, model: "deepseek-chat" };
   }
   return config;
@@ -249,27 +241,15 @@ async function refund(
   await billing.refundUsage(request.auth!.user.id, costs, operation, request.id);
 }
 
-function modelUsage(
-  billing: BillingService | undefined,
-  request: FastifyRequest,
-  operation: string,
-) {
+function modelUsage(billing: BillingService | undefined, request: FastifyRequest, operation: string) {
   if (!billing) return undefined;
   return {
     onUsage: (event: Parameters<BillingService["recordModelUsage"]>[3]) =>
-      billing.recordModelUsage(
-        request.auth!.user.id,
-        `${request.id}:${operation}:${event.attempt}`,
-        operation,
-        event,
-      ),
+      billing.recordModelUsage(request.auth!.user.id, `${request.id}:${operation}:${event.attempt}`, operation, event),
   };
 }
 
-function modelRequestAbort(
-  request: FastifyRequest,
-  reply: FastifyReply,
-) {
+function modelRequestAbort(request: FastifyRequest, reply: FastifyReply) {
   const controller = new AbortController();
   const abort = () => controller.abort();
   request.raw.once("aborted", abort);
@@ -283,7 +263,12 @@ function modelRequestAbort(
   };
 }
 
-export function registerAiRoutes(app: FastifyInstance, billing?: BillingService, database?: Database) {
+export function registerAiRoutes(
+  app: FastifyInstance,
+  billing?: BillingService,
+  database?: Database,
+  productEvents?: ProductEventService,
+) {
   app.get("/api/admin/ai-settings", async (request, reply) => {
     if (!requirePermission(request, reply, "ai-settings:manage:any")) return;
     let current: ReturnType<typeof getAnalyzeProviderSettings> & { dollarRateRials: number };
@@ -300,7 +285,18 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
       }
     }
     return {
-      current: { ...current, dollarRateRials: Number((await database?.select({ dollarRateRials: aiSettings.dollarRateRials }).from(aiSettings).where(eq(aiSettings.id, aiSettingsId)).limit(1))?.[0]?.dollarRateRials ?? 0) },
+      current: {
+        ...current,
+        dollarRateRials: Number(
+          (
+            await database
+              ?.select({ dollarRateRials: aiSettings.dollarRateRials })
+              .from(aiSettings)
+              .where(eq(aiSettings.id, aiSettingsId))
+              .limit(1)
+          )?.[0]?.dollarRateRials ?? 0,
+        ),
+      },
       providers: [
         { id: "freeDeepseekAPI", label: "DeepSeek Local", defaultModel: "deepseek-chat" },
         {
@@ -320,18 +316,30 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
     setAnalyzeProvider(provider, input.model || undefined);
     let dollarRateRials = input.dollarRateRials ?? 0;
     if (database) {
-      const saved = await database.select({ dollarRateRials: aiSettings.dollarRateRials }).from(aiSettings).where(eq(aiSettings.id, aiSettingsId)).limit(1);
+      const saved = await database
+        .select({ dollarRateRials: aiSettings.dollarRateRials })
+        .from(aiSettings)
+        .where(eq(aiSettings.id, aiSettingsId))
+        .limit(1);
       dollarRateRials = input.dollarRateRials ?? Number(saved[0]?.dollarRateRials ?? 0);
-      await database.insert(aiSettings).values({
-        id: aiSettingsId,
-        provider,
-        model: input.model?.trim() || (provider === "gapgpt" ? "gapgpt-qwen-3.6" : "deepseek-chat"),
-        updatedAt: new Date(),
-        dollarRateRials,
-      }).onConflictDoUpdate({
-        target: aiSettings.id,
-        set: { provider, model: input.model?.trim() || (provider === "gapgpt" ? "gapgpt-qwen-3.6" : "deepseek-chat"), dollarRateRials, updatedAt: new Date() },
-      });
+      await database
+        .insert(aiSettings)
+        .values({
+          id: aiSettingsId,
+          provider,
+          model: input.model?.trim() || (provider === "gapgpt" ? "gapgpt-qwen-3.6" : "deepseek-chat"),
+          updatedAt: new Date(),
+          dollarRateRials,
+        })
+        .onConflictDoUpdate({
+          target: aiSettings.id,
+          set: {
+            provider,
+            model: input.model?.trim() || (provider === "gapgpt" ? "gapgpt-qwen-3.6" : "deepseek-chat"),
+            dollarRateRials,
+            updatedAt: new Date(),
+          },
+        });
     }
     return { ...getAnalyzeProviderSettings(), dollarRateRials };
   });
@@ -341,43 +349,60 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
     const jobDescription = textOf(body.jobDescription).trim();
     const resume = asObject(normalizeStoredResumeData(body.resume));
     const validation = validateJobDescription(jobDescription);
-    if (!validation.valid)
-      return reply.code(422).send({ error: validation.error });
-    if (!hasResumeContent(resume))
-      return reply.code(422).send({ error: "رزومه مبنا خالی است." });
+    if (!validation.valid) return reply.code(422).send({ error: validation.error });
+    if (!hasResumeContent(resume)) return reply.code(422).send({ error: "رزومه مبنا خالی است." });
+    await productEvents?.record(
+      "job_input_submitted",
+      `job-input:${request.auth!.user.id}:${request.id}`,
+      request.auth!.user.id,
+      { source: "manual" },
+    );
 
     const usage = { ai: 2, match: 1 } satisfies UsageCosts;
     await consume(billing, request, usage, "match_analyze");
     const requestAbort = modelRequestAbort(request, reply);
     try {
-      const result = await chatJson<ModelAnalysis>(getMatchAnalyzeConfig(), [
+      const result = await chatJson<ModelAnalysis>(
+        getMatchAnalyzeConfig(),
+        [
+          {
+            role: "system",
+            content:
+              "تو یک متخصص سخت‌گیر ATS هستی. فقط JSON معتبر بدون markdown برگردان. هیچ امتیازی را بر اساس کیفیت کلی رزومه یا حدس خودت نده؛ فقط همپوشانی صریح رزومه با نیازمندی‌های همین آگهی ملاک است.",
+          },
+          {
+            role: "user",
+            content: `ابتدا بررسی کن متن واقعاً آگهی شغلی است. اگر معتبر بود چهار امتیاز مستقل ۰ تا ۱۰۰ برای تناسب عنوان (۳۰٪)، مهارت‌ها (۳۵٪)، سابقه (۲۵٪) و تحصیلات (۱۰٪) بده. نبود شواهد یعنی صفر و هیچ داده‌ای نساز.\nرزومه:\n${JSON.stringify(resume, null, 2)}\nشرح شغل:\n${jobDescription}\nJSON: {"isJobPosting":boolean,"invalidReason":string,"jobTitle":string,"company":string,"breakdown":[{"label":string,"value":number}],"strengths":string[],"gaps":string[]}`,
+          },
+        ],
         {
-          role: "system",
-          content:
-            "تو یک متخصص سخت‌گیر ATS هستی. فقط JSON معتبر بدون markdown برگردان. هیچ امتیازی را بر اساس کیفیت کلی رزومه یا حدس خودت نده؛ فقط همپوشانی صریح رزومه با نیازمندی‌های همین آگهی ملاک است.",
+          ...modelUsage(billing, request, "match_analyze"),
+          signal: requestAbort.signal,
+          emptyResponseMessage: "مدل پاسخی برای تحلیل تطابق نداد. لطفاً دوباره تلاش کن.",
+          maxAttempts: 2,
+          maxOutputTokens: 2_048,
         },
-        {
-          role: "user",
-          content: `ابتدا بررسی کن متن واقعاً آگهی شغلی است. اگر معتبر بود چهار امتیاز مستقل ۰ تا ۱۰۰ برای تناسب عنوان (۳۰٪)، مهارت‌ها (۳۵٪)، سابقه (۲۵٪) و تحصیلات (۱۰٪) بده. نبود شواهد یعنی صفر و هیچ داده‌ای نساز.\nرزومه:\n${JSON.stringify(resume, null, 2)}\nشرح شغل:\n${jobDescription}\nJSON: {"isJobPosting":boolean,"invalidReason":string,"jobTitle":string,"company":string,"breakdown":[{"label":string,"value":number}],"strengths":string[],"gaps":string[]}`,
-        },
-      ], {
-        ...modelUsage(billing, request, "match_analyze"),
-        signal: requestAbort.signal,
-        emptyResponseMessage:
-          "مدل پاسخی برای تحلیل تطابق نداد. لطفاً دوباره تلاش کن.",
-        maxAttempts: 2,
-        maxOutputTokens: 2_048,
-      });
-      return normalizeAnalysis(result);
+      );
+      const analysis = normalizeAnalysis(result);
+      await productEvents?.record(
+        "match_analysis_result",
+        `match-result:${request.auth!.user.id}:${request.id}`,
+        request.auth!.user.id,
+        { result: "success" },
+      );
+      return analysis;
     } catch (error) {
       request.log.error({ err: error }, "match analysis failed");
       await refund(billing, request, usage, "match_analyze");
       if (requestAbort.signal.aborted) return reply;
-      const message =
-        error instanceof Error ? error.message : "تحلیل مدل ناموفق بود.";
-      return reply
-        .code(message.includes("آگهی شغلی قابل تحلیل نیست") ? 422 : 502)
-        .send({ error: message });
+      const message = error instanceof Error ? error.message : "تحلیل مدل ناموفق بود.";
+      await productEvents?.record(
+        "match_analysis_result",
+        `match-result:${request.auth!.user.id}:${request.id}`,
+        request.auth!.user.id,
+        { result: "failure", failure_class: message.includes("آگهی") ? "validation" : "provider" },
+      );
+      return reply.code(message.includes("آگهی شغلی قابل تحلیل نیست") ? 422 : 502).send({ error: message });
     } finally {
       requestAbort.dispose();
     }
@@ -388,11 +413,9 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
     const jobDescription = textOf(body.jobDescription).trim();
     const resume = asObject(normalizeStoredResumeData(body.resume));
     const validation = validateJobDescription(jobDescription);
-    if (!validation.valid)
-      return reply.code(422).send({ error: validation.error });
-    if (!hasResumeContent(resume))
-      return reply.code(422).send({ error: "رزومه مبنا خالی است." });
-    const languageName = body.language === "en" ? "English" : "Persian";
+    if (!validation.valid) return reply.code(422).send({ error: validation.error });
+    if (!hasResumeContent(resume)) return reply.code(422).send({ error: "رزومه مبنا خالی است." });
+    const language = body.language === "en" ? "en" : "fa";
 
     const usage = { ai: 5 } satisfies UsageCosts;
     await consume(billing, request, usage, "match_tailor");
@@ -402,17 +425,16 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
         [
           {
             role: "system",
-            content: `You are a professional ${languageName} resume writer. Return valid JSON only. Tailor existing facts to the target job without inventing facts, employers, skills or achievements.`,
+            content: resumeTailoringSystemPrompt(language),
           },
           {
             role: "user",
-            content: `Base resume:\n${JSON.stringify(resume)}\nTarget job:\n${jobDescription}\nReturn only a concise rewrite patch in ${languageName}. Keep every supplied id exactly unchanged. Do not repeat contact details, dates, companies, titles, education or unchanged fields. JSON: {"summary":string,"skills":[string],"experiences":[{"id":string,"description":string}],"projects":[{"id":string,"description":string}]}`,
+            content: resumeTailoringUserPrompt(language, resume, jobDescription),
           },
         ],
         {
           ...modelUsage(billing, request, "match_tailor"),
-          emptyResponseMessage:
-            "مدل پاسخی برای ساخت رزومه اختصاصی نداد. لطفاً دوباره تلاش کن.",
+          emptyResponseMessage: "مدل پاسخی برای ساخت رزومه اختصاصی نداد. لطفاً دوباره تلاش کن.",
           maxAttempts: 2,
           maxOutputTokens: 4_096,
           timeoutMs: 45_000,
@@ -428,25 +450,30 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
   app.post("/api/resume/generate", async (request, reply) => {
     const body = bodyOf(request.body);
     const resume = asObject(normalizeStoredResumeData(body.resume));
-    if (!hasResumeContent(resume))
-      return reply
-        .code(422)
-        .send({ error: "ابتدا اطلاعات واقعی رزومه را وارد کن." });
-    const languageName = body.language === "en" ? "English" : "Persian";
+    if (!hasResumeContent(resume)) return reply.code(422).send({ error: "ابتدا اطلاعات واقعی رزومه را وارد کن." });
+    const language: ResumeOutputLanguage = body.language === "en" ? "en" : "fa";
     const usage = { ai: 2 } satisfies UsageCosts;
     await consume(billing, request, usage, "resume_generate");
     try {
-      const generated = await chatJson<JsonObject>(getWriteConfig(), [
-        {
-          role: "system",
-          content: `You are a professional ${languageName} resume writer. Return valid JSON only. Do not invent facts. Preserve contact fields and every experience, project and education id.`,
-        },
-        {
-          role: "user",
-          content: `Current resume:\n${JSON.stringify(resume, null, 2)}\nKnowledge base:\n${JSON.stringify(asObject(body.knowledge), null, 2)}\nInstruction: ${textOf(body.instruction) || `Create an ATS-friendly resume in ${languageName}.`}\nKeep every record and return every resume field as JSON.`,
-        },
-      ], modelUsage(billing, request, "resume_generate"));
-      return { resume: preserveResumeArrays(resume, generated) };
+      const generated = await chatJson<JsonObject>(
+        getWriteConfig(),
+        [
+          {
+            role: "system",
+            content: resumeGenerationSystemPrompt(language),
+          },
+          {
+            role: "user",
+            content: resumeGenerationUserPrompt(language, resume, asObject(body.knowledge), textOf(body.instruction)),
+          },
+        ],
+        modelUsage(billing, request, "resume_generate"),
+      );
+      const generatedResume = asObject(generated.resume);
+      return {
+        resume: preserveResumeArrays(resume, Object.keys(generatedResume).length ? generatedResume : generated),
+        atsMatchSummary: normalizeAtsMatchSummary(generated.atsMatchSummary),
+      };
     } catch (error) {
       await refund(billing, request, usage, "resume_generate");
       return modelError(reply, error, "مدل رزومه‌ساز پاسخ نداد.");
@@ -456,18 +483,14 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
   app.post("/api/panel/dashboard", async (request, reply) => {
     const body = bodyOf(request.body);
     const resume = asObject(normalizeStoredResumeData(body.resume));
-    if (!hasResumeContent(resume))
-      return reply
-        .code(422)
-        .send({ error: "برای ساخت داشبورد ابتدا رزومه را تکمیل کن." });
+    if (!hasResumeContent(resume)) return reply.code(422).send({ error: "برای ساخت داشبورد ابتدا رزومه را تکمیل کن." });
     try {
       const data = await chatJson<Partial<DashboardData>>(
         getAnalyzeConfig(),
         [
           {
             role: "system",
-            content:
-              "تو تحلیل‌گر پروفایل حرفه‌ای هستی. فقط JSON معتبر و فارسی برگردان و هیچ داده‌ای نساز.",
+            content: "تو تحلیل‌گر پروفایل حرفه‌ای هستی. فقط JSON معتبر و فارسی برگردان و هیچ داده‌ای نساز.",
           },
           {
             role: "user",
@@ -476,20 +499,11 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
         ],
         modelUsage(billing, request, "dashboard"),
       );
-      const fields = [
-        data.subtitle,
-        data.heroTitle,
-        data.heroText,
-        data.aiTitle,
-        data.aiText,
-      ].map(textOf);
-      if (fields.some((value) => !value))
-        throw new Error("خروجی مدل برای ساخت داشبورد کامل نیست.");
+      const fields = [data.subtitle, data.heroTitle, data.heroText, data.aiTitle, data.aiText].map(textOf);
+      if (fields.some((value) => !value)) throw new Error("خروجی مدل برای ساخت داشبورد کامل نیست.");
       const fullName = textOf(resume.fullName).trim().split(/\s+/)[0];
       return {
-        greeting: fullName
-          ? `سلام ${fullName}، آماده‌ی یک قدم تازه‌ای؟`
-          : "سلام، آماده‌ی یک قدم تازه‌ای؟",
+        greeting: fullName ? `سلام ${fullName}، آماده‌ی یک قدم تازه‌ای؟` : "سلام، آماده‌ی یک قدم تازه‌ای؟",
         subtitle: fields[0],
         profileScore: clampScore(data.profileScore),
         heroTitle: fields[1],
@@ -506,26 +520,28 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
     const body = bodyOf(request.body);
     const resume = asObject(normalizeStoredResumeData(body.resume));
     if (!hasResumeContent(resume))
-      return reply
-        .code(422)
-        .send({ error: "برای ساخت جلسه مصاحبه ابتدا رزومه را تکمیل کن." });
+      return reply.code(422).send({ error: "برای ساخت جلسه مصاحبه ابتدا رزومه را تکمیل کن." });
     const usage = { ai: 5, interview: 1 } satisfies UsageCosts;
     await consume(billing, request, usage, "interview_session");
     try {
-      const result = await chatJson<JsonObject>(getAnalyzeConfig(), [
+      const result = await chatJson<JsonObject>(
+        getAnalyzeConfig(),
+        [
+          {
+            role: "system",
+            content: "تو مربی مصاحبه شغلی هستی. فقط JSON معتبر فارسی برگردان.",
+          },
+          {
+            role: "user",
+            content: `رزومه:\n${JSON.stringify(resume, null, 2)}\nپایگاه دانش:\n${JSON.stringify(asObject(body.knowledge), null, 2)}\nحالت: ${textOf(body.mode) || "ترکیبی"}\nشرح شغل: ${textOf(body.jobDescription) || "ندارد"}\nJSON: {"title":string,"subtitle":string,"duration":string,"questions":string[],"cards":[{"title":string,"text":string,"tone":"lavender|mint|peach"}]}`,
+          },
+        ],
         {
-          role: "system",
-          content: "تو مربی مصاحبه شغلی هستی. فقط JSON معتبر فارسی برگردان.",
+          ...modelUsage(billing, request, "interview_session"),
+          maxAttempts: 2,
+          maxOutputTokens: 2_048,
         },
-        {
-          role: "user",
-          content: `رزومه:\n${JSON.stringify(resume, null, 2)}\nپایگاه دانش:\n${JSON.stringify(asObject(body.knowledge), null, 2)}\nحالت: ${textOf(body.mode) || "ترکیبی"}\nشرح شغل: ${textOf(body.jobDescription) || "ندارد"}\nJSON: {"title":string,"subtitle":string,"duration":string,"questions":string[],"cards":[{"title":string,"text":string,"tone":"lavender|mint|peach"}]}`,
-        },
-      ], {
-        ...modelUsage(billing, request, "interview_session"),
-        maxAttempts: 2,
-        maxOutputTokens: 2_048,
-      });
+      );
       const questions = stringArray(result.questions);
       if (
         !textOf(result.title).trim() ||
@@ -539,11 +555,7 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
         subtitle: textOf(result.subtitle).trim(),
         duration: textOf(result.duration).trim(),
         questions: questions.slice(0, 6),
-        cards: (Array.isArray(result.cards)
-          ? result.cards
-          : result.cards
-            ? [result.cards]
-            : [])
+        cards: (Array.isArray(result.cards) ? result.cards : result.cards ? [result.cards] : [])
           .slice(0, 3)
           .map((card) => {
             const safeCard = asObject(card);
@@ -551,9 +563,7 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
             return {
               title: textOf(safeCard.title),
               text: textOf(safeCard.text),
-              tone: ["lavender", "mint", "peach"].includes(tone)
-                ? tone
-                : "mint",
+              tone: ["lavender", "mint", "peach"].includes(tone) ? tone : "mint",
             };
           })
           .filter((card) => card.title && card.text),
@@ -567,23 +577,23 @@ export function registerAiRoutes(app: FastifyInstance, billing?: BillingService,
   app.post("/api/interview/feedback", async (request, reply) => {
     const body = bodyOf(request.body);
     const answer = textOf(body.answer).trim();
-    if (!answer)
-      return reply
-        .code(400)
-        .send({ error: "پاسخ برای دریافت بازخورد کافی نیست." });
+    if (!answer) return reply.code(400).send({ error: "پاسخ برای دریافت بازخورد کافی نیست." });
     try {
-      const result = await chatJson<JsonObject>(getAnalyzeConfig(), [
-        {
-          role: "system",
-          content: "تو مربی مصاحبه هستی. فقط JSON معتبر فارسی و کوتاه برگردان.",
-        },
-        {
-          role: "user",
-          content: `سؤال: ${textOf(body.question)}\nپاسخ کاربر: ${answer}\nJSON: {"title":string,"text":string}`,
-        },
-      ], modelUsage(billing, request, "interview_feedback"));
-      if (!textOf(result.title).trim() || !textOf(result.text).trim())
-        throw new Error("مدل بازخورد کامل تولید نکرد.");
+      const result = await chatJson<JsonObject>(
+        getAnalyzeConfig(),
+        [
+          {
+            role: "system",
+            content: "تو مربی مصاحبه هستی. فقط JSON معتبر فارسی و کوتاه برگردان.",
+          },
+          {
+            role: "user",
+            content: `سؤال: ${textOf(body.question)}\nپاسخ کاربر: ${answer}\nJSON: {"title":string,"text":string}`,
+          },
+        ],
+        modelUsage(billing, request, "interview_feedback"),
+      );
+      if (!textOf(result.title).trim() || !textOf(result.text).trim()) throw new Error("مدل بازخورد کامل تولید نکرد.");
       return {
         title: textOf(result.title).trim(),
         text: textOf(result.text).trim(),

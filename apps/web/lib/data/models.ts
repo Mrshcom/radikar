@@ -1,9 +1,5 @@
 import type { JobTone } from "@/app/(panel)/_data/jobs";
-import type {
-  ResumeColorId,
-  ResumeData,
-  ResumeProject,
-} from "@/app/(panel)/resumes/resume-data";
+import type { ResumeColorId, ResumeData, ResumeProject } from "@/app/(panel)/resumes/resume-data";
 
 export type { DataCollection } from "@radikar/shared-types";
 

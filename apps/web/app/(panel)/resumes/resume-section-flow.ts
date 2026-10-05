@@ -27,24 +27,18 @@ export function createContinuationResumePage(source: ResumeData): ResumeData {
  * appear before a later page that still contains experience or projects.
  */
 export function enforceResumeSectionFlow(pages: ResumeData[]): ResumeData[] {
-  const workPageIndexes = pages.flatMap((page, index) =>
-    hasWorkContent(page) ? [index] : [],
-  );
+  const workPageIndexes = pages.flatMap((page, index) => (hasWorkContent(page) ? [index] : []));
   const educationPageIndexes = pages.flatMap((page, index) =>
     page.educations.length > 0 || page.education.trim() ? [index] : [],
   );
   if (!educationPageIndexes.length) return pages;
 
   const lastWorkPageIndex = workPageIndexes.at(-1) ?? -1;
-  const interruptsWorkSequence = educationPageIndexes.some(
-    (index) => index < lastWorkPageIndex,
-  );
+  const interruptsWorkSequence = educationPageIndexes.some((index) => index < lastWorkPageIndex);
   const splitsEducationSection = educationPageIndexes.length > 1;
   if (!interruptsWorkSequence && !splitsEducationSection) return pages;
 
-  const educationPageIndex = interruptsWorkSequence
-    ? lastWorkPageIndex
-    : educationPageIndexes[0];
+  const educationPageIndex = interruptsWorkSequence ? lastWorkPageIndex : educationPageIndexes[0];
   const deferredEducations: ResumeEducation[] = [];
   let deferredLegacyEducation = "";
   let trailingSourcePageIndex = -1;
@@ -62,9 +56,7 @@ export function enforceResumeSectionFlow(pages: ResumeData[]): ResumeData[] {
   });
 
   if (!normalizedPages[educationPageIndex]) {
-    normalizedPages.push(
-      createContinuationResumePage(normalizedPages[lastWorkPageIndex]),
-    );
+    normalizedPages.push(createContinuationResumePage(normalizedPages[lastWorkPageIndex]));
   }
   const educationPage = normalizedPages[educationPageIndex];
   const trailingSource = normalizedPages[trailingSourcePageIndex];
@@ -89,9 +81,7 @@ export function enforceResumeSectionFlow(pages: ResumeData[]): ResumeData[] {
 }
 
 export function hasResumeSectionFlowViolation(pages: ResumeData[]) {
-  const workPageIndexes = pages.flatMap((page, index) =>
-    hasWorkContent(page) ? [index] : [],
-  );
+  const workPageIndexes = pages.flatMap((page, index) => (hasWorkContent(page) ? [index] : []));
   const educationPageIndexes = pages.flatMap((page, index) =>
     page.educations.length > 0 || page.education.trim() ? [index] : [],
   );

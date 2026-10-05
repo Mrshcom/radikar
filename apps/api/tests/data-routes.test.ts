@@ -50,12 +50,14 @@ class MemoryRecordRepository implements RecordRepository {
 }
 
 const testUser: AuthUser = {
+  email: null,
   id: "11111111-1111-4111-8111-111111111111",
   phone: "09120000000",
   fullName: "کاربر تست",
   role: "superadmin",
   status: "active",
   tablePageSize: 20,
+  onboardingState: { version: 1, status: "not_started", completedSteps: [] },
   createdAt: "2026-08-27T10:00:00.000Z",
   lastLoginAt: "2026-08-27T10:00:00.000Z",
 };
@@ -83,9 +85,9 @@ const authService: AuthServicePort = {
         ? otherIdentity
         : token === "second-user-token"
           ? secondUserIdentity
-        : token === "admin-token"
-          ? adminIdentity
-          : null,
+          : token === "admin-token"
+            ? adminIdentity
+            : null,
   revokeSession: async () => undefined,
   getStats: async () => ({
     users: { total: 1, active: 1, registeredToday: 1, activeToday: 1 },
@@ -99,6 +101,7 @@ const authService: AuthServicePort = {
   updateUser: async () => testUser,
   updateProfile: async () => testUser,
   updatePreferences: async (_userId, input) => ({ ...testUser, ...input }),
+  updateOnboarding: async (_userId, onboardingState) => ({ ...testUser, onboardingState }),
 };
 
 function createTestApp(authServiceOverride: AuthServicePort = authService) {
@@ -301,7 +304,11 @@ test("canonicalizes malformed resume records before storage", async () => {
 
 test("rejects unknown collections and mismatched ids", async () => {
   const app = createTestApp();
-  const unknown = await app.inject({ method: "GET", url: "/v1/data/unknown", cookies: { radikar_session: "other-token" } });
+  const unknown = await app.inject({
+    method: "GET",
+    url: "/v1/data/unknown",
+    cookies: { radikar_session: "other-token" },
+  });
   assert.equal(unknown.statusCode, 400);
 
   const mismatch = await app.inject({
@@ -467,13 +474,7 @@ test("extracts a safe company logo from structured and LinkedIn job markup", () 
     ),
     "https://media.licdn.com/dms/image/logo.png?x=1&y=2",
   );
-  assert.equal(
-    extractCompanyLogoUrl(
-      `<meta property="og:image" content="http://127.0.0.1/private.png">`,
-      pageUrl,
-    ),
-    "",
-  );
+  assert.equal(extractCompanyLogoUrl(`<meta property="og:image" content="http://127.0.0.1/private.png">`, pageUrl), "");
 });
 
 test("knowledge import requires a multipart resume file", async () => {
@@ -518,19 +519,13 @@ test("uses an embedded LinkedIn URL when the imported website is empty", () => {
     "https://example.com",
     "https://www.linkedin.com/in/mampel88/",
   ]);
-  assert.equal(
-    withLinkedIn.resumeData.website,
-    "https://www.linkedin.com/in/mampel88/",
-  );
+  assert.equal(withLinkedIn.resumeData.website, "https://www.linkedin.com/in/mampel88/");
 
   const replacesGeneratedPlaceholder = applyEmbeddedLinkFallbacks(
     { ...payload, resumeData: { website: "https://linkedinprofile/" } },
     ["https://www.linkedin.com/in/example-user"],
   );
-  assert.equal(
-    replacesGeneratedPlaceholder.resumeData.website,
-    "https://www.linkedin.com/in/example-user",
-  );
+  assert.equal(replacesGeneratedPlaceholder.resumeData.website, "https://www.linkedin.com/in/example-user");
 
   const existingWebsite = applyEmbeddedLinkFallbacks(
     { ...payload, resumeData: { website: "https://portfolio.example/" } },
@@ -559,10 +554,7 @@ MOHAMMAD REZA SHARIATZADEH`;
     phone: "+98 9158135580",
     location: "Mashhad, Razavi Khorasan, Iran",
   });
-  assert.equal(
-    extractSummaryFallback(text),
-    "Complete professional summary from the source resume.",
-  );
+  assert.equal(extractSummaryFallback(text), "Complete professional summary from the source resume.");
   assert.deepEqual(extractExperienceHeadingFallbacks(text), [
     {
       jobTitle: "Frontend Chapter Lead",
@@ -587,10 +579,7 @@ MOHAMMAD REZA SHARIATZADEH`;
   assert.equal(normalized.resumeData.email, "mrshcom@gmail.com");
   assert.equal(normalized.resumeData.phone, "+98 9158135580");
   assert.equal(normalized.resumeData.location, "Mashhad, Razavi Khorasan, Iran");
-  assert.equal(
-    normalized.resumeData.summary,
-    "Complete professional summary from the source resume.",
-  );
+  assert.equal(normalized.resumeData.summary, "Complete professional summary from the source resume.");
   assert.equal(normalized.experiences[0].company, "Dotin");
   assert.equal(normalized.experiences[0].location, "Iran");
 });

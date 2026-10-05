@@ -32,10 +32,7 @@ type DirectionalField = HTMLInputElement | HTMLTextAreaElement;
 
 function isDirectionalField(element: Element): element is DirectionalField {
   if (element instanceof HTMLTextAreaElement) return true;
-  return (
-    element instanceof HTMLInputElement &&
-    !IGNORED_INPUT_TYPES.has(element.type)
-  );
+  return element instanceof HTMLInputElement && !IGNORED_INPUT_TYPES.has(element.type);
 }
 
 function shouldAlwaysUseLtr(field: DirectionalField) {
@@ -50,8 +47,7 @@ function shouldAlwaysUseLtr(field: DirectionalField) {
 export function getFieldDirection(field: DirectionalField): "rtl" | "ltr" {
   if (shouldAlwaysUseLtr(field)) return "ltr";
   if (!field.value.trim()) return "rtl";
-  if (field.value.trim() && NUMERIC_CONTENT_PATTERN.test(field.value))
-    return "ltr";
+  if (field.value.trim() && NUMERIC_CONTENT_PATTERN.test(field.value)) return "ltr";
   return PERSIAN_SCRIPT_PATTERN.test(field.value) ? "rtl" : "ltr";
 }
 
@@ -62,8 +58,7 @@ export function applyFieldDirection(field: DirectionalField) {
 }
 
 function applyWithin(root: ParentNode) {
-  if (root instanceof Element && isDirectionalField(root))
-    applyFieldDirection(root);
+  if (root instanceof Element && isDirectionalField(root)) applyFieldDirection(root);
   root.querySelectorAll("input, textarea").forEach((element) => {
     if (isDirectionalField(element)) applyFieldDirection(element);
   });

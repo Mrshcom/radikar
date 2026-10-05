@@ -24,18 +24,14 @@ export function ScaledResumePreview({
   const rootRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
   const safeData = useMemo(() => normalizeResumeDataInput(data), [data]);
-  const { candidate, pages, pagesRef, probeRef, isSettled } =
-    useRenderedResumePagination(safeData, templateId);
+  const { candidate, pages, pagesRef, probeRef, isSettled } = useRenderedResumePagination(safeData, templateId);
   const visiblePages = showAllPages ? pages : pages.slice(0, 1);
-  const pageStackHeight =
-    visiblePages.length * DOCUMENT_HEIGHT +
-    Math.max(visiblePages.length - 1, 0) * 20;
+  const pageStackHeight = visiblePages.length * DOCUMENT_HEIGHT + Math.max(visiblePages.length - 1, 0) * 20;
 
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const updateScale = () =>
-      setScale(Math.min(root.clientWidth / DOCUMENT_WIDTH, 1));
+    const updateScale = () => setScale(Math.min(root.clientWidth / DOCUMENT_WIDTH, 1));
     updateScale();
     const observer = new ResizeObserver(updateScale);
     observer.observe(root);
@@ -43,11 +39,7 @@ export function ScaledResumePreview({
   }, []);
 
   return (
-    <div
-      ref={rootRef}
-      className="relative w-full overflow-hidden"
-      data-resume-scale-container
-    >
+    <div ref={rootRef} className="relative w-full overflow-hidden" data-resume-scale-container>
       <div
         ref={pagesRef}
         className="relative mx-auto"

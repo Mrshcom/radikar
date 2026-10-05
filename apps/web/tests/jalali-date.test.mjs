@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  getPersianDateParts,
-  getPersianMonthDays,
-  shiftPersianMonth,
-  toLocalIsoDate,
-} from "../lib/jalali-date.ts";
+import { getPersianDateParts, getPersianMonthDays, shiftPersianMonth, toLocalIsoDate } from "../lib/jalali-date.ts";
 
 test("maps Gregorian ISO dates to the Persian calendar", () => {
   const nowruz = new Date(2026, 2, 21, 12);

@@ -1,13 +1,6 @@
 import type { ResumeData } from "./resume-data";
 
-type ResumeHeadingSection =
-  | "contact"
-  | "summary"
-  | "experiences"
-  | "projects"
-  | "educations"
-  | "skills"
-  | "languages";
+type ResumeHeadingSection = "contact" | "summary" | "experiences" | "projects" | "educations" | "skills" | "languages";
 
 const SECTION_HEADING_ALIASES: Record<ResumeHeadingSection, string[]> = {
   contact: ["Contact", "Contact Information", "اطلاعات تماس", "تماس"],
@@ -47,10 +40,7 @@ function normalizeHeading(value: string) {
 
 const SECTION_BY_HEADING = new Map(
   Object.entries(SECTION_HEADING_ALIASES).flatMap(([section, aliases]) =>
-    aliases.map(
-      (alias) =>
-        [normalizeHeading(alias), section as ResumeHeadingSection] as const,
-    ),
+    aliases.map((alias) => [normalizeHeading(alias), section as ResumeHeadingSection] as const),
   ),
 );
 
@@ -61,9 +51,7 @@ function getHeadingSection(text: string) {
 function pageHasSection(page: ResumeData, section: ResumeHeadingSection) {
   switch (section) {
     case "contact":
-      return Boolean(
-        page.email || page.phone || page.location || page.website,
-      );
+      return Boolean(page.email || page.phone || page.location || page.website);
     case "summary":
       return Boolean(page.summary.trim());
     case "experiences":
@@ -81,8 +69,8 @@ function pageHasSection(page: ResumeData, section: ResumeHeadingSection) {
 
 export function getContinuedResumeSections(previousPages: ResumeData[]) {
   return new Set(
-    (Object.keys(SECTION_HEADING_ALIASES) as ResumeHeadingSection[]).filter(
-      (section) => previousPages.some((page) => pageHasSection(page, section)),
+    (Object.keys(SECTION_HEADING_ALIASES) as ResumeHeadingSection[]).filter((section) =>
+      previousPages.some((page) => pageHasSection(page, section)),
     ),
   );
 }
@@ -97,11 +85,8 @@ export function syncResumeSectionHeadingVisibility(
   pageElement.querySelectorAll<HTMLElement>("h2").forEach((heading) => {
     const text = heading.textContent?.trim() ?? "";
     const section = getHeadingSection(text);
-    const repeated = section
-      ? continuedSections.has(section)
-      : previousHeadingTexts.has(normalizeHeading(text));
-    const headingBlock =
-      heading.closest<HTMLElement>("[data-resume-section-heading]") ?? heading;
+    const repeated = section ? continuedSections.has(section) : previousHeadingTexts.has(normalizeHeading(text));
+    const headingBlock = heading.closest<HTMLElement>("[data-resume-section-heading]") ?? heading;
 
     headingBlock.hidden = repeated;
     headingBlock.classList.toggle("!hidden", repeated);
@@ -109,18 +94,11 @@ export function syncResumeSectionHeadingVisibility(
   });
 }
 
-export function syncRenderedResumeSectionHeadings(
-  pageElements: HTMLElement[],
-  pages: ResumeData[],
-) {
+export function syncRenderedResumeSectionHeadings(pageElements: HTMLElement[], pages: ResumeData[]) {
   const seenHeadingTexts = new Set<string>();
 
   pageElements.forEach((pageElement, pageIndex) => {
-    syncResumeSectionHeadingVisibility(
-      pageElement,
-      pages.slice(0, pageIndex),
-      seenHeadingTexts,
-    );
+    syncResumeSectionHeadingVisibility(pageElement, pages.slice(0, pageIndex), seenHeadingTexts);
 
     pageElement.querySelectorAll<HTMLElement>("h2").forEach((heading) => {
       const text = heading.textContent?.trim();

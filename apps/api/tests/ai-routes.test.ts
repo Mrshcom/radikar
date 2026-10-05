@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  getMatchAnalyzeConfig,
-  mergeTailoredResume,
-} from "../src/modules/ai/routes";
+import { getMatchAnalyzeConfig, mergeTailoredResume } from "../src/modules/ai/routes";
 
 test("match analysis avoids reasoning models for bounded JSON output", () => {
   const previousProvider = process.env.LLM_PROVIDER;
@@ -60,9 +57,7 @@ test("tailored resume patches rewrite content without replacing factual fields",
         description: "Tailored experience",
       },
     ],
-    projects: [
-      { id: "project-1", name: "Invented name", description: "Tailored project" },
-    ],
+    projects: [{ id: "project-1", name: "Invented name", description: "Tailored project" }],
     jobTitle: "Invented job title",
   });
 
@@ -78,8 +73,5 @@ test("tailored resume patches rewrite content without replacing factual fields",
 });
 
 test("tailored resume rejects empty model patches", () => {
-  assert.throws(
-    () => mergeTailoredResume({ summary: "Existing" }, {}),
-    /محتوای قابل استفاده‌ای/,
-  );
+  assert.throws(() => mergeTailoredResume({ summary: "Existing" }, {}), /محتوای قابل استفاده‌ای/);
 });

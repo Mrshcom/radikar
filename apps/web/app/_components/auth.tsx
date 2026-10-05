@@ -7,15 +7,23 @@ import { ApiError, apiRequest } from "@/lib/api-client";
 import { PageLoader } from "./page-loader";
 
 export type UserRole = "user" | "admin" | "superadmin";
+export type OnboardingStepId = "profile" | "match" | "resume" | "application";
+export type OnboardingState = {
+  version: number;
+  status: "not_started" | "active" | "dismissed" | "completed";
+  completedSteps: OnboardingStepId[];
+};
 export type CurrentUser = {
   id: string;
-  phone: string;
+  phone: string | null;
+  email: string | null;
   fullName: string | null;
   role: UserRole;
   status: "active" | "suspended";
   createdAt: string;
   lastLoginAt: string | null;
   tablePageSize: 10 | 20 | 50 | 100 | 200;
+  onboardingState: OnboardingState;
 };
 
 export const authQueryKey = ["auth", "me"] as const;

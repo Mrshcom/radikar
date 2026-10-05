@@ -12,11 +12,13 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "prepare": "node scripts/setup-git-hooks.mjs",
+    "prepare": "husky",
     "dev": "turbo run dev",
     "dev:web": "turbo run dev --filter=@radikar/web",
     "dev:api": "turbo run dev --filter=@radikar/api",
     "dev:stack": "turbo run dev --filter=@radikar/web --filter=@radikar/api",
+    "format": "prettier --write \"{apps,packages,scripts}/**/*.{ts,tsx,js,mjs,cjs,json}\" \"*.{js,mjs,cjs,json}\"",
+    "format:check": "prettier --check \"{apps,packages,scripts}/**/*.{ts,tsx,js,mjs,cjs,json}\" \"*.{js,mjs,cjs,json}\"",
     "build": "turbo run build",
     "build:web": "turbo run build --filter=@radikar/web...",
     "build:api": "turbo run build --filter=@radikar/api...",
@@ -28,6 +30,10 @@
     "test:web": "turbo run test --filter=@radikar/web",
     "test:api": "turbo run test --filter=@radikar/api",
     "test:all": "turbo run test",
+    "test:e2e": "npm run test:e2e --workspace @radikar/web",
+    "test:e2e:ui": "npm run test:e2e:ui --workspace @radikar/web",
+    "verify:push": "node scripts/verify-push.mjs",
+    "verify:full": "node scripts/verify-push.mjs --full",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "infra:up": "docker compose up -d postgres",
@@ -38,6 +44,8 @@
     "knowledge:check": "node scripts/check-knowledge-base.mjs"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "prettier": "^3.9.9",
     "turbo": "2.10.11"
   }
 }

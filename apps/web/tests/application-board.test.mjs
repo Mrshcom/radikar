@@ -1,9 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  moveApplicationToStage,
-  synchronizeJobsWithApplicationBoard,
-} from "../lib/application-board.ts";
+import { moveApplicationToStage, synchronizeJobsWithApplicationBoard } from "../lib/application-board.ts";
 
 const now = "2026-09-01T12:00:00.000Z";
 

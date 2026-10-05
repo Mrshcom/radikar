@@ -1,23 +1,17 @@
 import type { KnowledgeProfileRecord } from "@/lib/data/models";
 import { normalizeResumeImportPayload } from "@radikar/validators";
 
-type KnowledgeCompletionData = Omit<
-  KnowledgeProfileRecord,
-  "id" | "createdAt" | "updatedAt"
->;
+type KnowledgeCompletionData = Omit<KnowledgeProfileRecord, "id" | "createdAt" | "updatedAt">;
 
 const sampleProjectIdPrefix = "project-sample-";
 
 export function isSeededKnowledgeSampleProject(value: { id?: unknown }) {
-  return (
-    typeof value.id === "string" && value.id.startsWith(sampleProjectIdPrefix)
-  );
+  return typeof value.id === "string" && value.id.startsWith(sampleProjectIdPrefix);
 }
 
 export function calculateKnowledgeCompletion(data: KnowledgeCompletionData) {
   const safe = normalizeResumeImportPayload(data);
-  const hasText = (value: unknown) =>
-    typeof value === "string" && value.trim().length > 0;
+  const hasText = (value: unknown) => typeof value === "string" && value.trim().length > 0;
   const completed = [
     safe.resumeData.fullName,
     safe.resumeData.jobTitle,
@@ -37,10 +31,7 @@ export function calculateKnowledgeCompletion(data: KnowledgeCompletionData) {
       experience.jobTitle,
       experience.company,
       experience.location,
-      Boolean(
-        hasText(experience.startDate) &&
-          (experience.isCurrent || hasText(experience.endDate)),
-      ),
+      Boolean(hasText(experience.startDate) && (experience.isCurrent || hasText(experience.endDate))),
       experience.description,
       experience.technologies,
     ]),
@@ -61,16 +52,9 @@ export function calculateKnowledgeCompletion(data: KnowledgeCompletionData) {
         project.description,
         project.technologies,
       ]),
-    ...safe.languageItems.flatMap((language) => [
-      language.name,
-      language.proficiency,
-    ]),
-  ].map((value) =>
-    typeof value === "string" ? hasText(value) : Boolean(value),
-  );
+    ...safe.languageItems.flatMap((language) => [language.name, language.proficiency]),
+  ].map((value) => (typeof value === "string" ? hasText(value) : Boolean(value)));
 
   if (!completed.length) return 0;
-  return Math.round(
-    (completed.filter(Boolean).length / completed.length) * 100,
-  );
+  return Math.round((completed.filter(Boolean).length / completed.length) * 100);
 }

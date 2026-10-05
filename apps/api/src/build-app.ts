@@ -10,10 +10,15 @@ import { registerAiRoutes } from "./modules/ai/routes";
 import type { RecordRepository } from "./modules/data/record-repository";
 import { registerHealthRoutes } from "./modules/health/routes";
 import { registerImportRoutes } from "./modules/imports/routes";
+import { registerJobPoolRoutes } from "./modules/job-pool/routes";
+import type { JobPoolService } from "./modules/job-pool/service";
 import { handleAuthError, registerAuthRoutes, type AuthServicePort } from "./modules/auth/routes";
 import { handleBillingError, registerBillingRoutes } from "./modules/billing/routes";
 import type { BillingService } from "./modules/billing/service";
+import { handleRadicoinError, registerRadicoinRoutes } from "./modules/radicoin/routes";
+import type { RadicoinService } from "./modules/radicoin/service";
 import type { Database } from "@radikar/database";
+import type { ProductEventService } from "./modules/analytics/service";
 
 type BuildAppOptions = {
   fastifyFactory?: typeof Fastify;
@@ -25,9 +30,15 @@ type BuildAppOptions = {
   sessionCookieName: string;
   secureCookies: boolean;
   sessionTtlDays: number;
+  webAppUrl?: string;
   maxUploadSizeBytes?: number;
+  apifyApiToken?: string;
+  apifyLinkedInActorId?: string;
   billingService?: BillingService;
+  radicoinService?: RadicoinService;
   database?: Database;
+  jobPoolService?: JobPoolService;
+  productEvents?: ProductEventService;
 };
 
 export function buildApp({
@@ -40,9 +51,15 @@ export function buildApp({
   sessionCookieName,
   secureCookies,
   sessionTtlDays,
+  webAppUrl = "http://localhost:3161",
   maxUploadSizeBytes = 8 * 1024 * 1024,
+  apifyApiToken,
+  apifyLinkedInActorId,
   billingService,
+  radicoinService,
   database,
+  jobPoolService,
+  productEvents,
 }: BuildAppOptions) {
   const app = fastifyFactory({
     logger,
@@ -78,7 +95,14 @@ export function buildApp({
   });
 
   registerHealthRoutes(app, readinessCheck);
-  registerAuthRoutes(app, { authService, sessionCookieName, secureCookies, sessionTtlDays });
+  registerAuthRoutes(app, {
+    authService,
+    sessionCookieName,
+    secureCookies,
+    sessionTtlDays,
+    webAppUrl,
+    productEvents,
+  });
   app.addHook("preHandler", async (request, reply) => {
     const publicPaths = new Set([
       "/health",
@@ -86,6 +110,11 @@ export function buildApp({
       "/api/auth/request-otp",
       "/api/auth/verify-otp",
       "/api/auth/logout",
+      "/api/auth/providers",
+      "/api/auth/google/start",
+      "/api/auth/google/callback",
+      "/api/referrals/visits",
+      "/api/referrals/leaderboard",
       "/api/billing/callback",
     ]);
     if (request.method === "OPTIONS" || publicPaths.has(request.url.split("?")[0])) return;
@@ -96,10 +125,15 @@ export function buildApp({
       });
     }
   });
-  registerDataRoutes(app, repository, billingService);
+  registerDataRoutes(app, repository, billingService, radicoinService, productEvents);
   if (billingService) registerBillingRoutes(app, billingService);
-  registerAiRoutes(app, billingService, database);
-  registerImportRoutes(app, billingService, maxUploadSizeBytes);
+  if (radicoinService) registerRadicoinRoutes(app, radicoinService);
+  registerAiRoutes(app, billingService, database, productEvents);
+  registerImportRoutes(app, billingService, maxUploadSizeBytes, {
+    apiToken: apifyApiToken,
+    linkedInActorId: apifyLinkedInActorId,
+  });
+  if (jobPoolService) registerJobPoolRoutes(app, jobPoolService);
 
   app.setNotFoundHandler((request, reply) =>
     reply.code(404).send({
@@ -111,6 +145,7 @@ export function buildApp({
   app.setErrorHandler((error, request, reply) => {
     if (handleAuthError(error, request, reply)) return;
     if (handleBillingError(error, request, reply)) return;
+    if (handleRadicoinError(error, request, reply)) return;
     if (error instanceof ZodError) {
       return reply.code(400).send({
         error: "داده ورودی معتبر نیست.",

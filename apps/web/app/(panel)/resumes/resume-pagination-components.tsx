@@ -18,19 +18,9 @@ export function ResumePaginationProbe({
   );
 }
 
-export function ResumePrintPage({
-  children,
-  templateId,
-}: {
-  children: ReactNode;
-  templateId: string;
-}) {
+export function ResumePrintPage({ children, templateId }: { children: ReactNode; templateId: string }) {
   return (
-    <div
-      className="contents print:block"
-      data-resume-print-page
-      data-resume-template={templateId}
-    >
+    <div className="contents print:block" data-resume-print-page data-resume-template={templateId}>
       {children}
     </div>
   );

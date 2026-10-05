@@ -1,35 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useQueryStates } from "nuqs";
-import {
-  CalendarRange,
-  LoaderCircle,
-  RotateCcw,
-  Search,
-  SlidersHorizontal,
-} from "lucide-react";
+import { CalendarRange, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 import { JobCard } from "../_components/job-card";
+import { JobPoolCard } from "../_components/job-pool-card";
+import { TablePagination } from "../_components/table-pagination";
 import { JalaliDatePicker } from "../_components/jalali-date-picker";
-import { JobCardsSkeleton } from "../_components/loading-skeletons";
+import { JobCardsSkeleton } from "../_components/skeletons";
 import { SectionTitle } from "../_components/ui";
 import { useToast } from "@/app/_components/toast";
 import { RangeSlider } from "@/app/_components/range-slider";
-import { applicationStore, jobStore } from "@/lib/data/stores";
+import { applicationStore, createRecordId, jobStore } from "@/lib/data/stores";
 import type { ApplicationRecord, JobRecord } from "@/lib/data/models";
 import { formatPersianNumber } from "@/lib/fa-number";
-import {
-  jobFilterParsers,
-  jobFilterUrlKeys,
-  type JobScope,
-} from "@/lib/job-filter-search-params";
-import {
-  matchesJobCategory,
-  type JobCategory,
-} from "@/lib/job-category";
+import { jobFilterParsers, jobFilterUrlKeys, type JobScope } from "@/lib/job-filter-search-params";
+import { matchesJobCategory, type JobCategory } from "@/lib/job-category";
 import { prioritizeSavedJobs } from "@/lib/job-order";
 import { hasJobActivityInDateRange } from "@/lib/job-application-filter";
+import { jobPoolPageSizes, type JobPoolPageSize, type PublicJobPoolListing, useJobPoolListings } from "@/lib/job-pool";
 
 const categoryOptions: Array<{ id: JobScope; label: string }> = [
   { id: "all", label: "همه" },
@@ -40,6 +31,7 @@ const categoryOptions: Array<{ id: JobScope; label: string }> = [
 
 export default function JobsPage() {
   const notify = useToast();
+  const router = useRouter();
   const [urlFilters, setUrlFilters] = useQueryStates(jobFilterParsers, {
     urlKeys: jobFilterUrlKeys,
     history: "replace",
@@ -47,8 +39,7 @@ export default function JobsPage() {
     scroll: false,
   });
   const { query, scope, minMatch, fromDate, toDate } = urlFilters;
-  const activeDetailedFilterCount =
-    Number(minMatch > 0) + Number(Boolean(fromDate || toDate));
+  const activeDetailedFilterCount = Number(minMatch > 0) + Number(Boolean(fromDate || toDate));
   const hasActiveFilters = activeDetailedFilterCount > 0;
   const [filtersOpen, setFiltersOpen] = useState(hasActiveFilters);
   const [jobs, setJobs] = useState<JobRecord[]>([]);
@@ -56,22 +47,23 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savingJobId, setSavingJobId] = useState("");
+  const [poolPage, setPoolPage] = useState(1);
+  const [poolPageSize, setPoolPageSize] = useState<JobPoolPageSize>(9);
+  const poolListings = useJobPoolListings({
+    query,
+    page: poolPage,
+    pageSize: poolPageSize,
+  });
 
   const loadJobs = async () => {
     setLoading(true);
     setError("");
     try {
-      const [jobRecords, applicationRecords] = await Promise.all([
-        jobStore.list(),
-        applicationStore.list(),
-      ]);
+      const [jobRecords, applicationRecords] = await Promise.all([jobStore.list(), applicationStore.list()]);
       setJobs(jobRecords);
       setApplications(applicationRecords);
     } catch (event) {
-      const message =
-        event instanceof Error
-          ? event.message
-          : "خواندن فرصت‌های ذخیره‌شده ناموفق بود.";
+      const message = event instanceof Error ? event.message : "خواندن فرصت‌های ذخیره‌شده ناموفق بود.";
       setError(message);
       notify(message, "error");
     } finally {
@@ -90,10 +82,7 @@ export default function JobsPage() {
       })
       .catch((event: unknown) => {
         if (active) {
-          const message =
-            event instanceof Error
-              ? event.message
-              : "خواندن فرصت‌های ذخیره‌شده ناموفق بود.";
+          const message = event instanceof Error ? event.message : "خواندن فرصت‌های ذخیره‌شده ناموفق بود.";
           setError(message);
           notify(message, "error");
         }
@@ -108,16 +97,14 @@ export default function JobsPage() {
 
   const visibleJobs = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("fa");
-    const selectedCategory: JobCategory | undefined =
-      scope === "all" ? undefined : scope;
+    const selectedCategory: JobCategory | undefined = scope === "all" ? undefined : scope;
     const filteredJobs = jobs.filter((job) => {
       const matchesQuery =
         !normalizedQuery ||
         [job.role, job.company, job.description, job.reason].some((value) =>
           value?.toLocaleLowerCase("fa").includes(normalizedQuery),
         );
-      const matchesCategory =
-        !selectedCategory || matchesJobCategory(job, selectedCategory);
+      const matchesCategory = !selectedCategory || matchesJobCategory(job, selectedCategory);
       return (
         matchesQuery &&
         matchesCategory &&
@@ -141,12 +128,56 @@ export default function JobsPage() {
         updatedAt: new Date().toISOString(),
       };
       await jobStore.put(updated);
-      setJobs((current) =>
-        current.map((item) => (item.id === updated.id ? updated : item)),
-      );
+      setJobs((current) => current.map((item) => (item.id === updated.id ? updated : item)));
       notify(updated.saved ? "فرصت شغلی ذخیره شد" : "فرصت از ذخیره‌ها حذف شد");
     } catch {
       notify("تغییر وضعیت ذخیره فرصت شغلی ناموفق بود.", "error");
+    } finally {
+      setSavingJobId("");
+    }
+  };
+
+  const makePoolJobRecord = (listing: PublicJobPoolListing, existing?: JobRecord) => {
+    const now = new Date().toISOString();
+    return {
+      id: existing?.id || createRecordId("job"),
+      company: listing.companyName,
+      role: listing.title,
+      match: existing?.match || 0,
+      place: listing.location || "",
+      age: listing.postedAt
+        ? new Intl.DateTimeFormat("fa-IR", { month: "short", day: "numeric" }).format(new Date(listing.postedAt))
+        : "",
+      tone: existing?.tone || "green",
+      letter: Array.from(listing.companyName.trim())[0] || "—",
+      reason: existing?.reason || listing.skills.slice(0, 5).join("، "),
+      description: listing.description || existing?.description || "",
+      sourceUrl: listing.canonicalUrl,
+      saved: existing?.saved || false,
+      applicationBoardDismissedAt: existing?.applicationBoardDismissedAt,
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
+    } satisfies JobRecord;
+  };
+
+  const savePoolListing = async (listing: PublicJobPoolListing, analyze = false) => {
+    const existing = jobs.find((job) => job.sourceUrl === listing.canonicalUrl);
+    setSavingJobId(listing.id);
+    try {
+      const record = makePoolJobRecord(listing, existing);
+      const updated = { ...record, saved: analyze ? true : !record.saved };
+      await jobStore.put(updated);
+      setJobs((current) => {
+        const found = current.some((job) => job.id === updated.id);
+        return found ? current.map((job) => (job.id === updated.id ? updated : job)) : [updated, ...current];
+      });
+      if (analyze) {
+        router.push(`/match?job=${encodeURIComponent(updated.id)}`);
+        return;
+      }
+      notify(updated.saved ? "فرصت شغلی ذخیره شد" : "فرصت از ذخیره‌ها حذف شد");
+    } catch {
+      notify("ذخیره فرصت شغلی ناموفق بود.", "error");
     } finally {
       setSavingJobId("");
     }
@@ -161,7 +192,7 @@ export default function JobsPage() {
     <>
       <SectionTitle
         title="فرصت‌های شغلی"
-        description="فقط فرصت‌هایی نمایش داده می‌شوند که از یک آگهی واقعی وارد و تحلیل کرده‌ای."
+        description="آگهی‌های جدید Job Pool و فرصت‌های ذخیره‌شده یا تحلیل‌شدهٔ خودت را اینجا ببین."
         action={
           <button
             className={`${secondaryButton} relative ${filtersOpen ? "border-[#c5e0d5] bg-[#e9f5ef] text-[#0f7b62]" : ""}`}
@@ -183,20 +214,75 @@ export default function JobsPage() {
           </button>
         }
       />
+      <section className="mb-6 rounded-2xl border border-[#d9e8e0] bg-[#f8fcf9] p-4 sm:p-5">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="m-0 flex items-center gap-2 text-[13px] text-[#19312f]">پیشنهادهای امروز برای شما</h2>
+            <p className="mb-0 mt-1 text-[9px] text-[#71817d]">
+              آگهی‌های تازهٔ دریافت‌شده از منابع معتبر؛ ذخیره و تحلیل آن‌ها فقط در فضای کاری خودت انجام می‌شود.
+            </p>
+          </div>
+          {poolListings.data && (
+            <span className="rounded-lg bg-white px-2.5 py-1.5 text-[9px] font-bold text-[#0f7b62]">
+              {formatPersianNumber(poolListings.data.total)} آگهی فعال
+            </span>
+          )}
+        </div>
+        {poolListings.isLoading ? (
+          <JobCardsSkeleton count={3} />
+        ) : poolListings.isError ? (
+          <p className="m-0 rounded-xl bg-white p-4 text-[10px] text-[#a05b52]">
+            دریافت آگهی‌های جدید ناموفق بود. دوباره تلاش کن.
+          </p>
+        ) : poolListings.data?.items.length ? (
+          <>
+            <div className="grid grid-cols-1 gap-3 min-[700px]:grid-cols-2 min-[1121px]:grid-cols-3">
+              {poolListings.data.items.map((listing) => {
+                const savedJob = jobs.find((job) => job.sourceUrl === listing.canonicalUrl);
+                return (
+                  <JobPoolCard
+                    key={listing.id}
+                    listing={listing}
+                    saved={Boolean(savedJob?.saved)}
+                    saving={savingJobId === listing.id}
+                    onSave={() => void savePoolListing(listing)}
+                    onAnalyze={() => void savePoolListing(listing, true)}
+                  />
+                );
+              })}
+            </div>
+            <div className="mt-4 overflow-hidden rounded-xl border border-[#dce8e2] bg-white">
+              <TablePagination
+                page={poolListings.data.page}
+                pageSize={poolPageSize}
+                total={poolListings.data.total}
+                onPageChange={setPoolPage}
+                onPageSizeChange={(nextPageSize) => {
+                  setPoolPageSize(nextPageSize);
+                  setPoolPage(1);
+                }}
+                pageSizes={jobPoolPageSizes}
+              />
+            </div>
+          </>
+        ) : (
+          <p className="m-0 rounded-xl bg-white p-4 text-[10px] text-[#71817d]">
+            فعلاً آگهی فعالی در Job Pool وجود ندارد.
+          </p>
+        )}
+      </section>
       <div className="flex h-[57px] items-center gap-[10px] rounded-xl border border-[#e1e7e3] bg-white py-2 pl-2 pr-[11px] transition-colors focus-within:border-[#a9cfc0]">
         <Search size={19} />
         <input
           className="h-full flex-1 border-0 bg-transparent text-[12px] outline-0 placeholder:text-right"
           value={query}
-          onChange={(event) =>
-            void setUrlFilters({ query: event.target.value })
-          }
+          onChange={(event) => void setUrlFilters({ query: event.target.value }).then(() => setPoolPage(1))}
           aria-label="جست‌وجوی فرصت شغلی"
           placeholder="عنوان شغل، شرکت یا مهارت..."
         />
       </div>
       {filtersOpen && (
-        <div className="mt-3 rounded-xl border border-[#e1e7e3] bg-white p-4">
+        <div className="mt-3 rounded-xl border-0 bg-white p-4">
           <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#edf1ee] pb-3">
             <div className="flex items-center gap-2 text-[10px] font-bold text-[#304943]">
               <SlidersHorizontal size={16} className="text-[#0f7b62]" />
@@ -215,8 +301,7 @@ export default function JobsPage() {
           <div className="grid items-end gap-4 min-[860px]:grid-cols-[minmax(360px,520px)_260px]">
             <fieldset className="m-0 grid gap-2 border-0 p-0">
               <legend className="mb-2 flex items-center gap-1.5 text-[9px] font-semibold text-[#536562]">
-                <CalendarRange size={14} className="text-[#0f7b62]" /> بازه
-                تاریخ اپلای
+                <CalendarRange size={14} className="text-[#0f7b62]" /> بازه تاریخ اپلای
               </legend>
               <div className="grid grid-cols-2 gap-2 max-[560px]:grid-cols-1">
                 <label className="grid gap-1.5 text-[8px] text-[#7a8985]">
@@ -256,8 +341,8 @@ export default function JobsPage() {
       <div className="flex items-center justify-between py-5 max-[560px]:flex-col max-[560px]:items-start max-[560px]:gap-3">
         <strong className="text-[11px]">
           {loading
-            ? "در حال خواندن فرصت‌ها"
-            : `${formatPersianNumber(visibleJobs.length)} فرصت ذخیره‌شده`}
+            ? "در حال خواندن فرصت‌های شخصی"
+            : `${formatPersianNumber(visibleJobs.length)} آگهی تحلیل‌شده یا ذخیره‌شدهٔ من`}
         </strong>
         <div className="flex gap-1.5 overflow-x-auto">
           {categoryOptions.map((item) => (
@@ -297,11 +382,7 @@ export default function JobsPage() {
       ) : (
         <div className={emptyState}>
           <Search size={34} />
-          <h3>
-            {jobs.length
-              ? "فرصتی با این فیلتر پیدا نشد"
-              : "هنوز فرصت شغلی وارد نکرده‌ای"}
-          </h3>
+          <h3>{jobs.length ? "فرصتی با این فیلتر پیدا نشد" : "هنوز فرصت شغلی وارد نکرده‌ای"}</h3>
           <p>
             {jobs.length
               ? "عبارت جست‌وجو یا فیلترها را تغییر بده."

@@ -4,8 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "رادیکار؛ دستیار هوشمند مسیر شغلی",
     short_name: "رادیکار",
-    description:
-      "ساخت رزومه، تطبیق با آگهی شغلی، تمرین مصاحبه و مدیریت اپلای",
+    description: "ساخت رزومه، تطبیق با آگهی شغلی، تمرین مصاحبه و مدیریت اپلای",
     start_url: "/",
     display: "standalone",
     background_color: "#f6f7f2",

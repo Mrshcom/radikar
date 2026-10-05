@@ -11,10 +11,7 @@ type DatedApplication = JobIdentity & {
 };
 
 function normalizedPart(value: string) {
-  return value
-    .trim()
-    .toLocaleLowerCase("fa")
-    .replace(/\s+/g, " ");
+  return value.trim().toLocaleLowerCase("fa").replace(/\s+/g, " ");
 }
 
 function normalizedIdentity({ role, company }: JobIdentity) {
@@ -22,18 +19,11 @@ function normalizedIdentity({ role, company }: JobIdentity) {
 }
 
 function rangeBoundary(value: string, endOfDay: boolean) {
-  if (!value)
-    return endOfDay ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
-  return new Date(
-    `${value}T${endOfDay ? "23:59:59.999" : "00:00:00"}`,
-  ).getTime();
+  if (!value) return endOfDay ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+  return new Date(`${value}T${endOfDay ? "23:59:59.999" : "00:00:00"}`).getTime();
 }
 
-function isTimeInRange(
-  value: string | undefined,
-  fromTime: number,
-  toTime: number,
-) {
+function isTimeInRange(value: string | undefined, fromTime: number, toTime: number) {
   if (!value) return false;
   const time = new Date(value).getTime();
   return Number.isFinite(time) && time >= fromTime && time <= toTime;
@@ -52,12 +42,9 @@ export function hasJobActivityInDateRange(
 
   const hasMatchingApplication = applications.some(
     (application) =>
-      (Boolean(job.id && application.jobId === job.id) ||
-        normalizedIdentity(application) === identity) &&
+      (Boolean(job.id && application.jobId === job.id) || normalizedIdentity(application) === identity) &&
       isTimeInRange(application.appliedAt, fromTime, toTime),
   );
 
-  return (
-    hasMatchingApplication || isTimeInRange(job.createdAt, fromTime, toTime)
-  );
+  return hasMatchingApplication || isTimeInRange(job.createdAt, fromTime, toTime);
 }

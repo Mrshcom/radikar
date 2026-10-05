@@ -28,17 +28,13 @@ export class ApiError extends Error {
   }
 }
 
-const networkErrorMessage =
-  "ارتباط با سرویس برقرار نشد. لطفاً اتصال شبکه را بررسی و دوباره تلاش کنید.";
+const networkErrorMessage = "ارتباط با سرویس برقرار نشد. لطفاً اتصال شبکه را بررسی و دوباره تلاش کنید.";
 
 function notifyPlanUpgradeRequired(message: string) {
   if (typeof window === "undefined") return;
   pendingPlanUpgradeMessage = message;
   window.dispatchEvent(
-    new CustomEvent<PlanUpgradeRequiredEventDetail>(
-      PLAN_UPGRADE_REQUIRED_EVENT,
-      { detail: { message } },
-    ),
+    new CustomEvent<PlanUpgradeRequiredEventDetail>(PLAN_UPGRADE_REQUIRED_EVENT, { detail: { message } }),
   );
 }
 
@@ -74,10 +70,7 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   } catch (error) {
     throw new ApiError(
       response.status,
-      toPersianServiceErrorMessage(
-        error,
-        "پاسخ دریافتی از سرویس معتبر نبود. لطفاً دوباره تلاش کنید.",
-      ),
+      toPersianServiceErrorMessage(error, "پاسخ دریافتی از سرویس معتبر نبود. لطفاً دوباره تلاش کنید."),
     );
   }
 }

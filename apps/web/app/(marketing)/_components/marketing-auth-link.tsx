@@ -21,11 +21,7 @@ export function MarketingAuthLink({
 
   if (hideWhenAuthenticated && (isLoading || user)) return null;
 
-  const href = user
-    ? user.role === "user"
-      ? "/dashboard"
-      : "/admin"
-    : "/login";
+  const href = user ? (user.role === "user" ? "/dashboard" : "/admin") : "/login";
 
   return (
     <Link href={href} className={className}>

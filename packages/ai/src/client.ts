@@ -15,11 +15,7 @@ type ChatCompletionResponse = {
   };
   choices?: Array<{
     message?: {
-      content?:
-        | string
-        | Array<{ text?: string }>
-        | Record<string, unknown>
-        | null;
+      content?: string | Array<{ text?: string }> | Record<string, unknown> | null;
       reasoning_content?: string;
       tool_calls?: Array<{
         function?: {
@@ -84,15 +80,10 @@ const TRANSIENT_CONNECTION_CODES = new Set([
 function isTransientConnectionError(error: unknown) {
   if (!(error instanceof Error) || error.name === "AbortError") return false;
   const cause = error.cause;
-  const code =
-    cause && typeof cause === "object" && "code" in cause
-      ? String(cause.code)
-      : "";
+  const code = cause && typeof cause === "object" && "code" in cause ? String(cause.code) : "";
   return (
     TRANSIENT_CONNECTION_CODES.has(code) ||
-    /connect timeout|fetch failed|network request failed|socket disconnected/i.test(
-      error.message,
-    )
+    /connect timeout|fetch failed|network request failed|socket disconnected/i.test(error.message)
   );
 }
 
@@ -110,22 +101,15 @@ function usageEvent(
   const usage = payload?.usage;
   const hasProviderUsage = Boolean(
     usage &&
-      [
-        usage.prompt_tokens,
-        usage.completion_tokens,
-        usage.total_tokens,
-        usage.input_tokens,
-        usage.output_tokens,
-      ].some((value) => typeof value === "number" && Number.isFinite(value)),
+    [usage.prompt_tokens, usage.completion_tokens, usage.total_tokens, usage.input_tokens, usage.output_tokens].some(
+      (value) => typeof value === "number" && Number.isFinite(value),
+    ),
   );
   const inputTokens = hasProviderUsage
     ? Math.max(0, Math.round(usage?.prompt_tokens ?? usage?.input_tokens ?? 0))
     : estimatedTokens(messages.map((message) => message.content).join("\n"));
   const outputTokens = hasProviderUsage
-    ? Math.max(
-        0,
-        Math.round(usage?.completion_tokens ?? usage?.output_tokens ?? 0),
-      )
+    ? Math.max(0, Math.round(usage?.completion_tokens ?? usage?.output_tokens ?? 0))
     : estimatedTokens(rawResponse);
   const totalTokens = hasProviderUsage
     ? Math.max(0, Math.round(usage?.total_tokens ?? inputTokens + outputTokens))
@@ -141,18 +125,14 @@ function usageEvent(
     estimatedCostMicros: Math.max(
       0,
       Math.round(
-        inputTokens * (config.inputPricePerMillionUsd ?? 0) +
-          outputTokens * (config.outputPricePerMillionUsd ?? 0),
+        inputTokens * (config.inputPricePerMillionUsd ?? 0) + outputTokens * (config.outputPricePerMillionUsd ?? 0),
       ),
     ),
     ...details,
   };
 }
 
-async function reportUsage(
-  callback: ChatJsonOptions["onUsage"],
-  event: ModelUsageEvent,
-) {
+async function reportUsage(callback: ChatJsonOptions["onUsage"], event: ModelUsageEvent) {
   if (!callback) return;
   try {
     await callback(event);
@@ -189,25 +169,13 @@ function parseJsonCandidate<T>(value: unknown, depth = 0): T | undefined {
   }
   if (isJsonObject(value)) {
     if (Object.keys(value).length === 0) return undefined;
-    const wrapperValues = [
-      value.text,
-      value.content,
-      value.value,
-      value.json,
-      value.output_text,
-    ].filter((nested) => nested !== undefined);
+    const wrapperValues = [value.text, value.content, value.value, value.json, value.output_text].filter(
+      (nested) => nested !== undefined,
+    );
     const isContentWrapper =
       wrapperValues.length > 0 &&
       Object.keys(value).every((key) =>
-        [
-          "type",
-          "role",
-          "text",
-          "content",
-          "value",
-          "json",
-          "output_text",
-        ].includes(key),
+        ["type", "role", "text", "content", "value", "json", "output_text"].includes(key),
       );
     if (isContentWrapper) {
       for (const nested of wrapperValues) {
@@ -234,18 +202,14 @@ function parseJsonCandidate<T>(value: unknown, depth = 0): T | undefined {
   }
 }
 
-function findResponseJson<T>(
-  payload: ChatCompletionResponse | undefined,
-): T | undefined {
+function findResponseJson<T>(payload: ChatCompletionResponse | undefined): T | undefined {
   if (!payload) return undefined;
   const choice = payload.choices?.[0];
   const message = choice?.message;
   const candidates: unknown[] = [
     message?.content,
     message?.reasoning_content,
-    ...(message?.tool_calls?.map((toolCall) =>
-      toolCall.function?.arguments,
-    ) ?? []),
+    ...(message?.tool_calls?.map((toolCall) => toolCall.function?.arguments) ?? []),
     choice?.delta?.content,
     choice?.text,
     payload.content,
@@ -261,19 +225,13 @@ function findResponseJson<T>(
     if (parsed) return parsed;
     if (Array.isArray(candidate)) {
       for (const part of candidate) {
-        const nested = parseJsonCandidate<T>(
-          isJsonObject(part) ? (part.text ?? part.content) : part,
-        );
+        const nested = parseJsonCandidate<T>(isJsonObject(part) ? (part.text ?? part.content) : part);
         if (nested) return nested;
       }
     }
   }
 
-  if (
-    isJsonObject(payload) &&
-    !("choices" in payload) &&
-    !("error" in payload)
-  ) {
+  if (isJsonObject(payload) && !("choices" in payload) && !("error" in payload)) {
     return payload as T;
   }
   return undefined;
@@ -299,11 +257,7 @@ function parseEventStreamJson<T>(rawResponse: string): T | undefined {
     const complete = findResponseJson<T>(payload);
     if (complete) return complete;
     const choice = payload.choices?.[0];
-    for (const fragment of [
-      choice?.delta?.content,
-      choice?.message?.content,
-      choice?.message?.reasoning_content,
-    ]) {
+    for (const fragment of [choice?.delta?.content, choice?.message?.content, choice?.message?.reasoning_content]) {
       if (typeof fragment === "string") fragments.push(fragment);
     }
   }
@@ -320,18 +274,11 @@ export function parseLlmJsonResponse<T>(rawResponse: string): T | undefined {
   }
 
   const directJson =
-    !payload ||
-    (isJsonObject(payload) &&
-      !("choices" in payload) &&
-      !("error" in payload))
+    !payload || (isJsonObject(payload) && !("choices" in payload) && !("error" in payload))
       ? parseJsonCandidate<T>(rawResponse)
       : undefined;
 
-  return (
-    findResponseJson<T>(payload) ??
-    parseEventStreamJson<T>(rawResponse) ??
-    directJson
-  );
+  return findResponseJson<T>(payload) ?? parseEventStreamJson<T>(rawResponse) ?? directJson;
 }
 
 export async function chatJson<T>(
@@ -348,10 +295,7 @@ export async function chatJson<T>(
     MAX_EMPTY_RESPONSE_ATTEMPTS,
     Math.max(1, Math.round(options.maxAttempts ?? MAX_EMPTY_RESPONSE_ATTEMPTS)),
   );
-  const timeoutMs = Math.max(
-    1_000,
-    Math.round(options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS),
-  );
+  const timeoutMs = Math.max(1_000, Math.round(options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS));
   const retryDelayMs = Math.max(0, Math.round(options.retryDelayMs ?? 0));
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     const fallbackModels = options.emptyResponseFallbackModels?.filter(Boolean) ?? [];
@@ -385,16 +329,11 @@ export async function chatJson<T>(
                   temperature: 0.2,
                   stream: false,
                   user: `radikar-json-${requestId}-${attempt}`,
-                  ...(options.maxOutputTokens
-                    ? { max_tokens: Math.max(1, Math.round(options.maxOutputTokens)) }
-                    : {}),
+                  ...(options.maxOutputTokens ? { max_tokens: Math.max(1, Math.round(options.maxOutputTokens)) } : {}),
                 }),
           }),
           signal: options.signal
-            ? AbortSignal.any([
-                options.signal,
-                AbortSignal.timeout(timeoutMs),
-              ])
+            ? AbortSignal.any([options.signal, AbortSignal.timeout(timeoutMs)])
             : AbortSignal.timeout(timeoutMs),
         },
       );
@@ -409,15 +348,10 @@ export async function chatJson<T>(
         }),
       );
       if (error instanceof Error && error.name === "TimeoutError") {
-        throw new Error(
-          "زمان پاسخ‌گویی مدل بیش از حد مجاز شد. لطفاً دوباره تلاش کن.",
-        );
+        throw new Error("زمان پاسخ‌گویی مدل بیش از حد مجاز شد. لطفاً دوباره تلاش کن.");
       }
       if (attempt < maxAttempts && isTransientConnectionError(error)) {
-        if (retryDelayMs)
-          await new Promise((resolve) =>
-            setTimeout(resolve, retryDelayMs * attempt),
-          );
+        if (retryDelayMs) await new Promise((resolve) => setTimeout(resolve, retryDelayMs * attempt));
         continue;
       }
       throw error;
@@ -441,10 +375,7 @@ export async function chatJson<T>(
           attempt,
         }),
       );
-      throw new Error(
-        payload?.error?.message ||
-          `ارتباط با مدل با خطای ${response.status} روبه‌رو شد.`,
-      );
+      throw new Error(payload?.error?.message || `ارتباط با مدل با خطای ${response.status} روبه‌رو شد.`);
     }
 
     const parsed = parseLlmJsonResponse<T>(rawResponse);
@@ -468,17 +399,11 @@ export async function chatJson<T>(
       rawLength: rawResponse.length,
       topLevelKeys: payload && isJsonObject(payload) ? Object.keys(payload) : [],
       choiceCount: payload?.choices?.length ?? 0,
-      messageContentType: Array.isArray(messageContent)
-        ? "array"
-        : typeof messageContent,
-      messageContentLength:
-        typeof messageContent === "string" ? messageContent.length : 0,
+      messageContentType: Array.isArray(messageContent) ? "array" : typeof messageContent,
+      messageContentLength: typeof messageContent === "string" ? messageContent.length : 0,
       finishReason: choice?.finish_reason || "",
     });
   }
 
-  throw new Error(
-    options.emptyResponseMessage ||
-      "مدل پاسخی برای استخراج اطلاعات نداد. لطفاً دوباره تلاش کن.",
-  );
+  throw new Error(options.emptyResponseMessage || "مدل پاسخی برای استخراج اطلاعات نداد. لطفاً دوباره تلاش کن.");
 }

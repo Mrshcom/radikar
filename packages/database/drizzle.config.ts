@@ -5,7 +5,6 @@ export default defineConfig({
   schema: "./src/schema.ts",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ??
-      "postgresql://radikar:radikar@localhost:5433/radikar",
+    url: process.env.DATABASE_URL ?? "postgresql://radikar:radikar@localhost:5433/radikar",
   },
 });

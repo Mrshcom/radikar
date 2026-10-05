@@ -9,14 +9,10 @@ export type ServerAuthUser = {
 
 export async function getServerAuthUser(): Promise<ServerAuthUser | null> {
   const cookieStore = await cookies();
-  const hasSessionCookie =
-    cookieStore.has("radikar_session") ||
-    cookieStore.has("__Host-radikar_session");
+  const hasSessionCookie = cookieStore.has("radikar_session") || cookieStore.has("__Host-radikar_session");
   if (!hasSessionCookie) return null;
 
-  const apiOrigin = (
-    process.env.API_PROXY_ORIGIN ?? process.env.NEXT_PUBLIC_API_BASE_URL
-  )?.replace(/\/+$/, "");
+  const apiOrigin = (process.env.API_PROXY_ORIGIN ?? process.env.NEXT_PUBLIC_API_BASE_URL)?.replace(/\/+$/, "");
   if (!apiOrigin) return null;
 
   try {

@@ -1,8 +1,4 @@
-export type ProviderName =
-  | "freeDeepseekAPI"
-  | "openai-compatible"
-  | "local"
-  | "gapgpt";
+export type ProviderName = "freeDeepseekAPI" | "openai-compatible" | "local" | "gapgpt";
 
 export type ProviderConfig = {
   provider: ProviderName;
@@ -51,48 +47,32 @@ function getEnv(prefix: "LLM" | "LLM_WRITE", key: string) {
   return process.env[`${prefix}_${key}`] ?? process.env[`LLM_${key}`] ?? "";
 }
 
-function getNonNegativeNumber(
-  prefix: "LLM" | "LLM_WRITE",
-  key: string,
-) {
+function getNonNegativeNumber(prefix: "LLM" | "LLM_WRITE", key: string) {
   const value = Number(getEnv(prefix, key));
   return Number.isFinite(value) && value >= 0 ? value : 0;
 }
 
-function buildFreeDeepseekAPIConfig(
-  prefix: "LLM" | "LLM_WRITE",
-): ProviderConfig {
+function buildFreeDeepseekAPIConfig(prefix: "LLM" | "LLM_WRITE"): ProviderConfig {
   const port = process.env.FREE_DEEPSEEK_PORT ?? "9655";
 
   return {
     provider: "freeDeepseekAPI",
     model: getEnv(prefix, "MODEL") || "deepseek-chat",
     apiKey: "localproxy",
-    baseUrl:
-      process.env.FREE_DEEPSEEK_BASE_URL ??
-      `http://localhost:${port}/v1`,
+    baseUrl: process.env.FREE_DEEPSEEK_BASE_URL ?? `http://localhost:${port}/v1`,
     inputPricePerMillionUsd: 0,
     outputPricePerMillionUsd: 0,
   };
 }
 
-function buildOpenAICompatibleConfig(
-  prefix: "LLM" | "LLM_WRITE",
-): ProviderConfig {
+function buildOpenAICompatibleConfig(prefix: "LLM" | "LLM_WRITE"): ProviderConfig {
   return {
-    provider: (getEnv(prefix, "PROVIDER") ||
-      "openai-compatible") as ProviderName,
+    provider: (getEnv(prefix, "PROVIDER") || "openai-compatible") as ProviderName,
     model: getEnv(prefix, "MODEL"),
     apiKey: getEnv(prefix, "API_KEY"),
     baseUrl: getEnv(prefix, "BASE_URL"),
-    inputPricePerMillionUsd: getNonNegativeNumber(
-      prefix,
-      "INPUT_PRICE_PER_MILLION_USD",
-    ),
-    outputPricePerMillionUsd: getNonNegativeNumber(
-      prefix,
-      "OUTPUT_PRICE_PER_MILLION_USD",
-    ),
+    inputPricePerMillionUsd: getNonNegativeNumber(prefix, "INPUT_PRICE_PER_MILLION_USD"),
+    outputPricePerMillionUsd: getNonNegativeNumber(prefix, "OUTPUT_PRICE_PER_MILLION_USD"),
   };
 }
 
@@ -124,8 +104,7 @@ export function setAnalyzeProvider(provider: ProviderName, model?: string) {
 }
 
 export function getAnalyzeConfig(): ProviderConfig {
-  const provider =
-    analyzeProviderOverride?.provider ?? process.env.LLM_PROVIDER ?? "gapgpt";
+  const provider = analyzeProviderOverride?.provider ?? process.env.LLM_PROVIDER ?? "gapgpt";
 
   switch (provider) {
     case "freeDeepseekAPI":
@@ -144,8 +123,7 @@ export function getAnalyzeConfig(): ProviderConfig {
 }
 
 export function getWriteConfig(): ProviderConfig {
-  const provider =
-    process.env.LLM_WRITE_PROVIDER ?? process.env.LLM_PROVIDER ?? "gapgpt";
+  const provider = process.env.LLM_WRITE_PROVIDER ?? process.env.LLM_PROVIDER ?? "gapgpt";
 
   switch (provider) {
     case "freeDeepseekAPI":
@@ -156,8 +134,6 @@ export function getWriteConfig(): ProviderConfig {
     case "gapgpt":
       return buildGapGptConfig(process.env.LLM_WRITE_MODEL);
     default:
-      throw new Error(
-        `Unknown LLM write provider: ${provider || "not configured"}`,
-      );
+      throw new Error(`Unknown LLM write provider: ${provider || "not configured"}`);
   }
 }

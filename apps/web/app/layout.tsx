@@ -39,16 +39,15 @@ export const viewport: Viewport = {
   colorScheme: "light",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html className="scroll-smooth bg-[#f6f7f2] motion-reduce:scroll-auto" lang="fa" dir="rtl" data-scroll-behavior="smooth">
-      <body
-        className="m-0 bg-[#f6f7f2] font-sans text-[#19312f]"
-      >
-        {children}
-      </body>
+    <html
+      className="scroll-smooth bg-[#f6f7f2] motion-reduce:scroll-auto"
+      lang="fa"
+      dir="rtl"
+      data-scroll-behavior="smooth"
+    >
+      <body className="m-0 bg-[#f6f7f2] font-sans text-[#19312f]">{children}</body>
     </html>
   );
 }

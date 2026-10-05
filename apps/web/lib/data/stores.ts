@@ -17,9 +17,9 @@ import { getDataRepository } from "./repository";
 export const DEFAULT_PROFILE_ID = "profile-default";
 const ACTIVE_PROFILE_STATE_ID = "active-profile";
 
-function createUnscopedStore<
-  T extends { id: string; createdAt: string; updatedAt: string },
->(collection: DataCollection) {
+function createUnscopedStore<T extends { id: string; createdAt: string; updatedAt: string }>(
+  collection: DataCollection,
+) {
   return {
     async list() {
       const records = await getDataRepository().list<T>(collection);
@@ -40,16 +40,11 @@ function createUnscopedStore<
   };
 }
 
-export const appProfileStore =
-  createUnscopedStore<AppProfileRecord>("appProfiles");
-const workspaceStateStore =
-  createUnscopedStore<WorkspaceStateRecord>("workspaceState");
+export const appProfileStore = createUnscopedStore<AppProfileRecord>("appProfiles");
+const workspaceStateStore = createUnscopedStore<WorkspaceStateRecord>("workspaceState");
 
 export async function getActiveProfileId() {
-  return (
-    (await workspaceStateStore.get(ACTIVE_PROFILE_STATE_ID))?.activeProfileId ??
-    DEFAULT_PROFILE_ID
-  );
+  return (await workspaceStateStore.get(ACTIVE_PROFILE_STATE_ID))?.activeProfileId ?? DEFAULT_PROFILE_ID;
 }
 
 export async function setActiveProfileId(activeProfileId: string) {
@@ -71,14 +66,10 @@ export async function ensureDefaultAppProfile() {
       const legacyUserName = profile.fullName?.trim();
       const hasLegacyDefaultName =
         profile.id === DEFAULT_PROFILE_ID &&
-        (!currentName ||
-          currentName === "فضای کاری اصلی" ||
-          currentName === legacyUserName);
+        (!currentName || currentName === "فضای کاری اصلی" || currentName === legacyUserName);
       const normalizedProfile = {
         ...profile,
-        workspaceName: hasLegacyDefaultName
-          ? "فضای کاری شخصی"
-          : currentName || "فضای کاری شخصی",
+        workspaceName: hasLegacyDefaultName ? "فضای کاری شخصی" : currentName || "فضای کاری شخصی",
       };
       delete normalizedProfile.fullName;
       delete normalizedProfile.targetTitle;
@@ -126,13 +117,9 @@ export async function removeWorkspace(profileId: string) {
     SCOPED_COLLECTIONS.map(async (collection) => {
       const records = await repository.list<BaseRecord>(collection);
       const ownedRecords = records.filter(
-        (record) =>
-          record.profileId === profileId ||
-          (!record.profileId && profileId === DEFAULT_PROFILE_ID),
+        (record) => record.profileId === profileId || (!record.profileId && profileId === DEFAULT_PROFILE_ID),
       );
-      await Promise.all(
-        ownedRecords.map((record) => repository.remove(collection, record.id)),
-      );
+      await Promise.all(ownedRecords.map((record) => repository.remove(collection, record.id)));
     }),
   );
   await appProfileStore.remove(profileId);
@@ -148,26 +135,15 @@ function createStore<
 >(collection: DataCollection) {
   return {
     async list() {
-      const [records, profileId] = await Promise.all([
-        getDataRepository().list<T>(collection),
-        getActiveProfileId(),
-      ]);
+      const [records, profileId] = await Promise.all([getDataRepository().list<T>(collection), getActiveProfileId()]);
       return records
-        .filter(
-          (record) =>
-            record.profileId === profileId ||
-            (!record.profileId && profileId === DEFAULT_PROFILE_ID),
-        )
+        .filter((record) => record.profileId === profileId || (!record.profileId && profileId === DEFAULT_PROFILE_ID))
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     },
     async get(id: string) {
       const profileId = await getActiveProfileId();
       const record = await getDataRepository().get<T>(collection, id);
-      if (
-        record &&
-        (record.profileId === profileId ||
-          (!record.profileId && profileId === DEFAULT_PROFILE_ID))
-      )
+      if (record && (record.profileId === profileId || (!record.profileId && profileId === DEFAULT_PROFILE_ID)))
         return record;
       if (profileId === DEFAULT_PROFILE_ID && id === DEFAULT_PROFILE_ID) {
         return getDataRepository().get<T>(collection, "current-user");
@@ -184,11 +160,7 @@ function createStore<
     },
     async clear() {
       const records = await this.list();
-      await Promise.all(
-        records.map((record) =>
-          getDataRepository().remove(collection, record.id),
-        ),
-      );
+      await Promise.all(records.map((record) => getDataRepository().remove(collection, record.id)));
     },
   };
 }
@@ -202,17 +174,13 @@ export function createRecordId(prefix: string) {
 }
 
 export const userProfileStore = createStore<UserProfileRecord>("userProfiles");
-export const knowledgeProfileStore =
-  createStore<KnowledgeProfileRecord>("knowledgeProfiles");
+export const knowledgeProfileStore = createStore<KnowledgeProfileRecord>("knowledgeProfiles");
 export const resumeStore = createStore<ResumeRecord>("resumes");
 export const jobStore = createStore<JobRecord>("jobs");
 export const applicationStore = createStore<ApplicationRecord>("applications");
-export const interviewSessionStore =
-  createStore<InterviewSessionRecord>("interviewSessions");
-export const matchAnalysisStore =
-  createStore<MatchAnalysisRecord>("matchAnalyses");
-export const dashboardSnapshotStore =
-  createStore<DashboardSnapshotRecord>("dashboardSnapshots");
+export const interviewSessionStore = createStore<InterviewSessionRecord>("interviewSessions");
+export const matchAnalysisStore = createStore<MatchAnalysisRecord>("matchAnalyses");
+export const dashboardSnapshotStore = createStore<DashboardSnapshotRecord>("dashboardSnapshots");
 
 export async function getLatestResume() {
   return (await resumeStore.list())[0];

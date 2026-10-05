@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 
@@ -82,9 +74,7 @@ function ModelTaskStateProvider({ children }: { children: ReactNode }) {
   const runModelTask = useCallback(
     async <TResult,>(input: RunModelTaskInput<TResult>) => {
       if (runningCountRef.current >= 2)
-        throw new Error(
-          "دو درخواست مدل در حال انجام است؛ منتظر بمان تا یکی از آن‌ها تمام شود.",
-        );
+        throw new Error("دو درخواست مدل در حال انجام است؛ منتظر بمان تا یکی از آن‌ها تمام شود.");
       runningCountRef.current += 1;
       const id = createTaskId();
       const controller = new AbortController();
@@ -103,9 +93,7 @@ function ModelTaskStateProvider({ children }: { children: ReactNode }) {
       setTasks((current) => [task, ...current]);
 
       try {
-        const result = (await mutateAsync(() =>
-          input.run(controller.signal),
-        )) as TResult;
+        const result = (await mutateAsync(() => input.run(controller.signal))) as TResult;
         setTasks((current) =>
           current.map((item) =>
             item.id === id
@@ -133,14 +121,9 @@ function ModelTaskStateProvider({ children }: { children: ReactNode }) {
           );
           throw new ModelTaskCanceledError();
         }
-        const message =
-          error instanceof Error ? error.message : "عملیات مدل ناموفق بود.";
+        const message = error instanceof Error ? error.message : "عملیات مدل ناموفق بود.";
         setTasks((current) =>
-          current.map((item) =>
-            item.id === id
-              ? { ...item, status: "error", error: message }
-              : item,
-          ),
+          current.map((item) => (item.id === id ? { ...item, status: "error", error: message } : item)),
         );
         throw error;
       } finally {
@@ -152,13 +135,11 @@ function ModelTaskStateProvider({ children }: { children: ReactNode }) {
   );
 
   const isRunning = useCallback(
-    (key: string) =>
-      tasks.some((task) => task.key === key && task.status === "running"),
+    (key: string) => tasks.some((task) => task.key === key && task.status === "running"),
     [tasks],
   );
   const dismissTask = useCallback(
-    (taskId: string) =>
-      setTasks((current) => current.filter((task) => task.id !== taskId)),
+    (taskId: string) => setTasks((current) => current.filter((task) => task.id !== taskId)),
     [],
   );
   const cancelTask = useCallback((taskId: string) => {
@@ -196,11 +177,7 @@ function ModelTaskStateProvider({ children }: { children: ReactNode }) {
     [cancelTask, dismissTask, isRunning, openTask, runModelTask, tasks],
   );
 
-  return (
-    <ModelTaskContext.Provider value={value}>
-      {children}
-    </ModelTaskContext.Provider>
-  );
+  return <ModelTaskContext.Provider value={value}>{children}</ModelTaskContext.Provider>;
 }
 
 export function ModelTaskProvider({ children }: { children: ReactNode }) {
@@ -209,7 +186,6 @@ export function ModelTaskProvider({ children }: { children: ReactNode }) {
 
 export function useModelTasks() {
   const context = useContext(ModelTaskContext);
-  if (!context)
-    throw new Error("useModelTasks must be used inside ModelTaskProvider");
+  if (!context) throw new Error("useModelTasks must be used inside ModelTaskProvider");
   return context;
 }

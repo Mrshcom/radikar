@@ -27,8 +27,7 @@ export function Modal({
   showCloseButton?: boolean;
 }) {
   useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) =>
-      event.key === "Escape" && onClose();
+    const closeOnEscape = (event: KeyboardEvent) => event.key === "Escape" && onClose();
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onClose]);
@@ -40,32 +39,22 @@ export function Modal({
       onMouseDown={onClose}
     >
       <section
-        className={`${document ? "w-[min(804px,calc(100vw-32px))] max-w-[804px] pb-0" : wide ? "w-[min(1440px,calc(100vw-32px))] max-w-[1440px] pb-0" : "w-[min(520px,100%)]"} max-h-[calc(100dvh-40px)] cursor-default overflow-y-auto overscroll-contain rounded-[19px] border border-white/65 bg-white p-[22px] text-[12px] shadow-[0_26px_80px_rgba(10,38,33,.25)] [-webkit-overflow-scrolling:touch] max-[560px]:max-h-[calc(100dvh-20px)] max-[560px]:rounded-[15px] max-[560px]:p-[17px]`}
+        className={`${document ? "w-[min(804px,calc(100vw-32px))] max-w-[804px]" : wide ? "w-[min(1440px,calc(100vw-32px))] max-w-[1440px]" : "w-[min(520px,100%)]"} max-h-[calc(100dvh-40px)] cursor-default overflow-y-auto overscroll-contain rounded-[19px] border border-white/65 bg-white p-[22px] pb-8 text-[12px] shadow-[0_26px_80px_rgba(10,38,33,.25)] [-webkit-overflow-scrolling:touch] max-[560px]:max-h-[calc(100dvh-20px)] max-[560px]:rounded-[15px] max-[560px]:p-[17px] max-[560px]:pb-6`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <header
-          className={`flex flex-wrap items-center gap-3 ${headerClassName || ""}`}
-        >
+        <header className={`flex flex-wrap items-center gap-3 ${headerClassName || ""}`}>
           <div className="min-w-0 flex-1">
-            <h2
-              className={`mb-[7px] mt-0 text-[20px] leading-[1.5] max-[560px]:text-[16px] ${titleClassName || ""}`}
-            >
+            <h2 className={`mb-[5px] mt-0 text-[18px] leading-[1.5] max-[560px]:text-[16px] ${titleClassName || ""}`}>
               {title}
             </h2>
             {description && (
-              <p className="m-0 text-[12px] leading-[1.9] text-[#657672] max-[560px]:text-[10px]">
-                {description}
-              </p>
+              <p className="m-0 text-[11px] leading-[1.9] text-[#657672] max-[560px]:text-[10px]">{description}</p>
             )}
           </div>
-          {headerActions && (
-            <div className="flex flex-wrap items-center gap-2">
-              {headerActions}
-            </div>
-          )}
+          {headerActions && <div className="flex flex-wrap items-center gap-2">{headerActions}</div>}
           {showCloseButton && (
             <button
               className="grid size-9 shrink-0 place-items-center rounded-full border border-[#dfe5df] bg-white p-0 text-[#7d8b88] transition-colors hover:bg-[#f4f7f5] hover:text-[#19312f]"
@@ -118,6 +107,7 @@ export function ConfirmActionModal({
   tone = "primary",
   showCloseButton = true,
   pending = false,
+  children,
   onCancel,
   onConfirm,
 }: {
@@ -128,6 +118,7 @@ export function ConfirmActionModal({
   tone?: "primary" | "danger";
   showCloseButton?: boolean;
   pending?: boolean;
+  children?: ReactNode;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -138,6 +129,7 @@ export function ConfirmActionModal({
       onClose={() => !pending && onCancel()}
       showCloseButton={showCloseButton}
     >
+      {children ? <div className="mt-5">{children}</div> : null}
       <div className="mt-5 flex flex-wrap justify-end gap-2">
         <button
           className="inline-flex min-h-10 items-center justify-center rounded-[10px] border border-[#dfe5df] bg-white px-4 text-[12px] font-bold text-[#526461] hover:bg-[#f7f9f7] disabled:opacity-50"
@@ -153,11 +145,7 @@ export function ConfirmActionModal({
           type="button"
           onClick={onConfirm}
         >
-          {pending ? (
-            <LoaderCircle className="animate-spin" size={15} />
-          ) : (
-            confirmIcon
-          )}
+          {pending ? <LoaderCircle className="animate-spin" size={15} /> : confirmIcon}
           {confirmLabel}
         </button>
       </div>
@@ -166,34 +154,23 @@ export function ConfirmActionModal({
 }
 
 export function SectionTitle({
-  eyebrow,
   title,
   description,
   action,
+  className,
 }: {
-  eyebrow?: string;
   title: string;
-  description?: string;
+  description: string;
   action?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="mb-[27px] flex min-h-16 items-start justify-between gap-5 max-[560px]:block">
+    <div className={`mb-8 flex items-start justify-between gap-5 max-[560px]:block ${className || ""}`}>
       <div>
-        {eyebrow && (
-          <span className="text-[10px] text-[#9aa5a2]">{eyebrow}</span>
-        )}
-        <h1 className="mb-[7px] mt-[3px] text-[clamp(19px,2.2vw,27px)] leading-[1.35] tracking-[-.9px]">
-          {title}
-        </h1>
-        {description && (
-          <p className="m-0 text-xs text-[#758582]">{description}</p>
-        )}
+        <h1 className="m-0 text-[30px] font-black leading-[1.4] tracking-[-1px] text-[#19312f]">{title}</h1>
+        <p className="m-0 mt-1 text-[12px] leading-7 text-[#758582]">{description}</p>
       </div>
-      {action && (
-        <div className="max-[560px]:mt-4 max-[560px]:w-full">
-          {action}
-        </div>
-      )}
+      {action && <div className="max-[560px]:mt-4 max-[560px]:w-full">{action}</div>}
     </div>
   );
 }

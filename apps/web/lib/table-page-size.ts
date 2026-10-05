@@ -2,21 +2,11 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useQueryStates } from "nuqs";
-import {
-  authQueryKey,
-  useAuth,
-  type CurrentUser,
-} from "@/app/_components/auth";
+import { authQueryKey, useAuth, type CurrentUser } from "@/app/_components/auth";
 import { apiRequest } from "@/lib/api-client";
-import {
-  tablePaginationParsers,
-  type TablePageSize,
-} from "@/lib/table-pagination-search-params";
+import { tablePaginationParsers, type TablePageSize } from "@/lib/table-pagination-search-params";
 
-export {
-  tablePageSizes,
-  type TablePageSize,
-} from "@/lib/table-pagination-search-params";
+export { tablePageSizes, type TablePageSize } from "@/lib/table-pagination-search-params";
 
 type AuthResponse = { user: CurrentUser };
 

@@ -1,6 +1,5 @@
 /** Shared visual tokens for panel pages. Keep page-specific layout classes local. */
-export const panelSurface =
-  "rounded-[17px] border border-[#e7ebe6] bg-white shadow-[0_12px_36px_rgba(27,55,50,.055)]";
+export const panelSurface = "rounded-[17px] border border-[#e7ebe6] bg-white shadow-[0_12px_36px_rgba(27,55,50,.055)]";
 export const panelSurfacePadded = `${panelSurface} p-[22px]`;
 export const primaryAction =
   "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] bg-[#0f7b62] px-[15px] text-[11px] font-bold whitespace-nowrap text-white shadow-[0_7px_17px_rgba(15,123,98,.17)] transition-colors duration-200 hover:bg-[#0b6954] disabled:cursor-not-allowed disabled:opacity-45";

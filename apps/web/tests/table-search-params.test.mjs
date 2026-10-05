@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import {
-  createTableFilterParser,
-  modelUsageDaysParser,
-  tableSearchParser,
-} from "../lib/table-search-params.ts";
+import { createTableFilterParser, modelUsageDaysParser, tableSearchParser } from "../lib/table-search-params.ts";
 import { tablePaginationParsers } from "../lib/table-pagination-search-params.ts";
 
 test("table URL parsers validate pagination and page size", () => {
