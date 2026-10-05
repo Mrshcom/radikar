@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -46,10 +47,13 @@ vi.mock("@/lib/data/stores", () => ({
 import { PanelShell } from "./panel-shell";
 
 function renderShell() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(
-    <PanelShell>
-      <main>محتوای صفحه</main>
-    </PanelShell>,
+    <QueryClientProvider client={queryClient}>
+      <PanelShell>
+        <main>محتوای صفحه</main>
+      </PanelShell>
+    </QueryClientProvider>,
   );
 }
 

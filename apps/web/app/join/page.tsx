@@ -7,12 +7,10 @@ import { useEffect, useState } from "react";
 import { recordReferralVisit } from "@/lib/referrals";
 
 export default function JoinPage() {
-  const [referralCode, setReferralCode] = useState("");
-
-  useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get("ref")?.trim().toUpperCase() || "";
-    setReferralCode(code);
-  }, []);
+  const [referralCode] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("ref")?.trim().toUpperCase() || "";
+  });
 
   useEffect(() => {
     if (!/^R[A-Z0-9]{8}$/.test(referralCode)) return;

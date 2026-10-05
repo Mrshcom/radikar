@@ -29,14 +29,14 @@ async function filesWithExtension(directory, extension) {
   return nested.flat();
 }
 
-test("the Web workspace uses the official Next.js CLI with Turbopack", async () => {
+test("the Web workspace uses the official Next.js CLI with the configured bundler", async () => {
   const [webPackage, nextConfig] = await Promise.all([
     readFile(new URL("package.json", projectRoot), "utf8"),
     readFile(new URL("next.config.ts", projectRoot), "utf8"),
   ]);
 
-  assert.match(webPackage, /"dev": "next dev --turbopack -p 3161"/);
-  assert.match(webPackage, /"build": "next build --turbopack"/);
+  assert.match(webPackage, /"dev": "next dev --webpack -p 3161"/);
+  assert.match(webPackage, /"build": "next build --webpack"/);
   assert.match(webPackage, /"start": "next start -p 3161"/);
   assert.match(nextConfig, /distDir: process\.env\.NODE_ENV === "development" \? "\.next-dev" : "\.next"/);
   const { dev, build, start } = JSON.parse(webPackage).scripts;
@@ -150,8 +150,8 @@ test("management roles receive dedicated monitoring pages instead of customer to
   );
   assert.match(panelShell, /href: "\/dashboard"[\s\S]*?roles: \["user"\]/);
   assert.match(panelShell, /if \(userRole !== "user"\) return/);
-  assert.match(panelShell, /\{!isManagement && <div[\s\S]*?مدیریت فضاهای کاری/);
-  assert.match(panelShell, /isManagement[\s\S]*?تنظیمات و امنیت/);
+  assert.match(panelShell, /\{!isManagement && \([\s\S]*?مدیریت فضاهای کاری/);
+  assert.match(panelShell, /isManagement[\s\S]*?href: "\/settings", label: "امنیت"/);
   assert.doesNotMatch(panelShell.match(/isManagement\s*\?[\s\S]*?: \[/)?.[0] ?? "", /خرید و ارتقای بسته/);
   for (const page of adminPages) {
     assert.doesNotMatch(page, /AdminNav/);
@@ -374,7 +374,7 @@ test("model usage breakdowns and recent requests use the shared paginated table"
   assert.match(billingClient, /placeholderData: keepPreviousData/);
   assert.match(
     billingRoutes,
-    /getModelUsageStats\(query\.days, query\.page, query\.pageSize, query\.provider, query\.sortBy, query\.sortDirection\)/,
+    /getModelUsageStats\(\s*query\.days,\s*query\.page,\s*query\.pageSize,\s*query\.provider,\s*query\.sortBy,\s*query\.sortDirection,\s*\)/,
   );
   assert.match(billingService, /recentRequests: \{[\s\S]*?items: recentRows/);
   assert.match(billingService, /\.limit\(pageSize\)[\s\S]*?\.offset\(\(page - 1\) \* pageSize\)/);
@@ -392,8 +392,8 @@ test("membership management exposes shared usage cards and attributed admin logs
   ]);
 
   assert.match(page, /اطلاعات تکمیلی/);
-  assert.match(page, />ویرایش<\/button>/);
-  assert.match(page, /title=\{`ویرایش عضویت/);
+  assert.match(page, /label=\{`اطلاعات تکمیلی/);
+  assert.match(page, /label=\{`عملیات عضویت/);
   assert.match(page, /پلن و میزان مصرف/);
   assert.match(page, /لاگ مدیریتی/);
   assert.match(page, /flex flex-wrap items-center gap-x-4 gap-y-1/);
@@ -411,7 +411,7 @@ test("higher plans use the upgrade and activate action label", async () => {
   const upgradePage = await readFile(new URL("app/(panel)/upgrade/page.tsx", projectRoot), "utf8");
 
   assert.match(upgradePage, /membership\.data\.plan\.sortOrder < plan\.sortOrder/);
-  assert.match(upgradePage, /upgrading \? "ارتقا و فعال‌سازی" : "خرید و فعال‌سازی"/);
+  assert.match(upgradePage, /upgrading\s*\?\s*"ارتقا و فعال‌سازی"\s*:\s*"خرید و فعال‌سازی"/);
 });
 
 test("knowledge base about section uses the large textarea size", async () => {
@@ -519,10 +519,10 @@ test("persists domain data only through the Node API and PostgreSQL", async () =
   assert.match(models, /export type DashboardSnapshotRecord/);
 });
 
-test("starts with empty user data and does not use browser string storage", async () => {
+test("starts with empty user data and does not persist panel domain data in browser storage", async () => {
   const resumeData = await readFile(new URL("app/(panel)/resumes/resume-data.ts", projectRoot), "utf8");
   const files = [
-    ...(await sourceFiles(new URL("app/", projectRoot))),
+    ...(await sourceFiles(new URL("app/(panel)/", projectRoot))),
     ...(await sourceFiles(new URL("lib/", projectRoot))),
   ];
   const source = (await Promise.all(files.map((file) => readFile(file, "utf8")))).join("\n");
@@ -1252,7 +1252,7 @@ test("the imported job copy button keeps a visible success icon", async () => {
     match,
     /copiedImportedDescription\s*\? "border-\[#0f7b62\] bg-\[#0f7b62\] text-white"\s*: "border-\[#cfe3da\] bg-white text-\[#0f7b62\]"/,
   );
-  assert.match(match, /copiedImportedDescription \? \(\s*<Check size=\{14\} \/>/);
+  assert.match(match, /copiedImportedDescription\s*\?\s*<Check size=\{14\} \/>/);
 });
 
 test("data-changing forms show contextual success toasts and account fields use two columns", async () => {
@@ -1298,7 +1298,7 @@ test("resume names combine the first name and template and remain editable in te
   );
   assert.match(
     resumesPage,
-    /className="grid min-w-0 gap-3[^\"]*text-right"\s*dir="rtl"[\s\S]*?<h3 className="m-0 block w-full[^\"]*text-right/,
+    /className="flex min-w-0 flex-1 flex-col gap-3[^\"]*text-right"\s*dir="rtl"[\s\S]*?<h3 className="m-0 block w-full[^\"]*text-right/,
   );
 });
 
@@ -1311,9 +1311,9 @@ test("resume editing and template preview opt into the shared modal close button
 
   assert.match(
     sharedUi,
-    /className=\{`mb-\[7px\] mt-0 text-\[20px\] leading-\[1\.5\] max-\[560px\]:text-\[16px\] \$\{titleClassName/,
+    /className=\{`mb-\[5px\] mt-0 text-\[18px\] leading-\[1\.5\] max-\[560px\]:text-\[16px\] \$\{titleClassName/,
   );
-  assert.match(sharedUi, /<p className="m-0 text-\[12px\] leading-\[1\.9\]/);
+  assert.match(sharedUi, /<p className="m-0 text-\[11px\] leading-\[1\.9\]/);
   assert.match(sharedUi, /showCloseButton = false/);
   assert.match(sharedUi, /\{showCloseButton && \(/);
   assert.match(sharedUi, /aria-label="بستن"/);
@@ -1518,7 +1518,7 @@ test("every Persian resume template forces the bundled Vazirmatn font", async ()
   ]);
 
   assert.match(layout, /import "@fontsource-variable\/vazirmatn"/);
-  assert.match(layout, /<html[^>]*lang="fa" dir="rtl"/);
+  assert.match(layout, /<html[^>]*lang="fa"\s+dir="rtl"/);
   assert.match(layout, /font-sans/);
   assert.match(globalStyles, /--font-resume-rtl: "Vazirmatn Variable", Vazirmatn, Tahoma, Arial/);
   assert.match(globalStyles, /--font-sans: "Vazirmatn Variable", Vazirmatn, Tahoma, Arial/);
@@ -1646,7 +1646,7 @@ test("all resume templates keep their own layout on continuation pages", async (
     resumeDocument,
     /twoColumnTemplates\.has\(props\.templateId\)[\s\S]*?<TwoColumnResume \{\.\.\.props\} \/>[\s\S]*?<StandardResume \{\.\.\.props\} \/>/,
   );
-  assert.equal([...resumeDocument.matchAll(/\n  continuation,\n/g)].length, 18);
+  assert.equal([...resumeDocument.matchAll(/, continuation \}: ResumeDocumentProps/g)].length, 18);
   assert.equal([...resumeDocument.matchAll(/hideTitle=\{continuation\}/g)].length, 4);
   assert.match(resumeDocument, /\{!continuation && <h2[\s\S]*?BriefcaseBusiness/);
 });

@@ -33,3 +33,8 @@ For every task, before inspecting or editing application source code:
 3. If either file is missing, or any relevant tracked source file is newer than the graph output, run:
 ```bash
    graphify . --update --no-viz --code-only
+
+## کیفیت تغییرات جدید
+
+- پیش از تحویل هر تغییر کد، TypeScript و lint مرتبط را اجرا کن و خطاهای ناشی از تغییر را برطرف کن.
+- پوشه‌ها و فایل‌های تولیدشده مانند گزارش‌های تست، خروجی build و cache نباید وارد lint یا بررسی کد منبع شوند.

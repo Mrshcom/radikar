@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Clock3, History, LogIn, LogOut, MapPin, MonitorSmartphone, RefreshCw } from "lucide-react";
 import { useAuth } from "@/app/_components/auth";
 import { ConfirmActionModal } from "../_components/ui";
@@ -34,13 +34,10 @@ export default function SettingsPage() {
   const [historyPageSize, setHistoryPageSize] = useState(10);
   const activeSessions = sessions.data?.sessions.filter((session) => session.status === "active") ?? [];
   const historyRows = sessions.data?.sessions ?? [];
-  const historyStart = (historyPage - 1) * historyPageSize;
+  const historyTotalPages = Math.max(1, Math.ceil(historyRows.length / historyPageSize));
+  const visibleHistoryPage = Math.min(historyPage, historyTotalPages);
+  const historyStart = (visibleHistoryPage - 1) * historyPageSize;
   const historyPageRows = historyRows.slice(historyStart, historyStart + historyPageSize);
-
-  useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(historyRows.length / historyPageSize));
-    if (historyPage > totalPages) setHistoryPage(totalPages);
-  }, [historyPage, historyPageSize, historyRows.length]);
 
   const historyColumns: DataTableColumn<AccountSession>[] = [
     {
@@ -227,7 +224,7 @@ export default function SettingsPage() {
               minWidthClassName="min-w-[680px]"
               footer={
                 <TablePagination
-                  page={historyPage}
+                  page={visibleHistoryPage}
                   pageSize={historyPageSize}
                   total={historyRows.length}
                   onPageChange={setHistoryPage}

@@ -11,8 +11,17 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    "playwright-report/**",
     "next-env.d.ts",
   ]),
+  {
+    files: ["**/*.test.{ts,tsx}"],
+    rules: {
+      // Test doubles need intentionally loose props and mocked cache payloads.
+      "@typescript-eslint/no-explicit-any": "off",
+      "react/display-name": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
