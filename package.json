@@ -33,6 +33,7 @@
     "test:e2e": "npm run test:e2e --workspace @radikar/web",
     "test:e2e:ui": "npm run test:e2e:ui --workspace @radikar/web",
     "verify:push": "node scripts/verify-push.mjs",
+    "verify:full": "node scripts/verify-push.mjs --full",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "infra:up": "docker compose up -d postgres",
