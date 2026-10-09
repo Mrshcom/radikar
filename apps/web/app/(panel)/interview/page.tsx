@@ -549,7 +549,7 @@ export default function InterviewPage() {
             >
               <Icon
                 aria-hidden="true"
-                className="pointer-events-none absolute -bottom-4 -left-4 size-24 text-[#19312f] opacity-[0.05]"
+                className="pointer-events-none absolute bottom-2 left-2 size-24 text-[#19312f] opacity-[0.05]"
               />
               <div className="relative mb-4 flex items-center gap-3">
                 <div
