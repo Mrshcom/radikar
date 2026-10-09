@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { LoaderCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { panelSurface } from "../panel-styles";
 import { LoadingContext, Skeleton, SkeletonLines, SkeletonTitle } from "./primitives";
@@ -240,9 +241,24 @@ export function ApplicationsSkeleton() {
   );
 }
 
-export function InterviewSkeleton() {
+export function InterviewSkeleton({ isCreatingSession = false }: { isCreatingSession?: boolean }) {
   return (
-    <div role="status" aria-live="polite" aria-label="در حال آماده‌سازی جلسه و سؤال‌های مصاحبه">
+    <div role="status" aria-live="polite">
+      <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center px-5">
+        <div className="flex w-full max-w-[440px] flex-col items-center rounded-[22px] border border-[#dcebe3] bg-white/95 px-6 py-7 text-center shadow-[0_22px_60px_rgba(27,63,54,.14)] backdrop-blur-md">
+          <span className="grid size-14 place-items-center rounded-full bg-[#e5f4ed] text-[#0f7b62]">
+            <LoaderCircle aria-hidden="true" className="size-7 animate-spin motion-reduce:animate-none" />
+          </span>
+          <strong className="mt-4 text-[17px] text-[#19312f]">
+            {isCreatingSession ? "در حال ساخت سؤال‌های مصاحبهٔ تو..." : "در حال بازیابی جلسهٔ مصاحبه..."}
+          </strong>
+          <p className="mb-0 mt-2 text-[13px] leading-7 text-[#60746d]">
+            {isCreatingSession
+              ? "سؤال‌ها براساس رزومه و تجربه‌های تو آماده می‌شوند. چند لحظه همراه ما باش."
+              : "اطلاعات و تمرین‌های ذخیره‌شده‌ات را آماده می‌کنیم."}
+          </p>
+        </div>
+      </div>
       <div className="relative flex min-h-[584px] flex-col overflow-hidden rounded-[22px] bg-[#f7f9f7] lg:flex-row-reverse lg:items-start">
         <div className="relative w-full shrink-0 self-center lg:w-[55%]">
           <Image

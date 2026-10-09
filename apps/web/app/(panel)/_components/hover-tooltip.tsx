@@ -10,11 +10,19 @@ type HoverTooltipProps = {
   className?: string;
   contentClassName?: string;
   as?: "article" | "div" | "span";
+  showOnFocus?: boolean;
 };
 
 type TooltipPosition = { top: number; left: number; arrowLeft: number; below: boolean };
 
-export function HoverTooltip({ children, content, className, contentClassName, as: Tag = "span" }: HoverTooltipProps) {
+export function HoverTooltip({
+  children,
+  content,
+  className,
+  contentClassName,
+  as: Tag = "span",
+  showOnFocus = true,
+}: HoverTooltipProps) {
   const targetRef = useRef<HTMLElement | null>(null);
   const tooltipRef = useRef<HTMLSpanElement | null>(null);
   const [open, setOpen] = useState(false);
@@ -63,7 +71,7 @@ export function HoverTooltip({ children, content, className, contentClassName, a
     <Tag
       className={cn("inline-flex", className)}
       onBlur={() => setOpen(false)}
-      onFocus={showTooltip}
+      onFocus={showOnFocus ? showTooltip : undefined}
       onMouseEnter={showTooltip}
       onMouseLeave={() => setOpen(false)}
       ref={(element) => {

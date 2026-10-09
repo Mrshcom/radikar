@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
 import { useForm } from "react-hook-form";
-import { ArrowLeft, ArrowRight, Phone, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, LoaderCircle, Phone, RefreshCw, Sparkles } from "lucide-react";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api-client";
@@ -66,6 +66,7 @@ export default function LoginPage() {
   const [submittedPhone, setSubmittedPhone] = useState("");
   const [challengeId, setChallengeId] = useState("");
   const [serverError, setServerError] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [otpDigits, setOtpDigits] = useState(() => Array(6).fill(""));
   const {
     register: registerPhone,
@@ -106,6 +107,10 @@ export default function LoginPage() {
     const timer = window.setTimeout(() => setServerError(message), 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (step === "otp") router.prefetch("/dashboard");
+  }, [router, step]);
 
   const startGoogleLogin = () => {
     const next = new URLSearchParams(window.location.search).get("next");
@@ -167,9 +172,11 @@ export default function LoginPage() {
       queryClient.clear();
       queryClient.setQueryData(authQueryKey, { user: result.user });
       window.localStorage.removeItem("radikar_referral_code");
+      setIsRedirecting(true);
       notify("با موفقیت وارد حساب کاربری شدی.");
       router.replace(result.user.role === "user" ? "/dashboard" : "/admin");
     } catch (error) {
+      setIsRedirecting(false);
       setServerError(error instanceof Error ? error.message : "بررسی کد ورود ناموفق بود.");
     }
   };
@@ -281,145 +288,163 @@ export default function LoginPage() {
             <strong className="text-[19px] text-[#19312f]">رادیکار</strong>
           </div>
 
-          <div className="mb-6">
-            <h2 className="m-0 text-[25px] font-black tracking-[-.5px] text-[#19312f] sm:text-[27px]">
-              ورود به حساب کاربری
-            </h2>
-            <p className="mb-0 mt-2 text-[11px] leading-7 text-[#7b8b87] sm:mt-3 sm:leading-[1.9]">
-              {step === "phone"
-                ? "شماره همراهت را وارد کن تا کد ورود برایت ارسال شود."
-                : `کد ۶ رقمی ارسال‌شده به ${submittedPhone} را وارد کن.`}
-            </p>
-          </div>
-
-          {step === "phone" ? (
-            <div className="grid gap-4">
-              <form className="grid gap-4" onSubmit={handlePhoneSubmit(sendOtp)} noValidate>
-                <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
-                  شماره همراه
-                  <span className="relative block" dir="ltr">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#83928f]" size={17} />
-                    <input
-                      {...registerPhone("phone")}
-                      className={fieldClass}
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      maxLength={11}
-                      placeholder="09123456789"
-                      onInput={(event) => {
-                        event.currentTarget.value = normalizeDigits(event.currentTarget.value);
-                      }}
-                    />
-                  </span>
-                  {phoneErrors.phone && (
-                    <span className="text-[11px] font-medium text-[#c64c54]">{phoneErrors.phone.message}</span>
-                  )}
-                </label>
-
-                <button
-                  className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"
-                  type="submit"
-                  disabled={isSending}
-                >
-                  {isSending ? "در حال ارسال..." : "دریافت کد ورود"}
-                  {!isSending && <ArrowLeft size={17} />}
-                </button>
-              </form>
-              {providers.data?.google && (
-                <>
-                  <div className="flex items-center gap-3 text-[9px] text-[#9aa6a3]">
-                    <span className="h-px flex-1 bg-[#e4e9e5]" />
-                    یا
-                    <span className="h-px flex-1 bg-[#e4e9e5]" />
-                  </div>
-                  <button
-                    className="inline-flex h-11 items-center justify-center gap-2.5 rounded-[12px] border border-[#dce4df] bg-white px-5 text-[11px] font-extrabold text-[#354b47] transition hover:border-[#b9cec4] hover:bg-[#f9fbfa] sm:h-12"
-                    type="button"
-                    onClick={startGoogleLogin}
-                  >
-                    <GoogleMark />
-                    ادامه با Google
-                  </button>
-                </>
-              )}
+          {isRedirecting ? (
+            <div
+              className="flex flex-col items-center justify-center py-12 text-center"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="grid size-16 place-items-center rounded-full bg-[#e7f5ee] text-[#0f7b62]">
+                <LoaderCircle aria-hidden="true" className="size-8 animate-spin motion-reduce:animate-none" />
+              </span>
+              <h2 className="mb-0 mt-6 text-[22px] font-black text-[#19312f]">در حال ورود به پنل...</h2>
+              <p className="mb-0 mt-3 text-[12px] leading-7 text-[#60746d]">
+                ورودت با موفقیت انجام شد؛ فضای کاریت را آماده می‌کنیم.
+              </p>
             </div>
           ) : (
-            <form className="grid gap-4" onSubmit={handleOtpSubmit(verifyOtp)} noValidate>
-              <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
-                کد یک‌بارمصرف
-                <input {...registerOtp("otp")} type="hidden" />
-                <div className="grid grid-cols-6 gap-2 sm:gap-3" dir="ltr" onPaste={handleOtpPaste}>
-                  {Array.from({ length: 6 }, (_, index) => (
-                    <input
-                      className="h-12 min-w-0 rounded-[12px] border border-[#d9dfda] bg-white !text-center text-[20px] font-bold text-[#233936] outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/12 sm:h-14 sm:rounded-[14px] sm:text-[21px]"
-                      ref={(element) => {
-                        otpInputRefs.current[index] = element;
-                      }}
-                      value={otpDigits[index]}
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete={index === 0 ? "one-time-code" : "off"}
-                      maxLength={1}
-                      aria-label={`رقم ${index + 1} کد یک‌بارمصرف`}
-                      autoFocus={index === 0}
-                      onChange={(event) => updateOtpDigit(index, event.target.value)}
-                      onKeyDown={(event) => handleOtpKeyDown(index, event)}
-                      key={index}
-                    />
-                  ))}
-                </div>
-                {otpErrors.otp && (
-                  <span className="text-[11px] font-medium text-[#c64c54]">{otpErrors.otp.message}</span>
-                )}
-              </label>
-
-              <div className="flex items-center justify-between gap-3 text-[10px]">
-                <button
-                  className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 font-bold text-[#0f7b62]"
-                  type="button"
-                  onClick={() => void resendOtp()}
-                >
-                  <RefreshCw size={14} />
-                  ارسال مجدد کد
-                </button>
-                <button
-                  className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 text-[#687a76]"
-                  type="button"
-                  onClick={() => setStep("phone")}
-                >
-                  <ArrowRight size={14} />
-                  اصلاح شماره
-                </button>
+            <>
+              <div className="mb-6">
+                <h2 className="m-0 text-[25px] font-black tracking-[-.5px] text-[#19312f] sm:text-[27px]">
+                  ورود به حساب کاربری
+                </h2>
+                <p className="mb-0 mt-2 text-[11px] leading-7 text-[#7b8b87] sm:mt-3 sm:leading-[1.9]">
+                  {step === "phone"
+                    ? "شماره همراهت را وارد کن تا کد ورود برایت ارسال شود."
+                    : `کد ۶ رقمی ارسال‌شده به ${submittedPhone} را وارد کن.`}
+                </p>
               </div>
 
-              <button
-                className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"
-                type="submit"
-                disabled={isVerifying}
+              {step === "phone" ? (
+                <div className="grid gap-4">
+                  <form className="grid gap-4" onSubmit={handlePhoneSubmit(sendOtp)} noValidate>
+                    <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
+                      شماره همراه
+                      <span className="relative block" dir="ltr">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#83928f]" size={17} />
+                        <input
+                          {...registerPhone("phone")}
+                          className={fieldClass}
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="tel"
+                          maxLength={11}
+                          placeholder="09123456789"
+                          onInput={(event) => {
+                            event.currentTarget.value = normalizeDigits(event.currentTarget.value);
+                          }}
+                        />
+                      </span>
+                      {phoneErrors.phone && (
+                        <span className="text-[11px] font-medium text-[#c64c54]">{phoneErrors.phone.message}</span>
+                      )}
+                    </label>
+
+                    <button
+                      className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"
+                      type="submit"
+                      disabled={isSending}
+                    >
+                      {isSending ? "در حال ارسال..." : "دریافت کد ورود"}
+                      {!isSending && <ArrowLeft size={17} />}
+                    </button>
+                  </form>
+                  {providers.data?.google && (
+                    <>
+                      <div className="flex items-center gap-3 text-[9px] text-[#9aa6a3]">
+                        <span className="h-px flex-1 bg-[#e4e9e5]" />
+                        یا
+                        <span className="h-px flex-1 bg-[#e4e9e5]" />
+                      </div>
+                      <button
+                        className="inline-flex h-11 items-center justify-center gap-2.5 rounded-[12px] border border-[#dce4df] bg-white px-5 text-[11px] font-extrabold text-[#354b47] transition hover:border-[#b9cec4] hover:bg-[#f9fbfa] sm:h-12"
+                        type="button"
+                        onClick={startGoogleLogin}
+                      >
+                        <GoogleMark />
+                        ادامه با Google
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <form className="grid gap-4" onSubmit={handleOtpSubmit(verifyOtp)} noValidate>
+                  <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
+                    کد یک‌بارمصرف
+                    <input {...registerOtp("otp")} type="hidden" />
+                    <div className="grid grid-cols-6 gap-2 sm:gap-3" dir="ltr" onPaste={handleOtpPaste}>
+                      {Array.from({ length: 6 }, (_, index) => (
+                        <input
+                          className="h-12 min-w-0 rounded-[12px] border border-[#d9dfda] bg-white !text-center text-[20px] font-bold text-[#233936] outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/12 sm:h-14 sm:rounded-[14px] sm:text-[21px]"
+                          ref={(element) => {
+                            otpInputRefs.current[index] = element;
+                          }}
+                          value={otpDigits[index]}
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete={index === 0 ? "one-time-code" : "off"}
+                          maxLength={1}
+                          aria-label={`رقم ${index + 1} کد یک‌بارمصرف`}
+                          autoFocus={index === 0}
+                          onChange={(event) => updateOtpDigit(index, event.target.value)}
+                          onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                          key={index}
+                        />
+                      ))}
+                    </div>
+                    {otpErrors.otp && (
+                      <span className="text-[11px] font-medium text-[#c64c54]">{otpErrors.otp.message}</span>
+                    )}
+                  </label>
+
+                  <div className="flex items-center justify-between gap-3 text-[10px]">
+                    <button
+                      className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 font-bold text-[#0f7b62]"
+                      type="button"
+                      onClick={() => void resendOtp()}
+                    >
+                      <RefreshCw size={14} />
+                      ارسال مجدد کد
+                    </button>
+                    <button
+                      className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 text-[#687a76]"
+                      type="button"
+                      onClick={() => setStep("phone")}
+                    >
+                      <ArrowRight size={14} />
+                      اصلاح شماره
+                    </button>
+                  </div>
+
+                  <button
+                    className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"
+                    type="submit"
+                    disabled={isVerifying}
+                  >
+                    {isVerifying ? "در حال بررسی..." : "تأیید و ورود"}
+                    {!isVerifying && <ArrowLeft size={17} />}
+                  </button>
+                </form>
+              )}
+
+              {serverError && (
+                <p
+                  className="mb-0 mt-4 rounded-[10px] bg-[#fff1ef] px-3 py-2 text-[10px] font-medium text-[#b34545]"
+                  role="alert"
+                >
+                  {serverError}
+                </p>
+              )}
+
+              <Link
+                className="mx-auto mt-6 inline-flex items-center gap-1.5 text-[10px] font-bold text-[#0f7b62] no-underline transition hover:text-[#0b6954] sm:mt-8"
+                href="/"
               >
-                {isVerifying ? "در حال بررسی..." : "تأیید و ورود"}
-                {!isVerifying && <ArrowLeft size={17} />}
-              </button>
-            </form>
+                <ArrowRight size={14} />
+                بازگشت به سایت
+              </Link>
+            </>
           )}
-
-          {serverError && (
-            <p
-              className="mb-0 mt-4 rounded-[10px] bg-[#fff1ef] px-3 py-2 text-[10px] font-medium text-[#b34545]"
-              role="alert"
-            >
-              {serverError}
-            </p>
-          )}
-
-          <Link
-            className="mx-auto mt-6 inline-flex items-center gap-1.5 text-[10px] font-bold text-[#0f7b62] no-underline transition hover:text-[#0b6954] sm:mt-8"
-            href="/"
-          >
-            <ArrowRight size={14} />
-            بازگشت به سایت
-          </Link>
         </div>
       </section>
     </main>

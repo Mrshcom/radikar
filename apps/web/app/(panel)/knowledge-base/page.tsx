@@ -2098,7 +2098,7 @@ function MultiSkillAutocomplete({
       </span>
       <div
         className={cn(
-          "flex min-h-[42px] cursor-pointer flex-wrap items-center gap-1.5 rounded-[10px] border bg-[#fbfcfa] p-1.5 transition hover:border-[#9ccbbb] hover:bg-[#f7faf8]",
+          "flex min-h-[42px] cursor-pointer flex-wrap items-center gap-2 rounded-[10px] border bg-[#fbfcfa] p-2 transition hover:border-[#9ccbbb] hover:bg-[#f7faf8]",
           open ? "border-[#79b8a5] ring-3 ring-[#e5f2ed]" : "border-[#dfe5df]",
         )}
         dir="ltr"
@@ -2106,12 +2106,14 @@ function MultiSkillAutocomplete({
       >
         {selectedSkills.map((skill) => (
           <span
-            className="inline-flex items-center gap-1 rounded-full border border-[#cfe3da] bg-[#edf7f2] py-1 pr-2 pl-1 text-[8px] text-[#0f7b62]"
+            className="inline-flex h-8 max-w-full shrink-0 items-center gap-2 rounded-full border border-[#cfe3da] bg-[#edf7f2] px-2 text-[11px] font-medium text-[#0f7b62]"
             key={skill}
           >
-            {skill}
+            <span className="max-w-[min(220px,55vw)] truncate" title={skill}>
+              {skill}
+            </span>
             <button
-              className="grid size-4 place-items-center rounded-full bg-[#d8ece4] text-[#0f7b62]"
+              className="grid size-5 shrink-0 place-items-center rounded-full bg-[#d8ece4] text-[#0f7b62] transition-colors hover:bg-[#c7e6d8]"
               type="button"
               aria-label={`حذف ${skill}`}
               onClick={(event) => {
@@ -2119,7 +2121,7 @@ function MultiSkillAutocomplete({
                 setPendingSkillDelete(skill);
               }}
             >
-              <X size={11} />
+              <X size={12} />
             </button>
           </span>
         ))}

@@ -120,6 +120,9 @@ function tourTarget(href: string) {
       "/jobs": "nav-jobs",
       "/match": "nav-match",
       "/resumes": "nav-resumes",
+      "/applications": "nav-applications",
+      "/interview": "nav-interview",
+      "/radicoins": "nav-radicoins",
     } as Record<string, string>
   )[href];
 }
@@ -567,6 +570,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 setUserMenuOpen(false);
                 openMobileMenu();
               }}
+              data-tour="mobile-panel-menu"
               type="button"
             >
               <Menu size={20} />
@@ -719,6 +723,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   setNoticeOpen(false);
                   setUserMenuOpen((value) => !value);
                 }}
+                data-tour="account-menu"
                 type="button"
               >
                 <Image

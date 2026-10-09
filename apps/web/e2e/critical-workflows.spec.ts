@@ -361,6 +361,7 @@ test.describe("جریان‌های بحرانی داده‌های پنل", () =>
     });
     await page.goto("/interview");
     await page.getByRole("button", { name: "شروع مصاحبه جامع" }).click();
+    await expect(page.getByRole("dialog", { name: "مصاحبه فرانت‌اند" })).toBeVisible();
     await expect(page.getByText("React چیست؟")).toBeVisible();
     await page.getByRole("button", { name: /سؤال بعدی/ }).click();
     const answerField = page.getByLabel("پاسخ تو", { exact: true });
@@ -394,6 +395,7 @@ test.describe("جریان‌های بحرانی داده‌های پنل", () =>
       "TypeScript تایپ ایستا را به JavaScript اضافه می‌کند.",
     );
     await page.getByRole("button", { name: "پایان مصاحبه و دریافت نتیجه" }).click();
+    await expect(page).toHaveURL(/\/interview\/results\/interview-1$/);
     await expect(page.getByRole("region", { name: "نتیجه مصاحبه" })).toBeVisible();
     await expect.poll(() => repository.get("interviewSessions", "interview-1")?.report).toMatchObject({ score: 75 });
     await page.getByText("React چیست؟", { exact: true }).click();
@@ -405,10 +407,12 @@ test.describe("جریان‌های بحرانی داده‌های پنل", () =>
     await page.screenshot({ path: test.info().outputPath("interview-result-mobile.png"), fullPage: true });
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.reload();
+    await page.getByRole("link", { name: /بازگشت به آمادگی مصاحبه/ }).click();
     await page.getByRole("button", { name: "مشاهده نتیجه مصاحبه" }).click();
     await expect(page.getByRole("region", { name: "نتیجه مصاحبه" })).toBeVisible();
     expect(reportRequests).toBe(2);
     await page.getByRole("button", { name: "تمرین دوبارهٔ این مصاحبه" }).click();
+    await expect(page).toHaveURL(/\/interview\?session=/);
     await expect(page.getByPlaceholder("پاسخ خودت را وارد کن...")).toHaveValue("");
     await expect(page.getByRole("button", { name: /سؤال بعدی/ })).toBeVisible();
   });
@@ -454,6 +458,7 @@ test.describe("جریان‌های بحرانی داده‌های پنل", () =>
     await page.goto("/interview");
     await page.getByRole("button", { name: "شروع مصاحبه جامع" }).click();
     await expect.poll(() => requests[0]).toMatchObject({ type: "comprehensive" });
+    await page.getByRole("button", { name: "بستن و ذخیره مصاحبه" }).click();
     await page.getByRole("button", { name: "تمرین تخصصی این موضوع" }).click();
     await expect
       .poll(() => requests[1])
@@ -466,6 +471,7 @@ test.describe("جریان‌های بحرانی داده‌های پنل", () =>
     await page.getByRole("button", { name: "پایان مصاحبه و دریافت نتیجه" }).click();
     await expect(page.getByRole("region", { name: "نتیجه مصاحبه" })).toBeVisible();
     expect(reports[0].mode).toBe("تمرین تخصصی: معماری و مقیاس‌پذیری");
+    await page.getByRole("link", { name: /بازگشت به آمادگی مصاحبه/ }).click();
     await page.getByRole("button", { name: "شروع مصاحبه جامع" }).click();
     await expect.poll(() => requests[2]).toMatchObject({ type: "comprehensive" });
     expect(requests[2].focusArea).toBeUndefined();

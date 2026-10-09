@@ -69,6 +69,10 @@ describe("PanelShell behavior", () => {
     renderShell();
     await waitFor(() => expect(screen.getAllByRole("link", { name: /فرصت‌های مناسب من/ })[0]).toBeVisible());
     expect(screen.queryByRole("link", { name: "تنظیمات" })).toBeNull();
+    expect(screen.getAllByRole("link", { name: "پیگیری اپلای‌ها" })[0]).toHaveAttribute("data-tour", "nav-applications");
+    expect(screen.getAllByRole("link", { name: "آمادگی مصاحبه" })[0]).toHaveAttribute("data-tour", "nav-interview");
+    expect(screen.getAllByRole("link", { name: "کیف پول رادیکوین" })[0]).toHaveAttribute("data-tour", "nav-radicoins");
+    expect(screen.getByLabelText("منوی حساب کاربری")).toHaveAttribute("data-tour", "account-menu");
   });
 
   it("renders management navigation for an admin", async () => {

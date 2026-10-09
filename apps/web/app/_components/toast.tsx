@@ -135,10 +135,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             exit={
               shouldReduceMotion
                 ? undefined
-                : { opacity: 0, scale: 0.96, transition: { duration: 0.14, ease: "easeIn" }, y: -14 }
+                : { opacity: 0, scale: 0.96, transition: { duration: 0.1, ease: "easeIn" }, y: -14 }
             }
             initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: -14 }}
-            transition={{ duration: 0.24, ease: "easeOut" }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
             role={toast.variant === "error" ? "alert" : "status"}
             aria-live={toast.variant === "error" ? "assertive" : "polite"}
           >

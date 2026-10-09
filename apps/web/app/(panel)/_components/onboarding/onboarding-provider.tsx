@@ -55,38 +55,65 @@ const tourFloatingOptions = { hideArrow: true };
 type TourTailSide = "top" | "right" | "bottom" | "left";
 type TourTail = { side: TourTailSide; offset: number };
 
+const userPanelTourSteps = [
+  {
+    target: "nav-dashboard",
+    title: "نمای کلی مسیر",
+    content: "وضعیت مهم مسیر شغلی‌ات را از اینجا یک‌جا می‌بینی.",
+  },
+  {
+    target: "nav-profile",
+    title: "پروفایل مسیر شغلی",
+    content: "تجربه‌ها، توانمندی‌ها و هدف‌هایت را ثبت و به‌روز کن.",
+  },
+  {
+    target: "nav-jobs",
+    title: "فرصت‌های مناسب من",
+    content: "فرصت‌های شغلی مناسب مسیرت را بررسی کن.",
+  },
+  {
+    target: "nav-match",
+    title: "تحلیل تطابق",
+    content: "رزومه و آگهی را مقایسه کن تا برای اقدام بعدی دقیق‌تر تصمیم بگیری.",
+  },
+  {
+    target: "nav-resumes",
+    title: "رزومه‌های هدفمند",
+    content: "برای هر فرصت، رزومه‌ای متناسب با همان موقعیت بساز.",
+  },
+  {
+    target: "nav-applications",
+    title: "پیگیری اپلای‌ها",
+    content: "وضعیت درخواست‌ها و قدم بعدی هر اپلای را دنبال کن.",
+  },
+  {
+    target: "nav-interview",
+    title: "آمادگی مصاحبه",
+    content: "مصاحبهٔ تمرینی انجام بده و گزارش شخصی‌سازی‌شده بگیر.",
+  },
+  {
+    target: "nav-radicoins",
+    title: "کیف پول رادیکوین",
+    content: "موجودی، اعتبارها و روش‌های دریافت رادیکوین را اینجا می‌بینی.",
+  },
+] as const;
+
 function buildTourSteps(): Step[] {
   const isMobile = window.matchMedia("(max-width: 820px)").matches;
   if (isMobile) {
     return [
       {
-        target: "[data-tour='nav-dashboard']",
-        title: "نمای کلی مسیر",
-        content: "همه وضعیت‌های مهم مسیر شغلی‌ات را از اینجا یک‌جا می‌بینی.",
+        target: "[data-tour='mobile-panel-menu']",
+        title: "همهٔ بخش‌های پنل",
+        content: "از این منو به همهٔ بخش‌ها، از پروفایل و فرصت‌ها تا مصاحبه و کیف پول، دسترسی داری.",
         placement: "top",
         floatingOptions: tourFloatingOptions,
         offset: 28,
       },
       {
-        target: "[data-tour='nav-jobs']",
-        title: "فرصت‌های مناسب",
-        content: "آگهی‌ها و فرصت‌هایی که برایت وارد شده‌اند را اینجا بررسی کن.",
-        placement: "top",
-        floatingOptions: tourFloatingOptions,
-        offset: 28,
-      },
-      {
-        target: "[data-tour='nav-match']",
-        title: "تحلیل تطابق",
-        content: "رزومه و آگهی را مقایسه کن تا برای اقدام بعدی دقیق‌تر تصمیم بگیری.",
-        placement: "top",
-        floatingOptions: tourFloatingOptions,
-        offset: 28,
-      },
-      {
-        target: "[data-tour='nav-resumes']",
-        title: "رزومه هدفمند",
-        content: "برای هر فرصت، رزومه‌ای متناسب با همان موقعیت بساز.",
+        target: "[data-tour='account-menu']",
+        title: "منوی حساب کاربری",
+        content: "حساب، تنظیمات، سفارش‌ها، دعوت دوستان و ارتقای بسته را از اینجا مدیریت کن.",
         placement: "top",
         floatingOptions: tourFloatingOptions,
         offset: 28,
@@ -95,37 +122,20 @@ function buildTourSteps(): Step[] {
   }
 
   return [
-    {
-      target: "[data-tour='nav-dashboard']",
-      title: "نمای کلی مسیر",
-      content: "همه وضعیت‌های مهم مسیر شغلی‌ات را از اینجا یک‌جا می‌بینی.",
-      placement: "left",
+    ...userPanelTourSteps.map((step) => ({
+      ...step,
+      target: `[data-tour='${step.target}']`,
+      placement: "left" as const,
       floatingOptions: tourFloatingOptions,
       offset: 28,
-    },
+    })),
     {
-      target: "[data-tour='nav-profile']",
-      title: "پروفایل مسیر شغلی",
-      content: "توانمندی‌ها، تجربه‌ها و هدف‌های شغلی‌ات را کامل کن تا پیشنهادها دقیق‌تر شوند.",
-      placement: "left",
+      target: "[data-tour='account-menu']",
+      title: "منوی حساب کاربری",
+      content: "حساب، تنظیمات، سفارش‌ها، دعوت دوستان و ارتقای بسته را از اینجا مدیریت کن.",
+      placement: "bottom",
       floatingOptions: tourFloatingOptions,
-      offset: 28,
-    },
-    {
-      target: "[data-tour='nav-match']",
-      title: "تحلیل تطابق",
-      content: "رزومه و آگهی را مقایسه کن تا شکاف‌ها و نقاط قوتت روشن شوند.",
-      placement: "left",
-      floatingOptions: tourFloatingOptions,
-      offset: 28,
-    },
-    {
-      target: "[data-tour='nav-resumes']",
-      title: "رزومه هدفمند",
-      content: "برای هر فرصت، رزومه‌ای متناسب با همان موقعیت بساز.",
-      placement: "left",
-      floatingOptions: tourFloatingOptions,
-      offset: 28,
+      offset: 20,
     },
   ];
 }

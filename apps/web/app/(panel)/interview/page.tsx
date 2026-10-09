@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,6 +11,7 @@ import { z } from "zod";
 import type { InterviewReport } from "@radikar/shared-types";
 import {
   ArrowLeft,
+  ArrowRight,
   BriefcaseBusiness,
   ChevronLeft,
   CircleUserRound,
@@ -18,12 +20,13 @@ import {
   MessageSquareText,
   Sparkles,
   X,
+  LoaderCircle,
 } from "lucide-react";
-import { FeedbackSkeleton, InterviewSkeleton } from "../_components/skeletons";
+import { InterviewSkeleton } from "../_components/skeletons";
 import { useToast } from "@/app/_components/toast";
 import { TextAreaField } from "@/app/_components/text-field";
 import { FormField } from "../_components/form-field";
-import { useModelTasks } from "../_components/model-task-provider";
+import { isModelTaskCanceledError, useModelTasks } from "../_components/model-task-provider";
 import {
   createRecordId,
   getActiveProfileId,
@@ -32,7 +35,8 @@ import {
   knowledgeProfileStore,
 } from "@/lib/data/stores";
 import type { InterviewSessionRecord } from "@/lib/data/models";
-import { InterviewResult } from "./interview-result";
+import { InterviewPracticeDialog } from "./interview-practice-dialog";
+import { InterviewProgress } from "./interview-progress";
 import { formatPersianNumber, toPersianDigits } from "@/lib/fa-number";
 import { apiRequest } from "@/lib/api-client";
 
@@ -53,9 +57,11 @@ const focusedModePrefix = "تمرین تخصصی: ";
 const isComprehensiveMode = (value: string) => value === comprehensiveMode || value === "مصاحبه شخصی‌سازی‌شده";
 
 export default function InterviewPage() {
+  const router = useRouter();
   const notify = useToast();
   const { isRunning, runModelTask } = useModelTasks();
   const [sessionRecord, setSessionRecord] = useState<InterviewSessionRecord | null>(null);
+  const [completedSessions, setCompletedSessions] = useState<InterviewSessionRecord[]>([]);
   const [hasResume, setHasResume] = useState(true);
   const [started, setStarted] = useState(false);
   const [mode, setMode] = useState(comprehensiveMode);
@@ -69,10 +75,12 @@ export default function InterviewPage() {
   } = useForm<z.infer<typeof answerSchema>>({ resolver: zodResolver(answerSchema), defaultValues: { answer: "" } });
   const [questionIndex, setQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [creatingSession, setCreatingSession] = useState(false);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const sessionBuilding = loading || isRunning("interview-session");
+  const sessionCreationControllerRef = useRef<AbortController | null>(null);
+  const isCreatingSession = creatingSession || isRunning("interview-session");
   const feedbackBusy = feedbackLoading || isRunning("interview-feedback");
   const reportMutation = useMutation({
     mutationFn: ({
@@ -108,7 +116,13 @@ export default function InterviewPage() {
         ]);
         if (!active) return;
         setHasResume(Boolean(resume || knowledge));
-        if (sessions[0]) restoreSession(sessions[0]);
+        setCompletedSessions(sessions.filter((session) => Boolean(session.report)));
+        const requestedId = new URLSearchParams(window.location.search).get("session");
+        const requestedSession = sessions.find((session) => session.id === requestedId);
+        if (requestedSession && !requestedSession.report) {
+          restoreSession(requestedSession);
+          setStarted(true);
+        } else if (sessions[0]) restoreSession(sessions[0]);
       } catch (event) {
         if (active) {
           const message = event instanceof Error ? event.message : "خواندن جلسه‌های ذخیره‌شده ناموفق بود.";
@@ -126,7 +140,9 @@ export default function InterviewPage() {
   }, [notify, restoreSession]);
 
   const loadSession = async (selectedMode = mode, startAfterLoad = false) => {
-    setLoading(true);
+    const controller = new AbortController();
+    sessionCreationControllerRef.current = controller;
+    setCreatingSession(true);
     setError("");
     try {
       const record = await runModelTask({
@@ -151,6 +167,7 @@ export default function InterviewPage() {
                 ? { focusArea: selectedMode.slice(focusedModePrefix.length) }
                 : {}),
             }),
+            signal: controller.signal,
           });
           const now = new Date().toISOString();
           const record: InterviewSessionRecord = {
@@ -169,13 +186,16 @@ export default function InterviewPage() {
       });
       restoreSession(record);
       setStarted(startAfterLoad);
-      notify("جلسه مصاحبه با موفقیت ساخته شد.");
     } catch (event) {
+      if (isModelTaskCanceledError(event) || (event instanceof DOMException && event.name === "AbortError")) return;
       const message = event instanceof Error ? event.message : "مدل مصاحبه پاسخ نداد.";
       setError(message);
       notify(message, "error");
     } finally {
-      setLoading(false);
+      if (sessionCreationControllerRef.current === controller) {
+        sessionCreationControllerRef.current = null;
+        setCreatingSession(false);
+      }
     }
   };
 
@@ -183,6 +203,8 @@ export default function InterviewPage() {
     setMode(selectedMode);
     if (!sessionRecord || sessionRecord.mode !== selectedMode) {
       void loadSession(selectedMode, true);
+    } else if (sessionRecord.report) {
+      router.push(`/interview/results/${sessionRecord.id}`);
     } else {
       setStarted(true);
     }
@@ -227,6 +249,7 @@ export default function InterviewPage() {
     try {
       if (!sessionRecord?.report) await persistAnswers(getValues("answer"));
       setStarted(false);
+      if (window.location.search) router.replace("/interview");
     } catch {
       notify("ذخیرهٔ پاسخ انجام نشد؛ دوباره تلاش کن.", "error");
     } finally {
@@ -234,28 +257,10 @@ export default function InterviewPage() {
     }
   };
 
-  const restartPractice = async () => {
-    if (!sessionRecord) return;
-    setSaving(true);
-    try {
-      const now = new Date().toISOString();
-      const record = {
-        ...sessionRecord,
-        id: createRecordId("interview"),
-        answers: [],
-        currentQuestionIndex: 0,
-        report: undefined,
-        feedbacks: [],
-        createdAt: now,
-        updatedAt: now,
-      };
-      await interviewSessionStore.put(record);
-      restoreSession(record);
-    } catch {
-      notify("شروع دوباره انجام نشد؛ دوباره تلاش کن.", "error");
-    } finally {
-      setSaving(false);
-    }
+  const cancelSessionCreation = () => {
+    sessionCreationControllerRef.current?.abort();
+    setCreatingSession(false);
+    setStarted(false);
   };
 
   const requestFeedback = async (answer: string) => {
@@ -289,7 +294,7 @@ export default function InterviewPage() {
         },
       });
       setSessionRecord(updated);
-      notify("گزارش کامل مصاحبه آماده شد.");
+      router.push(`/interview/results/${updated.id}`);
     } catch (event) {
       notify(
         event instanceof Error ? event.message : "گزارش آماده نشد؛ پاسخ‌ها ذخیره‌اند و می‌توانی دوباره تلاش کنی.",
@@ -300,11 +305,11 @@ export default function InterviewPage() {
     }
   };
 
-  if (sessionBuilding) return <InterviewSkeleton />;
+  if (loading) return <InterviewSkeleton />;
   const primaryButton =
-    "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border-0 bg-[#0f7b62] px-[15px] text-[11px] font-bold text-white no-underline disabled:cursor-not-allowed disabled:opacity-45";
+    "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border-0 bg-[#0f7b62] px-[15px] text-[11px] font-bold text-white no-underline shadow-[0_8px_18px_rgba(15,123,98,.16)] transition-colors hover:bg-[#0d6b57] disabled:cursor-not-allowed disabled:opacity-45";
   const secondaryButton =
-    "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-[#e1e6e0] bg-white px-[15px] text-[11px] font-bold text-[#526461]";
+    "inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-[#e1e6e0] bg-white px-[15px] text-[11px] font-bold text-[#526461] transition-colors hover:bg-[#f3f8f4]";
   if (!hasResume)
     return (
       <div className="flex min-h-[300px] flex-col items-center justify-center rounded-[15px] border border-dashed border-[#dce3dc] text-[#8b9996] [&_h3]:mb-[3px] [&_h3]:mt-3 [&_h3]:text-sm [&_h3]:text-[#19312f] [&_p]:mb-[14px] [&_p]:mt-0 [&_p]:text-[9px]">
@@ -429,98 +434,110 @@ export default function InterviewPage() {
           ))}
         </div>
       </div>
-      {started && sessionRecord?.report && (
-        <InterviewResult
-          session={sessionRecord}
-          onRestart={() => {
-            if (!saving) void restartPractice();
-          }}
-        />
-      )}
-      {started && sessionRecord && !sessionRecord.report && (
-        <form
-          onSubmit={handleSubmit(({ answer }) =>
-            lastQuestion ? requestFeedback(answer) : moveQuestion(answer, questionIndex + 1),
-          )}
-          className="mt-4 rounded-[17px] border border-[#e7ebe6] bg-white p-[22px] shadow-[0_12px_36px_rgba(27,55,50,.055)] max-[820px]:p-4"
+      {(isCreatingSession || started) && (
+        <InterviewPracticeDialog
+          title={isCreatingSession ? "در حال ساخت جلسهٔ تازه" : (sessionRecord?.title ?? mode)}
+          closeDisabled={saving || feedbackBusy || Boolean(sessionRecord?.report)}
+          analysisPending={feedbackBusy}
+          exitDescription={
+            isCreatingSession
+              ? "ساخت این جلسه لغو می‌شود. هر زمان خواستی می‌توانی یک جلسهٔ تازه بسازی."
+              : undefined
+          }
+          exitConfirmLabel={isCreatingSession ? "لغو ساخت و خروج" : undefined}
+          onClose={() => (isCreatingSession ? cancelSessionCreation() : void closePractice())}
         >
-          <div className="flex items-start justify-between">
-            <div>
-              <span className="rounded-md bg-[#e6f4ee] px-2 py-1 text-[11px] font-bold text-[#0f7b62]">جلسه فعال</span>
-              <h3 className="mb-0 mt-[9px] text-[13px]">{mode}</h3>
-            </div>
-            <button
-              className="grid place-items-center border-0 bg-transparent p-[5px] text-[#9ba5a3]"
-              aria-label="بستن و ذخیره مصاحبه"
-              type="button"
-              disabled={saving || feedbackBusy}
-              onClick={() => void closePractice()}
+          {isCreatingSession ? (
+            <div
+              className="flex min-h-full flex-col items-center justify-center gap-4 text-center"
+              role="status"
+              aria-live="polite"
             >
-              <X size={19} />
-            </button>
-          </div>
-          <div className="mt-4 flex gap-1" aria-label="پیشرفت مصاحبه">
-            {sessionRecord.questions.map((_, index) => (
-              <span key={index} className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e7ebe6]">
-                <span
-                  className={`block h-full w-full origin-right rounded-full bg-[#0f7b62] transition-transform duration-500 ease-[cubic-bezier(0.55,0,0.2,1)] motion-reduce:transition-none ${index <= questionIndex ? "scale-x-100" : "scale-x-0"}`}
-                />
+              <span className="grid size-20 place-items-center rounded-[24px] bg-[#e6f4ee] text-[#0f7b62]">
+                <LoaderCircle className="animate-spin motion-reduce:animate-none" size={36} />
               </span>
-            ))}
-          </div>
-          <div className="my-[18px] rounded-[13px] bg-[#f1f6f2] p-[18px]">
-            <span className="text-[12px] font-bold text-[#0f7b62]">
-              سؤال {formatPersianNumber(questionIndex + 1)} از {formatPersianNumber(sessionRecord.questions.length)}
-            </span>
-            <h2 className="mb-0 mt-2 text-[15px] leading-[1.9]">{currentQuestion}</h2>
-          </div>
-          <FormField
-            label="پاسخ تو"
-            htmlFor="interview-answer"
-            errorId="interview-answer-error"
-            error={errors.answer?.message}
-            className="text-[11px] font-normal text-[#60716e]"
-          >
-            <TextAreaField
-              id="interview-answer"
-              {...register("answer")}
-              disabled={feedbackBusy || saving}
-              maxLength={8_000}
-              aria-invalid={Boolean(errors.answer)}
-              aria-describedby={errors.answer ? "interview-answer-error" : undefined}
-              placeholder="پاسخ خودت را وارد کن..."
-            />
-          </FormField>
-          <p className="mb-0 mt-3 text-xs leading-6 text-[#61746f]">
-            با تغییر سؤال یا بستن جلسه، پاسخ‌ها ذخیره می‌شوند. بعد از سؤال آخر، گزارش کامل مصاحبه را دریافت می‌کنی.
-          </p>
-          {feedbackBusy && <FeedbackSkeleton />}
-          <div className="mt-[14px] flex justify-between gap-[10px] max-[560px]:flex-col-reverse">
-            {questionIndex > 0 ? (
-              <button
-                className={secondaryButton}
-                type="button"
-                disabled={saving || feedbackBusy}
-                onClick={() => void moveQuestion(getValues("answer"), questionIndex - 1)}
-              >
-                سؤال قبلی
-              </button>
-            ) : (
-              <span />
-            )}
-            <button className={primaryButton} type="submit" disabled={saving || feedbackBusy}>
-              {lastQuestion ? (
-                <>
-                  <Sparkles size={17} /> {feedbackBusy ? "در حال آماده‌سازی گزارش..." : "پایان مصاحبه و دریافت نتیجه"}
-                </>
-              ) : (
-                <>
-                  سؤال بعدی <ArrowLeft size={16} />
-                </>
+              <h3 className="mb-0 mt-2 text-xl font-bold text-[#19312f]">سؤال‌های مصاحبه در حال آماده‌شدن هستند</h3>
+              <p className="m-0 max-w-md text-sm leading-7 text-[#61746f]">
+                پرسش‌ها براساس رزومه و مسیر شغلی تو ساخته می‌شوند. تا چند لحظهٔ دیگر تمرین شروع می‌شود.
+              </p>
+            </div>
+          ) : sessionRecord?.report ? (
+            <div className="flex min-h-full items-center justify-center gap-3 text-[#0f7b62]" role="status">
+              <LoaderCircle className="animate-spin motion-reduce:animate-none" size={24} />
+              در حال باز کردن گزارش مصاحبه...
+            </div>
+          ) : sessionRecord ? (
+            <form
+              onSubmit={handleSubmit(({ answer }) =>
+                lastQuestion ? requestFeedback(answer) : moveQuestion(answer, questionIndex + 1),
               )}
-            </button>
-          </div>
-        </form>
+              className="relative mx-auto w-full max-w-4xl overflow-hidden rounded-[20px] border border-[#dce8e1] bg-white p-[22px] shadow-[0_18px_48px_rgba(27,55,50,.09)] max-[820px]:p-4"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-md bg-[#e6f4ee] px-2 py-1 text-[11px] font-bold text-[#0f7b62]">
+                    <span className="size-1.5 rounded-full bg-[#26a77e]" /> جلسه فعال
+                  </span>
+                  <h3 className="mb-0 mt-[9px] text-[13px]">{mode}</h3>
+                </div>
+              </div>
+              <InterviewProgress total={sessionRecord.questions.length} currentIndex={questionIndex} />
+              <div className="my-[18px] rounded-[13px] border border-[#e0eee4] border-r-[3px] border-r-[#56b08c] bg-[linear-gradient(120deg,#edf7f0,#f6faf5)] p-[18px] shadow-[inset_0_1px_0_rgba(255,255,255,.9)]">
+                <span className="text-[12px] font-bold text-[#0f7b62]">
+                  سؤال {formatPersianNumber(questionIndex + 1)} از {formatPersianNumber(sessionRecord.questions.length)}
+                </span>
+                <h2 className="mb-0 mt-2 text-[15px] leading-[1.9]">{currentQuestion}</h2>
+              </div>
+              <FormField
+                label="پاسخ تو"
+                htmlFor="interview-answer"
+                errorId="interview-answer-error"
+                error={errors.answer?.message}
+                className="text-[11px] font-normal text-[#60716e]"
+              >
+                <TextAreaField
+                  id="interview-answer"
+                  {...register("answer")}
+                  className="bg-[#fcfdfb] shadow-[inset_0_2px_8px_rgba(27,55,50,.025)]"
+                  disabled={feedbackBusy || saving}
+                  maxLength={8_000}
+                  aria-invalid={Boolean(errors.answer)}
+                  aria-describedby={errors.answer ? "interview-answer-error" : undefined}
+                  placeholder="پاسخ خودت را وارد کن..."
+                />
+              </FormField>
+              <p className="mb-0 mt-3 text-xs leading-6 text-[#61746f]">
+                با تغییر سؤال یا بستن جلسه، پاسخ‌ها ذخیره می‌شوند. بعد از سؤال آخر، گزارش کامل مصاحبه را دریافت می‌کنی.
+              </p>
+              <div className="mt-[14px] flex justify-between gap-[10px] border-t border-[#edf1ed] pt-4 max-[560px]:flex-col-reverse">
+                {questionIndex > 0 ? (
+                  <button
+                    className={secondaryButton}
+                    type="button"
+                    disabled={saving || feedbackBusy}
+                    onClick={() => void moveQuestion(getValues("answer"), questionIndex - 1)}
+                  >
+                    <ArrowRight size={16} /> سؤال قبلی
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <button className={primaryButton} type="submit" disabled={saving || feedbackBusy}>
+                  {lastQuestion ? (
+                    <>
+                      <Sparkles size={17} />{" "}
+                      {feedbackBusy ? "در حال آماده‌سازی گزارش..." : "پایان مصاحبه و دریافت نتیجه"}
+                    </>
+                  ) : (
+                    <>
+                      سؤال بعدی <ArrowLeft size={16} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          ) : null}
+        </InterviewPracticeDialog>
       )}
       <div className="mt-4 grid grid-cols-3 gap-3 max-[820px]:grid-cols-1">
         {(sessionRecord?.cards || []).map((item, index) => {
@@ -555,6 +572,36 @@ export default function InterviewPage() {
           );
         })}
       </div>
+      {completedSessions.length > 0 && (
+        <section className="mt-10" aria-labelledby="interview-history-title">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 id="interview-history-title" className="m-0 text-lg font-bold text-[#19312f]">
+                نتایج مصاحبه‌های قبلی
+              </h2>
+              <p className="mb-0 mt-1 text-sm text-[#61746f]">گزارش هر جلسه را هر زمان خواستی دوباره ببین.</p>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {completedSessions.map((session) => (
+              <Link
+                key={session.id}
+                href={`/interview/results/${session.id}`}
+                className="group flex flex-col gap-2 rounded-2xl border border-[#dce9df] bg-white p-5 no-underline shadow-[0_8px_24px_rgba(27,55,50,.04)] hover:border-[#9bcdb8]"
+              >
+                <span className="text-xs font-bold text-[#0f7b62]">{session.mode}</span>
+                <strong className="text-sm text-[#19312f]">{session.title}</strong>
+                <span className="text-xs text-[#61746f]">
+                  امتیاز {formatPersianNumber(session.report?.score ?? 0)} از ۱۰۰
+                </span>
+                <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-[#0f7b62]">
+                  مشاهده گزارش <ArrowLeft size={15} />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </>
   );
 }

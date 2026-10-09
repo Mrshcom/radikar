@@ -51,7 +51,10 @@ Browser → Next.js Web → Fastify API → Neon/PostgreSQL
 `interviewSessions` ذخیره می‌شوند. در سؤال آخر، `POST /api/interview/report` همهٔ
 پاسخ‌ها را یک‌جا ارزیابی می‌کند؛ خروجی اعتبارسنجی‌شده با امتیاز میانگین پاسخ‌ها
 در `report` همان رکورد نگهداری می‌شود. UI گزارش در `interview/interview-result.tsx`
-است؛ قرارداد مشترک `InterviewReport` در `packages/shared-types` و اعتبارسنجی API
+است و در مسیر مستقل `/interview/results/[sessionId]` نمایش داده می‌شود. فهرست
+گزارش‌های قبلی در صفحهٔ `/interview` قرار دارد و تمرین فعال در مودال تمام‌صفحهٔ
+`interview/interview-practice-dialog.tsx` انجام می‌شود؛ بستن آن پاسخ جاری را ذخیره
+می‌کند. قرارداد مشترک `InterviewReport` در `packages/shared-types` و اعتبارسنجی API
 در `modules/ai/interview-report.ts` قرار دارند. مسیر قدیمی `/api/interview/feedback`
 برای سازگاری باقی است و UI جدید آن را فراخوانی نمی‌کند.
 
@@ -152,7 +155,11 @@ graphify path "A" "B"
   رزومه و شغل، تمرین مصاحبه، مدیریت اپلای، راهنماها، درباره، تماس، حریم خصوصی و
   شرایط استفاده هستند و در `sitemap.xml` ثبت شده‌اند.
 - `robots.txt` صفحه‌های عمومی و crawlerهای جست‌وجوی پاسخ‌گو را مجاز می‌کند،
-  routeهای حساب/API را می‌بندد و crawlerهای آموزش مدل را مسدود می‌کند.
+  routeهای حساب/API را می‌بندد و crawlerهای آموزش مدل را مسدود می‌کند. محدودیت
+  `/interview` باید فقط خود پنل و زیرمسیرهای آن را بگیرد، نه لندینگ عمومی
+  `/interview-practice`.
+- `sitemap.xml` فقط URLهای عمومی را ثبت می‌کند؛ تا وقتی تاریخ به‌روزرسانی مهم
+  هر صفحه از منبع قابل‌اعتماد به‌دست نیاید، `lastmod` منتشر نمی‌شود.
 - `llms.txt` خلاصهٔ factual محصول و لینک صفحه‌های مرجع را ارائه می‌کند.
 - تمام routeهای ورود و پنل metadata صریح `noindex, nofollow` دارند.
 - لندینگ server-rendered است و providerهای کلاینتی فقط در layoutهای ورود و پنل

@@ -7,11 +7,19 @@ export function InterviewResult({ session, onRestart }: { session: InterviewSess
   if (!report) return null;
   return (
     <section className="mt-4 space-y-5" aria-label="نتیجه مصاحبه">
-      <div className="grid gap-6 rounded-[22px] bg-[#173f39] p-6 text-white sm:grid-cols-[auto_1fr] sm:p-8">
-        <div className="flex size-36 flex-col items-center justify-center rounded-full border-8 border-[#68c8ac]/40 bg-white/5">
+      <div className="relative isolate grid gap-6 overflow-hidden rounded-[22px] bg-[radial-gradient(circle_at_8%_15%,rgba(105,200,165,.32),transparent_34%),linear-gradient(120deg,#164c40,#10342f)] p-6 text-white shadow-[0_18px_48px_rgba(22,76,64,.18)] sm:grid-cols-[auto_1fr] sm:p-8">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-24 -left-12 -z-10 size-72 rounded-full border border-white/10"
+        />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-12 -left-2 -z-10 size-52 rounded-full border border-white/10"
+        />
+        <div className="flex size-36 flex-col items-center justify-center rounded-full border-8 border-[#84d9b7]/55 bg-white/10 shadow-[inset_0_0_30px_rgba(255,255,255,.07),0_12px_35px_rgba(0,0,0,.12)]">
           <Trophy size={24} className="mb-1 text-[#f2d587]" />
           <strong className="text-4xl">{formatPersianNumber(report.score)}</strong>
-          <span className="mt-1 text-xs text-[#b8d9cd]">از ۱۰۰ · امتیاز تقریبی</span>
+          <span className="mt-1 text-xs text-[#d2e9dd]">از ۱۰۰ · امتیاز تقریبی</span>
         </div>
         <div className="self-center">
           <span className="text-xs text-[#9cddc6]">مصاحبه‌ات کامل شد</span>
