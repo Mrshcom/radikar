@@ -14,6 +14,7 @@ import {
   normalizeStoredResumeData,
 } from "@radikar/validators";
 import { asObject, hasResumeContent, type JsonObject, validateJobDescription } from "./helpers";
+import { interviewReportRequestSchema, interviewReportSystemPrompt, parseInterviewReport } from "./interview-report";
 import type { BillingService, UsageCosts } from "../billing/service";
 import { requirePermission } from "../auth/routes";
 import type { ProviderName } from "@radikar/ai";
@@ -521,6 +522,18 @@ export function registerAiRoutes(
     const resume = asObject(normalizeStoredResumeData(body.resume));
     if (!hasResumeContent(resume))
       return reply.code(422).send({ error: "برای ساخت جلسه مصاحبه ابتدا رزومه را تکمیل کن." });
+    const intent = z
+      .object({
+        type: z.enum(["comprehensive", "focused"]).optional(),
+        focusArea: z.string().trim().min(1).max(120).optional(),
+      })
+      .safeParse(body);
+    if (!intent.success || (intent.data.type === "focused" && !intent.data.focusArea))
+      return reply.code(422).send({ error: "برای تمرین تخصصی، موضوع معتبر انتخاب کن." });
+    const focusArea = intent.data.type === "focused" ? intent.data.focusArea : undefined;
+    const interviewScope = focusArea
+      ? `مصاحبه تخصصی فقط درباره «${focusArea}»: ۴ تا ۶ سؤال متنوع اما همگی مرتبط با همین موضوع بساز. رزومه فقط برای شخصی‌سازی سطح و مثال‌هاست؛ به حوزه‌های دیگر نرو.`
+      : "مصاحبه جامع: ۴ تا ۶ سؤال متنوع از مهارت‌های اصلی، تجربه‌های واقعی، حل مسئله و همکاری یا رهبری متناسب با رزومه بساز. سؤال‌ها نباید همگی روی یک موضوع متمرکز باشند.";
     const usage = { ai: 5, interview: 1 } satisfies UsageCosts;
     await consume(billing, request, usage, "interview_session");
     try {
@@ -529,11 +542,11 @@ export function registerAiRoutes(
         [
           {
             role: "system",
-            content: "تو مربی مصاحبه شغلی هستی. فقط JSON معتبر فارسی برگردان.",
+            content: "تو مربی مصاحبه شغلی هستی. دستور محدودهٔ مصاحبه را رعایت کن و فقط JSON معتبر فارسی برگردان.",
           },
           {
             role: "user",
-            content: `رزومه:\n${JSON.stringify(resume, null, 2)}\nپایگاه دانش:\n${JSON.stringify(asObject(body.knowledge), null, 2)}\nحالت: ${textOf(body.mode) || "ترکیبی"}\nشرح شغل: ${textOf(body.jobDescription) || "ندارد"}\nJSON: {"title":string,"subtitle":string,"duration":string,"questions":string[],"cards":[{"title":string,"text":string,"tone":"lavender|mint|peach"}]}`,
+            content: `محدودهٔ مصاحبه: ${interviewScope}\nبرای cards سه موضوع مشخص و قابل تمرین مرتبط با رزومه پیشنهاد بده؛ عنوان هر کارت نام یک حوزهٔ تخصصی باشد، نه ویژگی محصول یا نتیجهٔ مصاحبه.\nرزومه:\n${JSON.stringify(resume, null, 2)}\nپایگاه دانش:\n${JSON.stringify(asObject(body.knowledge), null, 2)}\nحالت: ${textOf(body.mode) || "ترکیبی"}\nشرح شغل: ${textOf(body.jobDescription) || "ندارد"}\nJSON: {"title":string,"subtitle":string,"duration":string,"questions":string[],"cards":[{"title":string,"text":string,"tone":"lavender|mint|peach"}]}`,
           },
         ],
         {
@@ -571,6 +584,35 @@ export function registerAiRoutes(
     } catch (error) {
       await refund(billing, request, usage, "interview_session");
       return modelError(reply, error, "مدل مصاحبه پاسخ نداد.");
+    }
+  });
+
+  app.post("/api/interview/report", async (request, reply) => {
+    const parsed = interviewReportRequestSchema.safeParse(request.body);
+    if (!parsed.success)
+      return reply
+        .code(422)
+        .send({ error: "برای دریافت نتیجه، پاسخ همهٔ سؤال‌ها را کامل کن؛ هر پاسخ حداکثر ۸۰۰۰ کاراکتر باشد." });
+    const abort = modelRequestAbort(request, reply);
+    try {
+      const result = await chatJson<unknown>(
+        getAnalyzeConfig(),
+        [
+          { role: "system", content: interviewReportSystemPrompt },
+          { role: "user", content: JSON.stringify(parsed.data) },
+        ],
+        {
+          ...modelUsage(billing, request, "interview_report"),
+          signal: abort.signal,
+          maxAttempts: 2,
+          maxOutputTokens: 6_144,
+        },
+      );
+      return parseInterviewReport(result, parsed.data.responses.length);
+    } catch (error) {
+      return modelError(reply, error, "مدل گزارش مصاحبه را کامل تولید نکرد. دوباره تلاش کن.");
+    } finally {
+      abort.dispose();
     }
   });
 

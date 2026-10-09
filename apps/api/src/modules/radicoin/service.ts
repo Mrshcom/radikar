@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, count, desc, eq, ilike, inArray, lte, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, lt, lte, or, sql } from "drizzle-orm";
 import {
   radicoinSettings,
   radicoinTransactions,
@@ -7,8 +7,16 @@ import {
   referrals,
   plans,
   users,
+  dataRecords,
   type Database,
 } from "@radikar/database";
+import type { OnboardingRewardStatus } from "@radikar/shared-types";
+import {
+  getOnboardingCompletedSteps,
+  ONBOARDING_REWARD_COINS,
+  onboardingRewardKey,
+  onboardingRewardSteps,
+} from "./onboarding-reward";
 
 export type RadicoinSource =
   | "daily_login"
@@ -78,6 +86,90 @@ export class RadicoinError extends Error {
 
 export class RadicoinService {
   constructor(private readonly database: Database) {}
+
+  private async onboardingRewardStatus(executor: Executor, userId: string): Promise<OnboardingRewardStatus> {
+    const [records, confirmedReferrals, claimed] = await Promise.all([
+      executor
+        .select({ collection: dataRecords.collection, payload: dataRecords.payload })
+        .from(dataRecords)
+        .where(
+          and(
+            eq(dataRecords.ownerUserId, userId),
+            inArray(dataRecords.collection, [
+              "workspaceState",
+              "knowledgeProfiles",
+              "matchAnalyses",
+              "resumes",
+              "applications",
+              "interviewSessions",
+            ]),
+          ),
+        ),
+      executor
+        .select({ id: referrals.id })
+        .from(referrals)
+        .where(and(eq(referrals.referrerUserId, userId), eq(referrals.status, "confirmed")))
+        .limit(1),
+      executor
+        .select({ id: radicoinTransactions.id })
+        .from(radicoinTransactions)
+        .where(
+          and(
+            eq(radicoinTransactions.userId, userId),
+            eq(radicoinTransactions.idempotencyKey, onboardingRewardKey(userId)),
+          ),
+        )
+        .limit(1),
+    ]);
+    const activeProfileId = records.find(
+      (record) => record.collection === "workspaceState" && record.payload.id === "active-profile",
+    )?.payload.activeProfileId;
+    const completedSteps = getOnboardingCompletedSteps(
+      records,
+      confirmedReferrals.length > 0,
+      typeof activeProfileId === "string" ? activeProfileId : "profile-default",
+    );
+    return {
+      amount: ONBOARDING_REWARD_COINS,
+      eligible: completedSteps.length === onboardingRewardSteps.length,
+      claimed: claimed.length > 0,
+      completedSteps,
+    };
+  }
+
+  getOnboardingRewardStatus(userId: string) {
+    return this.onboardingRewardStatus(this.database, userId);
+  }
+
+  async claimOnboardingReward(userId: string, now = new Date()) {
+    return this.database.transaction(async (tx) => {
+      await this.ensureWallet(tx, userId, now);
+      const status = await this.onboardingRewardStatus(tx, userId);
+      if (status.claimed) return { ...status, credited: false };
+      if (!status.eligible)
+        throw new RadicoinError(409, "ابتدا همهٔ مرحله‌های مسیر را تکمیل کن تا پاداش قابل دریافت شود.");
+      const credited = await this.creditInTransaction(
+        tx,
+        {
+          userId,
+          amount: ONBOARDING_REWARD_COINS,
+          source: "activity",
+          idempotencyKey: onboardingRewardKey(userId),
+          description: "پاداش تکمیل مسیر رادیکار",
+          metadata: { onboardingVersion: 1 },
+        },
+        now,
+      );
+      await tx
+        .update(users)
+        .set({
+          onboardingState: { version: 1, status: "completed", completedSteps: status.completedSteps },
+          updatedAt: now,
+        })
+        .where(eq(users.id, userId));
+      return { ...status, claimed: true, credited };
+    });
+  }
 
   private async settings(executor: Executor) {
     await executor.insert(radicoinSettings).values({ id: "default", updatedAt: new Date() }).onConflictDoNothing();
@@ -752,13 +844,40 @@ export class RadicoinService {
     });
     const [walletRows, transactions] = await Promise.all([
       this.database.select().from(radicoinWallets).where(eq(radicoinWallets.userId, userId)).limit(1),
-      this.database
-        .select()
-        .from(radicoinTransactions)
-        .where(eq(radicoinTransactions.userId, userId))
-        .orderBy(desc(radicoinTransactions.createdAt))
-        .limit(limit),
+      limit > 0
+        ? this.database
+            .select()
+            .from(radicoinTransactions)
+            .where(eq(radicoinTransactions.userId, userId))
+            .orderBy(desc(radicoinTransactions.createdAt))
+            .limit(limit)
+        : Promise.resolve([]),
     ]);
     return { wallet: walletRows[0] ?? null, transactions };
+  }
+
+  async getTransactionHistory(userId: string, limit = 20, cursor?: { createdAt: Date; id: string }) {
+    const rows = await this.database
+      .select()
+      .from(radicoinTransactions)
+      .where(
+        and(
+          eq(radicoinTransactions.userId, userId),
+          cursor
+            ? or(
+                lt(radicoinTransactions.createdAt, cursor.createdAt),
+                and(eq(radicoinTransactions.createdAt, cursor.createdAt), lt(radicoinTransactions.id, cursor.id)),
+              )
+            : undefined,
+        ),
+      )
+      .orderBy(desc(radicoinTransactions.createdAt), desc(radicoinTransactions.id))
+      .limit(limit + 1);
+    const items = rows.slice(0, limit);
+    const last = items.at(-1);
+    return {
+      items,
+      nextCursor: rows.length > limit && last ? `${last.createdAt.toISOString()}~${last.id}` : null,
+    };
   }
 }

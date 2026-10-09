@@ -1051,7 +1051,7 @@ export default function KnowledgeBasePage() {
           </span>
           <span className="flex flex-col">
             <strong className="text-[12px] text-[#19312f]">پروفایل حرفه‌ای تو</strong>
-            <small className="mt-1 text-[8px] text-[#7f8e8a]">همه اطلاعات فقط در مرورگر خودت نگهداری می‌شود.</small>
+            <small className="mt-1 text-[10px] text-[#7f8e8a]">همه اطلاعات فقط در مرورگر خودت نگهداری می‌شود.</small>
           </span>
         </div>
         <div className="relative flex items-center gap-3" ref={completionDetailsRef}>
@@ -1072,7 +1072,7 @@ export default function KnowledgeBasePage() {
             </div>
           </div>
           <button
-            className="inline-flex min-h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#cfe3da] bg-white px-2.5 text-[8px] font-bold text-[#0f7b62]"
+            className="inline-flex min-h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#cfe3da] bg-white px-2.5 text-[10px] font-bold text-[#0f7b62]"
             type="button"
             aria-expanded={showCompletionDetails}
             onClick={() => setShowCompletionDetails((current) => !current)}
@@ -1091,7 +1091,7 @@ export default function KnowledgeBasePage() {
                   <strong className="text-[10px]">
                     {missingCompletionItems.length ? "پروفایلت را کامل‌تر کن" : "پروفایل حرفه‌ای کامل"}
                   </strong>
-                  <small className="mt-0.5 text-[7px] text-[#758582]">
+                  <small className="mt-0.5 text-[9px] text-[#758582]">
                     {completion.toLocaleString("fa-IR")}٪ از اطلاعات پیشنهادی تکمیل شده
                   </small>
                 </div>
@@ -1102,13 +1102,13 @@ export default function KnowledgeBasePage() {
               <div className="max-h-[280px] overflow-y-auto p-3.5">
                 {missingCompletionItems.length ? (
                   <>
-                    <p className="mt-0 text-[8px] leading-[1.8] text-[#758582]">
+                    <p className="mt-0 mb-3 text-[12px] leading-[1.8] text-[#758582]">
                       موارد زیر را کامل کن تا رزومه و تمرین‌های مصاحبه دقیق‌تر و شخصی‌تر شوند.
                     </p>
                     <ul className="m-0 grid list-none gap-1.5 p-0">
                       {missingCompletionItems.map((item) => (
                         <li
-                          className="relative rounded-lg bg-[#f7f9f7] py-2 pr-6 pl-2 text-[8px] before:absolute before:top-3 before:right-2.5 before:size-1.5 before:rounded-full before:bg-[#66ad96]"
+                          className="relative rounded-lg bg-[#f7f9f7] py-2 pr-6 pl-2 text-[10px] before:absolute before:top-3 before:right-2.5 before:size-1.5 before:rounded-full before:bg-[#66ad96]"
                           key={item.label}
                         >
                           {item.label}
@@ -1127,7 +1127,7 @@ export default function KnowledgeBasePage() {
                 )}
               </div>
               {missingCompletionItems.length > 0 && (
-                <footer className="border-t border-[#e7ebe6] bg-[#fafbf9] px-3.5 py-2.5 text-[7px] text-[#758582]">
+                <footer className="border-t border-[#e7ebe6] bg-[#fafbf9] px-3.5 py-2.5 text-[9px] text-[#758582]">
                   بعد از تکمیل موارد، دکمه «ذخیره اطلاعات» را بزن.
                 </footer>
               )}
@@ -1151,7 +1151,7 @@ export default function KnowledgeBasePage() {
               <CheckCircle2 size={14} /> اطلاعات «{importedFile}» آماده بازبینی است.
             </span>
           )}
-          {importError && <span className="block text-[8px] text-[#b65e52]">{importError}</span>}
+          {importError && <span className="block text-[11px] text-[#b65e52]">{importError}</span>}
         </div>
         <input
           ref={fileInputRef}
@@ -1174,7 +1174,7 @@ export default function KnowledgeBasePage() {
           <Link2 size={20} />
           <h2 className="m-0 text-[11px] text-[#19312f]">تکمیل خودکار با پروفایل LinkedIn</h2>
         </div>
-        <p className="m-0 text-[10px] leading-[1.8] text-[#758582]">
+        <p className="m-0 text-[11px] leading-[1.8] text-[#758582]">
           فقط لینک عمومی پروفایل خودت را وارد کن. اطلاعات با Apify استخراج می‌شود؛ ورود به LinkedIn یا ارسال کوکی انجام
           نمی‌شود.
         </p>
@@ -1746,7 +1746,7 @@ export default function KnowledgeBasePage() {
       )}
 
       <div className="sticky bottom-4 z-10 mt-4 flex flex-col items-start justify-between gap-3 rounded-[15px] border border-[#d8e6df] bg-white/95 p-3.5 shadow-[0_14px_40px_rgba(25,49,47,.12)] backdrop-blur min-[561px]:flex-row min-[561px]:items-center">
-        <div className="flex items-center gap-2 text-[10px] text-[#758582]">
+        <div className="flex items-center gap-2 text-[12px] text-[#758582]">
           <CheckCircle2 className="text-[#0f7b62]" size={18} />
           <span>پس از ذخیره، ساخت رزومه جدید با این اطلاعات آغاز می‌شود.</span>
         </div>
@@ -1818,7 +1818,7 @@ function KnowledgeSectionTabs({
     <aside className="min-w-0 rounded-[18px] border border-[#dce7e1] bg-white p-2 shadow-[0_12px_36px_rgba(27,55,50,.055)] max-[1099px]:shadow-none min-[1100px]:sticky min-[1100px]:top-4">
       <header className="hidden px-3 pb-3 pt-2 min-[1100px]:block">
         <strong className="text-[13px] text-[#19312f]">بخش‌های پایگاه دانش</strong>
-        <p className="mb-0 mt-1 text-[9px] leading-[1.7] text-[#83918e]">برای تکمیل اطلاعات بین بخش‌ها جابه‌جا شو.</p>
+        <p className="mb-0 mt-1 text-[10px] leading-[1.7] text-[#83918e]">برای تکمیل اطلاعات بین بخش‌ها جابه‌جا شو.</p>
       </header>
       <div className="relative min-[1100px]:block">
         <button
@@ -1890,14 +1890,14 @@ function KnowledgeSectionTabs({
                   <Icon size={19} />
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <strong className="truncate text-[11px]">{tab.label}</strong>
-                  <small className={cn("mt-1 truncate text-[9px]", active ? "text-white/70" : "text-[#83918e]")}>
+                  <strong className="truncate text-[12px]">{tab.label}</strong>
+                  <small className={cn("mt-1 truncate text-[10px]", active ? "text-white/70" : "text-[#83918e]")}>
                     {tab.description}
                   </small>
                 </span>
                 <span
                   className={cn(
-                    "grid size-6 shrink-0 place-items-center rounded-full text-[7px] font-bold",
+                    "grid size-6 shrink-0 place-items-center rounded-full text-[10px] font-bold",
                     active ? "bg-white/15" : "bg-[#f2f6f3] text-[#7b8b87]",
                   )}
                 >

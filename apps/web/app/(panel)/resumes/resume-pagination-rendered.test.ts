@@ -78,6 +78,25 @@ describe("rendered resume pagination", () => {
     );
   });
 
+  it("does not double-count Matrix Dark project cards that share a visual row", () => {
+    const projects = Array.from({ length: 4 }, (_, index) => ({
+      id: String(index),
+      name: `پروژه ${index + 1}`,
+      role: "توسعه‌دهنده فرانت‌اند",
+      url: "",
+      startDate: "",
+      endDate: "",
+      isCurrent: false,
+      description: "شرح پروژه ".repeat(70),
+      technologies: "React, TypeScript",
+    }));
+
+    const pages = paginateResumeData({ ...emptyResumeData, projects }, "matrix-dark");
+
+    expect(pages).toHaveLength(1);
+    expect(pages[0].projects).toHaveLength(4);
+  });
+
   it("supports every registered template profile", () => {
     for (const id of ["sector-yellow", "designer-sidebar", "timeline-classic"])
       expect(getResumePaginationProfile(id)).toBeTruthy();

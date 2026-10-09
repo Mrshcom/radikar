@@ -8,23 +8,35 @@ type FormFieldProps = {
   hint?: ReactNode;
   children: ReactNode;
   className?: string;
+  htmlFor?: string;
+  errorId?: string;
 };
 
-export function FormField({ label, required = false, error, hint, children, className }: FormFieldProps) {
+export function FormField({
+  label,
+  required = false,
+  error,
+  hint,
+  children,
+  className,
+  htmlFor,
+  errorId,
+}: FormFieldProps) {
+  const Label = htmlFor ? "label" : "span";
   return (
     <div className={cn("grid gap-2 text-[10px] font-bold text-[#536562]", className)}>
-      <span className="flex items-center gap-1">
+      <Label htmlFor={htmlFor} className="flex items-center gap-1">
         {label}
         {required && (
           <span aria-hidden="true" className="text-[#c44d4d]">
             *
           </span>
         )}
-      </span>
+      </Label>
       {children}
       {hint && <small className="font-normal text-[#899793]">{hint}</small>}
       {error && (
-        <small className="font-normal text-[#c44d4d]" role="alert">
+        <small id={errorId} className="text-[11px] font-normal text-[#c44d4d]" role="alert">
           {error}
         </small>
       )}

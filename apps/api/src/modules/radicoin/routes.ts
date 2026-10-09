@@ -3,7 +3,11 @@ import { z } from "zod";
 import { requirePermission } from "../auth/routes";
 import { RadicoinError, RadicoinService } from "./service";
 
-const historySchema = z.object({ limit: z.coerce.number().int().min(1).max(100).default(30) });
+const historySchema = z.object({ limit: z.coerce.number().int().min(0).max(100).default(30) });
+const transactionHistorySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(20).default(20),
+  cursor: z.string().max(80).optional(),
+});
 const pageSchema = z.object({
   search: z.string().max(100).default(""),
   page: z.coerce.number().int().min(1).default(1),
@@ -48,10 +52,34 @@ function requireCustomer(request: FastifyRequest, reply: FastifyReply) {
 }
 
 export function registerRadicoinRoutes(app: FastifyInstance, radicoin: RadicoinService) {
+  app.get("/api/radicoin/onboarding-reward", async (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
+    return radicoin.getOnboardingRewardStatus(request.auth!.user.id);
+  });
+
+  app.post("/api/radicoin/onboarding-reward/claim", async (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
+    return radicoin.claimOnboardingReward(request.auth!.user.id);
+  });
+
   app.get("/api/radicoin/wallet", async (request, reply) => {
     if (!requireCustomer(request, reply)) return;
     const { limit } = historySchema.parse(request.query);
     return radicoin.getWallet(request.auth!.user.id, limit);
+  });
+
+  app.get("/api/radicoin/transactions", async (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
+    const { limit, cursor } = transactionHistorySchema.parse(request.query);
+    const [createdAtText, id] = cursor?.split("~") ?? [];
+    const parsedCursor = cursor
+      ? z.object({ createdAt: z.iso.datetime(), id: z.uuid() }).parse({ createdAt: createdAtText, id })
+      : null;
+    return radicoin.getTransactionHistory(
+      request.auth!.user.id,
+      limit,
+      parsedCursor ? { createdAt: new Date(parsedCursor.createdAt), id: parsedCursor.id } : undefined,
+    );
   });
 
   app.get("/api/admin/radicoin/wallets/:id", async (request, reply) => {

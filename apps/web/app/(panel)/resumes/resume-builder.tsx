@@ -649,7 +649,7 @@ export function ResumeBuilder({
                           ? "می‌توانی عکس را برای همین نسخه جایگزین یا حذف کنی."
                           : "این رزومه بدون عکس ساخته می‌شود؛ در صورت نیاز عکس اضافه کن."}
                       </p>
-                      {photoError && <span className="mt-1 block text-[7px] text-[#b65e52]">{photoError}</span>}
+                      {photoError && <span className="mt-1 block text-[11px] text-[#b65e52]">{photoError}</span>}
                     </div>
                     <input
                       ref={photoInputRef}

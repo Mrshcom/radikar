@@ -313,7 +313,7 @@ export default function LoginPage() {
                     />
                   </span>
                   {phoneErrors.phone && (
-                    <span className="text-[10px] font-medium text-[#c64c54]">{phoneErrors.phone.message}</span>
+                    <span className="text-[11px] font-medium text-[#c64c54]">{phoneErrors.phone.message}</span>
                   )}
                 </label>
 
@@ -370,7 +370,7 @@ export default function LoginPage() {
                   ))}
                 </div>
                 {otpErrors.otp && (
-                  <span className="text-[10px] font-medium text-[#c64c54]">{otpErrors.otp.message}</span>
+                  <span className="text-[11px] font-medium text-[#c64c54]">{otpErrors.otp.message}</span>
                 )}
               </label>
 

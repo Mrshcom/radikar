@@ -4,6 +4,7 @@ export {
   authSessions,
   dataRecords,
   jobListings,
+  jobRecommendationDeliveries,
   jobPoolRuns,
   jobPoolSegments,
   jobPoolSettings,

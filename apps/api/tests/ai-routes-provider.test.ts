@@ -163,6 +163,120 @@ test("all six AI routes accept successful provider JSON and record model usage",
   }
 });
 
+test("interview session scopes comprehensive and focused questions separately", async () => {
+  const previous = globalThis.fetch;
+  const prompts: string[] = [];
+  const app = appWithBilling([]);
+  try {
+    globalThis.fetch = async (_url, options) => {
+      const request = JSON.parse(String(options?.body));
+      const messages = request.messages ?? request.input;
+      prompts.push(messages.find((message: { role: string }) => message.role === "user").content);
+      return response({
+        title: "جلسه",
+        subtitle: "تمرین",
+        duration: "۱۰ دقیقه",
+        questions: ["سؤال اول؟"],
+        cards: [],
+      });
+    };
+    const cookies = { radikar_session: "token" };
+    const comprehensive = await app.inject({
+      method: "POST",
+      url: "/api/interview/session",
+      cookies,
+      payload: { resume, type: "comprehensive", mode: "مصاحبه جامع" },
+    });
+    const focused = await app.inject({
+      method: "POST",
+      url: "/api/interview/session",
+      cookies,
+      payload: { resume, type: "focused", focusArea: "معماری و مقیاس‌پذیری", mode: "تمرین تخصصی" },
+    });
+    assert.equal(comprehensive.statusCode, 200);
+    assert.equal(focused.statusCode, 200);
+    assert.match(prompts[0], /مصاحبه جامع.*مهارت‌های اصلی.*تجربه‌های واقعی/);
+    assert.match(prompts[1], /مصاحبه تخصصی فقط درباره «معماری و مقیاس‌پذیری»/);
+    assert.match(prompts[1], /به حوزه‌های دیگر نرو/);
+    const invalid = await app.inject({
+      method: "POST",
+      url: "/api/interview/session",
+      cookies,
+      payload: { resume, type: "focused", mode: "تمرین تخصصی" },
+    });
+    assert.equal(invalid.statusCode, 422);
+    assert.equal(prompts.length, 2);
+  } finally {
+    globalThis.fetch = previous;
+    await app.close();
+  }
+});
+
+test("interview report evaluates all answers in one model request and rejects incomplete reports", async () => {
+  const previous = globalThis.fetch;
+  const events: string[] = [];
+  const app = appWithBilling(events);
+  let calls = 0;
+  let output: unknown = {
+    summary: "جمع‌بندی",
+    strengths: ["وضوح"],
+    improvements: ["مثال عملی بیشتر"],
+    questions: [
+      {
+        questionIndex: 0,
+        score: 80,
+        feedback: "پاسخ درست",
+        strengths: ["تعریف درست"],
+        issues: [],
+        suggestedAnswer: "پاسخ بهتر اول",
+      },
+      {
+        questionIndex: 1,
+        score: 60,
+        feedback: "جزئیات کم",
+        strengths: [],
+        issues: ["مثال کم است"],
+        suggestedAnswer: "پاسخ بهتر دوم",
+      },
+    ],
+  };
+  try {
+    globalThis.fetch = async () => {
+      calls += 1;
+      return response(output);
+    };
+    const payload = {
+      mode: "فنی",
+      responses: [
+        { question: "سؤال اول", answer: "پاسخ اول" },
+        { question: "سؤال دوم", answer: "پاسخ دوم" },
+      ],
+    };
+    const result = await app.inject({
+      method: "POST",
+      url: "/api/interview/report",
+      cookies: { radikar_session: "token" },
+      payload,
+    });
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.json().score, 70);
+    assert.equal(result.json().questions.length, 2);
+    assert.equal(calls, 1);
+    assert.ok(events.includes("usage:interview_report:true"));
+    output = { summary: "ناقص", strengths: [], improvements: [], questions: [] };
+    const invalid = await app.inject({
+      method: "POST",
+      url: "/api/interview/report",
+      cookies: { radikar_session: "token" },
+      payload,
+    });
+    assert.equal(invalid.statusCode, 502);
+  } finally {
+    globalThis.fetch = previous;
+    await app.close();
+  }
+});
+
 test("AI routes refund consumed credits after provider, invalid JSON, timeout and abort errors", async () => {
   const previous = globalThis.fetch;
   const events: string[] = [];

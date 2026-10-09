@@ -82,12 +82,12 @@ const onboardingStateSchema = z
     version: z.literal(1),
     status: z.enum(["not_started", "active", "dismissed", "completed"]),
     completedSteps: z
-      .array(z.enum(["profile", "match", "resume", "application"]))
-      .max(4)
+      .array(z.enum(["profile", "match", "resume", "application", "referral", "interview"]))
+      .max(6)
       .transform((steps) => [...new Set(steps)]),
   })
   .superRefine((state, context) => {
-    if (state.status === "completed" && state.completedSteps.length !== 4) {
+    if (state.status === "completed" && state.completedSteps.length !== 6) {
       context.addIssue({ code: "custom", message: "راهنما فقط پس از تکمیل همه مراحل کامل می‌شود." });
     }
   });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import {
   ArrowDownLeft,
   ArrowLeft,
@@ -20,10 +21,9 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePlans } from "@/lib/billing";
+import { useMembership, usePlans } from "@/lib/billing";
 import { PersianDateTime } from "@/lib/date-time-display";
-import { useRadicoinWallet } from "@/lib/radicoins";
-import { RadicoinIcon } from "../_components/radicoin-icon";
+import { useRadicoinHistory, useRadicoinWallet } from "@/lib/radicoins";
 
 const sourceLabels: Record<string, string> = {
   daily_login: "ورود روزانه",
@@ -53,16 +53,52 @@ const sourceIcons = {
 };
 const formatCoinAmount = (value: number) => (value === 0 ? "صفر" : value.toLocaleString("fa-IR"));
 
+function TransactionSkeletons({ count = 3 }: { count?: number }) {
+  return Array.from({ length: count }, (_, index) => (
+    <div
+      aria-hidden="true"
+      className="flex min-h-[84px] animate-pulse items-center gap-3 rounded-[16px] border border-[#f3e0ae] bg-[#fffaf0] p-4"
+      key={index}
+    >
+      <span className="size-10 shrink-0 rounded-[12px] bg-[#f5e9c9]" />
+      <div className="grid flex-1 gap-2">
+        <span className="h-3 w-2/5 rounded bg-[#f5e9c9]" />
+        <span className="h-2.5 w-1/4 rounded bg-[#f5e9c9]" />
+      </div>
+      <span className="h-7 w-20 rounded-full bg-[#f5e9c9]" />
+    </div>
+  ));
+}
+
 export default function RadicoinsPage() {
   const wallet = useRadicoinWallet();
+  const history = useRadicoinHistory();
+  const historyEndRef = useRef<HTMLDivElement>(null);
   const plans = usePlans();
+  const membership = useMembership();
   const balance = wallet.data?.wallet?.availableCoins ?? 0;
-  const rewards = (plans.data ?? []).filter((plan) => plan.radicoinCost && plan.isPurchasable);
-  const nextReward = rewards
+  const activePlan = membership.data?.status === "active" ? membership.data.plan : null;
+  const upgradeRewards = (plans.data ?? []).filter(
+    (plan) => plan.radicoinCost && plan.isPurchasable && (!activePlan || plan.sortOrder > activePlan.sortOrder),
+  );
+  const nextReward = upgradeRewards
     .filter((plan) => (plan.radicoinCost ?? 0) > balance)
     .sort((a, b) => (a.radicoinCost ?? 0) - (b.radicoinCost ?? 0))[0];
   const progress = nextReward ? Math.min(100, Math.round((balance / (nextReward.radicoinCost ?? 1)) * 100)) : 100;
-  const transactions = wallet.data?.transactions ?? [];
+  const transactions = history.data?.pages.flatMap((page) => page.items) ?? [];
+
+  useEffect(() => {
+    const target = historyEndRef.current;
+    if (!target || !history.hasNextPage || history.isFetchingNextPage || history.isFetchNextPageError) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) void history.fetchNextPage();
+      },
+      { rootMargin: "200px 0px" },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [history.fetchNextPage, history.hasNextPage, history.isFetchingNextPage, history.isFetchNextPageError]);
 
   return (
     <div className="grid gap-6 overflow-x-clip">
@@ -168,14 +204,20 @@ export default function RadicoinsPage() {
             <span className="grid size-11 shrink-0 place-items-center rounded-[14px] bg-[#fff0bd] text-[#b18216]">
               <Gift size={21} />
             </span>
-            <div>
-              <strong className="text-[12px] text-[#5f5128]">
-                {nextReward ? `تا پلن ${nextReward.name}` : "رادیکوین‌هایت آماده استفاده‌اند"}
+            <div className={nextReward ? "flex items-baseline gap-3 whitespace-nowrap" : undefined}>
+              <strong className="text-[13px] text-[#5f5128]">
+                {nextReward
+                  ? `تا پلن ${nextReward.name}`
+                  : activePlan
+                    ? `پلن ${activePlan.name} فعال است`
+                    : "رادیکوین‌هایت آماده استفاده‌اند"}
               </strong>
-              <p className="mb-0 mt-1 text-[9px] leading-6 text-[#89794b]">
+              <p className={`text-[11px] leading-6 text-[#89794b] ${nextReward ? "m-0" : "mb-0 mt-1"}`}>
                 {nextReward
                   ? `${((nextReward.radicoinCost ?? 0) - balance).toLocaleString("fa-IR")} رادیکوین دیگر لازم داری`
-                  : "هنگام خرید یا ارتقا، روش پرداخت رادیکوین را انتخاب کن."}
+                  : activePlan
+                    ? "برای تمدید پلن فعلی یا مشاهده پلن‌ها، رادیکوین را در صفحه پلن‌ها خرج کن."
+                    : "هنگام خرید یا ارتقا، روش پرداخت رادیکوین را انتخاب کن."}
               </p>
             </div>
           </div>
@@ -207,10 +249,17 @@ export default function RadicoinsPage() {
           />
           گردش رادیکوین
         </h2>
-        {wallet.isLoading ? (
-          <div className="grid min-h-40 place-items-center">
-            <LoaderCircle className="animate-spin text-[#0f7b62]" />
+        {history.isPending ? (
+          <div className="grid gap-3 p-4" role="status" aria-label="در حال بارگذاری گردش رادیکوین">
+            <TransactionSkeletons />
           </div>
+        ) : history.isError && !history.data ? (
+          <p className="m-0 p-6 text-center text-[11px] text-[#a05b52]" role="alert">
+            دریافت گردش رادیکوین ناموفق بود.{" "}
+            <button className="font-bold underline" onClick={() => void history.refetch()} type="button">
+              تلاش دوباره
+            </button>
+          </p>
         ) : (
           <div className="grid gap-3 p-4">
             {transactions.map((entry) => {
@@ -241,13 +290,13 @@ export default function RadicoinsPage() {
                   : (sourceIcons[entry.source as keyof typeof sourceIcons] ?? ArrowDownLeft);
               return (
                 <article
-                  className="relative flex flex-col overflow-hidden rounded-[16px] border border-[#f3e0ae] bg-[linear-gradient(110deg,#fffdf7_0%,#fff6d9_100%)] p-4 transition-shadow hover:shadow-[0_12px_24px_rgba(122,88,18,.12)]"
+                  className="group relative flex flex-col overflow-hidden rounded-[16px] border border-[#f3e0ae] bg-[linear-gradient(110deg,#fffdf7_0%,#fff6d9_100%)] p-4 transition-colors hover:border-[#ddc56e]"
                   key={entry.id}
                 >
                   <Image
                     alt=""
                     aria-hidden="true"
-                    className="pointer-events-none absolute -bottom-8 -left-1 h-36 w-36 -rotate-[30deg] opacity-[0.07]"
+                    className="pointer-events-none absolute -bottom-8 -left-1 h-36 w-36 -rotate-[30deg] opacity-[0.07] transition-transform duration-300 group-hover:scale-[1.111] motion-reduce:transition-none"
                     height={144}
                     src="/illustrations/radicoin-coin-m-v3.png"
                     width={144}
@@ -292,6 +341,25 @@ export default function RadicoinsPage() {
             {!transactions.length && (
               <p className="m-0 p-10 text-center text-[10px] text-[#87938f]">هنوز تراکنشی ثبت نشده است.</p>
             )}
+            {history.isFetchingNextPage && (
+              <div className="grid gap-3" role="status" aria-label="در حال بارگذاری تراکنش‌های بیشتر">
+                <div className="flex items-center justify-center gap-2 text-[10px] text-[#8d6814]">
+                  <LoaderCircle className="animate-spin" size={17} />
+                  در حال بارگذاری تراکنش‌های بیشتر
+                </div>
+                <TransactionSkeletons count={2} />
+              </div>
+            )}
+            {history.isFetchNextPageError && (
+              <button
+                className="justify-self-center rounded-lg border border-[#e7d59f] px-4 py-2 text-[10px] font-bold text-[#8d6814]"
+                onClick={() => void history.fetchNextPage()}
+                type="button"
+              >
+                بارگذاری ناموفق بود؛ تلاش دوباره
+              </button>
+            )}
+            {history.hasNextPage && <div aria-hidden="true" className="h-px" ref={historyEndRef} />}
           </div>
         )}
       </section>

@@ -24,6 +24,7 @@
     "@radikar/shared-types": "*",
     "@radikar/validators": "*",
     "@tanstack/react-query": "^5.101.4",
+    "framer-motion": "^14.0.0",
     "lucide-react": "^1.24.0",
     "next": "^16.3.3",
     "nuqs": "^2.10.1",

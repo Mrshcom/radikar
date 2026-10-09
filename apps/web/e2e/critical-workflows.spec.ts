@@ -297,7 +297,8 @@ test.describe("جریان‌های بحرانی داده‌های پنل", () =>
     await expect(repository.list("matchAnalyses")).toHaveLength(0);
   });
 
-  test("جلسه مصاحبه ذخیره‌شده باز می‌شود و بازخورد پاسخ ذخیره می‌گردد", async ({ page }) => {
+  test("مصاحبه پاسخ‌ها را حفظ می‌کند و فقط در پایان گزارش کامل می‌دهد", async ({ page }) => {
+    await mockSession(page, "user", true);
     const repository = await mockDataCollections(page, {
       resumes: [resume],
       interviewSessions: [
@@ -315,26 +316,159 @@ test.describe("جریان‌های بحرانی داده‌های پنل", () =>
         },
       ],
     });
-    await page.route("**/api/interview/feedback", async (route) => {
+    let reportRequests = 0;
+    await page.route("**/api/interview/report", async (route) => {
+      reportRequests += 1;
+      expect(route.request().postDataJSON().responses).toEqual([
+        { question: "React چیست؟", answer: "React یک کتابخانه رابط کاربری است." },
+        { question: "TypeScript چیست؟", answer: "TypeScript تایپ ایستا را به JavaScript اضافه می‌کند." },
+      ]);
+      if (reportRequests === 1) {
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "مدل موقتاً در دسترس نیست" }),
+        });
+        return;
+      }
       await route.fulfill({
         contentType: "application/json",
-        body: JSON.stringify({ title: "پاسخ خوب", text: "مثال عملی بیشتری اضافه کن." }),
+        body: JSON.stringify({
+          score: 75,
+          summary: "پاسخ‌ها روشن بودند؛ مثال عملی بیشتری اضافه کن.",
+          strengths: ["توضیح روشن مفاهیم"],
+          improvements: ["مثال عملی بیشتر"],
+          questions: [
+            {
+              questionIndex: 0,
+              score: 80,
+              feedback: "تعریف درست است.",
+              strengths: ["تعریف درست"],
+              issues: ["مثال کم است"],
+              suggestedAnswer: "React رابط کاربری را با کامپوننت‌ها می‌سازد.",
+            },
+            {
+              questionIndex: 1,
+              score: 70,
+              feedback: "مثال کاربردی اضافه کن.",
+              strengths: [],
+              issues: ["کاربردها را شرح بده"],
+              suggestedAnswer: "TypeScript خطاهای نوع را پیش از اجرا پیدا می‌کند.",
+            },
+          ],
+        }),
       });
     });
     await page.goto("/interview");
-    await page.getByRole("button", { name: /شروع مصاحبه آزمایشی/ }).click();
+    await page.getByRole("button", { name: "شروع مصاحبه جامع" }).click();
+    await expect(page.getByText("React چیست؟")).toBeVisible();
+    await page.getByRole("button", { name: /سؤال بعدی/ }).click();
+    const answerField = page.getByLabel("پاسخ تو", { exact: true });
+    await expect(answerField).toHaveAttribute("aria-invalid", "true");
+    await expect(answerField).toHaveCSS("border-top-color", "rgb(196, 77, 77)");
+    await expect(page.locator("#interview-answer-error")).toHaveText("ابتدا پاسخ این سؤال را بنویس.");
+    await expect(answerField.locator("..")).toHaveCSS("row-gap", "8px");
     await expect(page.getByText("React چیست؟")).toBeVisible();
     await page.getByPlaceholder("پاسخ خودت را وارد کن...").fill("React یک کتابخانه رابط کاربری است.");
-    await page.getByRole("button", { name: "دریافت بازخورد" }).click();
-    await expect(page.getByText("پاسخ خوب")).toBeVisible();
-    await expect
-      .poll(() => {
-        const session = repository.get("interviewSessions", "interview-1") as { feedbacks?: unknown[] } | undefined;
-        return session?.feedbacks?.length;
-      })
-      .toBe(1);
     await page.getByRole("button", { name: /سؤال بعدی/ }).click();
     await expect(page.getByText("TypeScript چیست؟")).toBeVisible();
+    await expect(page.locator('[role="status"][aria-live="polite"]')).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /سؤال بعدی/ })).toHaveCount(0);
+    expect(reportRequests).toBe(0);
+    await page.getByPlaceholder("پاسخ خودت را وارد کن...").fill("TypeScript تایپ ایستا را به JavaScript اضافه می‌کند.");
+    await page.getByRole("button", { name: "سؤال قبلی" }).click();
+    await expect(page.getByPlaceholder("پاسخ خودت را وارد کن...")).toHaveValue("React یک کتابخانه رابط کاربری است.");
+    await page.getByRole("button", { name: /سؤال بعدی/ }).click();
+    await expect(page.getByPlaceholder("پاسخ خودت را وارد کن...")).toHaveValue(
+      "TypeScript تایپ ایستا را به JavaScript اضافه می‌کند.",
+    );
+    await page.getByRole("button", { name: "بستن و ذخیره مصاحبه" }).click();
+    await page.reload();
+    await page.getByRole("button", { name: "ادامه مصاحبه جامع" }).click();
+    await expect(page.getByPlaceholder("پاسخ خودت را وارد کن...")).toHaveValue(
+      "TypeScript تایپ ایستا را به JavaScript اضافه می‌کند.",
+    );
+    await page.getByRole("button", { name: "پایان مصاحبه و دریافت نتیجه" }).click();
+    await expect(page.getByText("مدل موقتاً در دسترس نیست").first()).toBeVisible();
+    await expect(page.getByPlaceholder("پاسخ خودت را وارد کن...")).toHaveValue(
+      "TypeScript تایپ ایستا را به JavaScript اضافه می‌کند.",
+    );
+    await page.getByRole("button", { name: "پایان مصاحبه و دریافت نتیجه" }).click();
+    await expect(page.getByRole("region", { name: "نتیجه مصاحبه" })).toBeVisible();
+    await expect.poll(() => repository.get("interviewSessions", "interview-1")?.report).toMatchObject({ score: 75 });
+    await page.getByText("React چیست؟", { exact: true }).click();
+    await expect(page.getByText("React رابط کاربری را با کامپوننت‌ها می‌سازد.")).toBeVisible();
+    await page.screenshot({ path: test.info().outputPath("interview-result.png"), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole("region", { name: "نتیجه مصاحبه" }).scrollIntoViewIfNeeded();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path: test.info().outputPath("interview-result-mobile.png"), fullPage: true });
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.reload();
+    await page.getByRole("button", { name: "مشاهده نتیجه مصاحبه" }).click();
+    await expect(page.getByRole("region", { name: "نتیجه مصاحبه" })).toBeVisible();
+    expect(reportRequests).toBe(2);
+    await page.getByRole("button", { name: "تمرین دوبارهٔ این مصاحبه" }).click();
+    await expect(page.getByPlaceholder("پاسخ خودت را وارد کن...")).toHaveValue("");
+    await expect(page.getByRole("button", { name: /سؤال بعدی/ })).toBeVisible();
+  });
+
+  test("دکمه اصلی مصاحبه جامع و کارت‌ها تمرین همان موضوع را می‌سازند", async ({ page }) => {
+    await mockSession(page, "user", true);
+    await mockDataCollections(page, { resumes: [resume], knowledgeProfiles: [], interviewSessions: [] });
+    const requests: Array<{ type: string; focusArea?: string }> = [];
+    const reports: Array<{ mode: string }> = [];
+    await page.route("**/api/interview/session", async (route) => {
+      requests.push(route.request().postDataJSON());
+      await route.fulfill({
+        json: {
+          title: "جلسه مصاحبه",
+          subtitle: "پرسش‌های متناسب با رزومه",
+          duration: "۱۰ دقیقه",
+          questions: ["چطور مسئله را حل می‌کنی؟"],
+          cards: [{ title: "معماری و مقیاس‌پذیری", text: "سؤالات معماری", tone: "mint" }],
+        },
+      });
+    });
+    await page.route("**/api/interview/report", async (route) => {
+      reports.push(route.request().postDataJSON());
+      await route.fulfill({
+        json: {
+          score: 80,
+          summary: "جمع‌بندی تمرین",
+          strengths: ["پاسخ روشن"],
+          improvements: ["مثال بیشتر"],
+          questions: [
+            {
+              questionIndex: 0,
+              score: 80,
+              feedback: "پاسخ روشن بود.",
+              strengths: ["وضوح"],
+              issues: ["مثال کم بود"],
+              suggestedAnswer: "نمونه پاسخ بهتر",
+            },
+          ],
+        },
+      });
+    });
+    await page.goto("/interview");
+    await page.getByRole("button", { name: "شروع مصاحبه جامع" }).click();
+    await expect.poll(() => requests[0]).toMatchObject({ type: "comprehensive" });
+    await page.getByRole("button", { name: "تمرین تخصصی این موضوع" }).click();
+    await expect
+      .poll(() => requests[1])
+      .toMatchObject({
+        type: "focused",
+        focusArea: "معماری و مقیاس‌پذیری",
+      });
+    await expect(page.getByText("تمرین تخصصی: معماری و مقیاس‌پذیری", { exact: true })).toBeVisible();
+    await page.getByPlaceholder("پاسخ خودت را وارد کن...").fill("برای مقیاس‌پذیری از کش و صف استفاده می‌کنم.");
+    await page.getByRole("button", { name: "پایان مصاحبه و دریافت نتیجه" }).click();
+    await expect(page.getByRole("region", { name: "نتیجه مصاحبه" })).toBeVisible();
+    expect(reports[0].mode).toBe("تمرین تخصصی: معماری و مقیاس‌پذیری");
+    await page.getByRole("button", { name: "شروع مصاحبه جامع" }).click();
+    await expect.poll(() => requests[2]).toMatchObject({ type: "comprehensive" });
+    expect(requests[2].focusArea).toBeUndefined();
   });
 
   test("داشبورد تحلیل تازه را نمایش می‌دهد و برای مراجعه بعدی ذخیره می‌کند", async ({ page }) => {

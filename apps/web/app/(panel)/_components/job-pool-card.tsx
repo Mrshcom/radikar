@@ -21,19 +21,23 @@ export function JobPoolCard({
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const summary = listing.skills.slice(0, 4).join(" · ");
+  const deadlineLabel =
+    listing.deadlineDays != null && listing.deadlineDays >= 0 && listing.deadlineDays <= 3
+      ? `${listing.deadlineDays.toLocaleString("fa-IR")} روز تا پایان فرصت`
+      : null;
 
   return (
     <>
-      <article className="flex min-h-[250px] min-w-0 flex-col rounded-2xl border border-[#d9e6df] bg-white p-5 transition-colors hover:border-[#9ac8b8]">
+      <article className="group flex min-h-[250px] min-w-0 flex-col rounded-2xl border border-[#dde5df] bg-white p-5 pb-4 transition-colors duration-200 hover:border-[#bcd2c8]">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <JobLogo company={listing.companyName} logoUrl={listing.companyLogoUrl || undefined} tone="green" />
             <div className="min-w-0">
-              <strong className="block truncate text-[10px] font-bold text-[#314943]" dir="auto">
+              <strong className="block truncate text-[12px] font-bold text-[#314943]" dir="auto">
                 {listing.companyName}
               </strong>
               {listing.location && (
-                <span className="mt-1 flex items-center gap-1 truncate text-[8px] text-[#899791]" dir="auto">
+                <span className="mt-1 flex items-center gap-1 truncate text-[10px] text-[#899791]" dir="auto">
                   <MapPin size={11} /> {listing.location}
                 </span>
               )}
@@ -56,23 +60,33 @@ export function JobPoolCard({
         <h3 className="mb-0 mt-5 line-clamp-2 text-[14px] font-semibold leading-[1.7] text-[#18332f]" dir="auto">
           {listing.title}
         </h3>
-        <p className="mt-3 line-clamp-2 min-h-9 text-[9px] leading-[1.9] text-[#687a75]" dir="auto">
-          {summary || listing.employmentType || listing.workplaceType || "جزئیات آگهی را مشاهده کن."}
-        </p>
-        <div className="mt-auto flex items-center justify-between gap-2 border-t border-[#e7ece8] pt-4">
-          <span className="inline-flex min-h-7 items-center gap-1 rounded-lg bg-[#edf7f2] px-2 text-[8px] font-extrabold text-[#0b7b5e]">
-            <Sparkles size={12} /> پیشنهاد جدید
-          </span>
-          <div className="flex flex-wrap justify-end gap-1">
+        <div className="mt-3 flex min-h-[54px] items-start gap-2 border-r-2 border-[#78bba5] bg-[#f7faf8] px-3 py-2.5 text-[10px] leading-[1.8] text-[#687a75]">
+          <Sparkles className="mt-0.5 shrink-0 text-[#45987d]" size={13} />
+          <p className="m-0 line-clamp-2" dir="auto">
+            {summary || listing.employmentType || listing.workplaceType || "جزئیات آگهی را مشاهده کن."}
+          </p>
+        </div>
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[#e7ece8] pt-4">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex min-h-7 items-center gap-1.5 rounded-lg bg-[#edf7f2] px-2.5 text-[10px] text-[#0b7b5e]">
+              <Sparkles size={12} /> پیشنهاد جدید
+            </span>
+            {deadlineLabel && (
+              <span className="inline-flex min-h-7 rounded-lg bg-[#fff1d9] px-2.5 text-[9px] font-bold text-[#a87529]">
+                {deadlineLabel}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
             <button
-              className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[8px] font-bold text-[#60716e] hover:bg-[#f3f6f4] hover:text-[#0f7b62]"
+              className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[10px] text-[#60716e] transition-colors duration-200 hover:bg-[#f3f6f4] hover:text-[#0f7b62]"
               type="button"
               onClick={() => setDetailsOpen(true)}
             >
               جزئیات
             </button>
             <button
-              className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[8px] font-bold text-[#0b795d] hover:bg-[#edf7f2]"
+              className="inline-flex min-h-8 items-center gap-1 rounded-md px-2 text-[10px] text-[#0b795d] transition-colors duration-200 hover:bg-[#edf7f2]"
               type="button"
               onClick={onAnalyze}
               disabled={saving || !listing.description}

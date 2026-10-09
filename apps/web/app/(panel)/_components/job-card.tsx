@@ -47,7 +47,7 @@ export function JobLogo({
   letter?: string;
   logoUrl?: string;
   tone?: Job["tone"];
-  variant?: "card" | "board";
+  variant?: "card" | "board" | "compact";
 }) {
   const [failedLogoUrl, setFailedLogoUrl] = useState("");
   const logoUrl = sanitizeRemoteImageSource(rawLogoUrl);
@@ -58,7 +58,11 @@ export function JobLogo({
     <div
       className={cn(
         "grid shrink-0 place-items-center overflow-hidden border font-extrabold",
-        variant === "board" ? "size-7 rounded-lg text-[9px]" : "size-11 rounded-xl text-[16px]",
+        variant === "board"
+          ? "size-7 rounded-lg text-[9px]"
+          : variant === "compact"
+            ? "size-[34px] rounded-[10px] text-[10px]"
+            : "size-11 rounded-xl text-[16px]",
         toneStyles[tone].logo,
       )}
       aria-hidden={!showLogo}

@@ -1,7 +1,7 @@
 export const roles = ["user", "admin", "superadmin"] as const;
 export type UserRole = (typeof roles)[number];
 export type UserStatus = "active" | "suspended";
-export type OnboardingStepId = "profile" | "match" | "resume" | "application";
+export type OnboardingStepId = "profile" | "match" | "resume" | "application" | "referral" | "interview";
 export type OnboardingState = {
   version: number;
   status: "not_started" | "active" | "dismissed" | "completed";

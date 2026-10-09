@@ -19,8 +19,15 @@ export type PublicJobPoolListing = {
   salaryText: string | null;
   salaryPeriod: "monthly" | "yearly" | "unknown";
   postedAt: string | null;
+  expiresAt: string | null;
+  deadlineDays: number | null;
   description: string | null;
   skills: string[];
+  recommendation?: {
+    deliveryId: string;
+    status: "available" | "seen" | "saved" | "dismissed";
+    deliveredAt: string;
+  };
 };
 
 export type PublicJobPoolResponse = {
@@ -30,8 +37,34 @@ export type PublicJobPoolResponse = {
   pageSize: number;
 };
 
+export type JobRecommendationResponse = {
+  items: PublicJobPoolListing[];
+  meta: {
+    activityScore: number;
+    deliveredThisWeek: number;
+    nextDeliveryAt: string | null;
+    weeklyLimit: number;
+  };
+};
+
 export function jobPoolQueryKey(query: string, page: number, pageSize: number) {
   return ["job-pool", "public", { query, page, pageSize }] as const;
+}
+
+export function jobRecommendationQueryKey(query: string) {
+  return ["job-pool", "recommendations", query] as const;
+}
+
+export function useJobRecommendations({ query = "" }: { query?: string } = {}) {
+  const normalizedQuery = query.trim();
+  return useQuery({
+    queryKey: jobRecommendationQueryKey(normalizedQuery),
+    queryFn: () =>
+      apiRequest<JobRecommendationResponse>(
+        `/api/job-pool/recommendations?${buildQueryString({ query: normalizedQuery, page: 1, pageSize: 1 })}`,
+      ),
+    staleTime: 60_000,
+  });
 }
 
 export function useJobPoolListings({

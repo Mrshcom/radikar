@@ -665,7 +665,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 )}
                 {noticeOpen && userRole === "user" && (
                   <div className="absolute left-0 top-[46px] z-40 w-[320px] overflow-hidden rounded-[20px] border border-[#dfe6e1] bg-white p-2.5 shadow-[0_22px_54px_rgba(25,57,50,.2)] max-[420px]:fixed max-[420px]:left-3 max-[420px]:right-auto max-[420px]:top-[68px] max-[420px]:w-[calc(100vw-48px)]">
-                    <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3">
+                    <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(15,123,98,.08)]">
                       <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#d9f0e6] text-[#0f7b62] ring-2 ring-[#c9e7da]">
                         <Bell size={19} />
                       </span>
@@ -735,7 +735,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
               </button>
               {userMenuOpen && (
                 <div className="absolute left-0 top-[46px] z-40 w-[292px] overflow-hidden rounded-[20px] border border-[#dfe6e1] bg-white p-2.5 shadow-[0_22px_54px_rgba(25,57,50,.2)]">
-                  <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3">
+                  <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(15,123,98,.08)]">
                     <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#e7f5ee] ring-2 ring-[#c9e7da]">
                       <Image alt="آواتار پیش‌فرض حساب کاربری" className="size-full" height={40} src="/illustrations/default-profile-avatar.svg" width={40} />
                     </span>
@@ -1034,7 +1034,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 <div
                   key={item.id}
                   className={cn(
-                    "flex min-h-[62px] w-full items-center gap-[10px] rounded-xl border p-[10px] transition-[border-color,background-color,box-shadow]",
+                    "relative flex min-h-[62px] w-full items-center gap-[10px] rounded-xl border p-[10px] transition-[border-color,background-color,box-shadow]",
                     active
                       ? "border-[#8fc8b7] border-r-[5px] border-r-[#0f7b62] bg-[#edf7f2] shadow-[0_8px_20px_rgba(15,123,98,.1)]"
                       : "border-[#e7ebe6] bg-[#fbfcfa]",
@@ -1071,16 +1071,16 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   ) : (
                     <>
                       <button
-                        className="flex min-w-0 flex-1 items-center gap-[10px] border-0 bg-transparent p-0 text-right"
+                        aria-label={`انتخاب فضای کاری ${item.workspaceName}`}
+                        className="absolute inset-0 z-0 rounded-xl border-0 bg-transparent p-0"
                         type="button"
                         onClick={() => void switchProfile(item.id)}
-                      >
-                        <span className="min-w-0 flex-1 truncate text-[10px] font-bold text-[#19312f]">
-                          {item.workspaceName}
-                        </span>
-                      </button>
+                      />
+                      <span className="min-w-0 flex-1 truncate text-[10px] font-bold text-[#19312f]">
+                        {item.workspaceName}
+                      </span>
                       <button
-                        className="grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#71817e] transition-colors hover:text-[#0f7b62]"
+                        className="relative z-10 grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#71817e] transition-colors hover:text-[#0f7b62]"
                         type="button"
                         aria-label={`ویرایش ${item.workspaceName}`}
                         onClick={() => {
@@ -1091,7 +1091,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                         <Pencil size={13} />
                       </button>
                       <button
-                        className="-mr-2 grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#c25b50] transition-colors hover:text-[#a93f36]"
+                        className="relative z-10 -mr-2 grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#c25b50] transition-colors hover:text-[#a93f36]"
                         type="button"
                         aria-label={`حذف ${item.workspaceName}`}
                         onClick={() => {

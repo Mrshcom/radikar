@@ -18,6 +18,7 @@ import { CircularProgress } from "../_components/circular-progress";
 import { Modal, SectionTitle } from "../_components/ui";
 import { panelSurfacePadded, primaryAction, scoreWidthClass, secondaryAction } from "../_components/panel-styles";
 import { GenerationShimmer, MatchAnalysisSkeleton } from "../_components/skeletons";
+import { ScaledResumePreview } from "../resumes/scaled-resume-preview";
 import { useToast } from "@/app/_components/toast";
 import { isModelTaskCanceledError, useModelTasks } from "../_components/model-task-provider";
 import {
@@ -110,6 +111,7 @@ export default function MatchPage() {
   const [analysisError, setAnalysisError] = useState("");
   const [analysis, setAnalysis] = useState<MatchAnalysis | null>(null);
   const [resumePicker, setResumePicker] = useState(false);
+  const [resumePreviewOpen, setResumePreviewOpen] = useState(false);
   const [resumePickerOpensUp, setResumePickerOpensUp] = useState(false);
   const [resumeOptions, setResumeOptions] = useState<ResumeOption[]>([]);
   const [baseResumeId, setBaseResumeId] = useState(() => runningAnalysisContext?.resumeId || "");
@@ -521,8 +523,8 @@ export default function MatchPage() {
                 >
                   <Icon className="shrink-0" size={19} />
                   <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-                    <strong className="text-[9px] text-[#19312f]">{source.title}</strong>
-                    <small className="truncate text-[9px] text-[#96a09e]">{source.hint}</small>
+                    <strong className="text-[11px] text-[#19312f]">{source.title}</strong>
+                    <small className="truncate text-[10px] text-[#96a09e]">{source.hint}</small>
                   </span>
                   {active && <CheckCircle2 className="shrink-0 text-[#0f7b62] max-[680px]:hidden" size={18} />}
                 </button>
@@ -576,7 +578,7 @@ export default function MatchPage() {
               <p className="mx-0.5 mt-[9px] text-[10px] leading-[1.8] text-[#8c9996]">
                 هنگام تحلیل، متن آگهی از همین لینک دریافت و سپس برای مدل ارسال می‌شود.
               </p>
-              {importError && <p className="m-0 text-[8px] text-[#b65e52]">{importError}</p>}
+              {importError && <p className="m-0 text-[11px] text-[#b65e52]">{importError}</p>}
               {importedDescription && (
                 <div className="relative mt-2.5">
                   <details className="rounded-[10px] border border-[#dbe8e2] bg-[#f4f9f6] [&_p]:m-0 [&_p]:max-h-[125px] [&_p]:overflow-auto [&_p]:whitespace-pre-wrap [&_p]:px-3 [&_p]:pb-3 [&_p]:text-[10px] [&_p]:leading-[1.9] [&_p]:text-[#657572] [&_summary]:min-h-10 [&_summary]:cursor-pointer [&_summary]:py-3 [&_summary]:pr-3 [&_summary]:pl-11 [&_summary]:text-[10px] [&_summary]:font-bold [&_summary]:text-[#0f7b62]">
@@ -611,11 +613,35 @@ export default function MatchPage() {
             <label className="text-[10px] font-normal">
               رزومه مبنا <span className="text-[#c85f52]">*</span>
             </label>
-            <button
+            <div
               className={cn(
-                "flex min-h-[58px] w-full items-center gap-2.5 rounded-xl border bg-[#fbfcfa] p-2.5 text-right",
+                "flex min-h-[58px] w-full items-stretch overflow-hidden rounded-xl border bg-[#fbfcfa] text-right",
                 selectedResume ? "border-[#dfe5df]" : "border-dashed border-[#cfd8d3]",
               )}
+            >
+              {selectedResume ? (
+                <button
+                  className="group/preview relative grid w-[50px] shrink-0 place-items-center overflow-hidden border-l border-[#e3e9e5] bg-[#edf2ef] p-1 transition-colors hover:bg-[#e5f2ec] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#0f7b62]"
+                  type="button"
+                  onClick={() => setResumePreviewOpen(true)}
+                  aria-label={`پیش‌نمایش ${selectedResume.label}`}
+                  title="مشاهده پیش‌نمایش رزومه"
+                >
+                  <span className="pointer-events-none block w-[34px] overflow-hidden rounded-[3px] bg-white shadow-[0_1px_3px_rgba(25,49,47,.16)] transition-transform duration-200 group-hover/preview:scale-[1.04]">
+                    <ScaledResumePreview
+                      templateId={selectedResume.templateId}
+                      data={selectedResume.data}
+                      colorId={selectedResume.colorId || getDefaultResumeColor(selectedResume.templateId)}
+                    />
+                  </span>
+                </button>
+              ) : (
+                <div className="grid w-[50px] shrink-0 place-items-center border-l border-[#e3e9e5] bg-[#edf0ed] text-[#879590]">
+                  <FileText size={18} />
+                </div>
+              )}
+              <button
+                className="flex min-w-0 flex-1 items-center gap-2.5 p-2.5 text-right"
               onClick={() => {
                 if (resumePicker) {
                   setResumePicker(false);
@@ -631,19 +657,17 @@ export default function MatchPage() {
               aria-expanded={resumePicker}
               aria-haspopup="listbox"
             >
-              <div className="grid size-9 place-items-center rounded-[10px] bg-[#edf0ed] text-[#879590]">
-                <FileText size={18} />
-              </div>
               <div className="flex min-w-0 flex-1 flex-col">
-                <strong className="truncate text-[9px] text-[#687773]">
+                <strong className="truncate text-[10px] text-[#687773]">
                   {selectedResume?.label || "انتخاب رزومه مبنا"}
                 </strong>
-                <span className="mt-0.5 truncate text-[9px] text-[#929e9a]">
+                <span className="mt-0.5 truncate text-[10px] text-[#929e9a]">
                   {selectedResume?.meta || "هیچ رزومه‌ای انتخاب نشده است"}
                 </span>
               </div>
               <ChevronLeft size={18} />
             </button>
+            </div>
             {resumePicker && (
               <div
                 className={cn(
@@ -672,8 +696,8 @@ export default function MatchPage() {
                     >
                       <FileText className="shrink-0" size={16} />
                       <span className="flex min-w-0 flex-1 flex-col">
-                        <strong className="truncate text-[9px]">{resume.label}</strong>
-                        <small className="mt-0.5 text-[7px] text-[#929e9a]">{resume.meta}</small>
+                        <strong className="truncate text-[10px]">{resume.label}</strong>
+                        <small className="mt-0.5 text-[9px] text-[#929e9a]">{resume.meta}</small>
                       </span>
                       {baseResumeId === resume.id && <Check size={15} />}
                     </button>
@@ -694,9 +718,6 @@ export default function MatchPage() {
                   </div>
                 )}
               </div>
-            )}
-            {!selectedResume && (
-              <p className="m-0 text-[8px] text-[#a36e45]">برای تحلیل تطابق، انتخاب رزومه مبنا الزامی است.</p>
             )}
           </div>
           <button
@@ -836,6 +857,27 @@ export default function MatchPage() {
           )}
         </section>
       </div>
+      {resumePreviewOpen && selectedResume && (
+        <Modal
+          document
+          showCloseButton
+          title={`پیش‌نمایش ${selectedResume.label}`}
+          titleClassName="!mb-0 !text-[16px] !leading-[1.5]"
+          headerClassName="pb-[22px]"
+          onClose={() => setResumePreviewOpen(false)}
+        >
+          <div className="max-h-[calc(100vh-160px)] overflow-auto bg-[#e9eeea] p-5">
+            <div className="mx-auto w-full max-w-[720px]">
+              <ScaledResumePreview
+                templateId={selectedResume.templateId}
+                data={selectedResume.data}
+                colorId={selectedResume.colorId || getDefaultResumeColor(selectedResume.templateId)}
+                showAllPages
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
       {templatePickerOpen && (
         <Modal
           title="انتخاب قالب رزومه"

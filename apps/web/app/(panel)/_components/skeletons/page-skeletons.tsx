@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/cn";
 import { panelSurface } from "../panel-styles";
 import { LoadingContext, Skeleton, SkeletonLines, SkeletonTitle } from "./primitives";
@@ -241,32 +242,57 @@ export function ApplicationsSkeleton() {
 
 export function InterviewSkeleton() {
   return (
-    <div role="status" aria-live="polite">
-      <LoadingContext>در حال تولید جلسه و سؤال‌های مصاحبه متناسب با رزومه</LoadingContext>
-      <SkeletonTitle action={false} />
-      <div className="relative flex min-h-[360px] items-center rounded-[22px] bg-[#173f39] px-[38px] py-[34px] max-[560px]:min-h-[350px] max-[560px]:items-start max-[560px]:p-7">
-        <div className="min-w-0 flex-1">
-          <Skeleton className="h-7 w-32 bg-white/15" />
-          <Skeleton className="mt-4 h-7 w-3/4 bg-white/15" />
-          <Skeleton className="mt-3 h-3 w-2/3 bg-white/10" />
-          <Skeleton className="mt-2 h-3 w-1/2 bg-white/10" />
-          <div className="mt-5 flex gap-4">
-            <Skeleton className="h-3 w-20 bg-white/10" />
-            <Skeleton className="h-3 w-28 bg-white/10" />
-          </div>
-          <Skeleton className="mt-5 h-10 w-36 bg-white/20" />
+    <div role="status" aria-live="polite" aria-label="در حال آماده‌سازی جلسه و سؤال‌های مصاحبه">
+      <div className="relative flex min-h-[584px] flex-col overflow-hidden rounded-[22px] bg-[#f7f9f7] lg:flex-row-reverse lg:items-start">
+        <div className="relative w-full shrink-0 self-center lg:w-[55%]">
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="block h-auto w-full grayscale opacity-25 [mask-image:linear-gradient(to_right,black_86%,transparent)]"
+            height={1024}
+            priority
+            sizes="(min-width: 1024px) 55vw, 100vw"
+            src="/illustrations/radikar-interview-room-v2.png"
+            width={1536}
+          />
         </div>
-        <Skeleton className="size-[132px] shrink-0 rounded-full bg-white/15 max-[560px]:absolute max-[560px]:bottom-[25px] max-[560px]:left-[25px] max-[560px]:size-[100px]" />
+        <div className="relative min-w-0 flex-1 px-[clamp(24px,3vw,44px)] pb-[52px] pt-8 max-[560px]:p-7 lg:pb-[180px] lg:pt-10">
+          <Skeleton className="h-9 w-36 rounded-lg" />
+          <Skeleton className="mt-4 h-9 w-[min(360px,90%)]" />
+          <Skeleton className="mt-4 h-4 w-[min(430px,95%)]" />
+          <Skeleton className="mt-2 h-4 w-[min(320px,70%)]" />
+          <div className="mt-5 flex gap-4">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <Skeleton className="mt-10 h-12 w-56 rounded-2xl" />
+        </div>
+        <div className="relative z-10 grid w-full gap-3 px-6 pb-6 sm:grid-cols-3 lg:absolute lg:inset-x-0 lg:bottom-0 lg:px-8 lg:pb-8">
+          {Array.from({ length: 3 }, (_, index) => (
+            <div
+              className="flex min-h-[112px] items-center gap-4 rounded-[18px] bg-white/85 p-4 shadow-[0_10px_30px_rgba(27,63,54,.1)] backdrop-blur-md"
+              key={index}
+            >
+              <Skeleton className="size-12 shrink-0 rounded-[16px]" />
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="mt-2 h-3 w-4/5" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
       <div className="mt-4 grid grid-cols-3 gap-3 max-[820px]:grid-cols-1">
         {Array.from({ length: 3 }, (_, index) => (
-          <div className={cn(panelSurface, "p-5")} key={index}>
-            <Skeleton className="size-10 rounded-xl" />
-            <Skeleton className="mt-4 h-4 w-2/3" />
-            <div className="mt-3">
-              <SkeletonLines count={2} />
-            </div>
-            <Skeleton className="mt-4 h-3 w-24" />
+          <div
+            className="flex min-h-[220px] flex-col rounded-[22px] border border-[#e7ebe6] bg-white p-5 shadow-[0_12px_36px_rgba(27,55,50,.055)]"
+            key={index}
+          >
+            <Skeleton className="size-12 rounded-[16px]" />
+            <Skeleton className="mt-5 h-4 w-2/3" />
+            <Skeleton className="mt-3 h-3 w-full" />
+            <Skeleton className="mt-2 h-3 w-4/5" />
+            <Skeleton className="mt-auto h-9 w-28 rounded-lg" />
           </div>
         ))}
       </div>

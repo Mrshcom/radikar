@@ -63,6 +63,7 @@ export default function UpgradePage() {
     invoicePlan && radicoinCost > 0
       ? Math.max(0, Math.ceil((invoicePlan.priceRials * (radicoinCost - appliedCoins)) / radicoinCost))
       : (invoicePlan?.priceRials ?? 0);
+  const showRecommendedPlan = membership.data?.status === "active" && membership.data.plan.isFree;
 
   const closeInvoice = () => {
     if (createOrder.isPending) return;
@@ -158,24 +159,34 @@ export default function UpgradePage() {
           ];
           return (
             <article
-              className={`relative flex min-h-[430px] flex-col rounded-[22px] border bg-white p-6 shadow-[0_14px_40px_rgba(27,63,54,.06)] max-md:min-h-[380px] max-md:p-4 ${plan.id === "job-search" ? "border-[#69b39c] ring-4 ring-[#e9f5f0]" : "border-[#e1e8e2]"}`}
+              className={`relative flex min-h-[430px] flex-col rounded-[22px] border bg-white p-6 shadow-[0_14px_40px_rgba(27,63,54,.06)] max-md:min-h-[380px] max-md:p-4 ${showRecommendedPlan && plan.id === "job-search" ? "border-[#69b39c] ring-4 ring-[#e9f5f0]" : upgrading ? "border-[#69b39c]" : "border-[#e1e8e2]"}`}
               key={plan.id}
             >
-              {plan.id === "job-search" && (
+              {showRecommendedPlan && plan.id === "job-search" && (
                 <span className="absolute -top-3 left-6 rounded-full bg-[#0f7b62] px-3 py-1 text-[11px] text-white">
                   پیشنهاد رادیکار
+                </span>
+              )}
+              {current && (
+                <span className="absolute -top-3 right-6 inline-flex items-center gap-1 rounded-full border border-[#c9e3d7] bg-[#eaf5f0] px-3 py-1 text-[10px] font-bold text-[#0f705a]">
+                  <BadgeCheck size={12} /> پلن فعلی
                 </span>
               )}
               <div className="flex min-h-[150px] items-center justify-between gap-3 max-md:min-h-[132px]">
                 <div className="min-w-0 flex-1">
                   <h2 className="mb-0 text-[18px] font-black text-[#19312f]">{plan.name}</h2>
                   <p className="mb-0 mt-1 text-[10px] leading-6 text-[#7c8b88]">{plan.description}</p>
+                  {current && membership.data && (
+                    <span className="mt-2 inline-flex items-center gap-1 text-[9px] font-bold text-[#0f705a]">
+                      <CalendarDays size={12} /> فعال تا <PersianDateTime value={membership.data.expiresAt} />
+                    </span>
+                  )}
                 </div>
                 {mascot && (
                   <div className="relative -mb-5 -ml-3 -mt-4 h-[170px] w-[124px] shrink-0 self-start max-md:h-[150px] max-md:w-[110px]">
                     <Image
                       alt={mascot.alt}
-                      className="object-contain object-bottom drop-shadow-[0_12px_18px_rgba(15,123,98,.14)]"
+                      className={`object-contain object-bottom drop-shadow-[0_12px_18px_rgba(15,123,98,.14)] ${downgradeBlocked ? "grayscale" : ""}`}
                       fill
                       sizes="(max-width: 1050px) 110px, 124px"
                       src={mascot.src}

@@ -69,10 +69,16 @@ test("AI routes reject incomplete inputs before invoking a model", async () => {
     app.inject({ method: "POST", url: "/api/panel/dashboard", cookies, payload: { resume: {} } }),
     app.inject({ method: "POST", url: "/api/interview/session", cookies, payload: { resume: {} } }),
     app.inject({ method: "POST", url: "/api/interview/feedback", cookies, payload: { question: "سؤال", answer: "" } }),
+    app.inject({
+      method: "POST",
+      url: "/api/interview/report",
+      cookies,
+      payload: { mode: "فنی", responses: [{ question: "سؤال", answer: "" }] },
+    }),
   ]);
   assert.deepEqual(
     requests.map((response) => response.statusCode),
-    [422, 422, 422, 422, 422, 400],
+    [422, 422, 422, 422, 422, 400, 422],
   );
   await app.close();
 });

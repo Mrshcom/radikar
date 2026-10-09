@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeft, CheckCircle2, CircleAlert, Info } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
@@ -25,6 +26,7 @@ export function useToast() {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const shouldReduceMotion = useReducedMotion();
   const [toast, setToast] = useState<ToastState | null>(null);
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
   const upgradeMessageRef = useRef<string | null>(null);
@@ -117,29 +119,40 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           </div>
         </Modal>
       )}
-      {toast && (
-        <div
-          className={cn(
-            "fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-100 flex min-h-12 w-[calc(100vw-32px)] max-w-[380px] -translate-x-1/2 items-center gap-[9px] rounded-xl border px-[15px] py-3 text-[12px] font-semibold shadow-[0_15px_45px_rgba(22,63,55,.16)] print:hidden",
-            toast.variant === "error"
-              ? "border-[#efc9c5] bg-[#fff1ef] text-[#a13f37]"
-              : toast.variant === "info"
-                ? "border-[#cbdde9] bg-[#f1f7fb] text-[#38677f]"
-                : "border-[#c9e5da] bg-[#eff9f4] text-[#176b57]",
-          )}
-          role={toast.variant === "error" ? "alert" : "status"}
-          aria-live={toast.variant === "error" ? "assertive" : "polite"}
-        >
-          {toast.variant === "error" ? (
-            <CircleAlert size={19} />
-          ) : toast.variant === "info" ? (
-            <Info size={19} />
-          ) : (
-            <CheckCircle2 size={19} />
-          )}
-          {toast.message}
-        </div>
-      )}
+      <AnimatePresence mode="wait">
+        {toast && (
+          <motion.div
+            key={`${toast.variant}-${toast.message}`}
+            className={cn(
+              "fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-100 flex min-h-12 w-fit min-w-[min(300px,calc(100vw-32px))] max-w-[min(640px,calc(100vw-32px))] -translate-x-1/2 items-center justify-center gap-3 rounded-xl border px-[15px] py-3 text-[12px] font-semibold shadow-[0_15px_45px_rgba(22,63,55,.16)] print:hidden",
+              toast.variant === "error"
+                ? "border-[#efc9c5] bg-[#fff1ef] text-[#a13f37]"
+                : toast.variant === "info"
+                  ? "border-[#cbdde9] bg-[#f1f7fb] text-[#38677f]"
+                  : "border-[#c9e5da] bg-[#eff9f4] text-[#176b57]",
+            )}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={
+              shouldReduceMotion
+                ? undefined
+                : { opacity: 0, scale: 0.96, transition: { duration: 0.14, ease: "easeIn" }, y: -14 }
+            }
+            initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: -14 }}
+            transition={{ duration: 0.24, ease: "easeOut" }}
+            role={toast.variant === "error" ? "alert" : "status"}
+            aria-live={toast.variant === "error" ? "assertive" : "polite"}
+          >
+            {toast.variant === "error" ? (
+              <CircleAlert className="shrink-0" size={19} />
+            ) : toast.variant === "info" ? (
+              <Info className="shrink-0" size={19} />
+            ) : (
+              <CheckCircle2 className="shrink-0" size={19} />
+            )}
+            <span className="min-w-0 break-words text-center leading-6 [overflow-wrap:anywhere]">{toast.message}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </ToastContext.Provider>
   );
 }

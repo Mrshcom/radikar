@@ -45,7 +45,7 @@ export default function SettingsPage() {
       title: "وضعیت",
       render: (session) => (
         <span
-          className={`inline-flex rounded-md px-2 py-1 text-[9px] ${session.status === "active" ? "bg-[#eaf5f0] text-[#0f705a]" : "bg-[#f1f3f1] text-[#687873]"}`}
+          className={`inline-flex rounded-md px-2 py-1 text-[11px] ${session.status === "active" ? "bg-[#eaf5f0] text-[#0f705a]" : "bg-[#f1f3f1] text-[#687873]"}`}
         >
           {sessionStatus[session.status]}
           {session.current ? " · فعلی" : ""}
@@ -57,7 +57,7 @@ export default function SettingsPage() {
       key: "login",
       title: "ورود",
       render: (session) => (
-        <div className="grid gap-1 text-[9px] text-[#74847f]">
+        <div className="grid gap-1 text-[11px] text-[#74847f]">
           <span className="flex items-center gap-1 text-[#405753]">
             <LogIn size={13} className="text-[#0f7b62]" />
             <PersianDateTime value={session.createdAt} />
@@ -73,7 +73,7 @@ export default function SettingsPage() {
       key: "logout",
       title: "پایان نشست",
       render: (session) => (
-        <div className="grid gap-1 text-[9px] text-[#74847f]">
+        <div className="grid gap-1 text-[11px] text-[#74847f]">
           <span className="flex items-center gap-1 text-[#405753]">
             <LogOut size={13} className="text-[#a35a4d]" />
             {session.endedAt ? <PersianDateTime value={session.endedAt} /> : "هنوز فعال است"}
@@ -166,21 +166,21 @@ export default function SettingsPage() {
                       <MonitorSmartphone size={17} />
                     </span>
                     <div>
-                      <strong className="block text-[11px] text-[#233d38]">
+                      <strong className="block text-[13px] text-[#233d38]">
                         {session.current ? "همین دستگاه" : "نشست فعال"}
                       </strong>
-                      <span className="mt-1 block text-[9px] text-[#7b8b86]">
+                      <span className="mt-1 block text-[11px] text-[#7b8b86]">
                         آخرین فعالیت: <PersianDateTime value={session.lastSeenAt} />
                       </span>
                     </div>
                   </div>
-                  <div className="text-[9px] leading-6 text-[#74847f]">
+                  <div className="text-[11px] leading-6 text-[#74847f]">
                     <span className="flex items-center gap-1">
                       <MapPin size={13} /> IP ورود
                     </span>
                     <IpAddress value={session.loginIp} />
                   </div>
-                  <div className="text-[9px] leading-6 text-[#74847f]">
+                  <div className="text-[11px] leading-6 text-[#74847f]">
                     <span className="flex items-center gap-1">
                       <Clock3 size={13} /> شروع نشست
                     </span>
@@ -189,7 +189,7 @@ export default function SettingsPage() {
                     </span>
                   </div>
                   {session.current ? (
-                    <span className="inline-flex min-h-8 items-center justify-center rounded-lg bg-[#0f7b62] px-3 text-[9px] font-normal text-white">
+                    <span className="inline-flex min-h-8 items-center justify-center rounded-lg bg-[#0f7b62] px-3 text-[11px] font-normal text-white">
                       فعلی
                     </span>
                   ) : (

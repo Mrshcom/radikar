@@ -1,7 +1,16 @@
 import { createHash, randomUUID } from "node:crypto";
-import { and, asc, desc, eq, gte, ilike, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, ilike, lte, sql } from "drizzle-orm";
 import type { Database } from "@radikar/database";
-import { jobListings, jobPoolRuns, jobPoolSegments, jobPoolSettings } from "@radikar/database";
+import {
+  jobListings,
+  jobPoolRuns,
+  jobPoolSegments,
+  jobPoolSettings,
+  jobRecommendationDeliveries,
+  plans,
+  productEvents,
+  userMemberships,
+} from "@radikar/database";
 import { DEFAULT_JOB_POOL_SEGMENTS } from "./default-segments";
 
 const APIFY_API_BASE = "https://api.apify.com/v2";
@@ -55,8 +64,27 @@ export type PublicJobPoolListing = {
   salaryText: string | null;
   salaryPeriod: "monthly" | "yearly" | "unknown";
   postedAt: Date | null;
+  expiresAt: Date | null;
+  deadlineDays: number | null;
   description: string | null;
   skills: string[];
+  recommendation?: {
+    deliveryId: string;
+    status: "available" | "seen" | "saved" | "dismissed";
+    deliveredAt: Date;
+  };
+};
+
+export type JobRecommendationMeta = {
+  activityScore: number;
+  deliveredThisWeek: number;
+  nextDeliveryAt: Date | null;
+  weeklyLimit: number;
+};
+
+export type PublicJobRecommendationResponse = {
+  items: PublicJobPoolListing[];
+  meta: JobRecommendationMeta;
 };
 
 function asText(value: unknown) {
@@ -70,6 +98,34 @@ function asTextList(value: unknown) {
         .map((item) => item.trim())
         .filter(Boolean)
     : [];
+}
+
+function startOfWeek(date: Date) {
+  const start = new Date(date);
+  const day = (start.getUTCDay() + 6) % 7;
+  start.setUTCDate(start.getUTCDate() - day);
+  start.setUTCHours(0, 0, 0, 0);
+  return start;
+}
+
+function recommendationPolicy(isFree: boolean, planOrder: number, activityScore: number) {
+  const active = activityScore >= 7;
+  if (isFree) return { minimumHours: 72, weeklyLimit: 3 };
+  const weeklyLimit = Math.min(14, 6 + Math.max(planOrder, 1) * 2 + (active ? 3 : activityScore >= 3 ? 1 : 0));
+  return { minimumHours: active ? 24 : 48, weeklyLimit };
+}
+
+function recommendationScore(job: {
+  postedAt: Date | null;
+  discoveredAt: Date;
+  skills: string[];
+  description: string | null;
+  workplaceType: string | null;
+}) {
+  const referenceDate = job.postedAt ?? job.discoveredAt;
+  const ageInDays = Math.max(0, (Date.now() - referenceDate.getTime()) / 86_400_000);
+  const freshness = Math.max(0, 60 - Math.floor(ageInDays) * 6);
+  return freshness + Math.min(job.skills.length * 4, 20) + (job.description ? 8 : 0) + (job.workplaceType === "remote" ? 3 : 0);
 }
 
 function parseDate(value: unknown) {
@@ -293,6 +349,7 @@ export class JobPoolService {
 
   async listPublicJobs(filters: JobPoolJobFilters) {
     const result = await this.listJobs(filters);
+    const now = Date.now();
     return {
       ...result,
       items: result.items.map(
@@ -307,16 +364,166 @@ export class JobPoolService {
           fingerprint: _fingerprint,
           discoveredAt: _discoveredAt,
           lastSeenAt: _lastSeenAt,
-          expiresAt: _expiresAt,
           isActive: _isActive,
           ...job
-        }) =>
+          }) =>
           ({
             ...job,
             companyLogoUrl: asText(rawPayload.companyLogo) || null,
+            deadlineDays: job.expiresAt ? Math.ceil((job.expiresAt.getTime() - now) / 86_400_000) : null,
           }) satisfies PublicJobPoolListing,
       ),
     };
+  }
+
+  async listRecommendedJobs(userId: string, filters: JobPoolJobFilters): Promise<PublicJobRecommendationResponse> {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 86_400_000);
+    const weekStart = startOfWeek(now);
+    const [membership] = await this.db
+      .select({ isFree: plans.isFree, sortOrder: plans.sortOrder })
+      .from(userMemberships)
+      .innerJoin(plans, eq(userMemberships.planId, plans.id))
+      .where(
+        and(
+          eq(userMemberships.userId, userId),
+          eq(userMemberships.status, "active"),
+          gt(userMemberships.expiresAt, now),
+        ),
+      )
+      .limit(1);
+    const [freePlan] = membership
+      ? []
+      : await this.db.select({ isFree: plans.isFree, sortOrder: plans.sortOrder }).from(plans).where(eq(plans.isFree, true)).limit(1);
+    const [activityEvents, deliveries] = await Promise.all([
+      this.db
+        .select({ name: productEvents.name, occurredAt: productEvents.occurredAt })
+        .from(productEvents)
+        .where(and(eq(productEvents.userId, userId), gte(productEvents.occurredAt, sevenDaysAgo))),
+      this.db
+        .select()
+        .from(jobRecommendationDeliveries)
+        .where(eq(jobRecommendationDeliveries.userId, userId))
+        .orderBy(desc(jobRecommendationDeliveries.deliveredAt)),
+    ]);
+    const activeDays = new Set(activityEvents.map((event) => event.occurredAt.toISOString().slice(0, 10))).size;
+    const weightedEvents = activityEvents.reduce(
+      (score, event) =>
+        score +
+        (event.name === "application_changed" || event.name === "tailored_resume_created" || event.name === "match_analysis_result"
+          ? 2
+          : event.name === "resume_saved" || event.name === "job_input_submitted"
+            ? 1
+            : 0),
+      0,
+    );
+    const activityScore = Math.min(12, activeDays * 2 + weightedEvents);
+    const plan = membership ?? freePlan ?? { isFree: true, sortOrder: 0 };
+    const policy = recommendationPolicy(plan.isFree, plan.sortOrder, activityScore);
+    let deliveredThisWeek = deliveries.filter((delivery) => delivery.deliveredAt >= weekStart).length;
+    const latestDelivery = deliveries[0];
+    const nextEligibleAt = latestDelivery
+      ? new Date(latestDelivery.deliveredAt.getTime() + policy.minimumHours * 3_600_000)
+      : null;
+    let delivery = deliveries.find((item) => item.status === "available") ?? latestDelivery;
+
+    if (deliveredThisWeek < policy.weeklyLimit && (!nextEligibleAt || nextEligibleAt <= now)) {
+      const candidates = await this.listJobs({ ...filters, page: 1, pageSize: 100, sortBy: "date", sortDirection: "desc" });
+      const deliveredJobIds = new Set(deliveries.map((item) => item.jobListingId));
+      const candidate = candidates.items
+        .filter((job) => !deliveredJobIds.has(job.id))
+        .sort((left, right) => recommendationScore(right) - recommendationScore(left))[0];
+      if (candidate) {
+        const createdAt = new Date();
+        const newDelivery = {
+          id: randomUUID(),
+          userId,
+          jobListingId: candidate.id,
+          score: recommendationScore(candidate),
+          status: "available" as const,
+          deliveredAt: createdAt,
+          seenAt: null,
+          savedAt: null,
+          createdAt,
+          updatedAt: createdAt,
+        };
+        await this.db.insert(jobRecommendationDeliveries).values(newDelivery).onConflictDoNothing();
+        delivery = newDelivery;
+        deliveredThisWeek += 1;
+      }
+    }
+
+    if (delivery?.status === "available") {
+      await this.db
+        .update(jobRecommendationDeliveries)
+        .set({ status: "seen", seenAt: now, updatedAt: now })
+        .where(eq(jobRecommendationDeliveries.id, delivery.id));
+      delivery = { ...delivery, status: "seen", seenAt: now, updatedAt: now };
+    }
+
+    const [job] = delivery
+      ? await this.db.select().from(jobListings).where(eq(jobListings.id, delivery.jobListingId)).limit(1)
+      : [];
+    const nextDeliveryAt =
+      deliveredThisWeek >= policy.weeklyLimit
+        ? new Date(weekStart.getTime() + 7 * 86_400_000)
+        : nextEligibleAt;
+    if (!job || !delivery) {
+      return {
+        items: [],
+        meta: { activityScore, deliveredThisWeek, nextDeliveryAt, weeklyLimit: policy.weeklyLimit },
+      };
+    }
+
+    return {
+      items: [
+        {
+          id: job.id,
+          title: job.title,
+          companyName: job.companyName,
+          companyLogoUrl: asText(job.rawPayload.companyLogo) || null,
+          location: job.location,
+          canonicalUrl: job.canonicalUrl,
+          workplaceType: job.workplaceType,
+          employmentType: job.employmentType,
+          salaryText: job.salaryText,
+          salaryPeriod: detectSalaryPeriod(
+            job.salaryText,
+            job.rawPayload.salaryInfo,
+            job.rawPayload.salary,
+            job.rawPayload.salaryText,
+            job.rawPayload.description,
+            job.rawPayload.jobDescription,
+          ),
+          postedAt: job.postedAt,
+          expiresAt: job.expiresAt,
+          deadlineDays: job.expiresAt ? Math.ceil((job.expiresAt.getTime() - now.getTime()) / 86_400_000) : null,
+          description: job.description,
+          skills: job.skills,
+          recommendation: {
+            deliveryId: delivery.id,
+            status: delivery.status,
+            deliveredAt: delivery.deliveredAt,
+          },
+        },
+      ],
+      meta: { activityScore, deliveredThisWeek, nextDeliveryAt, weeklyLimit: policy.weeklyLimit },
+    };
+  }
+
+  async markRecommendationSaved(userId: string, deliveryId: string) {
+    const now = new Date();
+    const [delivery] = await this.db
+      .select({ id: jobRecommendationDeliveries.id })
+      .from(jobRecommendationDeliveries)
+      .where(and(eq(jobRecommendationDeliveries.id, deliveryId), eq(jobRecommendationDeliveries.userId, userId)))
+      .limit(1);
+    if (!delivery) return false;
+    await this.db
+      .update(jobRecommendationDeliveries)
+      .set({ status: "saved", savedAt: now, updatedAt: now })
+      .where(eq(jobRecommendationDeliveries.id, delivery.id));
+    return true;
   }
 
   async getSettings(): Promise<JobPoolSettingsInput> {

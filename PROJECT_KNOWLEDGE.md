@@ -47,6 +47,21 @@ Browser → Next.js Web → Fastify API → Neon/PostgreSQL
 | پرداخت و عضویت | `orders`، `upgrade` و admin pages | `modules/billing/*` و Zarinpal client |
 | بررسی سرویس | — | `/health` و `/ready` در `modules/health/routes.ts` |
 
+مصاحبه: پاسخ‌ها و مرحلهٔ جاری با `answers` و `currentQuestionIndex` داخل رکورد
+`interviewSessions` ذخیره می‌شوند. در سؤال آخر، `POST /api/interview/report` همهٔ
+پاسخ‌ها را یک‌جا ارزیابی می‌کند؛ خروجی اعتبارسنجی‌شده با امتیاز میانگین پاسخ‌ها
+در `report` همان رکورد نگهداری می‌شود. UI گزارش در `interview/interview-result.tsx`
+است؛ قرارداد مشترک `InterviewReport` در `packages/shared-types` و اعتبارسنجی API
+در `modules/ai/interview-report.ts` قرار دارند. مسیر قدیمی `/api/interview/feedback`
+برای سازگاری باقی است و UI جدید آن را فراخوانی نمی‌کند.
+
+پاداش مسیر: `GET /api/radicoin/onboarding-reward` شش مرحله را از داده‌های فضای
+کاری فعال و دعوت تأییدشده بررسی می‌کند و وضعیت دریافت را بدون واریز برمی‌گرداند.
+واریز فقط با `POST /api/radicoin/onboarding-reward/claim` انجام می‌شود؛ ۱۰۰ رادیکوین
+با کلید ثابت `onboarding-completion:v1:<userId>` و قفل کیف پول در یک تراکنش ثبت
+می‌شود. کامل‌شدن وضعیت راهنما به‌تنهایی پاداشی واریز نمی‌کند. گزارش جدید مصاحبه
+و بازخوردهای قدیمی هر دو برای مرحلهٔ مصاحبه پذیرفته می‌شوند.
+
 ## اجرای محلی
 
 پیش‌نیاز: Node `>=22.13.0`، npm `>=10` و Docker Desktop.
@@ -201,6 +216,10 @@ graphify path "A" "B"
 > Automated review: 2026-10-02 — project changes were committed; review the affected sections if behavior or architecture changed.
 
 > Automated review: 2026-10-02 — project changes were committed; review the affected sections if behavior or architecture changed.
+
+> Automated review: 2026-10-05 — project changes were committed; review the affected sections if behavior or architecture changed.
+
+> Automated review: 2026-10-05 — project changes were committed; review the affected sections if behavior or architecture changed.
 
 > Automated review: 2026-10-05 — project changes were committed; review the affected sections if behavior or architecture changed.
 

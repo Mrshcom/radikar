@@ -1,7 +1,7 @@
 import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { DataRecord } from "@radikar/shared-types";
 
-export type OnboardingStepId = "profile" | "match" | "resume" | "application";
+export type OnboardingStepId = "profile" | "match" | "resume" | "application" | "referral" | "interview";
 
 export type OnboardingState = {
   version: number;
@@ -628,5 +628,32 @@ export const jobListings = pgTable(
     uniqueIndex("job_listings_source_fingerprint_unique").on(table.source, table.fingerprint),
     index("job_listings_active_posted_idx").on(table.isActive, table.postedAt),
     index("job_listings_title_idx").on(table.title),
+  ],
+);
+
+export const jobRecommendationDeliveries = pgTable(
+  "job_recommendation_deliveries",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    jobListingId: uuid("job_listing_id")
+      .notNull()
+      .references(() => jobListings.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    status: text("status", { enum: ["available", "seen", "saved", "dismissed"] })
+      .notNull()
+      .default("available"),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }).notNull(),
+    seenAt: timestamp("seen_at", { withTimezone: true }),
+    savedAt: timestamp("saved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("job_recommendation_deliveries_user_job_unique").on(table.userId, table.jobListingId),
+    index("job_recommendation_deliveries_user_delivered_idx").on(table.userId, table.deliveredAt),
+    index("job_recommendation_deliveries_user_status_idx").on(table.userId, table.status),
   ],
 );

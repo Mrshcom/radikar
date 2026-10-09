@@ -111,8 +111,9 @@ const aiSettings = {
   ],
 };
 
-export async function mockSession(page: Page, role: TestRole = "user") {
+export async function mockSession(page: Page, role: TestRole = "user", onboardingCompleted = false) {
   const user = testUser(role);
+  if (onboardingCompleted) user.onboardingState.status = "completed";
 
   await page.route("**/v1/data/**", async (route) => {
     const method = route.request().method();
@@ -154,6 +155,11 @@ export async function mockSession(page: Page, role: TestRole = "user") {
     else if (pathname.startsWith("/api/admin/")) body = { items: [], total: 0, page: 1, pageSize: 10 };
     else if (pathname === "/api/account") body = { user };
     else if (pathname === "/api/account/preferences") body = { user };
+    else if (pathname === "/api/account/onboarding") {
+      user.onboardingState = route.request().postDataJSON() as typeof user.onboardingState;
+      body = { user };
+    } else if (pathname === "/api/radicoin/onboarding-reward")
+      body = { amount: 100, eligible: false, claimed: false, completedSteps: [] };
     else if (pathname === "/api/panel/dashboard") body = { analysis: null };
     else if (method === "POST" || method === "PATCH" || method === "DELETE") body = {};
 

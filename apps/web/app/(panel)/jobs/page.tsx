@@ -7,7 +7,6 @@ import { useQueryStates } from "nuqs";
 import { CalendarRange, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 import { JobCard } from "../_components/job-card";
 import { JobPoolCard } from "../_components/job-pool-card";
-import { TablePagination } from "../_components/table-pagination";
 import { JalaliDatePicker } from "../_components/jalali-date-picker";
 import { JobCardsSkeleton } from "../_components/skeletons";
 import { SectionTitle } from "../_components/ui";
@@ -20,7 +19,9 @@ import { jobFilterParsers, jobFilterUrlKeys, type JobScope } from "@/lib/job-fil
 import { matchesJobCategory, type JobCategory } from "@/lib/job-category";
 import { prioritizeSavedJobs } from "@/lib/job-order";
 import { hasJobActivityInDateRange } from "@/lib/job-application-filter";
-import { jobPoolPageSizes, type JobPoolPageSize, type PublicJobPoolListing, useJobPoolListings } from "@/lib/job-pool";
+import { type PublicJobPoolListing, useJobRecommendations } from "@/lib/job-pool";
+import { cn } from "@/lib/cn";
+import { apiRequest } from "@/lib/api-client";
 
 const categoryOptions: Array<{ id: JobScope; label: string }> = [
   { id: "all", label: "همه" },
@@ -28,6 +29,8 @@ const categoryOptions: Array<{ id: JobScope; label: string }> = [
   { id: "international", label: "بین‌المللی" },
   { id: "remote", label: "دورکاری" },
 ];
+
+type JobsPageTab = "pool" | "saved";
 
 export default function JobsPage() {
   const notify = useToast();
@@ -47,13 +50,8 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savingJobId, setSavingJobId] = useState("");
-  const [poolPage, setPoolPage] = useState(1);
-  const [poolPageSize, setPoolPageSize] = useState<JobPoolPageSize>(9);
-  const poolListings = useJobPoolListings({
-    query,
-    page: poolPage,
-    pageSize: poolPageSize,
-  });
+  const [activeTab, setActiveTab] = useState<JobsPageTab>("pool");
+  const recommendations = useJobRecommendations();
 
   const loadJobs = async () => {
     setLoading(true);
@@ -167,6 +165,9 @@ export default function JobsPage() {
       const record = makePoolJobRecord(listing, existing);
       const updated = { ...record, saved: analyze ? true : !record.saved };
       await jobStore.put(updated);
+      if (updated.saved && listing.recommendation) {
+        await apiRequest(`/api/job-pool/recommendations/${listing.recommendation.deliveryId}/save`, { method: "POST" });
+      }
       setJobs((current) => {
         const found = current.some((job) => job.id === updated.id);
         return found ? current.map((job) => (job.id === updated.id ? updated : job)) : [updated, ...current];
@@ -194,206 +195,234 @@ export default function JobsPage() {
         title="فرصت‌های شغلی"
         description="آگهی‌های جدید Job Pool و فرصت‌های ذخیره‌شده یا تحلیل‌شدهٔ خودت را اینجا ببین."
         action={
-          <button
-            className={`${secondaryButton} relative ${filtersOpen ? "border-[#c5e0d5] bg-[#e9f5ef] text-[#0f7b62]" : ""}`}
-            onClick={() => setFiltersOpen((value) => !value)}
-            aria-expanded={filtersOpen}
-            aria-label={
-              activeDetailedFilterCount
-                ? `فیلترها، ${formatPersianNumber(activeDetailedFilterCount)} فیلتر فعال`
-                : "فیلترها"
-            }
-          >
-            <SlidersHorizontal size={18} />
-            {activeDetailedFilterCount > 0 && (
-              <span className="absolute -right-2 -top-2 grid size-5 place-items-center rounded-full border-2 border-white bg-[#0f7b62] text-[7px] font-extrabold leading-none text-white">
-                {formatPersianNumber(activeDetailedFilterCount)}
-              </span>
-            )}
-            فیلترها
-          </button>
+          activeTab === "saved" ? (
+            <button
+              className={`${secondaryButton} relative ${filtersOpen ? "border-[#c5e0d5] bg-[#e9f5ef] text-[#0f7b62]" : ""}`}
+              onClick={() => setFiltersOpen((value) => !value)}
+              aria-expanded={filtersOpen}
+              aria-label={
+                activeDetailedFilterCount
+                  ? `فیلترها، ${formatPersianNumber(activeDetailedFilterCount)} فیلتر فعال`
+                  : "فیلترها"
+              }
+            >
+              <SlidersHorizontal size={18} />
+              {activeDetailedFilterCount > 0 && (
+                <span className="absolute -right-2 -top-2 grid size-5 place-items-center rounded-full border-2 border-white bg-[#0f7b62] text-[7px] font-extrabold leading-none text-white">
+                  {formatPersianNumber(activeDetailedFilterCount)}
+                </span>
+              )}
+              فیلترها
+            </button>
+          ) : undefined
         }
       />
-      <section className="mb-6 rounded-2xl border border-[#d9e8e0] bg-[#f8fcf9] p-4 sm:p-5">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2 className="m-0 flex items-center gap-2 text-[13px] text-[#19312f]">پیشنهادهای امروز برای شما</h2>
-            <p className="mb-0 mt-1 text-[9px] text-[#71817d]">
-              آگهی‌های تازهٔ دریافت‌شده از منابع معتبر؛ ذخیره و تحلیل آن‌ها فقط در فضای کاری خودت انجام می‌شود.
-            </p>
-          </div>
-          {poolListings.data && (
-            <span className="rounded-lg bg-white px-2.5 py-1.5 text-[9px] font-bold text-[#0f7b62]">
-              {formatPersianNumber(poolListings.data.total)} آگهی فعال
-            </span>
+      <div
+        className="mb-6 flex w-full gap-1 rounded-[14px] border border-[#dfe7e1] bg-[#f2f5f2] p-1.5"
+        role="tablist"
+        aria-label="بخش‌های فرصت‌های شغلی"
+      >
+        <button
+          className={cn(
+            "flex min-h-10 flex-1 items-center justify-center rounded-[10px] px-4 text-[10px] font-bold transition-colors duration-200",
+            activeTab === "pool"
+              ? "bg-white text-[#0f7b62] shadow-[0_4px_14px_rgba(27,55,50,.08)]"
+              : "bg-transparent text-[#71807c] hover:bg-white/60 hover:text-[#29433e]",
           )}
-        </div>
-        {poolListings.isLoading ? (
-          <JobCardsSkeleton count={3} />
-        ) : poolListings.isError ? (
-          <p className="m-0 rounded-xl bg-white p-4 text-[10px] text-[#a05b52]">
-            دریافت آگهی‌های جدید ناموفق بود. دوباره تلاش کن.
-          </p>
-        ) : poolListings.data?.items.length ? (
-          <>
-            <div className="grid grid-cols-1 gap-3 min-[700px]:grid-cols-2 min-[1121px]:grid-cols-3">
-              {poolListings.data.items.map((listing) => {
-                const savedJob = jobs.find((job) => job.sourceUrl === listing.canonicalUrl);
-                return (
-                  <JobPoolCard
-                    key={listing.id}
-                    listing={listing}
-                    saved={Boolean(savedJob?.saved)}
-                    saving={savingJobId === listing.id}
-                    onSave={() => void savePoolListing(listing)}
-                    onAnalyze={() => void savePoolListing(listing, true)}
-                  />
-                );
-              })}
-            </div>
-            <div className="mt-4 overflow-hidden rounded-xl border border-[#dce8e2] bg-white">
-              <TablePagination
-                page={poolListings.data.page}
-                pageSize={poolPageSize}
-                total={poolListings.data.total}
-                onPageChange={setPoolPage}
-                onPageSizeChange={(nextPageSize) => {
-                  setPoolPageSize(nextPageSize);
-                  setPoolPage(1);
-                }}
-                pageSizes={jobPoolPageSizes}
-              />
-            </div>
-          </>
-        ) : (
-          <p className="m-0 rounded-xl bg-white p-4 text-[10px] text-[#71817d]">
-            فعلاً آگهی فعالی در Job Pool وجود ندارد.
-          </p>
-        )}
-      </section>
-      <div className="flex h-[57px] items-center gap-[10px] rounded-xl border border-[#e1e7e3] bg-white py-2 pl-2 pr-[11px] transition-colors focus-within:border-[#a9cfc0]">
-        <Search size={19} />
-        <input
-          className="h-full flex-1 border-0 bg-transparent text-[12px] outline-0 placeholder:text-right"
-          value={query}
-          onChange={(event) => void setUrlFilters({ query: event.target.value }).then(() => setPoolPage(1))}
-          aria-label="جست‌وجوی فرصت شغلی"
-          placeholder="عنوان شغل، شرکت یا مهارت..."
-        />
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "pool"}
+          onClick={() => setActiveTab("pool")}
+        >
+          پیشنهادهای امروز
+        </button>
+        <button
+          className={cn(
+            "flex min-h-10 flex-1 items-center justify-center rounded-[10px] px-4 text-[10px] font-bold transition-colors duration-200",
+            activeTab === "saved"
+              ? "bg-white text-[#0f7b62] shadow-[0_4px_14px_rgba(27,55,50,.08)]"
+              : "bg-transparent text-[#71807c] hover:bg-white/60 hover:text-[#29433e]",
+          )}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "saved"}
+          onClick={() => setActiveTab("saved")}
+        >
+          فرصت‌های من
+        </button>
       </div>
-      {filtersOpen && (
-        <div className="mt-3 rounded-xl border-0 bg-white p-4">
-          <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#edf1ee] pb-3">
-            <div className="flex items-center gap-2 text-[10px] font-bold text-[#304943]">
-              <SlidersHorizontal size={16} className="text-[#0f7b62]" />
-              فیلترهای پیشرفته
+
+      {activeTab === "pool" && (
+        <section>
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="m-0 flex items-center gap-2 text-[13px] text-[#19312f]">پیشنهادهای امروز برای شما</h2>
+              <p className="mb-0 mt-1 text-[9px] text-[#71817d]">
+                آگهی‌های تازهٔ دریافت‌شده از منابع معتبر؛ ذخیره و تحلیل آن‌ها فقط در فضای کاری خودت انجام می‌شود.
+              </p>
             </div>
-            {hasActiveFilters && (
-              <button
-                className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2.5 text-[9px] font-bold text-[#70807c] transition-colors hover:bg-[#f2f6f4] hover:text-[#0f7b62]"
-                type="button"
-                onClick={clearFilters}
-              >
-                <RotateCcw size={13} /> پاک‌کردن
-              </button>
+            {recommendations.data && (
+              <span className="rounded-lg bg-white px-2.5 py-1.5 text-[9px] font-bold text-[#0f7b62]">
+                {`${formatPersianNumber(recommendations.data.meta.deliveredThisWeek)} از ${formatPersianNumber(recommendations.data.meta.weeklyLimit)} پیشنهاد این هفته`}
+              </span>
             )}
           </div>
-          <div className="grid items-end gap-4 min-[860px]:grid-cols-[minmax(360px,520px)_260px]">
-            <fieldset className="m-0 grid gap-2 border-0 p-0">
-              <legend className="mb-2 flex items-center gap-1.5 text-[9px] font-semibold text-[#536562]">
-                <CalendarRange size={14} className="text-[#0f7b62]" /> بازه تاریخ اپلای
-              </legend>
-              <div className="grid grid-cols-2 gap-2 max-[560px]:grid-cols-1">
-                <label className="grid gap-1.5 text-[8px] text-[#7a8985]">
-                  از تاریخ
-                  <JalaliDatePicker
-                    ariaLabel="از تاریخ"
-                    value={fromDate}
-                    max={toDate || undefined}
-                    onChange={(value) => void setUrlFilters({ fromDate: value })}
-                  />
-                </label>
-                <label className="grid gap-1.5 text-[8px] text-[#7a8985]">
-                  تا تاریخ
-                  <JalaliDatePicker
-                    ariaLabel="تا تاریخ"
-                    value={toDate}
-                    min={fromDate || undefined}
-                    onChange={(value) => void setUrlFilters({ toDate: value })}
-                  />
-                </label>
+          {recommendations.isLoading ? (
+            <JobCardsSkeleton count={1} />
+          ) : recommendations.isError ? (
+            <p className="m-0 rounded-[15px] border border-[#efcfb8] bg-white p-4 text-[10px] text-[#a05b52]">
+              دریافت آگهی‌های جدید ناموفق بود. دوباره تلاش کن.
+            </p>
+          ) : recommendations.data?.items.length ? (
+            <div className="grid grid-cols-3 gap-3 max-[1120px]:grid-cols-2 max-[560px]:grid-cols-1">
+              {recommendations.data.items.map((listing) => {
+                  const savedJob = jobs.find((job) => job.sourceUrl === listing.canonicalUrl);
+                  return (
+                    <JobPoolCard
+                      key={listing.id}
+                      listing={listing}
+                      saved={Boolean(savedJob?.saved)}
+                      saving={savingJobId === listing.id}
+                      onSave={() => void savePoolListing(listing)}
+                      onAnalyze={() => void savePoolListing(listing, true)}
+                    />
+                  );
+                })}
+            </div>
+          ) : (
+            <p className="m-0 rounded-[15px] border border-dashed border-[#dce3dc] bg-white p-4 text-[10px] text-[#71817d]">
+              فعلاً پیشنهاد تازه‌ای برایت آماده نیست. با تکمیل پروفایل، تحلیل تطابق یا ثبت اپلای، پیشنهادهای شخصی‌سازی‌شده‌تری دریافت می‌کنی.
+            </p>
+          )}
+        </section>
+      )}
+      {activeTab === "saved" && (
+        <>
+          <div className="flex h-[57px] items-center gap-[10px] rounded-xl border border-[#e1e7e3] bg-white py-2 pl-2 pr-[11px] transition-colors focus-within:border-[#a9cfc0]">
+            <Search size={19} />
+            <input
+              className="h-full flex-1 border-0 bg-transparent text-[12px] outline-0 placeholder:text-right"
+              value={query}
+              onChange={(event) => void setUrlFilters({ query: event.target.value })}
+              aria-label="جست‌وجوی فرصت شغلی"
+              placeholder="عنوان شغل، شرکت یا مهارت..."
+            />
+          </div>
+          {filtersOpen && (
+            <div className="mt-3 rounded-xl border-0 bg-white p-4">
+              <div className="mb-4 flex items-center justify-between gap-3 border-b border-[#edf1ee] pb-3">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-[#304943]">
+                  <SlidersHorizontal size={16} className="text-[#0f7b62]" />
+                  فیلترهای پیشرفته
+                </div>
+                {hasActiveFilters && (
+                  <button
+                    className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2.5 text-[9px] font-bold text-[#70807c] transition-colors hover:bg-[#f2f6f4] hover:text-[#0f7b62]"
+                    type="button"
+                    onClick={clearFilters}
+                  >
+                    <RotateCcw size={13} /> پاک‌کردن
+                  </button>
+                )}
               </div>
-            </fieldset>
-            <div className="grid w-full max-w-[280px] gap-2 text-[9px] font-semibold text-[#536562]">
-              <span>حداقل تطابق</span>
-              <RangeSlider
-                value={minMatch}
-                min={0}
-                max={95}
-                onChange={(value) => void setUrlFilters({ minMatch: value })}
-                label="حداقل تطابق"
-                valueFormatter={(value) => `${formatPersianNumber(value)}٪`}
-              />
+              <div className="grid items-end gap-4 min-[860px]:grid-cols-[minmax(360px,520px)_260px]">
+                <fieldset className="m-0 grid gap-2 border-0 p-0">
+                  <legend className="mb-2 flex items-center gap-1.5 text-[9px] font-semibold text-[#536562]">
+                    <CalendarRange size={14} className="text-[#0f7b62]" /> بازه تاریخ اپلای
+                  </legend>
+                  <div className="grid grid-cols-2 gap-2 max-[560px]:grid-cols-1">
+                    <label className="grid gap-1.5 text-[8px] text-[#7a8985]">
+                      از تاریخ
+                      <JalaliDatePicker
+                        ariaLabel="از تاریخ"
+                        value={fromDate}
+                        max={toDate || undefined}
+                        onChange={(value) => void setUrlFilters({ fromDate: value })}
+                      />
+                    </label>
+                    <label className="grid gap-1.5 text-[8px] text-[#7a8985]">
+                      تا تاریخ
+                      <JalaliDatePicker
+                        ariaLabel="تا تاریخ"
+                        value={toDate}
+                        min={fromDate || undefined}
+                        onChange={(value) => void setUrlFilters({ toDate: value })}
+                      />
+                    </label>
+                  </div>
+                </fieldset>
+                <div className="grid w-full max-w-[280px] gap-2 text-[9px] font-semibold text-[#536562]">
+                  <span>حداقل تطابق</span>
+                  <RangeSlider
+                    value={minMatch}
+                    min={0}
+                    max={95}
+                    onChange={(value) => void setUrlFilters({ minMatch: value })}
+                    label="حداقل تطابق"
+                    valueFormatter={(value) => `${formatPersianNumber(value)}٪`}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="flex items-center justify-between py-5 max-[560px]:flex-col max-[560px]:items-start max-[560px]:gap-3">
+            <strong className="text-[11px]">
+              {loading
+                ? "در حال خواندن فرصت‌های شخصی"
+                : `${formatPersianNumber(visibleJobs.length)} آگهی تحلیل‌شده یا ذخیره‌شدهٔ من`}
+            </strong>
+            <div className="flex gap-1.5 overflow-x-auto">
+              {categoryOptions.map((item) => (
+                <button
+                  key={item.id}
+                  className={`shrink-0 rounded-lg border px-3 py-2 text-[10px] ${scope === item.id ? "border-[#9dcdbd] bg-[#edf6f1] text-[#0f7b62]" : "border-[#e6ebe6] bg-white text-[#788784]"}`}
+                  onClick={() => void setUrlFilters({ scope: item.id })}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
           </div>
-        </div>
-      )}
-      <div className="flex items-center justify-between py-5 max-[560px]:flex-col max-[560px]:items-start max-[560px]:gap-3">
-        <strong className="text-[11px]">
-          {loading
-            ? "در حال خواندن فرصت‌های شخصی"
-            : `${formatPersianNumber(visibleJobs.length)} آگهی تحلیل‌شده یا ذخیره‌شدهٔ من`}
-        </strong>
-        <div className="flex gap-1.5 overflow-x-auto">
-          {categoryOptions.map((item) => (
-            <button
-              key={item.id}
-              className={`shrink-0 rounded-lg border px-3 py-2 text-[10px] ${scope === item.id ? "border-[#9dcdbd] bg-[#edf6f1] text-[#0f7b62]" : "border-[#e6ebe6] bg-white text-[#788784]"}`}
-              onClick={() => void setUrlFilters({ scope: item.id })}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      {error ? (
-        <div className={emptyState}>
-          <Search size={34} />
-          <h3>خواندن فرصت‌ها ناموفق بود</h3>
-          <p>{error}</p>
-          <button className={secondaryButton} onClick={loadJobs}>
-            تلاش دوباره
-          </button>
-        </div>
-      ) : loading ? (
-        <JobCardsSkeleton count={6} />
-      ) : visibleJobs.length ? (
-        <div className="grid grid-cols-3 gap-3 max-[1120px]:grid-cols-2 max-[560px]:grid-cols-1">
-          {visibleJobs.map((job) => (
-            <JobCard
-              key={job.id}
-              job={job}
-              saved={job.saved}
-              saving={savingJobId === job.id}
-              onSave={() => void toggleSave(job)}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className={emptyState}>
-          <Search size={34} />
-          <h3>{jobs.length ? "فرصتی با این فیلتر پیدا نشد" : "هنوز فرصت شغلی وارد نکرده‌ای"}</h3>
-          <p>
-            {jobs.length
-              ? "عبارت جست‌وجو یا فیلترها را تغییر بده."
-              : "در بخش تطبیق هوشمند، متن یا لینک یک آگهی واقعی را تحلیل کن."}
-          </p>
-          {!jobs.length && (
-            <Link className={secondaryButton} href="/match">
-              وارد کردن آگهی شغلی
-            </Link>
+          {error ? (
+            <div className={emptyState}>
+              <Search size={34} />
+              <h3>خواندن فرصت‌ها ناموفق بود</h3>
+              <p>{error}</p>
+              <button className={secondaryButton} onClick={loadJobs}>
+                تلاش دوباره
+              </button>
+            </div>
+          ) : loading ? (
+            <JobCardsSkeleton count={6} />
+          ) : visibleJobs.length ? (
+            <div className="grid grid-cols-3 gap-3 max-[1120px]:grid-cols-2 max-[560px]:grid-cols-1">
+              {visibleJobs.map((job) => (
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  saved={job.saved}
+                  saving={savingJobId === job.id}
+                  onSave={() => void toggleSave(job)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className={emptyState}>
+              <Search size={34} />
+              <h3>{jobs.length ? "فرصتی با این فیلتر پیدا نشد" : "هنوز فرصت شغلی وارد نکرده‌ای"}</h3>
+              <p>
+                {jobs.length
+                  ? "عبارت جست‌وجو یا فیلترها را تغییر بده."
+                  : "در بخش تطبیق هوشمند، متن یا لینک یک آگهی واقعی را تحلیل کن."}
+              </p>
+              {!jobs.length && (
+                <Link className={secondaryButton} href="/match">
+                  وارد کردن آگهی شغلی
+                </Link>
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
     </>
   );

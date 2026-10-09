@@ -69,9 +69,10 @@ test.describe("خرید و نتیجه پرداخت", () => {
     await expect(page).toHaveURL("/orders");
   });
 
-  test("نتیجه ناموفق پرداخت بازگشت به پنل را پیشنهاد می‌کند", async ({ page }) => {
+  test("نتیجه ناموفق پرداخت تلاش دوباره از انتخاب پلن را پیشنهاد می‌کند", async ({ page }) => {
     await page.goto("/billing/result?status=failed");
     await expect(page.getByRole("heading", { name: "پرداخت تکمیل نشد" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "تلاش مجدد" })).toHaveAttribute("href", "/upgrade");
     await page.getByRole("link", { name: "بازگشت به پنل" }).click();
     await expect(page).toHaveURL("/dashboard");
   });
