@@ -19,6 +19,8 @@ import { handleRadicoinError, registerRadicoinRoutes } from "./modules/radicoin/
 import type { RadicoinService } from "./modules/radicoin/service";
 import type { Database } from "@radikar/database";
 import type { ProductEventService } from "./modules/analytics/service";
+import { handleProductTimelineError, registerProductTimelineRoutes } from "./modules/product-timeline/routes";
+import { ProductTimelineService } from "./modules/product-timeline/service";
 
 type BuildAppOptions = {
   fastifyFactory?: typeof Fastify;
@@ -134,6 +136,7 @@ export function buildApp({
     linkedInActorId: apifyLinkedInActorId,
   });
   if (jobPoolService) registerJobPoolRoutes(app, jobPoolService);
+  if (database) registerProductTimelineRoutes(app, new ProductTimelineService(database));
 
   app.setNotFoundHandler((request, reply) =>
     reply.code(404).send({
@@ -146,6 +149,7 @@ export function buildApp({
     if (handleAuthError(error, request, reply)) return;
     if (handleBillingError(error, request, reply)) return;
     if (handleRadicoinError(error, request, reply)) return;
+    if (handleProductTimelineError(error, request, reply)) return;
     if (error instanceof ZodError) {
       return reply.code(400).send({
         error: "داده ورودی معتبر نیست.",

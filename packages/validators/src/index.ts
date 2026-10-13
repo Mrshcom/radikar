@@ -5,6 +5,7 @@ export {
   type AdminUserEditInput,
   type UpdateAdminAliasInput,
 } from "./admin";
+export { productStorySlideSchema, productTimelineInputSchema } from "./product-timeline";
 import { dataCollections, type DataCollection, type DataRecord } from "@radikar/shared-types";
 
 const localizedDigitPattern = /[۰-۹٠-٩]/g;

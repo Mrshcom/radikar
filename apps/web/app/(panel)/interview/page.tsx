@@ -37,6 +37,7 @@ import {
 import type { InterviewSessionRecord } from "@/lib/data/models";
 import { InterviewPracticeDialog } from "./interview-practice-dialog";
 import { InterviewProgress } from "./interview-progress";
+import { ModelThinkingOrb } from "../_components/model-thinking-orb";
 import { formatPersianNumber, toPersianDigits } from "@/lib/fa-number";
 import { apiRequest } from "@/lib/api-client";
 
@@ -440,9 +441,7 @@ export default function InterviewPage() {
           closeDisabled={saving || feedbackBusy || Boolean(sessionRecord?.report)}
           analysisPending={feedbackBusy}
           exitDescription={
-            isCreatingSession
-              ? "ساخت این جلسه لغو می‌شود. هر زمان خواستی می‌توانی یک جلسهٔ تازه بسازی."
-              : undefined
+            isCreatingSession ? "ساخت این جلسه لغو می‌شود. هر زمان خواستی می‌توانی یک جلسهٔ تازه بسازی." : undefined
           }
           exitConfirmLabel={isCreatingSession ? "لغو ساخت و خروج" : undefined}
           onClose={() => (isCreatingSession ? cancelSessionCreation() : void closePractice())}
@@ -453,8 +452,8 @@ export default function InterviewPage() {
               role="status"
               aria-live="polite"
             >
-              <span className="grid size-20 place-items-center rounded-[24px] bg-[#e6f4ee] text-[#0f7b62]">
-                <LoaderCircle className="animate-spin motion-reduce:animate-none" size={36} />
+              <span className="grid size-20 place-items-center">
+                <ModelThinkingOrb label="در حال ساخت سؤال‌های مصاحبه" />
               </span>
               <h3 className="mb-0 mt-2 text-xl font-bold text-[#19312f]">سؤال‌های مصاحبه در حال آماده‌شدن هستند</h3>
               <p className="m-0 max-w-md text-sm leading-7 text-[#61746f]">
@@ -594,7 +593,7 @@ export default function InterviewPage() {
                 <span className="text-xs text-[#61746f]">
                   امتیاز {formatPersianNumber(session.report?.score ?? 0)} از ۱۰۰
                 </span>
-                <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-[#0f7b62]">
+                <span className="mt-1 inline-flex self-end items-center gap-1 text-xs font-bold text-[#0f7b62]">
                   مشاهده گزارش <ArrowLeft size={15} />
                 </span>
               </Link>

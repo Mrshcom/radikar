@@ -1,5 +1,16 @@
-import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
-import type { DataRecord } from "@radikar/shared-types";
+import {
+  type AnyPgColumn,
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
+import type { DataRecord, ProductStorySlide } from "@radikar/shared-types";
 
 export type OnboardingStepId = "profile" | "match" | "resume" | "application" | "referral" | "interview";
 
@@ -80,6 +91,30 @@ export const productEvents = pgTable(
     uniqueIndex("product_events_idempotency_unique").on(table.idempotencyKey),
     index("product_events_name_occurred_idx").on(table.name, table.occurredAt),
     index("product_events_user_occurred_idx").on(table.userId, table.occurredAt),
+  ],
+);
+
+export const productTimelineEntries = pgTable(
+  "product_timeline_entries",
+  {
+    id: uuid("id").primaryKey(),
+    kind: text("kind", { enum: ["phase", "feature", "release"] }).notNull(),
+    phaseId: uuid("phase_id").references((): AnyPgColumn => productTimelineEntries.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    status: text("status", { enum: ["planned", "building", "completed"] })
+      .notNull()
+      .default("planned"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    storySlides: jsonb("story_slides").$type<ProductStorySlide[]>().notNull().default([]),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index("product_timeline_kind_order_idx").on(table.kind, table.sortOrder),
+    index("product_timeline_phase_idx").on(table.phaseId),
+    index("product_timeline_published_idx").on(table.publishedAt),
   ],
 );
 

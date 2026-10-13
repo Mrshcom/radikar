@@ -23,6 +23,7 @@ import { DeleteConfirmModal, Modal } from "../_components/ui";
 import { SearchableSelect } from "@/app/_components/searchable-select";
 import { Checkbox } from "@/app/_components/checkbox";
 import { ResumePreviewSkeleton } from "../_components/skeletons";
+import { ModelThinkingOrb } from "../_components/model-thinking-orb";
 import { ResumeDocument } from "./resume-document";
 import { ScaledResumePreview } from "./scaled-resume-preview";
 import {
@@ -430,7 +431,7 @@ export function ResumeBuilder({
             disabled={generationBusy}
             onClick={() => setModelOverwriteConfirmOpen(true)}
           >
-            <Sparkles size={16} />
+            {generationBusy ? <ModelThinkingOrb label="در حال تکمیل رزومه با مدل" size={20} /> : <Sparkles size={16} />}
             {generationBusy ? "در حال تکمیل با مدل..." : "تکمیل رزومه با AI"}
           </button>
           <button
@@ -501,7 +502,8 @@ export function ResumeBuilder({
             disabled={generationBusy}
             onClick={() => setModelOverwriteConfirmOpen(true)}
           >
-            <Sparkles size={14} /> تکمیل با AI
+            {generationBusy ? <ModelThinkingOrb label="در حال تکمیل رزومه با مدل" size={20} /> : <Sparkles size={14} />}{" "}
+            {generationBusy ? "در حال تکمیل با مدل..." : "تکمیل با AI"}
           </button>
           <button
             className={`${primaryButton} w-fit px-3 text-[9px]`}

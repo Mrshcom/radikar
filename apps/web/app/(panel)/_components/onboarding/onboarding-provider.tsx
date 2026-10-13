@@ -27,7 +27,14 @@ import {
 import { apiRequest } from "@/lib/api-client";
 import { OnboardingChecklistModal } from "./onboarding-checklist";
 
-const onboardingSteps: readonly OnboardingStepId[] = ["profile", "match", "resume", "application", "referral", "interview"];
+const onboardingSteps: readonly OnboardingStepId[] = [
+  "profile",
+  "match",
+  "resume",
+  "application",
+  "referral",
+  "interview",
+];
 
 type AuthResponse = { user: CurrentUser };
 type OnboardingContextValue = {
@@ -91,11 +98,6 @@ const userPanelTourSteps = [
     title: "آمادگی مصاحبه",
     content: "مصاحبهٔ تمرینی انجام بده و گزارش شخصی‌سازی‌شده بگیر.",
   },
-  {
-    target: "nav-radicoins",
-    title: "کیف پول رادیکوین",
-    content: "موجودی، اعتبارها و روش‌های دریافت رادیکوین را اینجا می‌بینی.",
-  },
 ] as const;
 
 function buildTourSteps(): Step[] {
@@ -105,7 +107,7 @@ function buildTourSteps(): Step[] {
       {
         target: "[data-tour='mobile-panel-menu']",
         title: "همهٔ بخش‌های پنل",
-        content: "از این منو به همهٔ بخش‌ها، از پروفایل و فرصت‌ها تا مصاحبه و کیف پول، دسترسی داری.",
+        content: "از این منو به بخش‌های اصلی مسیر شغلی، از پروفایل و فرصت‌ها تا مصاحبه، دسترسی داری.",
         placement: "top",
         floatingOptions: tourFloatingOptions,
         offset: 28,
@@ -113,7 +115,7 @@ function buildTourSteps(): Step[] {
       {
         target: "[data-tour='account-menu']",
         title: "منوی حساب کاربری",
-        content: "حساب، تنظیمات، سفارش‌ها، دعوت دوستان و ارتقای بسته را از اینجا مدیریت کن.",
+        content: "مرکز حساب، کیف پول و تازه‌های رادیکار را از این منو باز کن.",
         placement: "top",
         floatingOptions: tourFloatingOptions,
         offset: 28,
@@ -132,7 +134,7 @@ function buildTourSteps(): Step[] {
     {
       target: "[data-tour='account-menu']",
       title: "منوی حساب کاربری",
-      content: "حساب، تنظیمات، سفارش‌ها، دعوت دوستان و ارتقای بسته را از اینجا مدیریت کن.",
+      content: "مرکز حساب، کیف پول و تازه‌های رادیکار را از این منو باز کن.",
       placement: "bottom",
       floatingOptions: tourFloatingOptions,
       offset: 20,
@@ -211,7 +213,9 @@ function TourTooltip({
       const limit = side === "top" || side === "bottom" ? tooltipRect.width : tooltipRect.height;
       const offset = Math.max(24, Math.min(rawOffset, limit - 56));
 
-      setTail((current) => (current.side === side && Math.abs(current.offset - offset) < 1 ? current : { side, offset }));
+      setTail((current) =>
+        current.side === side && Math.abs(current.offset - offset) < 1 ? current : { side, offset },
+      );
     };
 
     const frame = window.requestAnimationFrame(updateTailPosition);

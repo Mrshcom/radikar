@@ -200,6 +200,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardState | null>(null);
   const [hasResume, setHasResume] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
   const [heroTextExpanded, setHeroTextExpanded] = useState(false);
   const [aiTextExpanded, setAiTextExpanded] = useState(false);
@@ -251,6 +252,7 @@ export default function DashboardPage() {
         }
 
         try {
+          if (active) setAnalyzing(true);
           const snapshot = await runModelTask({
             key: `dashboard-analysis-${sourceType}-${sourceId}`,
             title: "تحلیل هوشمند داشبورد",
@@ -309,6 +311,8 @@ export default function DashboardPage() {
           } else {
             throw modelError;
           }
+        } finally {
+          if (active) setAnalyzing(false);
         }
       } catch (event) {
         if (active) {
@@ -338,7 +342,7 @@ export default function DashboardPage() {
     return bars.map((count) => (count ? Math.max(18, Math.round((count / maximum) * 100)) : 0));
   }, [data]);
 
-  if (loading) return <DashboardSkeleton />;
+  if (loading) return <DashboardSkeleton isAnalyzing={analyzing} />;
   if (!hasResume)
     return (
       <div className={emptyState}>

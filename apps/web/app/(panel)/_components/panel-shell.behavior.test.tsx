@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -9,13 +9,14 @@ const state = vi.hoisted(() => ({
   notify: vi.fn(),
   put: vi.fn(),
   remove: vi.fn(),
+  jobs: [] as Array<{ role: string; company: string; match: number }>,
   profiles: [
     { id: "profile-default", workspaceName: "فضای کاری شخصی", createdAt: "2026-01-01", updatedAt: "2026-01-01" },
   ],
 }));
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard" }));
-vi.mock("next/image", () => ({ default: (props: any) => <img {...props} /> }));
+vi.mock("next/image", () => ({ default: () => null }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...props }: any) => (
     <a href={href} {...props}>
@@ -40,7 +41,7 @@ vi.mock("@/lib/data/stores", () => ({
   getActiveProfileId: async () => "profile-default",
   setActiveProfileId: vi.fn(),
   createRecordId: () => "profile-created",
-  jobStore: { list: async () => [] },
+  jobStore: { list: async () => state.jobs },
   removeWorkspace: state.remove,
 }));
 
@@ -61,6 +62,7 @@ describe("PanelShell behavior", () => {
   afterEach(() => {
     vi.clearAllMocks();
     state.role = "user";
+    state.jobs = [];
     state.put.mockResolvedValue(undefined);
     state.remove.mockResolvedValue(undefined);
   });
@@ -69,9 +71,31 @@ describe("PanelShell behavior", () => {
     renderShell();
     await waitFor(() => expect(screen.getAllByRole("link", { name: /فرصت‌های مناسب من/ })[0]).toBeVisible());
     expect(screen.queryByRole("link", { name: "تنظیمات" })).toBeNull();
-    expect(screen.getAllByRole("link", { name: "پیگیری اپلای‌ها" })[0]).toHaveAttribute("data-tour", "nav-applications");
+    expect(screen.getAllByRole("link", { name: "پیگیری اپلای‌ها" })[0]).toHaveAttribute(
+      "data-tour",
+      "nav-applications",
+    );
     expect(screen.getAllByRole("link", { name: "آمادگی مصاحبه" })[0]).toHaveAttribute("data-tour", "nav-interview");
-    expect(screen.getAllByRole("link", { name: "کیف پول رادیکوین" })[0]).toHaveAttribute("data-tour", "nav-radicoins");
+    expect(within(screen.getByRole("navigation", { name: "منوی اصلی" })).queryByRole("link", { name: "کیف پول رادیکوین" })).toBeNull();
+    expect(
+      within(screen.getByRole("navigation", { name: "منوی اصلی" })).queryByRole("link", { name: /مشاهدهٔ تغییرات/ }),
+    ).toBeNull();
+    expect(screen.queryByRole("link", { name: /نسخه 0\.1\.0؛ مشاهدهٔ تغییرات/ })).toBeNull();
+    fireEvent.click(screen.getByLabelText("منوی حساب کاربری"));
+    const accountCenter = screen.getByRole("link", { name: "مرکز حساب" });
+    expect(accountCenter).toHaveAttribute("href", "/account-center");
+    expect(accountCenter.querySelector("span")?.className).not.toContain("group-hover:shadow");
+    expect(screen.getByRole("link", { name: /موجودی رادیکوین/ })).toHaveAttribute("href", "/radicoins");
+    expect(screen.queryByRole("link", { name: "سفارش‌ها" })).toBeNull();
+    const versionLink = screen.getByRole("link", { name: /نسخه 0\.1\.0؛ مشاهدهٔ تغییرات/ });
+    expect(versionLink).toHaveAttribute("href", "/updates");
+    expect(versionLink.className).not.toMatch(/\bborder\b|\bbg-\[/);
+    expect(versionLink).toHaveClass("text-[#536762]");
+    expect(versionLink.querySelector("svg")).toHaveClass("lucide-tag", "text-current");
+    versionLink.addEventListener("click", (event) => event.preventDefault());
+    fireEvent.click(versionLink);
+    expect(screen.queryByRole("link", { name: /نسخه 0\.1\.0؛ مشاهدهٔ تغییرات/ })).toBeNull();
+    expect(screen.getByTitle("فضای کاری شخصی").closest("button")?.parentElement).toHaveClass("border-t");
     expect(screen.getByLabelText("منوی حساب کاربری")).toHaveAttribute("data-tour", "account-menu");
   });
 
@@ -80,6 +104,20 @@ describe("PanelShell behavior", () => {
     renderShell();
     await waitFor(() => expect(screen.getAllByRole("link", { name: "داشبورد مدیریتی" })[0]).toBeVisible());
     expect(screen.queryByRole("link", { name: "کاربران و دسترسی‌ها" })).toBeNull();
+    fireEvent.click(screen.getByLabelText("منوی حساب کاربری"));
+    expect(screen.queryByRole("link", { name: /نسخه .* مشاهدهٔ تغییرات/ })).toBeNull();
+  });
+
+  it("shows a compact clickable job notification with its match", async () => {
+    state.jobs = [{ role: "Frontend Engineer", company: "WebstaurantStore", match: 82 }];
+    renderShell();
+    await waitFor(() => expect(screen.getAllByRole("link", { name: /فرصت‌های مناسب من/ })[0]).toHaveTextContent("۱"));
+    fireEvent.click(screen.getByRole("button", { name: "اعلان‌ها" }));
+    const jobLink = screen.getByTitle("Frontend Engineer").closest("a");
+    expect(jobLink).toHaveAttribute("href", "/jobs");
+    expect(jobLink).toHaveTextContent("تطابق ۸۲٪");
+    expect(jobLink).toHaveTextContent("WebstaurantStore");
+    expect(jobLink).not.toHaveTextContent("مشاهده فرصت‌ها");
   });
 
   it("opens and closes the mobile menu with Escape and restores overflow", () => {
@@ -100,7 +138,12 @@ describe("PanelShell behavior", () => {
     state.logout.mockRejectedValueOnce(new Error("offline"));
     renderShell();
     fireEvent.click(screen.getByLabelText("منوی حساب کاربری"));
-    fireEvent.click(screen.getByText("خروج از حساب"));
+    const logoutButton = screen.getByRole("button", { name: "خروج از حساب" });
+    expect(logoutButton).toHaveClass("text-[#536762]", "hover:text-[#a13f37]", "hover:bg-[#fff1ef]");
+    expect(logoutButton.previousElementSibling).toHaveAttribute("aria-label", "دسترسی‌های حساب");
+    expect(logoutButton.querySelector("span")?.className).toContain("bg-[#f2f6f4]");
+    expect(logoutButton.querySelector("span")?.className).toContain("group-hover:bg-white");
+    fireEvent.click(logoutButton);
     await waitFor(() => expect(state.notify).toHaveBeenCalledWith("خروج از حساب ناموفق بود؛ دوباره تلاش کن.", "error"));
   });
 

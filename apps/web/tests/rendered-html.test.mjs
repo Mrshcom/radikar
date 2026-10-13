@@ -2504,9 +2504,10 @@ test("resume modals scale complete A4 pages instead of squeezing their layout", 
 });
 
 test("model work stays in the panel shell and exposes completed destinations", async () => {
-  const [provider, shell, appProviders] = await Promise.all([
+  const [provider, shell, taskStack, appProviders] = await Promise.all([
     readFile(new URL("app/(panel)/_components/model-task-provider.tsx", projectRoot), "utf8"),
     readFile(new URL("app/(panel)/_components/panel-shell.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/_components/model-task-stack.tsx", projectRoot), "utf8"),
     readFile(new URL("app/providers.tsx", projectRoot), "utf8"),
   ]);
 
@@ -2524,9 +2525,11 @@ test("model work stays in the panel shell and exposes completed destinations", a
   assert.doesNotMatch(provider, /\.slice\(0, 5\)/);
   assert.match(provider, /setTasks\(\(current\) => \[task, \.\.\.current\]\)/);
   assert.match(provider, /if \(task\.status !== "running"\) dismissTask\(task\.id\)/);
-  assert.match(shell, /فعالیت‌های مدل/);
-  assert.match(shell, /لغو/);
-  assert.ok(shell.indexOf('aria-label="فعالیت‌های مدل"') < shell.indexOf('{ href: "/account", label: "حساب کاربری"'));
+  assert.match(shell, /<ModelTaskStack \/>/);
+  assert.match(taskStack, /فعالیت‌های هوشمند/);
+  assert.match(taskStack, /aria-expanded=\{showHistory\}/);
+  assert.match(taskStack, /cancelTask\(task\.id\)/);
+  assert.ok(shell.indexOf("<ModelTaskStack />") < shell.indexOf("مدیریت فضاهای کاری"));
 });
 
 test("running match analysis restores its exact inputs and can be canceled", async () => {
@@ -2540,8 +2543,12 @@ test("running match analysis restores its exact inputs and can be canceled", asy
   assert.match(matchPage, /jobDescription: selectedDescription/);
   assert.match(matchPage, /resumeId: selectedResume\.id/);
   assert.match(matchPage, /signal,/);
-  assert.match(matchPage, /در حال تحلیل/);
+  assert.match(matchPage, /importControllerRef\.current\.abort\(\)/);
+  assert.match(matchPage, /disabled=\{!hasSelectedInput \|\| !selectedResume \|\| analysisBusy \|\| importingUrl\}/);
+  assert.match(matchPage, /aria-busy=\{analysisBusy\}/);
+  assert.match(matchPage, /در حال تحلیل با مدل/);
   assert.match(matchPage, /لغو تحلیل/);
+  assert.ok(matchPage.indexOf("در حال تحلیل با مدل") < matchPage.indexOf("لغو تحلیل"));
   assert.match(matchPage, /cancelTask\(runningAnalysisTask\.id\)/);
   assert.match(matchPage, /normalizeMatchAnalysisInput\(rawResult\)/);
   assert.match(matchPage, /normalizeMatchAnalysisInput\(previousAnalysis\.analysis\)/);
@@ -2550,6 +2557,23 @@ test("running match analysis restores its exact inputs and can be canceled", asy
   assert.match(apiRoutes, /getMatchAnalyzeConfig\(\)/);
   assert.match(apiRoutes, /model: "deepseek-chat"/);
   assert.match(apiRoutes, /maxOutputTokens: 2_048/);
+});
+
+test("match resume picker previews any saved resume without changing the selection", async () => {
+  const matchPage = await readFile(new URL("app/(panel)/match/page.tsx", projectRoot), "utf8");
+
+  assert.match(matchPage, /label: resume\.name\?\.trim\(\)/);
+  assert.match(matchPage, /className="grid min-w-0 grid-cols-\[minmax\(0,1fr\)\] gap-1\.5"/);
+  assert.match(matchPage, /className="block max-w-full truncate text-xs/);
+  assert.match(
+    matchPage,
+    /resumeOptions\.map\(\(resume\) => \{[\s\S]*?<ScaledResumePreview[\s\S]*?data=\{resume\.data\}/,
+  );
+  assert.match(matchPage, /aria-label=\{`پیش‌نمایش \$\{resume\.label\}`\}/);
+  assert.match(matchPage, /onClick=\{\(\) => setPreviewResumeId\(resume\.id\)\}/);
+  assert.match(matchPage, /const previewResume = resumeOptions\.find/);
+  assert.match(matchPage, /previewResume\.id !== baseResumeId/);
+  assert.match(matchPage, /onClick=\{\(\) => selectResume\(previewResume\.id\)\}/);
 });
 
 test("every model-backed panel operation uses the shared background task manager", async () => {

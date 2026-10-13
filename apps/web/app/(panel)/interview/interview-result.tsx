@@ -97,9 +97,9 @@ export function InterviewResult({ session, onRestart }: { session: InterviewSess
                 <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#e6f4ee] text-sm font-bold text-[#0f7b62]">
                   {formatPersianNumber(item.questionIndex + 1)}
                 </span>
-                <strong className="min-w-0 flex-1 text-sm leading-7 text-[#19312f]">
+                <p className="min-w-0 flex-1 text-sm leading-7 text-[#19312f]">
                   {session.questions[item.questionIndex]}
-                </strong>
+                </p>
                 <span className="shrink-0 text-sm font-bold text-[#0f7b62]">
                   {formatPersianNumber(item.score)} از ۱۰۰
                 </span>

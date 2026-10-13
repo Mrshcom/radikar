@@ -23,29 +23,30 @@ Browser → Next.js Web → Fastify API → Neon/PostgreSQL
 
 ## ساختار سریع repository
 
-| مسیر | مسئولیت |
-| --- | --- |
-| `apps/web` | Next.js App Router؛ رابط فارسی/RTL، پنل کاربر و مدیریت |
-| `apps/api` | Fastify؛ احراز هویت، داده، پرداخت، AI، import و health checks |
-| `packages/database` | Drizzle schema، migration و seed PostgreSQL |
-| `packages/validators` | قراردادها و اعتبارسنجی‌های مشترک Zod |
-| `packages/shared-types` | typeهای مشترک بدون وابستگی به framework |
-| `packages/ai` | adapter/provider و پردازش پاسخ مدل‌های زبانی |
-| `packages/config` | بارگذاری و اعتبارسنجی تنظیمات server |
-| `deploy` | Docker/Caddy و دستورالعمل استقرار VPS |
-| `graphify-out` | graph تولیدشدهٔ محلی؛ در Git نادیده گرفته می‌شود و با `graphify update .` بازسازی می‌شود |
+| مسیر                    | مسئولیت                                                                                  |
+| ----------------------- | ---------------------------------------------------------------------------------------- |
+| `apps/web`              | Next.js App Router؛ رابط فارسی/RTL، پنل کاربر و مدیریت                                   |
+| `apps/api`              | Fastify؛ احراز هویت، داده، پرداخت، AI، import و health checks                            |
+| `packages/database`     | Drizzle schema، migration و seed PostgreSQL                                              |
+| `packages/validators`   | قراردادها و اعتبارسنجی‌های مشترک Zod                                                     |
+| `packages/shared-types` | typeهای مشترک بدون وابستگی به framework                                                  |
+| `packages/ai`           | adapter/provider و پردازش پاسخ مدل‌های زبانی                                             |
+| `packages/config`       | بارگذاری و اعتبارسنجی تنظیمات server                                                     |
+| `deploy`                | Docker/Caddy و دستورالعمل استقرار VPS                                                    |
+| `graphify-out`          | graph تولیدشدهٔ محلی؛ در Git نادیده گرفته می‌شود و با `graphify update .` بازسازی می‌شود |
 
 ## نقاط ورود و مسیرهای مهم
 
-| موضوع | Web | API |
-| --- | --- | --- |
-| API client و proxy | `apps/web/lib/api-client.ts` و routeهای `apps/web/app/api` / `app/v1` | `apps/api/src/app.ts` و `build-app.ts` |
-| احراز هویت و OTP | `apps/web/app/login` و `app/_components/auth.tsx` | `modules/auth/routes.ts` و `service.ts` |
-| رزومه | `apps/web/app/(panel)/resumes` | data routes و `modules/imports` |
-| jobs/applications/knowledge base | routeهای متناظر در `apps/web/app/(panel)` | `modules/data/routes.ts` |
-| تحلیل AI، تطبیق و مصاحبه | `match`، `interview` و provider taskهای Web | `modules/ai/routes.ts` و `packages/ai` |
-| پرداخت و عضویت | `orders`، `upgrade` و admin pages | `modules/billing/*` و Zarinpal client |
-| بررسی سرویس | — | `/health` و `/ready` در `modules/health/routes.ts` |
+| موضوع                            | Web                                                                   | API                                                            |
+| -------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| API client و proxy               | `apps/web/lib/api-client.ts` و routeهای `apps/web/app/api` / `app/v1` | `apps/api/src/app.ts` و `build-app.ts`                         |
+| احراز هویت و OTP                 | `apps/web/app/login` و `app/_components/auth.tsx`                     | `modules/auth/routes.ts` و `service.ts`                        |
+| رزومه                            | `apps/web/app/(panel)/resumes`                                        | data routes و `modules/imports`                                |
+| jobs/applications/knowledge base | routeهای متناظر در `apps/web/app/(panel)`                             | `modules/data/routes.ts`                                       |
+| تحلیل AI، تطبیق و مصاحبه         | `match`، `interview` و provider taskهای Web                           | `modules/ai/routes.ts` و `packages/ai`                         |
+| پرداخت و عضویت                   | `orders`، `upgrade` و admin pages                                     | `modules/billing/*` و Zarinpal client                          |
+| تایم‌لاین محصول و استوری         | `updates` و `admin/updates`                                           | `modules/product-timeline/*` و جدول `product_timeline_entries` |
+| بررسی سرویس                      | —                                                                     | `/health` و `/ready` در `modules/health/routes.ts`             |
 
 مصاحبه: پاسخ‌ها و مرحلهٔ جاری با `answers` و `currentQuestionIndex` داخل رکورد
 `interviewSessions` ذخیره می‌شوند. در سؤال آخر، `POST /api/interview/report` همهٔ
@@ -77,13 +78,13 @@ npm run db:seed
 npm run dev:stack
 ```
 
-| سرویس | آدرس |
-| --- | --- |
-| Web | `http://localhost:3161` |
-| API | `http://localhost:3162` |
-| API health | `http://localhost:3162/health` |
-| API readiness | `http://localhost:3162/ready` |
-| PostgreSQL میزبان | `127.0.0.1:5433` |
+| سرویس             | آدرس                           |
+| ----------------- | ------------------------------ |
+| Web               | `http://localhost:3161`        |
+| API               | `http://localhost:3162`        |
+| API health        | `http://localhost:3162/health` |
+| API readiness     | `http://localhost:3162/ready`  |
+| PostgreSQL میزبان | `127.0.0.1:5433`               |
 
 برای حفظ session، hostnameهای `localhost` و `127.0.0.1` را با هم ترکیب نکنید.
 
@@ -231,3 +232,5 @@ graphify path "A" "B"
 > Automated review: 2026-10-05 — project changes were committed; review the affected sections if behavior or architecture changed.
 
 > Automated review: 2026-10-05 — project changes were committed; review the affected sections if behavior or architecture changed.
+
+> Automated review: 2026-10-09 — project changes were committed; review the affected sections if behavior or architecture changed.

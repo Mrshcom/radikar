@@ -16,6 +16,7 @@ export {
   payments,
   plans,
   productEvents,
+  productTimelineEntries,
   radicoinSettings,
   radicoinTransactions,
   radicoinWallets,

@@ -9,6 +9,7 @@ import {
   Copy,
   FileText,
   Link2,
+  LoaderCircle,
   Sparkles,
   Target,
   WandSparkles,
@@ -21,6 +22,7 @@ import { GenerationShimmer, MatchAnalysisSkeleton } from "../_components/skeleto
 import { ScaledResumePreview } from "../resumes/scaled-resume-preview";
 import { useToast } from "@/app/_components/toast";
 import { isModelTaskCanceledError, useModelTasks } from "../_components/model-task-provider";
+import { ModelThinkingOrb } from "../_components/model-thinking-orb";
 import {
   getDefaultResumeColor,
   resumeColorOptions,
@@ -52,6 +54,9 @@ type ResumeOption = {
   id: string;
   label: string;
   meta: string;
+  detail: string;
+  sourceLabel: string;
+  templateName: string;
   data: ResumeData;
   templateId: string;
   colorId?: ResumeColorId;
@@ -111,7 +116,7 @@ export default function MatchPage() {
   const [analysisError, setAnalysisError] = useState("");
   const [analysis, setAnalysis] = useState<MatchAnalysis | null>(null);
   const [resumePicker, setResumePicker] = useState(false);
-  const [resumePreviewOpen, setResumePreviewOpen] = useState(false);
+  const [previewResumeId, setPreviewResumeId] = useState<string | null>(null);
   const [resumePickerOpensUp, setResumePickerOpensUp] = useState(false);
   const [resumeOptions, setResumeOptions] = useState<ResumeOption[]>([]);
   const [baseResumeId, setBaseResumeId] = useState(() => runningAnalysisContext?.resumeId || "");
@@ -123,6 +128,7 @@ export default function MatchPage() {
   const [tailoringColor, setTailoringColor] = useState<ResumeColorId>("mint");
   const [tailoringLanguage, setTailoringLanguage] = useState<ResumeLanguage>("fa");
   const resumePickerRef = useRef<HTMLDivElement>(null);
+  const importControllerRef = useRef<AbortController | null>(null);
   const tailoring = isRunning("match-tailor-resume");
   const analysisBusy = analyzing || isRunning("match-analysis");
 
@@ -142,8 +148,14 @@ export default function MatchPage() {
             resumeTemplates.find((template) => template.id === resume.templateId)?.name || "قالب ذخیره‌شده";
           return {
             id: resume.id,
-            label: data.jobTitle ? `${data.fullName || "رزومه من"} — ${data.jobTitle}` : data.fullName || resume.name,
+            label: resume.name?.trim() || data.fullName || "رزومه بدون عنوان",
             meta: `${resume.source === "tailored" ? "نسخه اختصاصی" : "پیش‌نویس"} · ${templateName}`,
+            detail:
+              resume.source === "tailored" && resume.targetCompany
+                ? `${resume.targetCompany}${resume.targetJobTitle ? ` · ${resume.targetJobTitle}` : ""}`
+                : data.jobTitle || data.fullName || "رزومه ذخیره‌شده",
+            sourceLabel: resume.source === "tailored" ? "اختصاصی" : "پیش‌نویس",
+            templateName,
             data,
             templateId: resume.templateId,
             colorId: resume.colorId,
@@ -215,6 +227,16 @@ export default function MatchPage() {
   }, [resumePicker]);
 
   const selectedResume = resumeOptions.find((resume) => resume.id === baseResumeId);
+  const previewResume = resumeOptions.find((resume) => resume.id === previewResumeId);
+
+  const selectResume = (resumeId: string) => {
+    setBaseResumeId(resumeId);
+    setResumePicker(false);
+    setPreviewResumeId(null);
+    setAnalysisDescription("");
+    setAnalyzed(false);
+    setTailored(false);
+  };
 
   const selectSourceMode = (mode: JobSourceMode) => {
     setSourceMode(mode);
@@ -236,9 +258,10 @@ export default function MatchPage() {
     }
   };
 
-  const importJobDescription = async () => {
+  const importJobDescription = async (signal: AbortSignal) => {
     const result = await apiRequest<ImportJobResponse>("/api/job-import", {
       method: "POST",
+      signal,
       body: JSON.stringify({ url: jobUrl.trim() }),
     });
 
@@ -267,23 +290,29 @@ export default function MatchPage() {
     let selectedSourceUrl = sourceMode === "text" ? prefilledSourceUrl : "";
     let selectedLogoUrl = sourceMode === "text" ? prefilledLogoUrl : "";
     if (sourceMode === "url") {
+      const importController = new AbortController();
+      importControllerRef.current = importController;
       setImportingUrl(true);
       try {
-        const imported = await importJobDescription();
+        const imported = await importJobDescription(importController.signal);
+        if (importController.signal.aborted) return;
         selectedDescription = imported.text;
         selectedSourceUrl = imported.sourceUrl;
         selectedLogoUrl = imported.logoUrl;
         setImportedDescription(selectedDescription);
         setCopiedImportedDescription(false);
       } catch (error) {
+        if (importController.signal.aborted) return;
         const message = error instanceof Error ? error.message : "خواندن لینک آگهی با خطا روبه‌رو شد.";
         setImportError(message);
         notify(message, "error");
         setAnalyzing(false);
-        setImportingUrl(false);
         return;
+      } finally {
+        if (importControllerRef.current === importController) importControllerRef.current = null;
+        setImportingUrl(false);
+        if (importController.signal.aborted) setAnalyzing(false);
       }
-      setImportingUrl(false);
     }
 
     try {
@@ -480,12 +509,12 @@ export default function MatchPage() {
         </div>
       )}
       <div className="grid gap-4 min-[1121px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <section className={panelSurfacePadded}>
+        <section className={`${panelSurfacePadded} min-w-0`}>
           <div className="mb-4 flex items-center gap-2.5">
             <span className="grid size-8 place-items-center rounded-[10px] bg-[#e6f4ee] text-[10px] font-bold text-[#0f7b62]">
               ۱
             </span>
-            <div className="flex flex-col">
+            <div className="flex min-w-0 flex-1 flex-col">
               <strong className="text-[11px]">اطلاعات فرصت شغلی</strong>
               <small className="mt-0.5 text-[8px] text-[#8c9996]">یکی از دو روش زیر را انتخاب کن</small>
             </div>
@@ -609,7 +638,7 @@ export default function MatchPage() {
             </div>
           )}
 
-          <div className="relative mt-4 grid gap-1.5" ref={resumePickerRef}>
+          <div className="relative mt-4 grid min-w-0 gap-1.5" ref={resumePickerRef}>
             <label className="text-[10px] font-normal">
               رزومه مبنا <span className="text-[#c85f52]">*</span>
             </label>
@@ -623,7 +652,7 @@ export default function MatchPage() {
                 <button
                   className="group/preview relative grid w-[50px] shrink-0 place-items-center overflow-hidden border-l border-[#e3e9e5] bg-[#edf2ef] p-1 transition-colors hover:bg-[#e5f2ec] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#0f7b62]"
                   type="button"
-                  onClick={() => setResumePreviewOpen(true)}
+                  onClick={() => setPreviewResumeId(selectedResume.id)}
                   aria-label={`پیش‌نمایش ${selectedResume.label}`}
                   title="مشاهده پیش‌نمایش رزومه"
                 >
@@ -642,66 +671,114 @@ export default function MatchPage() {
               )}
               <button
                 className="flex min-w-0 flex-1 items-center gap-2.5 p-2.5 text-right"
-              onClick={() => {
-                if (resumePicker) {
-                  setResumePicker(false);
-                  return;
-                }
-                const pickerRect = resumePickerRef.current?.getBoundingClientRect();
-                if (pickerRect) {
-                  const spaceBelow = window.innerHeight - pickerRect.bottom;
-                  setResumePickerOpensUp(spaceBelow < 320 && pickerRect.top > spaceBelow);
-                }
-                setResumePicker(true);
-              }}
-              aria-expanded={resumePicker}
-              aria-haspopup="listbox"
-            >
-              <div className="flex min-w-0 flex-1 flex-col">
-                <strong className="truncate text-[10px] text-[#687773]">
-                  {selectedResume?.label || "انتخاب رزومه مبنا"}
-                </strong>
-                <span className="mt-0.5 truncate text-[10px] text-[#929e9a]">
-                  {selectedResume?.meta || "هیچ رزومه‌ای انتخاب نشده است"}
-                </span>
-              </div>
-              <ChevronLeft size={18} />
-            </button>
+                onClick={() => {
+                  if (resumePicker) {
+                    setResumePicker(false);
+                    return;
+                  }
+                  const pickerRect = resumePickerRef.current?.getBoundingClientRect();
+                  if (pickerRect) {
+                    const spaceBelow = window.innerHeight - pickerRect.bottom;
+                    setResumePickerOpensUp(spaceBelow < 380 && pickerRect.top > spaceBelow);
+                  }
+                  setResumePicker(true);
+                }}
+                aria-expanded={resumePicker}
+                aria-controls="match-resume-options"
+              >
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <strong className="truncate text-[10px] text-[#687773]">
+                    {selectedResume?.label || "انتخاب رزومه مبنا"}
+                  </strong>
+                  <span className="mt-0.5 truncate text-[10px] text-[#929e9a]">
+                    {selectedResume?.meta || "هیچ رزومه‌ای انتخاب نشده است"}
+                  </span>
+                </div>
+                <ChevronLeft size={18} />
+              </button>
             </div>
             {resumePicker && (
               <div
                 className={cn(
-                  "absolute right-0 left-0 z-40 max-h-[min(320px,calc(100vh-32px))] overflow-y-auto rounded-xl border border-[#dce6e1] bg-white p-1.5 shadow-[0_16px_40px_rgba(25,49,47,.14)]",
+                  "absolute right-0 left-0 z-40 w-full min-w-0 max-w-full max-h-[min(380px,calc(100vh-32px))] overflow-x-hidden overflow-y-auto rounded-2xl border border-[#dce6e1] bg-white p-2 shadow-[0_20px_48px_rgba(25,49,47,.16)]",
                   resumePickerOpensUp ? "bottom-[58px]" : "top-full mt-1.5",
                 )}
-                role="listbox"
+                id="match-resume-options"
+                role="group"
+                aria-label="رزومه‌های ذخیره‌شده"
               >
                 {resumeOptions.length ? (
-                  resumeOptions.map((resume) => (
-                    <button
-                      key={resume.id}
-                      role="option"
-                      aria-selected={baseResumeId === resume.id}
-                      className={cn(
-                        "flex w-full items-center gap-2 rounded-lg p-2.5 text-right text-[#60716e] hover:bg-[#edf7f2]",
-                        baseResumeId === resume.id && "bg-[#edf7f2] text-[#0f7b62]",
-                      )}
-                      onClick={() => {
-                        setBaseResumeId(resume.id);
-                        setResumePicker(false);
-                        setAnalysisDescription("");
-                        setAnalyzed(false);
-                        setTailored(false);
-                      }}
-                    >
-                      <FileText className="shrink-0" size={16} />
-                      <span className="flex min-w-0 flex-1 flex-col">
-                        <strong className="truncate text-[10px]">{resume.label}</strong>
-                        <small className="mt-0.5 text-[9px] text-[#929e9a]">{resume.meta}</small>
-                      </span>
-                      {baseResumeId === resume.id && <Check size={15} />}
-                    </button>
-                  ))
+                  <>
+                    <div className="flex items-center justify-between px-2 pb-2 pt-1 text-[11px] text-[#71817b]">
+                      <strong className="text-[#264b42]">رزومه‌های من</strong>
+                      <span>{formatPersianNumber(resumeOptions.length)} رزومه</span>
+                    </div>
+                    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1.5">
+                      {resumeOptions.map((resume) => {
+                        const isSelected = baseResumeId === resume.id;
+                        return (
+                          <div
+                            key={resume.id}
+                            className={cn(
+                              "flex min-w-0 max-w-full items-stretch gap-2 overflow-hidden rounded-xl border p-1.5 transition-colors",
+                              isSelected
+                                ? "border-[#a9d7c5] bg-[#eef8f2]"
+                                : "border-[#e8eeea] bg-[#fbfcfa] hover:border-[#cbded3] hover:bg-[#f6faf7]",
+                            )}
+                          >
+                            <button
+                              type="button"
+                              aria-pressed={isSelected}
+                              className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden rounded-lg p-1.5 text-right focus-visible:outline-2 focus-visible:outline-[#0f7b62]"
+                              onClick={() => selectResume(resume.id)}
+                            >
+                              <span className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-hidden">
+                                <strong
+                                  className="block max-w-full truncate text-xs text-[#24483e]"
+                                  dir="auto"
+                                  title={resume.label}
+                                >
+                                  {resume.label}
+                                </strong>
+                                <span
+                                  className="block max-w-full truncate text-[10px] text-[#72837c]"
+                                  dir="auto"
+                                  title={resume.detail}
+                                >
+                                  {resume.detail}
+                                </span>
+                                <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[9px] text-[#82938a]">
+                                  <span className="rounded-full bg-white px-1.5 py-0.5 text-[#4c806b]">
+                                    {resume.sourceLabel}
+                                  </span>
+                                  <span className="min-w-0 truncate">{resume.templateName}</span>
+                                </span>
+                              </span>
+                              {isSelected && <Check className="shrink-0 text-[#0f7b62]" size={16} aria-hidden="true" />}
+                            </button>
+                            <button
+                              type="button"
+                              className="group/thumbnail flex w-[68px] shrink-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border border-[#dbe9e1] bg-white p-1 text-[9px] font-medium text-[#0f7b62] transition-colors hover:border-[#9ac9b3] hover:bg-[#edf7f2] focus-visible:outline-2 focus-visible:outline-[#0f7b62]"
+                              onClick={() => setPreviewResumeId(resume.id)}
+                              aria-label={`پیش‌نمایش ${resume.label}`}
+                            >
+                              <span
+                                className="pointer-events-none block w-[54px] overflow-hidden rounded-[3px] border border-[#e4e9e5] bg-white shadow-[0_2px_5px_rgba(25,49,47,.1)] transition-transform group-hover/thumbnail:scale-[1.04]"
+                                aria-hidden="true"
+                              >
+                                <ScaledResumePreview
+                                  templateId={resume.templateId}
+                                  data={resume.data}
+                                  colorId={resume.colorId || getDefaultResumeColor(resume.templateId)}
+                                />
+                              </span>
+                              <span>پیش‌نمایش</span>
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
                 ) : (
                   <div className="flex flex-col items-center p-4 text-center text-[#8a9793]">
                     <FileText className="text-[#8fb4a8]" size={22} />
@@ -721,13 +798,23 @@ export default function MatchPage() {
             )}
           </div>
           <button
+            type="button"
             className={`${primaryAction} mt-4 w-full`}
             disabled={!hasSelectedInput || !selectedResume || analysisBusy || importingUrl}
+            aria-busy={analysisBusy}
             onClick={analyze}
           >
-            <Sparkles size={18} />{" "}
+            {analysisBusy ? (
+              importingUrl ? (
+                <LoaderCircle className="animate-spin motion-reduce:animate-none" size={18} />
+              ) : (
+                <ModelThinkingOrb label="در حال تحلیل تطابق رزومه و آگهی" size={20} theme="dark" />
+              )
+            ) : (
+              <Sparkles size={18} />
+            )}{" "}
             {analysisBusy
-              ? sourceMode === "url" && importingUrl
+              ? importingUrl
                 ? "در حال خواندن لینک..."
                 : "در حال تحلیل با مدل..."
               : analyzed
@@ -736,6 +823,21 @@ export default function MatchPage() {
                   ? "دریافت لینک و تحلیل تطابق"
                   : "تحلیل تطابق متن"}
           </button>
+          {(importingUrl || runningAnalysisTask) && (
+            <button
+              type="button"
+              className="mt-2 inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-[#e6b9b2] bg-white px-3 text-[9px] font-bold text-[#a5483e] hover:bg-[#fff3f1]"
+              onClick={() => {
+                if (importControllerRef.current) importControllerRef.current.abort();
+                if (runningAnalysisTask) cancelTask(runningAnalysisTask.id);
+                setImportingUrl(false);
+                setAnalyzing(false);
+                notify("تحلیل لغو شد.");
+              }}
+            >
+              <X size={14} /> لغو تحلیل
+            </button>
+          )}
         </section>
         <section className={`${panelSurfacePadded} min-h-[470px]`}>
           {analyzed && analysis ? (
@@ -761,9 +863,9 @@ export default function MatchPage() {
               <div className="my-5 grid gap-3">
                 {analysis.breakdown.map((item) => (
                   <div className="grid gap-1.5" key={item.label}>
-                    <div className="flex justify-between text-[9px]">
-                      <span>{item.label}</span>
-                      <strong>{formatPersianNumber(item.value)}٪</strong>
+                    <div className="flex justify-between">
+                      <span className="text-[10px]">{item.label}</span>
+                      <span className="text-[12px]">{formatPersianNumber(item.value)}٪</span>
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-[#e8eeeb]">
                       <div className={`h-full rounded-full bg-[#0f7b62] ${scoreWidthClass(item.value)}`} />
@@ -823,31 +925,18 @@ export default function MatchPage() {
                   setTemplatePickerOpen(true);
                 }}
               >
-                <WandSparkles size={18} /> {tailoring ? "در حال ساخت با مدل..." : "ساخت رزومه اختصاصی"}
+                {tailoring ? (
+                  <ModelThinkingOrb label="در حال ساخت رزومه اختصاصی" size={20} theme="dark" />
+                ) : (
+                  <WandSparkles size={18} />
+                )}{" "}
+                {tailoring ? "در حال ساخت با مدل..." : "ساخت رزومه اختصاصی"}
               </button>
             </>
           ) : analysisBusy ? (
-            <div className="grid gap-4">
-              {runningAnalysisTask && (
-                <div className="flex items-center justify-between gap-3 rounded-[13px] border border-[#cfe4dc] bg-[#f3f9f6] px-3.5 py-3">
-                  <strong className="text-[10px] text-[#175f50]">در حال تحلیل</strong>
-                  <button
-                    type="button"
-                    className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[#e6b9b2] bg-white px-2.5 text-[8px] font-bold text-[#a5483e] hover:bg-[#fff3f1]"
-                    onClick={() => {
-                      cancelTask(runningAnalysisTask.id);
-                      setAnalyzing(false);
-                      notify("تحلیل لغو شد.");
-                    }}
-                  >
-                    <X size={14} /> لغو تحلیل
-                  </button>
-                </div>
-              )}
-              <MatchAnalysisSkeleton
-                label={importingUrl ? "در حال خواندن متن آگهی از لینک" : "در حال مقایسه رزومه با نیازمندی‌های آگهی"}
-              />
-            </div>
+            <MatchAnalysisSkeleton
+              label={importingUrl ? "در حال خواندن متن آگهی از لینک" : "در حال مقایسه رزومه با نیازمندی‌های آگهی"}
+            />
           ) : (
             <div className="flex min-h-[420px] flex-col items-center justify-center text-center text-[#8b9996]">
               <Target size={44} />
@@ -857,21 +946,32 @@ export default function MatchPage() {
           )}
         </section>
       </div>
-      {resumePreviewOpen && selectedResume && (
+      {previewResume && (
         <Modal
           document
           showCloseButton
-          title={`پیش‌نمایش ${selectedResume.label}`}
+          title={`پیش‌نمایش ${previewResume.label}`}
           titleClassName="!mb-0 !text-[16px] !leading-[1.5]"
           headerClassName="pb-[22px]"
-          onClose={() => setResumePreviewOpen(false)}
+          headerActions={
+            previewResume.id !== baseResumeId ? (
+              <button
+                type="button"
+                className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[11px] font-semibold text-white transition-colors hover:bg-[#09664f]"
+                onClick={() => selectResume(previewResume.id)}
+              >
+                انتخاب این رزومه
+              </button>
+            ) : undefined
+          }
+          onClose={() => setPreviewResumeId(null)}
         >
           <div className="max-h-[calc(100vh-160px)] overflow-auto bg-[#e9eeea] p-5">
             <div className="mx-auto w-full max-w-[720px]">
               <ScaledResumePreview
-                templateId={selectedResume.templateId}
-                data={selectedResume.data}
-                colorId={selectedResume.colorId || getDefaultResumeColor(selectedResume.templateId)}
+                templateId={previewResume.templateId}
+                data={previewResume.data}
+                colorId={previewResume.colorId || getDefaultResumeColor(previewResume.templateId)}
                 showAllPages
               />
             </div>

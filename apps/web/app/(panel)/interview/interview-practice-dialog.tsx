@@ -3,8 +3,9 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, LoaderCircle, LogOut, Sparkles, X } from "lucide-react";
+import { ArrowLeft, LogOut, Sparkles, X } from "lucide-react";
 import { HoverTooltip } from "../_components/hover-tooltip";
+import { ModelThinkingOrb } from "../_components/model-thinking-orb";
 
 type InterviewPracticeDialogProps = {
   title: string;
@@ -198,9 +199,8 @@ export function InterviewPracticeDialog({
             aria-live="polite"
             tabIndex={-1}
           >
-            <span className="relative grid size-24 place-items-center rounded-[28px] bg-[#e3f3eb] text-[#0f7b62] shadow-[0_18px_45px_rgba(15,123,98,.12)]">
-              <LoaderCircle className="animate-spin motion-reduce:animate-none" size={46} strokeWidth={1.7} />
-              <Sparkles className="absolute size-5 text-[#0f7b62]" strokeWidth={1.8} />
+            <span className="relative grid size-24 place-items-center">
+              <ModelThinkingOrb label="در حال تحلیل پاسخ‌های مصاحبه" />
             </span>
             <div className="max-w-lg">
               <h3 className="m-0 text-xl font-bold text-[#19312f] sm:text-2xl">در حال تحلیل مصاحبهٔ تو هستیم</h3>

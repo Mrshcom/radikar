@@ -30,6 +30,7 @@ import { KnowledgeCardsSkeleton, KnowledgePageSkeleton } from "../_components/sk
 import { ImageEditorModal } from "./image-editor-modal";
 import { useToast } from "@/app/_components/toast";
 import { useModelTasks } from "../_components/model-task-provider";
+import { ModelThinkingOrb } from "../_components/model-thinking-orb";
 import { emptyResumeData, type ResumeData, type ResumeProject } from "../resumes/resume-data";
 import {
   createRecordId,
@@ -1137,8 +1138,13 @@ export default function KnowledgeBasePage() {
       </div>
 
       <section className="mb-4 flex flex-col items-start gap-3 rounded-[17px] border border-[#dce7e1] bg-white p-4 shadow-[0_12px_36px_rgba(27,55,50,.055)] min-[700px]:flex-row min-[700px]:items-center">
-        <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#e3f2ec] text-[#0f7b62]">
-          {importBusy ? <LoaderCircle className="animate-spin" size={24} /> : <FileUp size={24} />}
+        <div
+          className={cn(
+            "grid size-11 shrink-0 place-items-center text-[#0f7b62]",
+            !importBusy && "rounded-xl bg-[#e3f2ec]",
+          )}
+        >
+          {importBusy ? <ModelThinkingOrb label="در حال استخراج اطلاعات رزومه" size={20} /> : <FileUp size={24} />}
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="m-0 text-[11px]">تکمیل خودکار با رزومه فعلی</h2>
