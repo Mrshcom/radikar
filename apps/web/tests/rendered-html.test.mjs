@@ -439,7 +439,7 @@ test("knowledge base organizes every form section in an accessible responsive ta
   }
   assert.match(knowledgeBase, /role="tablist"/);
   assert.match(knowledgeBase, /aria-orientation="vertical"/);
-  assert.match(knowledgeBase, /بخش‌های پایگاه دانش[\s\S]*?text-\[9px\][\s\S]*?tab\.description/);
+  assert.match(knowledgeBase, /بخش‌های پایگاه دانش[\s\S]*?text-\[10px\][\s\S]*?tab\.description/);
   assert.match(knowledgeBase, /تکمیل خودکار با رزومه فعلی[\s\S]*?my-1 text-\[11px\][\s\S]*?PDF، DOCX یا TXT/);
   assert.match(
     knowledgeBase,
@@ -1217,7 +1217,7 @@ test("plan expiry and quota errors open one global upgrade modal", async () => {
   assert.match(dashboard, /"\/api\/panel\/dashboard"/);
   assert.match(builder, /"\/api\/resume\/generate"/);
   assert.match(interview, /"\/api\/interview\/session"/);
-  assert.match(interview, /"\/api\/interview\/feedback"/);
+  assert.match(interview, /"\/api\/interview\/report"/);
 });
 
 test("job cards keep imported logos safe and localize saved state and dates", async () => {
