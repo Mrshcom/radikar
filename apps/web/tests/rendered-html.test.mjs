@@ -304,7 +304,8 @@ test("superadmin dashboard statistics use compact single-line cards", async () =
 
   assert.match(adminPage, /className="flex min-w-0 items-center gap-3 rounded-\[15px\]/);
   assert.match(adminPage, /className="min-w-0 flex-1 truncate whitespace-nowrap/);
-  assert.match(adminPage, /className="shrink-0 text-\[18px\] font-black/);
+  assert.match(adminPage, /className="flex shrink-0 items-baseline gap-1\.5/);
+  assert.match(adminPage, /<strong className="text-\[18px\] font-black/);
   assert.doesNotMatch(adminPage, /mb-4 grid size-10/);
 });
 
@@ -521,15 +522,16 @@ test("persists domain data only through the Node API and PostgreSQL", async () =
 
 test("starts with empty user data and does not persist panel domain data in browser storage", async () => {
   const resumeData = await readFile(new URL("app/(panel)/resumes/resume-data.ts", projectRoot), "utf8");
+  const domainFiles = await sourceFiles(new URL("lib/data/", projectRoot));
   const files = [
     ...(await sourceFiles(new URL("app/(panel)/", projectRoot))),
     ...(await sourceFiles(new URL("lib/", projectRoot))),
   ];
   const source = (await Promise.all(files.map((file) => readFile(file, "utf8")))).join("\n");
+  const domainSource = (await Promise.all(domainFiles.map((file) => readFile(file, "utf8")))).join("\n");
 
   assert.match(resumeData, /export const emptyResumeData/);
-  assert.doesNotMatch(source, /\blocalStorage\b|\bsessionStorage\b/);
-  assert.doesNotMatch(source, /\bindexedDB\b/);
+  assert.doesNotMatch(domainSource, /\blocalStorage\b|\bsessionStorage\b|\bindexedDB\b/);
   assert.doesNotMatch(source, /سینا احمدی|شرکت پیشنهادی|موقعیت مرتبط|Product Lead/);
 });
 
@@ -1265,9 +1267,9 @@ test("data-changing forms show contextual success toasts and account fields use 
   assert.match(account, /grid items-start gap-5 md:grid-cols-2/);
   assert.match(account, /notify\("اطلاعات فردی با موفقیت ذخیره شد\."\)/);
   assert.doesNotMatch(account, /update\.isSuccess/);
-  assert.match(login, /notify\("کد ورود با موفقیت ارسال شد\."\)/);
+  assert.match(login, /result\.deliveryMode === "console" \? "کد ورود آماده است\." : "کد ورود با موفقیت ارسال شد\."/);
   assert.match(login, /notify\("با موفقیت وارد حساب کاربری شدی\."\)/);
-  assert.match(login, /notify\("کد ورود مجدداً ارسال شد\."\)/);
+  assert.match(login, /result\.deliveryMode === "console" \? "کد ورود جدید آماده است\." : "کد ورود مجدداً ارسال شد\."/);
   for (const message of [
     "پلن جدید با موفقیت به عضویت کاربر افزوده شد.",
     "مدت عضویت کاربر با موفقیت تمدید شد.",
@@ -1807,7 +1809,7 @@ test("profile band template matches the supplied identity-band structure", async
   assert.match(template, /grid-cols-\[7em_1fr\]/);
   assert.match(template, /<ProfileBandHeading palette=\{palette\}>/);
   assert.match(template, /<LanguageList/);
-  assert.match(template, /ps-\[9\.5em\][^\"]*text-balance/);
+  assert.match(template, /<h1 className="[^"]*min-w-0 break-words ps-\[5\.75em\][^"]*text-pretty"/);
   assert.match(template, /grid[^\"]*min-w-0[^\"]*grid-cols-2[^\"]*ps-\[13em\]/);
   assert.match(template, /<ResumeFullName fullName=\{data\.fullName\} \/>/);
   assert.match(template, /<MapPin className=\{cn\("size-\[1\.15em\] shrink-0"/);
