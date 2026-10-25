@@ -529,6 +529,15 @@ function projectWeight(project: ResumeProject) {
   );
 }
 
+function projectGroupsForTemplate(projects: ResumeProject[], templateId?: string) {
+  if (templateId !== "matrix-dark") return projects.map((project) => [project]);
+  return Array.from({ length: Math.ceil(projects.length / 2) }, (_, index) => projects.slice(index * 2, index * 2 + 2));
+}
+
+function projectGroupWeight(projects: ResumeProject[]) {
+  return Math.max(...projects.map(projectWeight));
+}
+
 type OneColumnPageDraft = {
   experiences: ResumeExperience[];
   educations: ResumeEducation[];
@@ -648,6 +657,7 @@ export function paginateResumeData(data: ResumeData, templateId?: string): Resum
   const experiences = getResumeExperiences(data);
   const educations = getResumeEducations(data);
   const projects = getResumeProjects(data);
+  const projectGroups = projectGroupsForTemplate(projects, templateId);
   const summaryWeight = data.summary.trim() ? 2 + Math.ceil(data.summary.length / 350) : 0;
   const summaryIsInMain = getResumeSectionFlow(paginationProfile, "summary") !== "sidebar";
   const educationsAreInMain = getResumeSectionFlow(paginationProfile, "educations") !== "sidebar";
@@ -661,7 +671,7 @@ export function paginateResumeData(data: ResumeData, templateId?: string): Resum
   const totalWeight =
     mainSummaryWeight +
     trailingContentWeight +
-    projects.reduce((total, project) => total + projectWeight(project), 0) +
+    projectGroups.reduce((total, group) => total + projectGroupWeight(group), 0) +
     experiences.reduce((total, experience) => total + experienceWeight(experience), 0);
 
   if (totalWeight <= firstPageCapacity) return [data];
@@ -687,8 +697,8 @@ export function paginateResumeData(data: ResumeData, templateId?: string): Resum
   let projectPageWeight =
     pages[projectPageIndex].reduce((total, experience) => total + experienceWeight(experience), 0) +
     (projectPageIndex === 0 ? mainSummaryWeight : 0);
-  for (const project of projects) {
-    const weight = projectWeight(project);
+  for (const projectGroup of projectGroups) {
+    const weight = projectGroupWeight(projectGroup);
     const capacity = projectPageIndex === 0 ? firstPageCapacity : continuationPageCapacity;
     if (projectPageWeight && projectPageWeight + weight > capacity) {
       pages.push([]);
@@ -696,12 +706,15 @@ export function paginateResumeData(data: ResumeData, templateId?: string): Resum
       projectPageIndex += 1;
       projectPageWeight = 0;
     }
-    pageProjects[projectPageIndex].push(project);
+    pageProjects[projectPageIndex].push(...projectGroup);
     projectPageWeight += weight;
   }
   const lastPageExperienceWeight =
     pages.at(-1)!.reduce((total, experience) => total + experienceWeight(experience), 0) +
-    pageProjects.at(-1)!.reduce((total, project) => total + projectWeight(project), 0);
+    projectGroupsForTemplate(pageProjects.at(-1)!, templateId).reduce(
+      (total, group) => total + projectGroupWeight(group),
+      0,
+    );
   const lastPageBaseWeight = lastPageExperienceWeight + (pages.length === 1 ? mainSummaryWeight : 0);
   const lastPageCapacity = pages.length === 1 ? firstPageCapacity : continuationPageCapacity;
   if (trailingContentWeight && lastPageBaseWeight + trailingContentWeight > lastPageCapacity) {

@@ -1,7 +1,18 @@
-import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
-import type { DataRecord } from "@radikar/shared-types";
+import {
+  type AnyPgColumn,
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
+import type { DataRecord, ProductStorySlide } from "@radikar/shared-types";
 
-export type OnboardingStepId = "profile" | "match" | "resume" | "application";
+export type OnboardingStepId = "profile" | "match" | "resume" | "application" | "referral" | "interview";
 
 export type OnboardingState = {
   version: number;
@@ -80,6 +91,30 @@ export const productEvents = pgTable(
     uniqueIndex("product_events_idempotency_unique").on(table.idempotencyKey),
     index("product_events_name_occurred_idx").on(table.name, table.occurredAt),
     index("product_events_user_occurred_idx").on(table.userId, table.occurredAt),
+  ],
+);
+
+export const productTimelineEntries = pgTable(
+  "product_timeline_entries",
+  {
+    id: uuid("id").primaryKey(),
+    kind: text("kind", { enum: ["phase", "feature", "release"] }).notNull(),
+    phaseId: uuid("phase_id").references((): AnyPgColumn => productTimelineEntries.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    status: text("status", { enum: ["planned", "building", "completed"] })
+      .notNull()
+      .default("planned"),
+    sortOrder: integer("sort_order").notNull().default(0),
+    storySlides: jsonb("story_slides").$type<ProductStorySlide[]>().notNull().default([]),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index("product_timeline_kind_order_idx").on(table.kind, table.sortOrder),
+    index("product_timeline_phase_idx").on(table.phaseId),
+    index("product_timeline_published_idx").on(table.publishedAt),
   ],
 );
 
@@ -628,5 +663,32 @@ export const jobListings = pgTable(
     uniqueIndex("job_listings_source_fingerprint_unique").on(table.source, table.fingerprint),
     index("job_listings_active_posted_idx").on(table.isActive, table.postedAt),
     index("job_listings_title_idx").on(table.title),
+  ],
+);
+
+export const jobRecommendationDeliveries = pgTable(
+  "job_recommendation_deliveries",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    jobListingId: uuid("job_listing_id")
+      .notNull()
+      .references(() => jobListings.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    status: text("status", { enum: ["available", "seen", "saved", "dismissed"] })
+      .notNull()
+      .default("available"),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }).notNull(),
+    seenAt: timestamp("seen_at", { withTimezone: true }),
+    savedAt: timestamp("saved_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("job_recommendation_deliveries_user_job_unique").on(table.userId, table.jobListingId),
+    index("job_recommendation_deliveries_user_delivered_idx").on(table.userId, table.deliveredAt),
+    index("job_recommendation_deliveries_user_status_idx").on(table.userId, table.status),
   ],
 );

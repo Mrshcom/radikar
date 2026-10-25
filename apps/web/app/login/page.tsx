@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
 import { useForm } from "react-hook-form";
-import { ArrowLeft, ArrowRight, Phone, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, LoaderCircle, Phone, RefreshCw, Sparkles } from "lucide-react";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api-client";
 import { apiUrl } from "@/lib/api-url";
 import { authQueryKey, type CurrentUser } from "@/app/_components/auth";
 import { useToast } from "@/app/_components/toast";
+import { toPersianDigits } from "@/lib/fa-number";
 import { normalizeDigits } from "@radikar/validators";
 
 const localizedNumericString = z.string().trim().transform(normalizeDigits);
@@ -36,15 +37,20 @@ type OtpValues = z.infer<typeof otpSchema>;
 const fieldClass =
   "h-11 w-full rounded-[12px] border border-[#dce5df] bg-white ps-11 pe-4 text-left text-[13px] font-normal text-[#233936] outline-none transition placeholder:text-[#a3afac] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 sm:h-12";
 
+function logReversedOtpFromResponse(response: Response) {
+  const reversedCode = response.headers.get("x-radikar-otp-reversed");
+  if (reversedCode) console.info(`[radikar:otp-reversed] ${reversedCode}`);
+}
+
 function GoogleMark() {
   return (
     <svg aria-hidden="true" className="size-5 shrink-0" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
       <path
-        fill="#EA4335"
+        fill="#4285F4"
         d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.715v2.258h2.909c1.702-1.567 2.684-3.875 2.684-6.614Z"
       />
       <path
-        fill="#4285F4"
+        fill="#34A853"
         d="M9 18c2.43 0 4.467-.806 5.956-2.181l-2.909-2.258c-.806.54-1.837.859-3.047.859-2.344 0-4.328-1.584-5.037-3.711H.956v2.332A9 9 0 0 0 9 18Z"
       />
       <path
@@ -52,7 +58,7 @@ function GoogleMark() {
         d="M3.963 10.709A5.41 5.41 0 0 1 3.681 9c0-.594.102-1.171.282-1.709V4.96H.956A9 9 0 0 0 0 9c0 1.453.348 2.83.956 4.04l3.007-2.331Z"
       />
       <path
-        fill="#34A853"
+        fill="#EA4335"
         d="M9 3.58c1.32 0 2.506.454 3.438 1.346l2.58-2.58C13.462.89 11.425 0 9 0A9 9 0 0 0 .956 4.96l3.007 2.331C4.672 5.164 6.656 3.58 9 3.58Z"
       />
     </svg>
@@ -63,9 +69,11 @@ export default function LoginPage() {
   const router = useRouter();
   const notify = useToast();
   const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [deliveryMode, setDeliveryMode] = useState<"console" | "provider">("provider");
   const [submittedPhone, setSubmittedPhone] = useState("");
   const [challengeId, setChallengeId] = useState("");
   const [serverError, setServerError] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [otpDigits, setOtpDigits] = useState(() => Array(6).fill(""));
   const {
     register: registerPhone,
@@ -107,6 +115,10 @@ export default function LoginPage() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (step === "otp") router.prefetch("/dashboard");
+  }, [router, step]);
+
   const startGoogleLogin = () => {
     const next = new URLSearchParams(window.location.search).get("next");
     const referralCode =
@@ -122,10 +134,11 @@ export default function LoginPage() {
 
   const requestOtp = useMutation({
     mutationFn: (phone: string) =>
-      apiRequest<{ challengeId: string; expiresInSeconds: number; devOtp?: string }>("/api/auth/request-otp", {
-        method: "POST",
-        body: JSON.stringify({ phone }),
-      }),
+      apiRequest<{ challengeId: string; expiresInSeconds: number; deliveryMode?: "console" }>(
+        "/api/auth/request-otp",
+        { method: "POST", body: JSON.stringify({ phone }) },
+        logReversedOtpFromResponse,
+      ),
   });
   const verifyOtpMutation = useMutation({
     mutationFn: (input: { phone: string; challengeId: string; code: string; referralCode?: string }) =>
@@ -139,15 +152,15 @@ export default function LoginPage() {
     setServerError("");
     try {
       const result = await requestOtp.mutateAsync(phone);
-      if (result.devOtp) console.info(`[radikar:dev-otp] ${result.devOtp}`);
       setSubmittedPhone(phone);
       setChallengeId(result.challengeId);
+      setDeliveryMode(result.deliveryMode ?? "provider");
       resetOtp({ otp: "" });
       setOtpDigits(Array(6).fill(""));
       setStep("otp");
-      notify("کد ورود با موفقیت ارسال شد.");
+      notify(result.deliveryMode === "console" ? "کد ورود آماده است." : "کد ورود با موفقیت ارسال شد.");
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : "ارسال کد ورود ناموفق بود.");
+      setServerError(error instanceof Error ? error.message : "دریافت کد ورود ناموفق بود.");
     }
   };
 
@@ -167,9 +180,11 @@ export default function LoginPage() {
       queryClient.clear();
       queryClient.setQueryData(authQueryKey, { user: result.user });
       window.localStorage.removeItem("radikar_referral_code");
+      setIsRedirecting(true);
       notify("با موفقیت وارد حساب کاربری شدی.");
       router.replace(result.user.role === "user" ? "/dashboard" : "/admin");
     } catch (error) {
+      setIsRedirecting(false);
       setServerError(error instanceof Error ? error.message : "بررسی کد ورود ناموفق بود.");
     }
   };
@@ -180,11 +195,11 @@ export default function LoginPage() {
     setServerError("");
     try {
       const result = await requestOtp.mutateAsync(submittedPhone);
-      if (result.devOtp) console.info(`[radikar:dev-otp] ${result.devOtp}`);
       setChallengeId(result.challengeId);
-      notify("کد ورود مجدداً ارسال شد.");
+      setDeliveryMode(result.deliveryMode ?? "provider");
+      notify(result.deliveryMode === "console" ? "کد ورود جدید آماده است." : "کد ورود مجدداً ارسال شد.");
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : "ارسال مجدد کد ناموفق بود.");
+      setServerError(error instanceof Error ? error.message : "دریافت کد جدید ناموفق بود.");
     }
     otpInputRefs.current[0]?.focus();
   };
@@ -281,145 +296,165 @@ export default function LoginPage() {
             <strong className="text-[19px] text-[#19312f]">رادیکار</strong>
           </div>
 
-          <div className="mb-6">
-            <h2 className="m-0 text-[25px] font-black tracking-[-.5px] text-[#19312f] sm:text-[27px]">
-              ورود به حساب کاربری
-            </h2>
-            <p className="mb-0 mt-2 text-[11px] leading-7 text-[#7b8b87] sm:mt-3 sm:leading-[1.9]">
-              {step === "phone"
-                ? "شماره همراهت را وارد کن تا کد ورود برایت ارسال شود."
-                : `کد ۶ رقمی ارسال‌شده به ${submittedPhone} را وارد کن.`}
-            </p>
-          </div>
-
-          {step === "phone" ? (
-            <div className="grid gap-4">
-              <form className="grid gap-4" onSubmit={handlePhoneSubmit(sendOtp)} noValidate>
-                <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
-                  شماره همراه
-                  <span className="relative block" dir="ltr">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#83928f]" size={17} />
-                    <input
-                      {...registerPhone("phone")}
-                      className={fieldClass}
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      maxLength={11}
-                      placeholder="09123456789"
-                      onInput={(event) => {
-                        event.currentTarget.value = normalizeDigits(event.currentTarget.value);
-                      }}
-                    />
-                  </span>
-                  {phoneErrors.phone && (
-                    <span className="text-[10px] font-medium text-[#c64c54]">{phoneErrors.phone.message}</span>
-                  )}
-                </label>
-
-                <button
-                  className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"
-                  type="submit"
-                  disabled={isSending}
-                >
-                  {isSending ? "در حال ارسال..." : "دریافت کد ورود"}
-                  {!isSending && <ArrowLeft size={17} />}
-                </button>
-              </form>
-              {providers.data?.google && (
-                <>
-                  <div className="flex items-center gap-3 text-[9px] text-[#9aa6a3]">
-                    <span className="h-px flex-1 bg-[#e4e9e5]" />
-                    یا
-                    <span className="h-px flex-1 bg-[#e4e9e5]" />
-                  </div>
-                  <button
-                    className="inline-flex h-11 items-center justify-center gap-2.5 rounded-[12px] border border-[#dce4df] bg-white px-5 text-[11px] font-extrabold text-[#354b47] transition hover:border-[#b9cec4] hover:bg-[#f9fbfa] sm:h-12"
-                    type="button"
-                    onClick={startGoogleLogin}
-                  >
-                    <GoogleMark />
-                    ادامه با Google
-                  </button>
-                </>
-              )}
+          {isRedirecting ? (
+            <div
+              className="flex flex-col items-center justify-center py-12 text-center"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="grid size-16 place-items-center rounded-full bg-[#e7f5ee] text-[#0f7b62]">
+                <LoaderCircle aria-hidden="true" className="size-8 animate-spin motion-reduce:animate-none" />
+              </span>
+              <h2 className="mb-0 mt-6 text-[22px] font-black text-[#19312f]">در حال ورود به پنل...</h2>
+              <p className="mb-0 mt-3 text-[12px] leading-7 text-[#60746d]">
+                ورودت با موفقیت انجام شد؛ فضای کاریت را آماده می‌کنیم.
+              </p>
             </div>
           ) : (
-            <form className="grid gap-4" onSubmit={handleOtpSubmit(verifyOtp)} noValidate>
-              <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
-                کد یک‌بارمصرف
-                <input {...registerOtp("otp")} type="hidden" />
-                <div className="grid grid-cols-6 gap-2 sm:gap-3" dir="ltr" onPaste={handleOtpPaste}>
-                  {Array.from({ length: 6 }, (_, index) => (
-                    <input
-                      className="h-12 min-w-0 rounded-[12px] border border-[#d9dfda] bg-white !text-center text-[20px] font-bold text-[#233936] outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/12 sm:h-14 sm:rounded-[14px] sm:text-[21px]"
-                      ref={(element) => {
-                        otpInputRefs.current[index] = element;
-                      }}
-                      value={otpDigits[index]}
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete={index === 0 ? "one-time-code" : "off"}
-                      maxLength={1}
-                      aria-label={`رقم ${index + 1} کد یک‌بارمصرف`}
-                      autoFocus={index === 0}
-                      onChange={(event) => updateOtpDigit(index, event.target.value)}
-                      onKeyDown={(event) => handleOtpKeyDown(index, event)}
-                      key={index}
-                    />
-                  ))}
-                </div>
-                {otpErrors.otp && (
-                  <span className="text-[10px] font-medium text-[#c64c54]">{otpErrors.otp.message}</span>
-                )}
-              </label>
-
-              <div className="flex items-center justify-between gap-3 text-[10px]">
-                <button
-                  className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 font-bold text-[#0f7b62]"
-                  type="button"
-                  onClick={() => void resendOtp()}
-                >
-                  <RefreshCw size={14} />
-                  ارسال مجدد کد
-                </button>
-                <button
-                  className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 text-[#687a76]"
-                  type="button"
-                  onClick={() => setStep("phone")}
-                >
-                  <ArrowRight size={14} />
-                  اصلاح شماره
-                </button>
+            <>
+              <div className="mb-6">
+                <h2 className="m-0 text-[25px] font-black tracking-[-.5px] text-[#19312f] sm:text-[27px]">
+                  ورود به حساب کاربری
+                </h2>
+                <p className="mb-0 mt-2 text-[11px] leading-7 text-[#7b8b87] sm:mt-3 sm:leading-[1.9]">
+                  {step === "phone"
+                    ? "شماره همراهت را وارد کن تا کد ورود برایت آماده شود."
+                    : deliveryMode === "console"
+                      ? `کد ۶ رقمی ورود برای ${toPersianDigits(submittedPhone)} را وارد کن.`
+                      : `کد ۶ رقمی ارسال‌شده به ${toPersianDigits(submittedPhone)} را وارد کن.`}
+                </p>
               </div>
 
-              <button
-                className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"
-                type="submit"
-                disabled={isVerifying}
+              {step === "phone" ? (
+                <div className="grid gap-4">
+                  <form className="grid gap-4" onSubmit={handlePhoneSubmit(sendOtp)} noValidate>
+                    <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
+                      شماره همراه
+                      <span className="relative block" dir="ltr">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#83928f]" size={17} />
+                        <input
+                          {...registerPhone("phone")}
+                          className={fieldClass}
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="tel"
+                          maxLength={11}
+                          placeholder="09123456789"
+                          onInput={(event) => {
+                            event.currentTarget.value = normalizeDigits(event.currentTarget.value);
+                          }}
+                        />
+                      </span>
+                      {phoneErrors.phone && (
+                        <span className="text-[11px] font-medium text-[#c64c54]">{phoneErrors.phone.message}</span>
+                      )}
+                    </label>
+
+                    <button
+                      className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"
+                      type="submit"
+                      disabled={isSending}
+                    >
+                      {isSending ? "در حال آماده‌سازی..." : "دریافت کد ورود"}
+                      {!isSending && <ArrowLeft size={17} />}
+                    </button>
+                  </form>
+                  {providers.data?.google && (
+                    <>
+                      <div className="flex items-center gap-3 text-[9px] text-[#9aa6a3]">
+                        <span className="h-px flex-1 bg-[#e4e9e5]" />
+                        یا
+                        <span className="h-px flex-1 bg-[#e4e9e5]" />
+                      </div>
+                      <button
+                        className="inline-flex h-11 items-center justify-center gap-2.5 rounded-[12px] border border-[#dce4df] bg-white px-5 text-[11px] font-extrabold text-[#354b47] transition hover:border-[#b9cec4] hover:bg-[#f9fbfa] sm:h-12"
+                        type="button"
+                        onClick={startGoogleLogin}
+                      >
+                        <GoogleMark />
+                        ادامه با Google
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <form className="grid gap-4" onSubmit={handleOtpSubmit(verifyOtp)} noValidate>
+                  <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
+                    کد یک‌بارمصرف
+                    <input {...registerOtp("otp")} type="hidden" />
+                    <div className="grid grid-cols-6 gap-2 sm:gap-3" dir="ltr" onPaste={handleOtpPaste}>
+                      {Array.from({ length: 6 }, (_, index) => (
+                        <input
+                          className="h-12 min-w-0 rounded-[12px] border border-[#d9dfda] bg-white !text-center text-[20px] font-bold text-[#233936] outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/12 sm:h-14 sm:rounded-[14px] sm:text-[21px]"
+                          ref={(element) => {
+                            otpInputRefs.current[index] = element;
+                          }}
+                          value={otpDigits[index]}
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete={index === 0 ? "one-time-code" : "off"}
+                          maxLength={1}
+                          aria-label={`رقم ${index + 1} کد یک‌بارمصرف`}
+                          autoFocus={index === 0}
+                          onChange={(event) => updateOtpDigit(index, event.target.value)}
+                          onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                          key={index}
+                        />
+                      ))}
+                    </div>
+                    {otpErrors.otp && (
+                      <span className="text-[11px] font-medium text-[#c64c54]">{otpErrors.otp.message}</span>
+                    )}
+                  </label>
+
+                  <div className="flex items-center justify-between gap-3 text-[10px]">
+                    <button
+                      className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 font-bold text-[#0f7b62]"
+                      type="button"
+                      onClick={() => void resendOtp()}
+                    >
+                      <RefreshCw size={14} />
+                      {deliveryMode === "console" ? "دریافت کد جدید" : "ارسال مجدد کد"}
+                    </button>
+                    <button
+                      className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 text-[#687a76]"
+                      type="button"
+                      onClick={() => setStep("phone")}
+                    >
+                      <ArrowRight size={14} />
+                      اصلاح شماره
+                    </button>
+                  </div>
+
+                  <button
+                    className="mt-1 inline-flex h-11 items-center justify-center gap-2 rounded-[12px] border-0 bg-[#0f7b62] px-5 text-[12px] font-extrabold text-white shadow-[0_10px_24px_rgba(15,123,98,.22)] transition hover:bg-[#0b6954] disabled:cursor-wait disabled:opacity-65 sm:mt-2 sm:h-12"
+                    type="submit"
+                    disabled={isVerifying}
+                  >
+                    {isVerifying ? "در حال بررسی..." : "تأیید و ورود"}
+                    {!isVerifying && <ArrowLeft size={17} />}
+                  </button>
+                </form>
+              )}
+
+              {serverError && (
+                <p
+                  className="mb-0 mt-4 rounded-[10px] bg-[#fff1ef] px-3 py-2 text-[10px] font-medium text-[#b34545]"
+                  role="alert"
+                >
+                  {serverError}
+                </p>
+              )}
+
+              <Link
+                className="mx-auto mt-6 inline-flex items-center gap-1.5 text-[10px] font-bold text-[#0f7b62] no-underline transition hover:text-[#0b6954] sm:mt-8"
+                href="/"
               >
-                {isVerifying ? "در حال بررسی..." : "تأیید و ورود"}
-                {!isVerifying && <ArrowLeft size={17} />}
-              </button>
-            </form>
+                <ArrowRight size={14} />
+                بازگشت به سایت
+              </Link>
+            </>
           )}
-
-          {serverError && (
-            <p
-              className="mb-0 mt-4 rounded-[10px] bg-[#fff1ef] px-3 py-2 text-[10px] font-medium text-[#b34545]"
-              role="alert"
-            >
-              {serverError}
-            </p>
-          )}
-
-          <Link
-            className="mx-auto mt-6 inline-flex items-center gap-1.5 text-[10px] font-bold text-[#0f7b62] no-underline transition hover:text-[#0b6954] sm:mt-8"
-            href="/"
-          >
-            <ArrowRight size={14} />
-            بازگشت به سایت
-          </Link>
         </div>
       </section>
     </main>

@@ -1,7 +1,7 @@
 export const roles = ["user", "admin", "superadmin"] as const;
 export type UserRole = (typeof roles)[number];
 export type UserStatus = "active" | "suspended";
-export type OnboardingStepId = "profile" | "match" | "resume" | "application";
+export type OnboardingStepId = "profile" | "match" | "resume" | "application" | "referral" | "interview";
 export type OnboardingState = {
   version: number;
   status: "not_started" | "active" | "dismissed" | "completed";
@@ -33,11 +33,12 @@ export type Permission =
   | "memberships:manage:any"
   | "radicoin:manage:any"
   | "ai-settings:manage:any"
-  | "job-pool:manage:any";
+  | "job-pool:manage:any"
+  | "product-timeline:manage:any";
 
 const rolePermissions: Record<UserRole, ReadonlySet<Permission>> = {
   user: new Set(["own:data:read", "own:data:write"]),
-  admin: new Set(["orders:read:any", "payments:read:any", "memberships:manage:any"]),
+  admin: new Set(["orders:read:any", "payments:read:any", "memberships:manage:any", "product-timeline:manage:any"]),
   superadmin: new Set([
     "users:read:any",
     "reports:read:any",
@@ -47,6 +48,7 @@ const rolePermissions: Record<UserRole, ReadonlySet<Permission>> = {
     "radicoin:manage:any",
     "ai-settings:manage:any",
     "job-pool:manage:any",
+    "product-timeline:manage:any",
   ]),
 };
 

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildApp } from "../src/build-app";
 import type { AuthServicePort } from "../src/modules/auth/routes";
+import { AuthError } from "../src/modules/auth/service";
 import type { AuthUser, SessionIdentity } from "../src/modules/auth/types";
 import type { RecordRepository } from "../src/modules/data/record-repository";
 
@@ -25,11 +26,13 @@ const identities: Record<string, SessionIdentity> = {
   superadmin: { user: superadmin, sessionId: "session-superadmin" },
 };
 
-function createApp({ google = false } = {}) {
+function createApp({ google = false, exposeReversedOtp = false, failOtp = false } = {}) {
   const calls: Array<{ name: string; args: unknown[] }> = [];
   const authService: AuthServicePort = {
-    requestOtp: async (phone) => {
+    requestOtp: async (phone, onCodeGenerated) => {
       calls.push({ name: "requestOtp", args: [phone] });
+      onCodeGenerated?.("654321");
+      if (failOtp) throw new AuthError(502, "ارسال پیامک ورود ناموفق بود: IP سرویس مبدا با تنظیمات مطابقت ندارد");
       return { challengeId: "11111111-1111-4111-8111-111111111111", expiresInSeconds: 180 };
     },
     verifyOtp: async (...args) => {
@@ -113,9 +116,43 @@ function createApp({ google = false } = {}) {
     sessionCookieName: "radikar_session",
     secureCookies: false,
     sessionTtlDays: 30,
+    exposeReversedOtp,
   });
   return { app, calls };
 }
+
+test("OTP diagnostic header is configurable and provider errors still fail the request", async () => {
+  for (const exposeReversedOtp of [true, false]) {
+    const { app } = createApp({ exposeReversedOtp, failOtp: true });
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/auth/request-otp",
+      headers: { origin: "http://localhost:3161" },
+      payload: { phone: "09121234567" },
+    });
+    assert.equal(response.statusCode, 502);
+    assert.match(response.json().error, /IP سرویس مبدا/);
+    assert.equal(response.headers["x-radikar-otp-reversed"], exposeReversedOtp ? "654321" : undefined);
+    assert.equal(
+      response.headers["access-control-expose-headers"],
+      exposeReversedOtp ? "x-radikar-otp-reversed" : undefined,
+    );
+    await app.close();
+  }
+});
+
+test("successful OTP requests expose the diagnostic header only when configured", async () => {
+  const { app } = createApp({ exposeReversedOtp: true });
+  const response = await app.inject({
+    method: "POST",
+    url: "/api/auth/request-otp",
+    headers: { origin: "http://localhost:3161" },
+    payload: { phone: "09121234567" },
+  });
+  assert.equal(response.statusCode, 201);
+  assert.equal(response.headers["x-radikar-otp-reversed"], "654321");
+  await app.close();
+});
 
 test("auth request and verify routes normalize input, set a cookie and expose the session", async () => {
   const { app, calls } = createApp();

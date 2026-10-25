@@ -512,7 +512,7 @@ export default function ResumesPage() {
                     className={cn(
                       "inline-flex h-[34px] shrink-0 items-stretch overflow-hidden rounded-full border p-0 text-[10px] font-semibold transition-all duration-200",
                       active
-                        ? "border-[#0e765e] bg-[linear-gradient(135deg,#16876b_0%,#0a6956_100%)] text-white shadow-[0_5px_14px_rgba(13,112,88,.26)]"
+                        ? "border-[#0e765e] bg-[linear-gradient(135deg,#16876b_0%,#0a6956_100%)] text-white"
                         : "border-[#dbe6e1] bg-[#f4f7f5] text-[#526862] hover:border-[#9ec3b6] hover:bg-[#ebf5f0] hover:text-[#155f50]",
                     )}
                     type="button"

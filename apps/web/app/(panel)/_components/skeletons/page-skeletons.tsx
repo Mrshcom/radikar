@@ -1,5 +1,8 @@
+import Image from "next/image";
+import { LoaderCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { panelSurface } from "../panel-styles";
+import { ModelThinkingOrb } from "../model-thinking-orb";
 import { LoadingContext, Skeleton, SkeletonLines, SkeletonTitle } from "./primitives";
 
 type SkeletonProps = { label?: string };
@@ -55,11 +58,18 @@ export function JobCardsSkeleton({ count = 8, dashboard = false }: { count?: num
   );
 }
 
-export function DashboardSkeleton() {
+export function DashboardSkeleton({ isAnalyzing = false }: { isAnalyzing?: boolean }) {
   const chartBars = ["h-[45%]", "h-[70%]", "h-[35%]", "h-[90%]", "h-[55%]", "h-[75%]", "h-[40%]"];
   return (
     <div role="status" aria-live="polite">
-      <LoadingContext>در حال تحلیل رزومه و ساخت نمای کلی داشبورد</LoadingContext>
+      {isAnalyzing ? (
+        <div className="mb-4 flex items-center gap-2 text-[9px] text-[#71817e]">
+          <ModelThinkingOrb label="در حال تحلیل رزومه و ساخت نمای کلی داشبورد" size={20} />
+          در حال تحلیل رزومه و ساخت نمای کلی داشبورد
+        </div>
+      ) : (
+        <LoadingContext>در حال دریافت اطلاعات داشبورد</LoadingContext>
+      )}
       <SkeletonTitle />
       <section className="grid gap-4 min-[1121px]:grid-cols-[minmax(0,1.9fr)_minmax(270px,.8fr)]">
         <div className="flex min-h-[265px] items-center rounded-[22px] bg-[#173f39] px-[clamp(24px,3vw,38px)] py-[34px]">
@@ -239,34 +249,83 @@ export function ApplicationsSkeleton() {
   );
 }
 
-export function InterviewSkeleton() {
+export function InterviewSkeleton({ isCreatingSession = false }: { isCreatingSession?: boolean }) {
   return (
     <div role="status" aria-live="polite">
-      <LoadingContext>در حال تولید جلسه و سؤال‌های مصاحبه متناسب با رزومه</LoadingContext>
-      <SkeletonTitle action={false} />
-      <div className="relative flex min-h-[360px] items-center rounded-[22px] bg-[#173f39] px-[38px] py-[34px] max-[560px]:min-h-[350px] max-[560px]:items-start max-[560px]:p-7">
-        <div className="min-w-0 flex-1">
-          <Skeleton className="h-7 w-32 bg-white/15" />
-          <Skeleton className="mt-4 h-7 w-3/4 bg-white/15" />
-          <Skeleton className="mt-3 h-3 w-2/3 bg-white/10" />
-          <Skeleton className="mt-2 h-3 w-1/2 bg-white/10" />
-          <div className="mt-5 flex gap-4">
-            <Skeleton className="h-3 w-20 bg-white/10" />
-            <Skeleton className="h-3 w-28 bg-white/10" />
-          </div>
-          <Skeleton className="mt-5 h-10 w-36 bg-white/20" />
+      <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center px-5">
+        <div className="flex w-full max-w-[440px] flex-col items-center rounded-[22px] border border-[#dcebe3] bg-white/95 px-6 py-7 text-center shadow-[0_22px_60px_rgba(27,63,54,.14)] backdrop-blur-md">
+          <span
+            className={cn(
+              "grid place-items-center",
+              isCreatingSession ? "size-20" : "size-14 rounded-full bg-[#e5f4ed] text-[#0f7b62]",
+            )}
+          >
+            {isCreatingSession ? (
+              <ModelThinkingOrb label="در حال ساخت سؤال‌های مصاحبه" />
+            ) : (
+              <LoaderCircle aria-hidden="true" className="size-7 animate-spin motion-reduce:animate-none" />
+            )}
+          </span>
+          <strong className="mt-4 text-[17px] text-[#19312f]">
+            {isCreatingSession ? "در حال ساخت سؤال‌های مصاحبهٔ تو..." : "در حال بازیابی جلسهٔ مصاحبه..."}
+          </strong>
+          <p className="mb-0 mt-2 text-[13px] leading-7 text-[#60746d]">
+            {isCreatingSession
+              ? "سؤال‌ها براساس رزومه و تجربه‌های تو آماده می‌شوند. چند لحظه همراه ما باش."
+              : "اطلاعات و تمرین‌های ذخیره‌شده‌ات را آماده می‌کنیم."}
+          </p>
         </div>
-        <Skeleton className="size-[132px] shrink-0 rounded-full bg-white/15 max-[560px]:absolute max-[560px]:bottom-[25px] max-[560px]:left-[25px] max-[560px]:size-[100px]" />
+      </div>
+      <div className="relative flex min-h-[584px] flex-col overflow-hidden rounded-[22px] bg-[#f7f9f7] lg:flex-row-reverse lg:items-start">
+        <div className="relative w-full shrink-0 self-center lg:w-[55%]">
+          <Image
+            alt=""
+            aria-hidden="true"
+            className="block h-auto w-full grayscale opacity-25 [mask-image:linear-gradient(to_right,black_86%,transparent)]"
+            height={1024}
+            priority
+            sizes="(min-width: 1024px) 55vw, 100vw"
+            src="/illustrations/radikar-interview-room-v2.png"
+            width={1536}
+          />
+        </div>
+        <div className="relative min-w-0 flex-1 px-[clamp(24px,3vw,44px)] pb-[52px] pt-8 max-[560px]:p-7 lg:pb-[180px] lg:pt-10">
+          <Skeleton className="h-9 w-36 rounded-lg" />
+          <Skeleton className="mt-4 h-9 w-[min(360px,90%)]" />
+          <Skeleton className="mt-4 h-4 w-[min(430px,95%)]" />
+          <Skeleton className="mt-2 h-4 w-[min(320px,70%)]" />
+          <div className="mt-5 flex gap-4">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          <Skeleton className="mt-10 h-12 w-56 rounded-2xl" />
+        </div>
+        <div className="relative z-10 grid w-full gap-3 px-6 pb-6 sm:grid-cols-3 lg:absolute lg:inset-x-0 lg:bottom-0 lg:px-8 lg:pb-8">
+          {Array.from({ length: 3 }, (_, index) => (
+            <div
+              className="flex min-h-[112px] items-center gap-4 rounded-[18px] bg-white/85 p-4 shadow-[0_10px_30px_rgba(27,63,54,.1)] backdrop-blur-md"
+              key={index}
+            >
+              <Skeleton className="size-12 shrink-0 rounded-[16px]" />
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="mt-2 h-3 w-4/5" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
       <div className="mt-4 grid grid-cols-3 gap-3 max-[820px]:grid-cols-1">
         {Array.from({ length: 3 }, (_, index) => (
-          <div className={cn(panelSurface, "p-5")} key={index}>
-            <Skeleton className="size-10 rounded-xl" />
-            <Skeleton className="mt-4 h-4 w-2/3" />
-            <div className="mt-3">
-              <SkeletonLines count={2} />
-            </div>
-            <Skeleton className="mt-4 h-3 w-24" />
+          <div
+            className="flex min-h-[220px] flex-col rounded-[22px] border border-[#e7ebe6] bg-white p-5 shadow-[0_12px_36px_rgba(27,55,50,.055)]"
+            key={index}
+          >
+            <Skeleton className="size-12 rounded-[16px]" />
+            <Skeleton className="mt-5 h-4 w-2/3" />
+            <Skeleton className="mt-3 h-3 w-full" />
+            <Skeleton className="mt-2 h-3 w-4/5" />
+            <Skeleton className="mt-auto h-9 w-28 rounded-lg" />
           </div>
         ))}
       </div>
@@ -276,34 +335,39 @@ export function InterviewSkeleton() {
 
 export function MatchAnalysisSkeleton({ label = "در حال مقایسه رزومه با نیازمندی‌های آگهی" }: SkeletonProps) {
   return (
-    <div className="min-h-[420px] p-5" role="status" aria-live="polite">
-      <LoadingContext>{label}</LoadingContext>
-      <div className="flex items-center gap-4 border-b border-[#edf0ec] pb-5">
-        <Skeleton className="size-[105px] shrink-0 rounded-full" />
-        <div className="min-w-0 flex-1">
-          <Skeleton className="h-6 w-24" />
-          <Skeleton className="mt-3 h-5 w-2/3" />
-          <Skeleton className="mt-2 h-2.5 w-1/3" />
-        </div>
-      </div>
-      <div className="my-5 grid gap-3">
-        {Array.from({ length: 4 }, (_, index) => (
-          <div key={index}>
-            <div className="flex justify-between">
-              <Skeleton className="h-2.5 w-1/3" />
-              <Skeleton className="h-2.5 w-10" />
-            </div>
-            <Skeleton className="mt-2 h-1.5 w-full rounded-full" />
+    <div className="relative min-h-[420px] overflow-hidden p-5" role="status" aria-live="polite">
+      <div aria-hidden="true">
+        <div className="flex items-center gap-4 border-b border-[#edf0ec] pb-5">
+          <Skeleton className="size-[105px] shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1">
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="mt-3 h-5 w-2/3" />
+            <Skeleton className="mt-2 h-2.5 w-1/3" />
           </div>
-        ))}
-      </div>
-      <div className="border-t border-[#edf0ec] pt-4">
-        <Skeleton className="h-3 w-40" />
-        <div className="mt-3 flex gap-2">
-          <Skeleton className="h-7 w-24" />
-          <Skeleton className="h-7 w-28" />
-          <Skeleton className="h-7 w-20" />
         </div>
+        <div className="my-5 grid gap-3">
+          {Array.from({ length: 4 }, (_, index) => (
+            <div key={index}>
+              <div className="flex justify-between">
+                <Skeleton className="h-2.5 w-1/3" />
+                <Skeleton className="h-2.5 w-10" />
+              </div>
+              <Skeleton className="mt-2 h-1.5 w-full rounded-full" />
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-[#edf0ec] pt-4">
+          <Skeleton className="h-3 w-40" />
+          <div className="mt-3 flex gap-2">
+            <Skeleton className="h-7 w-24" />
+            <Skeleton className="h-7 w-28" />
+            <Skeleton className="h-7 w-20" />
+          </div>
+        </div>
+      </div>
+      <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/60 px-5 text-center">
+        <ModelThinkingOrb label={label} />
+        <span className="max-w-[260px] text-[11px] font-semibold leading-6 text-[#526461]">{label}</span>
       </div>
     </div>
   );
@@ -312,7 +376,10 @@ export function MatchAnalysisSkeleton({ label = "در حال مقایسه رزو
 export function GenerationShimmer({ label = "در حال تولید محتوا با مدل" }: SkeletonProps) {
   return (
     <div className="rounded-xl border border-[#d9e7df] bg-[#f2faf6] p-3" role="status" aria-live="polite">
-      <LoadingContext>{label}</LoadingContext>
+      <div className="mb-4 flex items-center gap-2 text-[9px] text-[#71817e]">
+        <ModelThinkingOrb label={label} size={20} />
+        {label}
+      </div>
       <SkeletonLines count={2} />
     </div>
   );
@@ -325,7 +392,7 @@ export function FeedbackSkeleton() {
       role="status"
       aria-label="در حال تولید بازخورد"
     >
-      <Skeleton className="size-8" />
+      <ModelThinkingOrb label="در حال تولید بازخورد" size={20} />
       <div className="flex-1">
         <Skeleton className="h-3 w-1/3" />
         <Skeleton className="mt-2 h-3 w-full" />
@@ -343,7 +410,10 @@ export function ResumePreviewSkeleton() {
       aria-label="در حال تکمیل اطلاعات رزومه"
     >
       <div className="absolute top-4 right-4 left-4 z-2 rounded-lg bg-white/90 p-2 backdrop-blur">
-        <LoadingContext className="mb-0">در حال بازنویسی اطلاعات و ساخت پیش‌نمایش رزومه</LoadingContext>
+        <div className="flex items-center gap-2 text-[9px] text-[#71817e]">
+          <ModelThinkingOrb label="در حال بازنویسی اطلاعات رزومه" size={20} />
+          در حال بازنویسی اطلاعات و ساخت پیش‌نمایش رزومه
+        </div>
       </div>
       <div className="flex h-[22%] items-center gap-4 bg-[#173f39] p-7">
         <Skeleton className="size-16 rounded-full bg-white/20" />

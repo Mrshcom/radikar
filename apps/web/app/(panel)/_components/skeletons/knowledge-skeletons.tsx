@@ -1,10 +1,18 @@
 import { cn } from "@/lib/cn";
+import { ModelThinkingOrb } from "../model-thinking-orb";
 
 const repeatGrid = "grid grid-cols-1 gap-3 min-[561px]:grid-cols-2 min-[1121px]:grid-cols-3 min-[1800px]:grid-cols-4";
 
 export function KnowledgeCardsSkeleton() {
   return (
     <div className="grid gap-4" aria-label="در حال استخراج اطلاعات رزومه" aria-busy="true">
+      <div
+        className="flex items-center gap-3 rounded-xl border border-[#dcebe3] bg-[#f2faf6] p-3 text-[11px] text-[#176b57]"
+        role="status"
+      >
+        <ModelThinkingOrb label="در حال استخراج اطلاعات رزومه" size={20} />
+        در حال استخراج اطلاعات رزومه
+      </div>
       {[7, 4, 1, 1, 5].map((fieldCount, cardIndex) => (
         <section
           className="rounded-[18px] border border-[#e7ebe6] bg-white p-5 shadow-[0_12px_36px_rgba(27,55,50,.045)]"

@@ -26,11 +26,24 @@ const jobsQuerySchema = z.object({
   sortBy: z.enum(["title", "company", "location", "salary", "date"]).optional(),
   sortDirection: z.enum(["asc", "desc"]).optional(),
 });
+const recommendationParamsSchema = z.object({ deliveryId: z.uuid() });
 
 export function registerJobPoolRoutes(app: FastifyInstance, jobPool: JobPoolService) {
   app.get("/api/job-pool/jobs", async (request, reply) => {
     if (!requirePermission(request, reply, "own:data:read")) return;
     return jobPool.listPublicJobs(jobsQuerySchema.parse(request.query));
+  });
+
+  app.get("/api/job-pool/recommendations", async (request, reply) => {
+    if (!requirePermission(request, reply, "own:data:read")) return;
+    return jobPool.listRecommendedJobs(request.auth!.user.id, jobsQuerySchema.parse(request.query));
+  });
+
+  app.post<{ Params: { deliveryId: string } }>("/api/job-pool/recommendations/:deliveryId/save", async (request, reply) => {
+    if (!requirePermission(request, reply, "own:data:read")) return;
+    const { deliveryId } = recommendationParamsSchema.parse(request.params);
+    const saved = await jobPool.markRecommendationSaved(request.auth!.user.id, deliveryId);
+    return reply.code(saved ? 200 : 404).send(saved ? { saved: true } : { error: "پیشنهاد پیدا نشد." });
   });
 
   app.get("/api/admin/job-pool", async (request, reply) => {
@@ -40,7 +53,7 @@ export function registerJobPoolRoutes(app: FastifyInstance, jobPool: JobPoolServ
 
   app.post("/api/admin/job-pool/sync", async (request, reply) => {
     if (!requirePermission(request, reply, "job-pool:manage:any")) return;
-    const result = await jobPool.syncDailyPool({ ignoreInterval: true });
+    const result = await jobPool.syncDailyPool({ ignoreInterval: true, ignoreEnabled: true });
     return reply.code(201).send(result);
   });
 

@@ -42,7 +42,7 @@ import { formatPersianNumber } from "@/lib/fa-number";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { apiRequest } from "@/lib/api-client";
 import { prioritizeSavedJobs } from "@/lib/job-order";
-import { useJobPoolListings } from "@/lib/job-pool";
+import { useJobRecommendations } from "@/lib/job-pool";
 
 type DashboardState = {
   snapshot: DashboardSnapshotRecord;
@@ -81,9 +81,9 @@ function dashboardTitle(fullName: string) {
 }
 
 function JobPoolPreview() {
-  const listings = useJobPoolListings({ pageSize: 3 });
+  const recommendations = useJobRecommendations();
 
-  if (listings.isLoading || listings.isError || !listings.data?.items.length) return null;
+  if (recommendations.isLoading || recommendations.isError || !recommendations.data?.items.length) return null;
 
   return (
     <section className={`${panelSurface} mt-4 p-[21px]`}>
@@ -91,7 +91,7 @@ function JobPoolPreview() {
         <div>
           <h3 className="m-0 mb-[5px] text-[13px]">پیشنهادهای امروز برای شما</h3>
           <p className="m-0 text-[10px] text-[#99a4a1]">
-            {formatPersianNumber(listings.data.total)} آگهی فعال در Job Pool
+            {`این هفته ${formatPersianNumber(recommendations.data.meta.deliveredThisWeek)} از ${formatPersianNumber(recommendations.data.meta.weeklyLimit)} پیشنهاد متناسب با فعالیت و پلنت دریافت می‌کنی.`}
           </p>
         </div>
         <Link
@@ -102,7 +102,7 @@ function JobPoolPreview() {
         </Link>
       </div>
       <div className="mt-3 grid grid-cols-1 gap-2.5 min-[700px]:grid-cols-3">
-        {listings.data.items.map((listing) => (
+        {recommendations.data.items.map((listing) => (
           <Link
             key={listing.id}
             className="flex items-center gap-2.5 rounded-xl border border-[#e0e8e3] bg-[#fbfcfa] p-3 no-underline transition-colors hover:border-[#9ac8b8] hover:bg-white"
@@ -200,6 +200,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardState | null>(null);
   const [hasResume, setHasResume] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState("");
   const [heroTextExpanded, setHeroTextExpanded] = useState(false);
   const [aiTextExpanded, setAiTextExpanded] = useState(false);
@@ -251,6 +252,7 @@ export default function DashboardPage() {
         }
 
         try {
+          if (active) setAnalyzing(true);
           const snapshot = await runModelTask({
             key: `dashboard-analysis-${sourceType}-${sourceId}`,
             title: "تحلیل هوشمند داشبورد",
@@ -309,6 +311,8 @@ export default function DashboardPage() {
           } else {
             throw modelError;
           }
+        } finally {
+          if (active) setAnalyzing(false);
         }
       } catch (event) {
         if (active) {
@@ -338,7 +342,7 @@ export default function DashboardPage() {
     return bars.map((count) => (count ? Math.max(18, Math.round((count / maximum) * 100)) : 0));
   }, [data]);
 
-  if (loading) return <DashboardSkeleton />;
+  if (loading) return <DashboardSkeleton isAnalyzing={analyzing} />;
   if (!hasResume)
     return (
       <div className={emptyState}>
@@ -475,9 +479,9 @@ export default function DashboardPage() {
                 <Icon size={20} />
               </div>
               <div className="grid flex-1 grid-cols-[auto_auto]">
-                <span className="col-span-2 text-[9px] text-[#7d8b88]">{stat.label}</span>
+                <span className="col-span-2 text-[12px] text-[#7d8b88]">{stat.label}</span>
                 <strong className="mt-0.5 text-[22px]">{stat.value}</strong>
-                <small className="self-end justify-self-end text-[8px] text-[#3a9a77]">{stat.note}</small>
+                <small className="self-end justify-self-end text-[10px] text-[#3a9a77]">{stat.note}</small>
               </div>
             </div>
           );
@@ -487,8 +491,8 @@ export default function DashboardPage() {
         <div className={`${panelSurface} p-[21px]`}>
           <div className="flex items-start justify-between gap-5">
             <div>
-              <h3 className="m-0 mb-[5px] text-[13px]">آخرین اپلای‌ها</h3>
-              <p className="m-0 text-[9px] text-[#99a4a1]">براساس وضعیت‌هایی که خودت ثبت کرده‌ای</p>
+              <h3 className="m-0 mb-[5px] text-[14px]">آخرین اپلای‌ها</h3>
+              <p className="m-0 text-[10px] text-[#99a4a1]">براساس وضعیت‌هایی که خودت ثبت کرده‌ای</p>
             </div>
             <Link
               className="flex items-center gap-[3px] p-1.5 text-[10px] font-bold text-[#0f7b62] no-underline"
@@ -500,22 +504,28 @@ export default function DashboardPage() {
           <div className="mt-3.5">
             {data.applications.slice(0, 4).map((item) => {
               const stage = stageLabels[item.stage];
+              const applicationJob =
+                data.jobs.find((job) => job.id === item.jobId) ?? data.jobs.find((job) => job.company === item.company);
               return (
                 <div
                   className="grid min-h-[61px] grid-cols-[36px_minmax(100px,1fr)_auto_48px_25px] items-center gap-2.5 border-t border-[#eef1ed]"
                   key={item.id}
                 >
-                  <div className="grid size-[34px] place-items-center rounded-[10px] border border-[#e4e8e3] bg-[#f1f4f0] text-[10px] font-extrabold">
-                    {Array.from(item.company)[0] || "—"}
-                  </div>
+                  <JobLogo
+                    company={item.company}
+                    letter={applicationJob?.letter}
+                    logoUrl={applicationJob?.logoUrl}
+                    tone={applicationJob?.tone}
+                    variant="compact"
+                  />
                   <div className="flex min-w-0 flex-col gap-1">
-                    <strong className="truncate text-[10px]">{item.role}</strong>
-                    <span className="truncate text-[8px] text-[#929e9b]">{item.company}</span>
+                    <strong className="truncate text-[12px]">{item.role}</strong>
+                    <span className="truncate text-[10px] text-[#929e9b]">{item.company}</span>
                   </div>
-                  <span className={`w-fit rounded-[7px] px-2 py-[5px] text-[8px] ${stage.className}`}>
+                  <span className={`w-fit rounded-[7px] px-2 py-[5px] text-[9px] ${stage.className}`}>
                     {stage.label}
                   </span>
-                  <span className="text-[8px] text-[#929e9b]">
+                  <span className="text-[10px] text-[#929e9b]">
                     <PersianDateTime value={item.updatedAt} />
                   </span>
                   <button

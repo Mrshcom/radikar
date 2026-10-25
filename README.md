@@ -151,7 +151,7 @@ curl http://localhost:3162/ready
 خروجی موفق endpoint دوم باید شبیه زیر باشد:
 
 ```json
-{"status":"ready"}
+{ "status": "ready" }
 ```
 
 ## اجرای Web و API در terminalهای جدا
@@ -213,10 +213,9 @@ docker compose down
 
 ## ورود با OTP در محیط توسعه
 
-کد یک‌بارمصرف در همهٔ محیط‌ها فقط از مسیر ارسال‌کنندهٔ پیکربندی‌شدهٔ پیامک دریافت می‌شود و هرگز در پاسخ API یا صفحهٔ ورود نمایش داده نمی‌شود.
-3. اولین کاربری که در دیتابیس خالی ثبت شود نقش `superadmin` می‌گیرد.
-4. سوپرادمین بعد از ورود به `/admin` هدایت می‌شود؛ کاربران معمولی به
-   `/dashboard` می‌روند.
+در همهٔ محیط‌ها ارسال‌کنندهٔ پیامک باید در `apps/api/.env` یا env همان محیط تنظیم شده باشد؛ API بدون تنظیمات کامل provider یا webhook شروع نمی‌شود. کد یک‌بارمصرف فقط از طریق پیامک فرستاده می‌شود و در پاسخ API یا کنسول نمایش داده نمی‌شود.
+
+اولین کاربری که در دیتابیس خالی ثبت شود نقش `superadmin` می‌گیرد. سوپرادمین بعد از ورود به `/admin` هدایت می‌شود و کاربران معمولی به `/dashboard` می‌روند.
 
 برای تعیین یک سوپرادمین مشخص می‌توانید در `apps/api/.env` مقدار زیر را فعال کنید:
 
@@ -231,11 +230,11 @@ BOOTSTRAP_SUPERADMIN_PHONE=09123456789
 
 سه پلن اولیه هنگام اجرای `npm run db:seed` ثبت می‌شوند:
 
-| پلن | قیمت | مدت | رزومه | PDF | AI | تطبیق | مصاحبه |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| رایگان | ۰ | ۳۰ روز | ۱ | ۳ | ۵ | ۱ | ۱ |
-| جست‌وجوی شغلی | ۴۹۹٬۰۰۰ تومان | ۳۰ روز | ۵ | نامحدود | ۴۰ | ۱۵ | ۵ |
-| حرفه‌ای | ۷۹۹٬۰۰۰ تومان | ۳۰ روز | نامحدود | نامحدود | ۱۵۰ | ۵۰ | ۱۵ |
+| پلن           |          قیمت |    مدت |   رزومه |     PDF |  AI | تطبیق | مصاحبه |
+| ------------- | ------------: | -----: | ------: | ------: | --: | ----: | -----: |
+| رایگان        |             ۰ | ۳۰ روز |       ۱ |       ۳ |   ۵ |     ۱ |      ۱ |
+| جست‌وجوی شغلی | ۴۹۹٬۰۰۰ تومان | ۳۰ روز |       ۵ | نامحدود |  ۴۰ |    ۱۵ |      ۵ |
+| حرفه‌ای       | ۷۹۹٬۰۰۰ تومان | ۳۰ روز | نامحدود | نامحدود | ۱۵۰ |    ۵۰ |     ۱۵ |
 
 پلن رایگان فقط یک‌بار و هم‌زمان با اولین ثبت‌نام کاربر اعطا می‌شود و خودکار
 تمدید نمی‌شود. تمدید پلن فعلی، ۳۰ روز و اعتبارهای همان پلن را اضافه می‌کند. ارتقا
@@ -351,30 +350,30 @@ FREE_DEEPSEEK_PORT=9655
 
 ## متغیرهای محیطی API
 
-| متغیر | پیش‌فرض توسعه | توضیح |
-| --- | --- | --- |
-| `API_HOST` | `127.0.0.1` | آدرس listen شدن API |
-| `API_PORT` | `3162` | پورت API |
-| `CORS_ORIGINS` | `http://localhost:3161` | originهای مجاز، جداشده با کاما |
-| `DATABASE_URL` | PostgreSQL روی پورت `5433` | رشته اتصال دیتابیس |
-| `DATABASE_MAX_CONNECTIONS` | `10` | سقف connection pool هر API instance |
-| `LOG_LEVEL` | `info` | سطح log بک‌اند |
-| `AUTH_SECRET` | فقط مقدار توسعه | کلید امضای session و OTP؛ در Production حتماً عوض شود |
-| `SESSION_TTL_DAYS` | `30` | عمر session |
-| `OTP_TTL_SECONDS` | `180` | عمر کد یک‌بارمصرف |
-| `ALLOW_FIRST_USER_SUPERADMIN` | `true` در env نمونه | ارتقای اولین کاربر دیتابیس خالی |
-| `BOOTSTRAP_SUPERADMIN_PHONE` | خالی | شماره مجاز برای bootstrap سوپرادمین |
-| `SMSIR_USERNAME` | خالی | نام کاربری SMS.ir؛ فقط سمت سرور |
-| `SMSIR_API_KEY` | خالی | کلید خصوصی SMS.ir؛ فقط سمت سرور و هرگز با پیشوند `NEXT_PUBLIC_` تعریف نشود |
-| `SMSIR_LINE_NUMBER` | خالی | شماره خط ارسال‌کننده در SMS.ir |
-| `SMSIR_BASE_URL` | `https://api.sms.ir/v1` | آدرس پایه API سامانه SMS.ir |
-| `SMSIR_TIMEOUT_MS` | `8000` | مهلت پاسخ‌گویی سامانه پیامکی بر حسب میلی‌ثانیه |
-| `OTP_WEBHOOK_URL` | خالی | fallback قدیمی ارسال OTP، فقط وقتی SMS.ir تنظیم نشده باشد |
-| `OTP_WEBHOOK_TOKEN` | خالی | Bearer token اختیاری fallback پیامک |
-| `API_PUBLIC_URL` | `http://localhost:3162` | آدرس عمومی callback بک‌اند |
-| `WEB_APP_URL` | `http://localhost:3161` | آدرس Web برای redirect نتیجه پرداخت |
-| `ZARINPAL_BASE_URL` | `https://sandbox.zarinpal.com` | آدرس درگاه؛ در توسعه Sandbox |
-| `ZARINPAL_MERCHANT_ID` | UUID توسعه | شناسه پذیرنده Sandbox |
+| متغیر                         | پیش‌فرض توسعه                  | توضیح                                                                      |
+| ----------------------------- | ------------------------------ | -------------------------------------------------------------------------- |
+| `API_HOST`                    | `127.0.0.1`                    | آدرس listen شدن API                                                        |
+| `API_PORT`                    | `3162`                         | پورت API                                                                   |
+| `CORS_ORIGINS`                | `http://localhost:3161`        | originهای مجاز، جداشده با کاما                                             |
+| `DATABASE_URL`                | PostgreSQL روی پورت `5433`     | رشته اتصال دیتابیس                                                         |
+| `DATABASE_MAX_CONNECTIONS`    | `10`                           | سقف connection pool هر API instance                                        |
+| `LOG_LEVEL`                   | `info`                         | سطح log بک‌اند                                                             |
+| `AUTH_SECRET`                 | فقط مقدار توسعه                | کلید امضای session و OTP؛ در Production حتماً عوض شود                      |
+| `SESSION_TTL_DAYS`            | `30`                           | عمر session                                                                |
+| `OTP_TTL_SECONDS`             | `180`                          | عمر کد یک‌بارمصرف                                                          |
+| `OTP_DELIVERY_MODE`           | `console`                      | موقت: `console` چالش معتبر می‌سازد ولی تابع ارسال را صدا نمی‌زند؛ `provider` ارسال واقعی را با کاوه‌نگار فعال می‌کند |
+| `OTP_LOG_REVERSED_CODE`        | `true`                         | کد معکوس را در کنسول API و مرورگر نشان می‌دهد؛ در حالت `console` الزامی است. برای ارسال واقعی و حذف لاگ، همراه با `OTP_DELIVERY_MODE=provider` آن را `false` کنید. فعال‌بودنش در Production امکان ورود با شمارهٔ دیگران را ایجاد می‌کند |
+| `ALLOW_FIRST_USER_SUPERADMIN` | `true` در env نمونه            | ارتقای اولین کاربر دیتابیس خالی                                            |
+| `BOOTSTRAP_SUPERADMIN_PHONE`  | خالی                           | شماره مجاز برای bootstrap سوپرادمین                                        |
+| `OTP_PROVIDER`                | خالی                           | adapter فعال ارسال OTP؛ فعلاً `kavenegar`                                  |
+| `OTP_PROVIDER_API_KEY`        | خالی                           | کلید خصوصی provider؛ فقط سمت سرور و هرگز با پیشوند `NEXT_PUBLIC_` تعریف نشود |
+| `OTP_PROVIDER_TEMPLATE`       | خالی                           | نام الگوی تأییدشدهٔ provider؛ در adapter فعلی باید شامل `%token` باشد       |
+| `OTP_PROVIDER_BASE_URL`       | `https://api.kavenegar.com/v1` | آدرس پایه adapter فعال                                                     |
+| `OTP_PROVIDER_TIMEOUT_MS`     | `8000`                         | مهلت پاسخ‌گویی provider بر حسب میلی‌ثانیه                                  |
+| `API_PUBLIC_URL`              | `http://localhost:3162`        | آدرس عمومی callback بک‌اند                                                 |
+| `WEB_APP_URL`                 | `http://localhost:3161`        | آدرس Web برای redirect نتیجه پرداخت                                        |
+| `ZARINPAL_BASE_URL`           | `https://sandbox.zarinpal.com` | آدرس درگاه؛ در توسعه Sandbox                                               |
+| `ZARINPAL_MERCHANT_ID`        | UUID توسعه                     | شناسه پذیرنده Sandbox                                                      |
 
 ## مدیریت دیتابیس
 
@@ -474,35 +473,39 @@ PostgreSQL باید قبل از start شدن API در دسترس باشد و mig
 - `ALLOW_FIRST_USER_SUPERADMIN=false`
 - تنظیم `BOOTSTRAP_SUPERADMIN_PHONE` برای bootstrap کنترل‌شده یا مدیریت نقش از
   قبل
-- تنظیم هر سه مقدار `SMSIR_USERNAME`، `SMSIR_API_KEY` و `SMSIR_LINE_NUMBER`؛ webhook قدیمی فقط fallback است
+- انتخاب provider با `OTP_PROVIDER` و تنظیم credentialهای عمومی `OTP_PROVIDER_*`؛ adapter فعلی `kavenegar` است و به یک الگوی Verify تأییدشده شامل `%token` نیاز دارد
 - محدودکردن `CORS_ORIGINS` به دامنه واقعی Web
 - استفاده از PostgreSQL production با backup، connection pooling و SSL
 - نگهداری secretها در Secret Manager، نه داخل repository یا Docker image
 
-API در حالت Production با secret توسعه، بدون webhook پیامک یا با نمایش OTP بالا
-نمی‌آید و عمداً startup را متوقف می‌کند.
+API در حالت Production با secret توسعه بالا نمی‌آید؛ در حالت `provider` تنظیم کامل
+کاوه‌نگار نیز برای شروع الزامی است. فعلاً `OTP_DELIVERY_MODE=console` تابع ارسال را
+فراخوانی نمی‌کند، چالش معتبر می‌سازد و کد معکوس را در کنسول API و مرورگر نشان می‌دهد.
+برای بازگشت به ارسال واقعی با کاوه‌نگار، `OTP_DELIVERY_MODE=provider` و
+`OTP_LOG_REVERSED_CODE=false` را با هم تنظیم کنید. در حالت `provider` خطای ارسال
+باعث شکست درخواست و حذف چالش می‌شود. حالت `console` امن نیست و امکان ورود با شمارهٔ دیگران را می‌دهد.
 
 ## فرمان‌های مهم Monorepo
 
-| فرمان | کاربرد |
-| --- | --- |
-| `npm run dev:stack` | اجرای هم‌زمان Web و API |
-| `npm run dev:web` | فقط Web روی پورت 3161 |
-| `npm run dev:api` | فقط API روی پورت 3162 |
-| `npm run build` | Build کامل Monorepo با Next.js رسمی |
-| `npm run build:web` | Build فقط Web و dependencyهای آن |
-| `npm run build:api` | بررسی Build API و dependencyهای آن |
-| `npm run build:packages` | Build packageهای مشترک |
-| `npm run test` | تمام تست‌ها |
-| `npm run test:web` | تست‌های Web |
-| `npm run test:api` | تست‌های API |
-| `npm run typecheck` | TypeScript تمام workspaceها |
-| `npm run lint` | lint تمام workspaceها |
-| `npm run infra:up` | اجرای PostgreSQL محلی |
-| `npm run infra:down` | توقف containerها بدون حذف volume |
-| `npm run db:generate` | تولید migration جدید |
-| `npm run db:migrate` | اجرای migrationها |
-| `npm run db:seed` | ایجاد داده اولیه |
+| فرمان                    | کاربرد                              |
+| ------------------------ | ----------------------------------- |
+| `npm run dev:stack`      | اجرای هم‌زمان Web و API             |
+| `npm run dev:web`        | فقط Web روی پورت 3161               |
+| `npm run dev:api`        | فقط API روی پورت 3162               |
+| `npm run build`          | Build کامل Monorepo با Next.js رسمی |
+| `npm run build:web`      | Build فقط Web و dependencyهای آن    |
+| `npm run build:api`      | بررسی Build API و dependencyهای آن  |
+| `npm run build:packages` | Build packageهای مشترک              |
+| `npm run test`           | تمام تست‌ها                         |
+| `npm run test:web`       | تست‌های Web                         |
+| `npm run test:api`       | تست‌های API                         |
+| `npm run typecheck`      | TypeScript تمام workspaceها         |
+| `npm run lint`           | lint تمام workspaceها               |
+| `npm run infra:up`       | اجرای PostgreSQL محلی               |
+| `npm run infra:down`     | توقف containerها بدون حذف volume    |
+| `npm run db:generate`    | تولید migration جدید                |
+| `npm run db:migrate`     | اجرای migrationها                   |
+| `npm run db:seed`        | ایجاد داده اولیه                    |
 
 ## رفع خطاهای رایج
 
@@ -610,6 +613,19 @@ npm ci
 - `[ ]` تقویم اپلای، یادآوری مهلت‌ها و پیگیری follow-up
 - `[ ]` تحلیل شکاف مهارتی و مسیر یادگیری پیشنهادی برای رسیدن به فرصت هدف
 - `[ ]` نسخهٔ فارسی/انگلیسی و آماده‌سازی رزومه برای مهاجرت کاری و فرمت‌های رایج
+- `[ ]` تجربهٔ خوشامدگویی بدو ورود با مودال Onboarding برای کاربر تازه: معرفی
+  کوتاه مسیر و امکان شروع تور/چک‌لیست یا ردکردن. نمایش خودکار فقط یک‌بار باشد و
+  از راهنمای پنل دوباره در دسترس بماند. این تجربه با مودال چک‌لیست فعلی یکپارچه
+  شود تا دو مودال پشت سر هم باز نشوند؛ وضعیت مشاهده یا رد در حساب کاربر ثبت شود.
+- `[ ]` صفحهٔ «در راه رادیکار» شبیه wish list برای نمایش قابلیت‌هایی که برای
+  آینده در نظر گرفته شده‌اند؛ ورودی آن در منوی حساب کاربری باشد، نه منوی اصلی
+  سایدبار. این فهرست از تایم‌لاین تغییراتِ منتشرشده جداست و نباید تاریخ یا وعدهٔ
+  قطعی انتشار القا کند. دامنه و معیارهای پذیرش در
+  [`docs/future-features-wishlist.md`](docs/future-features-wishlist.md) ثبت شده‌اند.
+- `[~]` انتخاب تم پنل از بخش تنظیمات (روشن، تیره، هماهنگ با سیستم)؛ اجرای مرحله‌ای
+  پس از یکپارچه‌سازی رنگ‌های معنایی، با حفظ ظاهر فعلی برای کاربران موجود و بدون
+  تغییر رنگ خروجی رزومه/PDF. دامنه، وابستگی‌ها و معیارهای پذیرش در
+  [`docs/theme-settings-plan.md`](docs/theme-settings-plan.md) ثبت شده‌اند.
 
 ### فاز ۲ — پنل کارفرما و مدیریت جذب
 
@@ -670,6 +686,16 @@ npm ci
 - `[ ]` ارسال ایمیل و پیام‌های transactional با قالب‌های قابل تنظیم
 - `[ ]` صفحهٔ عمومی فرصت شغلی با SEO و schema مناسب
 - `[ ]` گزارش‌های سازمانی، صورتحساب تیمی و مدیریت چند شرکت
+
+### قابلیت مستقل از فاز — مسیر محصول و استوری‌ها
+
+- `[~]` تایم‌لاین فازها، قابلیت‌ها و لاگ‌های انتشار با مدیریت محتوا از پنل ادمین.
+  هر استوری تا ۷ روز در «تازه‌ها» است و پس از آن از کنار همان آیتم قابل بازبینی
+  می‌ماند. پیاده‌سازی محلی انجام شده، اما هنوز داده‌ای منتشر یا روی سرور مستقر
+  نشده است. قرارداد محتوا و انتشار در
+  [`docs/product-timeline.md`](docs/product-timeline.md) آمده است.
+- `[ ]` ثبت رویدادهای مشاهده، تکمیل استوری و کلیک روی دمو برای سنجش آگاهی و
+  پذیرش قابلیت، بدون ذخیرهٔ محتوای شخصی کاربر.
 
 ### الزامات مشترک همهٔ فازها
 

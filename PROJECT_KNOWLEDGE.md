@@ -23,29 +23,48 @@ Browser → Next.js Web → Fastify API → Neon/PostgreSQL
 
 ## ساختار سریع repository
 
-| مسیر | مسئولیت |
-| --- | --- |
-| `apps/web` | Next.js App Router؛ رابط فارسی/RTL، پنل کاربر و مدیریت |
-| `apps/api` | Fastify؛ احراز هویت، داده، پرداخت، AI، import و health checks |
-| `packages/database` | Drizzle schema، migration و seed PostgreSQL |
-| `packages/validators` | قراردادها و اعتبارسنجی‌های مشترک Zod |
-| `packages/shared-types` | typeهای مشترک بدون وابستگی به framework |
-| `packages/ai` | adapter/provider و پردازش پاسخ مدل‌های زبانی |
-| `packages/config` | بارگذاری و اعتبارسنجی تنظیمات server |
-| `deploy` | Docker/Caddy و دستورالعمل استقرار VPS |
-| `graphify-out` | graph تولیدشدهٔ محلی؛ در Git نادیده گرفته می‌شود و با `graphify update .` بازسازی می‌شود |
+| مسیر                    | مسئولیت                                                                                  |
+| ----------------------- | ---------------------------------------------------------------------------------------- |
+| `apps/web`              | Next.js App Router؛ رابط فارسی/RTL، پنل کاربر و مدیریت                                   |
+| `apps/api`              | Fastify؛ احراز هویت، داده، پرداخت، AI، import و health checks                            |
+| `packages/database`     | Drizzle schema، migration و seed PostgreSQL                                              |
+| `packages/validators`   | قراردادها و اعتبارسنجی‌های مشترک Zod                                                     |
+| `packages/shared-types` | typeهای مشترک بدون وابستگی به framework                                                  |
+| `packages/ai`           | adapter/provider و پردازش پاسخ مدل‌های زبانی                                             |
+| `packages/config`       | بارگذاری و اعتبارسنجی تنظیمات server                                                     |
+| `deploy`                | Docker/Caddy و دستورالعمل استقرار VPS                                                    |
+| `graphify-out`          | graph تولیدشدهٔ محلی؛ در Git نادیده گرفته می‌شود و با `graphify update .` بازسازی می‌شود |
 
 ## نقاط ورود و مسیرهای مهم
 
-| موضوع | Web | API |
-| --- | --- | --- |
-| API client و proxy | `apps/web/lib/api-client.ts` و routeهای `apps/web/app/api` / `app/v1` | `apps/api/src/app.ts` و `build-app.ts` |
-| احراز هویت و OTP | `apps/web/app/login` و `app/_components/auth.tsx` | `modules/auth/routes.ts` و `service.ts` |
-| رزومه | `apps/web/app/(panel)/resumes` | data routes و `modules/imports` |
-| jobs/applications/knowledge base | routeهای متناظر در `apps/web/app/(panel)` | `modules/data/routes.ts` |
-| تحلیل AI، تطبیق و مصاحبه | `match`، `interview` و provider taskهای Web | `modules/ai/routes.ts` و `packages/ai` |
-| پرداخت و عضویت | `orders`، `upgrade` و admin pages | `modules/billing/*` و Zarinpal client |
-| بررسی سرویس | — | `/health` و `/ready` در `modules/health/routes.ts` |
+| موضوع                            | Web                                                                   | API                                                            |
+| -------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| API client و proxy               | `apps/web/lib/api-client.ts` و routeهای `apps/web/app/api` / `app/v1` | `apps/api/src/app.ts` و `build-app.ts`                         |
+| احراز هویت و OTP                 | `apps/web/app/login` و `app/_components/auth.tsx`                     | `modules/auth/routes.ts` و `service.ts`                        |
+| رزومه                            | `apps/web/app/(panel)/resumes`                                        | data routes و `modules/imports`                                |
+| jobs/applications/knowledge base | routeهای متناظر در `apps/web/app/(panel)`                             | `modules/data/routes.ts`                                       |
+| تحلیل AI، تطبیق و مصاحبه         | `match`، `interview` و provider taskهای Web                           | `modules/ai/routes.ts` و `packages/ai`                         |
+| پرداخت و عضویت                   | `orders`، `upgrade` و admin pages                                     | `modules/billing/*` و Zarinpal client                          |
+| تایم‌لاین محصول و استوری         | `updates` و `admin/updates`                                           | `modules/product-timeline/*` و جدول `product_timeline_entries` |
+| بررسی سرویس                      | —                                                                     | `/health` و `/ready` در `modules/health/routes.ts`             |
+
+مصاحبه: پاسخ‌ها و مرحلهٔ جاری با `answers` و `currentQuestionIndex` داخل رکورد
+`interviewSessions` ذخیره می‌شوند. در سؤال آخر، `POST /api/interview/report` همهٔ
+پاسخ‌ها را یک‌جا ارزیابی می‌کند؛ خروجی اعتبارسنجی‌شده با امتیاز میانگین پاسخ‌ها
+در `report` همان رکورد نگهداری می‌شود. UI گزارش در `interview/interview-result.tsx`
+است و در مسیر مستقل `/interview/results/[sessionId]` نمایش داده می‌شود. فهرست
+گزارش‌های قبلی در صفحهٔ `/interview` قرار دارد و تمرین فعال در مودال تمام‌صفحهٔ
+`interview/interview-practice-dialog.tsx` انجام می‌شود؛ بستن آن پاسخ جاری را ذخیره
+می‌کند. قرارداد مشترک `InterviewReport` در `packages/shared-types` و اعتبارسنجی API
+در `modules/ai/interview-report.ts` قرار دارند. مسیر قدیمی `/api/interview/feedback`
+برای سازگاری باقی است و UI جدید آن را فراخوانی نمی‌کند.
+
+پاداش مسیر: `GET /api/radicoin/onboarding-reward` شش مرحله را از داده‌های فضای
+کاری فعال و دعوت تأییدشده بررسی می‌کند و وضعیت دریافت را بدون واریز برمی‌گرداند.
+واریز فقط با `POST /api/radicoin/onboarding-reward/claim` انجام می‌شود؛ ۱۰۰ رادیکوین
+با کلید ثابت `onboarding-completion:v1:<userId>` و قفل کیف پول در یک تراکنش ثبت
+می‌شود. کامل‌شدن وضعیت راهنما به‌تنهایی پاداشی واریز نمی‌کند. گزارش جدید مصاحبه
+و بازخوردهای قدیمی هر دو برای مرحلهٔ مصاحبه پذیرفته می‌شوند.
 
 ## اجرای محلی
 
@@ -59,13 +78,13 @@ npm run db:seed
 npm run dev:stack
 ```
 
-| سرویس | آدرس |
-| --- | --- |
-| Web | `http://localhost:3161` |
-| API | `http://localhost:3162` |
-| API health | `http://localhost:3162/health` |
-| API readiness | `http://localhost:3162/ready` |
-| PostgreSQL میزبان | `127.0.0.1:5433` |
+| سرویس             | آدرس                           |
+| ----------------- | ------------------------------ |
+| Web               | `http://localhost:3161`        |
+| API               | `http://localhost:3162`        |
+| API health        | `http://localhost:3162/health` |
+| API readiness     | `http://localhost:3162/ready`  |
+| PostgreSQL میزبان | `127.0.0.1:5433`               |
 
 برای حفظ session، hostnameهای `localhost` و `127.0.0.1` را با هم ترکیب نکنید.
 
@@ -76,6 +95,7 @@ npm run dev:stack
   یا Git ثبت نکنید.
 - API برای توسعه به `DATABASE_URL` محلی یا اتصال Neon نیاز دارد.
 - Production باید `AUTH_SECRET` تصادفی، ارسال OTP واقعی و CORS محدود داشته باشد.
+- OTP در همهٔ محیط‌ها از abstraction عمومی provider استفاده می‌کند. adapter فعلی `kavenegar` است و با `POST /v1/{API-KEY}/verify/lookup.json` کار می‌کند؛ در حالت ارسال واقعی `OTP_PROVIDER=kavenegar`، `OTP_PROVIDER_API_KEY` و `OTP_PROVIDER_TEMPLATE` الزامی‌اند و الگو باید شامل `%token` باشد. حالت موقت پیش‌فرض `OTP_DELIVERY_MODE=console` حتی بدون کلید provider چالش معتبر می‌سازد اما تابع ارسال را فراخوانی نمی‌کند. با `OTP_LOG_REVERSED_CODE=true` کد معکوس در کنسول API و از طریق هدر پاسخ در کنسول مرورگر ثبت می‌شود. این حالت در Production کد را به درخواست‌کنندهٔ ناشناس می‌دهد و خطر تصاحب حساب دارد. برای فعال‌سازی ارسال واقعی و حذف لاگ، هر دو متغیر را به‌ترتیب `provider` و `false` تنظیم کنید. در حالت provider خطای ارسال به کاربر نمایش داده شده و چالش ناموفق حذف می‌شود. افزودن provider بعدی فقط به adapter/factory عمومی OTP محدود است.
 - شماره bootstrap فقط برای راه‌اندازی کنترل‌شدهٔ سوپرادمین استفاده شود و بعد
   حذف شود.
 
@@ -120,7 +140,7 @@ graphify path "A" "B"
 - VPS فعلی رادیکار در مسیر `/home/sport724/mampel/radikar` اجرا می‌شود؛ دامنهٔ
   production از پورت‌های استاندارد HTTP `80` و HTTPS `443` استفاده می‌کند و
   پورت‌های داخلی API/Web عمومی نیستند.
-- OTP در همهٔ محیط‌ها فقط از مسیر ارسالکنندهٔ پیکربندی‌شدهٔ پیامک تحویل داده می‌شود و هرگز در پاسخ API نمایش داده نمی‌شود.
+- OTP فعلاً در همهٔ محیط‌ها با `OTP_DELIVERY_MODE=console` بدون ارسال پیامک ساخته می‌شود و کد معکوس در هدر پاسخ API برای کنسول مرورگر قرار می‌گیرد؛ فعال‌سازی بعدی کاوه‌نگار با `provider` و خاموش‌کردن لاگ انجام می‌شود.
 - خروجی provider هوش مصنوعی از کانتینر API روی HTTPS استفاده می‌کند و برای
   پایداری، `api.gapgpt.app` در Compose به edge سالم pin شده است.
 - CI/CD در `.github/workflows/deploy-production.yml` با push تگ‌هایی مثل
@@ -137,7 +157,11 @@ graphify path "A" "B"
   رزومه و شغل، تمرین مصاحبه، مدیریت اپلای، راهنماها، درباره، تماس، حریم خصوصی و
   شرایط استفاده هستند و در `sitemap.xml` ثبت شده‌اند.
 - `robots.txt` صفحه‌های عمومی و crawlerهای جست‌وجوی پاسخ‌گو را مجاز می‌کند،
-  routeهای حساب/API را می‌بندد و crawlerهای آموزش مدل را مسدود می‌کند.
+  routeهای حساب/API را می‌بندد و crawlerهای آموزش مدل را مسدود می‌کند. محدودیت
+  `/interview` باید فقط خود پنل و زیرمسیرهای آن را بگیرد، نه لندینگ عمومی
+  `/interview-practice`.
+- `sitemap.xml` فقط URLهای عمومی را ثبت می‌کند؛ تا وقتی تاریخ به‌روزرسانی مهم
+  هر صفحه از منبع قابل‌اعتماد به‌دست نیاید، `lastmod` منتشر نمی‌شود.
 - `llms.txt` خلاصهٔ factual محصول و لینک صفحه‌های مرجع را ارائه می‌کند.
 - تمام routeهای ورود و پنل metadata صریح `noindex, nofollow` دارند.
 - لندینگ server-rendered است و providerهای کلاینتی فقط در layoutهای ورود و پنل
@@ -205,3 +229,11 @@ graphify path "A" "B"
 > Automated review: 2026-10-05 — project changes were committed; review the affected sections if behavior or architecture changed.
 
 > Automated review: 2026-10-05 — project changes were committed; review the affected sections if behavior or architecture changed.
+
+> Automated review: 2026-10-05 — project changes were committed; review the affected sections if behavior or architecture changed.
+
+> Automated review: 2026-10-05 — project changes were committed; review the affected sections if behavior or architecture changed.
+
+> Automated review: 2026-10-09 — project changes were committed; review the affected sections if behavior or architecture changed.
+
+> Automated review: 2026-10-13 — project changes were committed; review the affected sections if behavior or architecture changed.

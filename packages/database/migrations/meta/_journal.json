@@ -169,6 +169,20 @@
       "when": 1791054000004,
       "tag": "0023_product_events",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791461993000,
+      "tag": "0024_job_recommendation_deliveries",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1791621718867,
+      "tag": "0025_product_timeline",
+      "breakpoints": true
     }
   ]
 }

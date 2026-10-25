@@ -19,6 +19,8 @@ import { handleRadicoinError, registerRadicoinRoutes } from "./modules/radicoin/
 import type { RadicoinService } from "./modules/radicoin/service";
 import type { Database } from "@radikar/database";
 import type { ProductEventService } from "./modules/analytics/service";
+import { handleProductTimelineError, registerProductTimelineRoutes } from "./modules/product-timeline/routes";
+import { ProductTimelineService } from "./modules/product-timeline/service";
 
 type BuildAppOptions = {
   fastifyFactory?: typeof Fastify;
@@ -39,6 +41,7 @@ type BuildAppOptions = {
   database?: Database;
   jobPoolService?: JobPoolService;
   productEvents?: ProductEventService;
+  exposeReversedOtp?: boolean;
 };
 
 export function buildApp({
@@ -60,6 +63,7 @@ export function buildApp({
   database,
   jobPoolService,
   productEvents,
+  exposeReversedOtp = false,
 }: BuildAppOptions) {
   const app = fastifyFactory({
     logger,
@@ -73,6 +77,7 @@ export function buildApp({
     origin: corsOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
+    ...(exposeReversedOtp ? { exposedHeaders: ["x-radikar-otp-reversed"] } : {}),
   });
   app.register(cookie);
   app.addHook("preValidation", async (request) => {
@@ -102,6 +107,7 @@ export function buildApp({
     sessionTtlDays,
     webAppUrl,
     productEvents,
+    exposeReversedOtp,
   });
   app.addHook("preHandler", async (request, reply) => {
     const publicPaths = new Set([
@@ -134,6 +140,7 @@ export function buildApp({
     linkedInActorId: apifyLinkedInActorId,
   });
   if (jobPoolService) registerJobPoolRoutes(app, jobPoolService);
+  if (database) registerProductTimelineRoutes(app, new ProductTimelineService(database));
 
   app.setNotFoundHandler((request, reply) =>
     reply.code(404).send({
@@ -146,6 +153,7 @@ export function buildApp({
     if (handleAuthError(error, request, reply)) return;
     if (handleBillingError(error, request, reply)) return;
     if (handleRadicoinError(error, request, reply)) return;
+    if (handleProductTimelineError(error, request, reply)) return;
     if (error instanceof ZodError) {
       return reply.code(400).send({
         error: "داده ورودی معتبر نیست.",

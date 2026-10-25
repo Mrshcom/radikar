@@ -35,6 +35,7 @@ const operationLabels: Record<string, string> = {
   dashboard: "تحلیل داشبورد",
   interview_session: "ساخت جلسه مصاحبه",
   interview_feedback: "بازخورد مصاحبه",
+  interview_report: "گزارش کامل مصاحبه",
   knowledge_import: "ایمپورت رزومه",
 };
 

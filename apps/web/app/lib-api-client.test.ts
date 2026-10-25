@@ -50,6 +50,20 @@ describe("apiRequest", () => {
     expect(getPendingPlanUpgradeMessage()).toBe("سقف استفاده تمام شده");
   });
 
+  it("runs a response diagnostic hook before returning provider errors without changing the error", async () => {
+    const response = new Response(JSON.stringify({ error: "ارسال پیامک ورود ناموفق بود: IP سرویس مبدا" }), {
+      status: 502,
+      headers: { "x-radikar-otp-reversed": "654321" },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response));
+    const diagnostic = vi.fn((result: Response) => result.headers.get("x-radikar-otp-reversed"));
+    await expect(apiRequest("/api/auth/request-otp", { method: "POST" }, diagnostic)).rejects.toMatchObject({
+      status: 502,
+      message: "ارسال پیامک ورود ناموفق بود: IP سرویس مبدا",
+    });
+    expect(diagnostic).toHaveBeenCalledWith(response);
+  });
+
   it("maps malformed, network and abort failures correctly", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not-json", { status: 200 })));
     await expect(apiRequest("/api/bad-json")).rejects.toBeInstanceOf(ApiError);

@@ -82,12 +82,12 @@ const onboardingStateSchema = z
     version: z.literal(1),
     status: z.enum(["not_started", "active", "dismissed", "completed"]),
     completedSteps: z
-      .array(z.enum(["profile", "match", "resume", "application"]))
-      .max(4)
+      .array(z.enum(["profile", "match", "resume", "application", "referral", "interview"]))
+      .max(6)
       .transform((steps) => [...new Set(steps)]),
   })
   .superRefine((state, context) => {
-    if (state.status === "completed" && state.completedSteps.length !== 4) {
+    if (state.status === "completed" && state.completedSteps.length !== 6) {
       context.addIssue({ code: "custom", message: "راهنما فقط پس از تکمیل همه مراحل کامل می‌شود." });
     }
   });
@@ -99,6 +99,7 @@ export type AuthRouteOptions = {
   sessionTtlDays: number;
   webAppUrl: string;
   productEvents?: ProductEventService;
+  exposeReversedOtp?: boolean;
 };
 
 export type AuthServicePort = Pick<
@@ -167,12 +168,16 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
   });
 
   app.post("/api/auth/request-otp", async (request, reply) => {
+    reply.header("cache-control", "no-store");
     const input = requestOtpSchema.parse(request.body);
     await options.productEvents?.record("auth_otp_requested", `otp-request:${request.id}`, undefined, {
       auth_method: "phone",
     });
     try {
-      const result = await authService.requestOtp(input.phone);
+      const result = await authService.requestOtp(
+        input.phone,
+        options.exposeReversedOtp ? (reversedCode) => reply.header("x-radikar-otp-reversed", reversedCode) : undefined,
+      );
       await options.productEvents?.record("auth_otp_delivery_result", `otp-delivery:${request.id}`, undefined, {
         auth_method: "phone",
         result: "success",

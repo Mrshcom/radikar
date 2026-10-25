@@ -7,11 +7,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, 
 import {
   BarChart3,
   Bell,
+  CalendarDays,
   BookOpenText,
   BriefcaseBusiness,
   Check,
-  CheckCircle2,
-  CircleAlert,
   ChevronLeft,
   FileText,
   LayoutDashboard,
@@ -24,7 +23,6 @@ import {
   Search,
   Target,
   Trash2,
-  WandSparkles,
   ShieldCheck,
   LogOut,
   CreditCard,
@@ -52,7 +50,7 @@ import type { AppProfileRecord, JobRecord } from "@/lib/data/models";
 import { DeleteConfirmModal, Modal } from "./ui";
 import { useFieldDirectionManager } from "@/lib/field-direction";
 import { cn } from "@/lib/cn";
-import { ModelTaskProvider, useModelTasks } from "./model-task-provider";
+import { ModelTaskProvider } from "./model-task-provider";
 import { useAuth, useLogout, type UserRole } from "@/app/_components/auth";
 import { useToast } from "@/app/_components/toast";
 import { useAdminEvents, type AdminEvent } from "@/lib/admin-stats";
@@ -62,6 +60,8 @@ import { OnboardingLauncher, OnboardingProvider } from "./onboarding/onboarding-
 import { useRadicoinWallet } from "@/lib/radicoins";
 import { RadicoinIcon } from "./radicoin-icon";
 import { PanelNavigationProgress } from "./panel-navigation-progress";
+import { ModelTaskStack } from "./model-task-stack";
+import { ProductUpdatesNavLink } from "./product-updates-nav-link";
 
 type MenuItem = {
   href: string;
@@ -78,7 +78,6 @@ const menuItems: MenuItem[] = [
   { href: "/resumes", label: "رزومه‌های هدفمند", icon: FileText, roles: ["user"] },
   { href: "/applications", label: "پیگیری اپلای‌ها", icon: BarChart3, roles: ["user"] },
   { href: "/interview", label: "آمادگی مصاحبه", icon: MessageSquareText, roles: ["user"] },
-  { href: "/radicoins", label: "کیف پول رادیکوین", icon: RadicoinIcon, roles: ["user"] },
   { href: "/admin", label: "داشبورد مدیریتی", icon: LayoutDashboard, roles: ["admin", "superadmin"] },
   { href: "/admin/users", label: "کاربران و دسترسی‌ها", icon: Users, roles: ["superadmin"] },
   { href: "/admin/memberships", label: "عضویت و اعتبار", icon: ShieldCheck, roles: ["admin", "superadmin"] },
@@ -89,12 +88,16 @@ const menuItems: MenuItem[] = [
   { href: "/admin/job-pool", label: "گزارش Job Pool", icon: BriefcaseBusiness, roles: ["superadmin"] },
   { href: "/admin/referrals", label: "ریفرال و دعوت", icon: Gift, roles: ["superadmin"] },
   { href: "/admin/radicoins", label: "مدیریت رادیکوین", icon: RadicoinIcon, roles: ["superadmin"] },
+  { href: "/admin/updates", label: "مدیریت مسیر محصول", icon: CalendarDays, roles: ["admin", "superadmin"] },
   { href: "/admin/settings", label: "تنظیمات", icon: Settings, roles: ["superadmin"] },
 ];
 
 const pageTitles: Record<string, string> = {
+  "/account-center": "مرکز حساب",
   "/account": "حساب کاربری",
   "/settings": "تنظیمات",
+  "/updates": "مسیر و تازه‌های رادیکار",
+  "/admin/updates": "مدیریت مسیر محصول",
   "/orders": "سفارش‌ها",
   "/upgrade": "خرید و ارتقای بسته",
   "/billing/result": "نتیجه پرداخت",
@@ -120,6 +123,8 @@ function tourTarget(href: string) {
       "/jobs": "nav-jobs",
       "/match": "nav-match",
       "/resumes": "nav-resumes",
+      "/applications": "nav-applications",
+      "/interview": "nav-interview",
     } as Record<string, string>
   )[href];
 }
@@ -148,6 +153,23 @@ function adminEventTime(value: string) {
   return <PersianDateTime value={value} />;
 }
 
+function adminEventSeenStorageKey(userId: string) {
+  return `radikar:admin-events:seen:${userId}`;
+}
+
+function readSeenAdminEventIds(userId: string) {
+  try {
+    const storedValue = window.localStorage.getItem(adminEventSeenStorageKey(userId));
+    const eventIds = storedValue ? JSON.parse(storedValue) : [];
+    const stringEventIds = Array.isArray(eventIds)
+      ? eventIds.filter((eventId): eventId is string => typeof eventId === "string")
+      : [];
+    return new Set(stringEventIds);
+  } catch {
+    return new Set<string>();
+  }
+}
+
 export function PanelShell({ children }: { children: ReactNode }) {
   return (
     <ModelTaskProvider>
@@ -163,7 +185,6 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
   const logout = useLogout();
-  const { tasks: modelTasks, openTask, cancelTask } = useModelTasks();
   const notify = useToast();
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -188,7 +209,10 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const isManagement = userRole === "admin" || userRole === "superadmin";
   const isSuperadmin = userRole === "superadmin";
   const adminEvents = useAdminEvents(isSuperadmin);
-  const [seenAdminEventIds, setSeenAdminEventIds] = useState<Set<string>>(() => new Set());
+  const userId = user?.id;
+  const [seenAdminEventIds, setSeenAdminEventIds] = useState<Set<string>>(() =>
+    typeof window !== "undefined" && isSuperadmin && userId ? readSeenAdminEventIds(userId) : new Set(),
+  );
   const visibleMenuItems = useMemo(
     () => menuItems.filter((item) => userRole && item.roles.includes(userRole)),
     [userRole],
@@ -210,6 +234,19 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const latestJob = jobs[0];
   const activeWorkspace = profiles.find((item) => item.id === activeProfileId);
   const unreadAdminEvents = (adminEvents.data?.items ?? []).filter((event) => !seenAdminEventIds.has(event.id));
+
+  const markAdminEventsAsSeen = useCallback(() => {
+    if (!userId) return;
+
+    const eventIds = (adminEvents.data?.items ?? []).map((event) => event.id);
+    setSeenAdminEventIds(new Set(eventIds));
+
+    try {
+      window.localStorage.setItem(adminEventSeenStorageKey(userId), JSON.stringify(eventIds));
+    } catch {
+      // The notification badge continues to work for the current session when browser storage is unavailable.
+    }
+  }, [adminEvents.data?.items, userId]);
 
   const openMobileMenu = useCallback(() => {
     if (mobileMenuCloseTimerRef.current !== null) {
@@ -460,78 +497,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
           })}
         </nav>
         <div className="mt-auto grid w-full min-w-0 gap-3">
-          {!isManagement && modelTasks.length > 0 && (
-            <section
-              aria-label="فعالیت‌های مدل"
-              aria-live="polite"
-              className="grid max-h-[210px] gap-1.5 overflow-y-auto rounded-[14px] border border-[#d7e8e1] bg-[#f5faf7] p-2 shadow-[0_10px_28px_rgba(24,73,60,.09)]"
-            >
-              <div className="flex items-center gap-1.5 px-1 pb-0.5 text-[#1b5145]">
-                <WandSparkles size={14} />
-                <strong className="text-[9px]">فعالیت‌های مدل</strong>
-              </div>
-              {modelTasks.map((task) => (
-                <div
-                  className={cn(
-                    "flex min-w-0 cursor-pointer items-center gap-2 rounded-[10px] border p-2 text-right",
-                    task.status === "running"
-                      ? "border-[#c9e3d9] bg-white text-[#176b57]"
-                      : task.status === "completed"
-                        ? "border-[#cce4d9] bg-[#e9f6f0] text-[#12664f]"
-                        : task.status === "canceled"
-                          ? "border-[#e3e6e4] bg-[#f5f6f5] text-[#74827e]"
-                          : "border-[#efd9b2] bg-[#fff7e8] text-[#966925]",
-                  )}
-                  key={task.id}
-                  onClick={() => openTask(task)}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter" && event.key !== " ") return;
-                    event.preventDefault();
-                    openTask(task);
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-current/10">
-                    {task.status === "running" ? (
-                      <LoaderCircle className="animate-spin" size={14} />
-                    ) : task.status === "completed" ? (
-                      <CheckCircle2 size={14} />
-                    ) : (
-                      <CircleAlert size={14} />
-                    )}
-                  </span>
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <strong className="truncate text-[8px]">{task.title}</strong>
-                    <small className="mt-0.5 line-clamp-2 text-[7px] leading-[1.55] opacity-75">
-                      {task.status === "running"
-                        ? task.pendingLabel
-                        : task.status === "completed"
-                          ? `${task.completedLabel}؛ برای مشاهده کلیک کن.`
-                          : task.status === "canceled"
-                            ? "عملیات توسط شما لغو شد."
-                            : task.error || "عملیات مدل ناموفق بود."}
-                    </small>
-                  </span>
-                  {task.status === "running" ? (
-                    <button
-                      type="button"
-                      className="grid size-6 shrink-0 place-items-center rounded-md text-[#a5483e] hover:bg-[#fff1ef]"
-                      aria-label={`لغو ${task.title}`}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        cancelTask(task.id);
-                      }}
-                    >
-                      <X size={13} />
-                    </button>
-                  ) : (
-                    <ChevronLeft className="shrink-0 opacity-55" size={13} />
-                  )}
-                </div>
-              ))}
-            </section>
-          )}
+          {!isManagement && <ModelTaskStack />}
           {!isManagement && (
             <div className="-mx-1 -mb-1 min-w-0 max-w-full border-t border-[#e7ebe6] px-[5px] pt-[17px]">
               <button
@@ -567,6 +533,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 setUserMenuOpen(false);
                 openMobileMenu();
               }}
+              data-tour="mobile-panel-menu"
               type="button"
             >
               <Menu size={20} />
@@ -594,7 +561,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   onClick={() => {
                     setUserMenuOpen(false);
                     if (!noticeOpen && isSuperadmin) {
-                      setSeenAdminEventIds(new Set((adminEvents.data?.items ?? []).map((event) => event.id)));
+                      markAdminEventsAsSeen();
                     }
                     setNoticeOpen((value) => !value);
                   }}
@@ -665,45 +632,63 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 )}
                 {noticeOpen && userRole === "user" && (
                   <div className="absolute left-0 top-[46px] z-40 w-[320px] overflow-hidden rounded-[20px] border border-[#dfe6e1] bg-white p-2.5 shadow-[0_22px_54px_rgba(25,57,50,.2)] max-[420px]:fixed max-[420px]:left-3 max-[420px]:right-auto max-[420px]:top-[68px] max-[420px]:w-[calc(100vw-48px)]">
-                    <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3">
+                    <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(15,123,98,.08)]">
                       <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#d9f0e6] text-[#0f7b62] ring-2 ring-[#c9e7da]">
                         <Bell size={19} />
                       </span>
                       <div className="min-w-0">
                         <strong className="block text-[12px] text-[#19312f]">اعلان‌ها</strong>
-                        <small className="mt-0.5 block text-[9px] text-[#7b8b86]">فرصت‌ها و رویدادهای تازه مسیر شغلی</small>
+                        <small className="mt-0.5 block text-[9px] text-[#7b8b86]">
+                          فرصت‌ها و رویدادهای تازه مسیر شغلی
+                        </small>
                       </div>
-                      {latestJob && <span className="mr-auto size-2.5 rounded-full bg-[#25a56f] shadow-[0_0_0_3px_#d8f0e4]" />}
+                      {latestJob && (
+                        <span className="mr-auto size-2.5 rounded-full bg-[#25a56f] shadow-[0_0_0_3px_#d8f0e4]" />
+                      )}
                     </div>
                     {latestJob ? (
-                      <div className="mt-2 rounded-[14px] border border-[#e4efe9] bg-[#f7fbf8] p-3">
-                        <div className="flex items-start gap-3">
-                          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#e1f3eb] text-[#0f7b62]">
-                            <BriefcaseBusiness size={17} />
+                      <Link
+                        className="group mt-2 flex min-h-[88px] items-center gap-2.5 rounded-[13px] border border-[#dcece4] bg-[#f7fbf8] px-3 py-2.5 text-[#19312f] no-underline transition-colors hover:border-[#aadbc6] hover:bg-[#eef8f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0f7b62]"
+                        href="/jobs"
+                        onClick={() => setNoticeOpen(false)}
+                      >
+                        <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#e1f3eb] text-[#0f7b62]">
+                          <BriefcaseBusiness aria-hidden="true" size={17} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1.5 text-[9px] font-semibold text-[#0f7b62]">
+                            <span aria-hidden="true" className="size-1.5 rounded-full bg-[#27a875]" />
+                            فرصت تازه
+                            {latestJob.match > 0 && (
+                              <span className="mr-auto text-[#62877a]">
+                                تطابق {latestJob.match.toLocaleString("fa-IR")}٪
+                              </span>
+                            )}
                           </span>
-                          <div className="min-w-0 flex-1">
-                            <span className="mb-1 inline-flex rounded-full bg-[#dff2e9] px-2 py-0.5 text-[8px] font-bold text-[#0f7b62]">فرصت جدید</span>
-                            <strong className="block truncate text-[11px] text-[#19312f]">{latestJob.role}</strong>
-                            <p className="m-0 mt-1 truncate text-[9px] text-[#758582]">
-                              {latestJob.company}
-                              {latestJob.match > 0 ? ` · تطابق ${latestJob.match.toLocaleString("fa-IR")}٪` : ""}
-                            </p>
-                          </div>
-                        </div>
-                        <Link
-                          className="mt-3 flex min-h-9 items-center justify-center gap-2 rounded-[10px] bg-[#0f7b62] text-[10px] font-bold text-white no-underline shadow-[0_7px_17px_rgba(15,123,98,.14)] transition hover:bg-[#0c6c56]"
-                          href="/jobs"
-                          onClick={() => setNoticeOpen(false)}
-                        >
-                          مشاهده فرصت‌ها
-                          <ChevronLeft size={14} />
-                        </Link>
-                      </div>
+                          <strong
+                            className="mt-0.5 block truncate text-right text-[11px] leading-5 text-[#19312f]"
+                            dir="auto"
+                            title={latestJob.role}
+                          >
+                            {latestJob.role}
+                          </strong>
+                          <small className="block truncate text-right text-[9px] text-[#758582]" dir="auto">
+                            {latestJob.company}
+                          </small>
+                        </span>
+                        <ChevronLeft
+                          aria-hidden="true"
+                          className="shrink-0 text-[#77a493] transition-transform group-hover:-translate-x-0.5"
+                          size={15}
+                        />
+                      </Link>
                     ) : (
                       <div className="mt-2 rounded-[14px] border border-dashed border-[#dfe9e3] px-3 py-8 text-center">
                         <Bell className="mx-auto mb-2 text-[#9bb0a9]" size={21} />
                         <strong className="block text-[10px] text-[#536762]">اعلان تازه‌ای نیست</strong>
-                        <p className="m-0 mt-1 text-[9px] leading-6 text-[#91a09c]">فرصت‌ها و رویدادهای واقعی اینجا نمایش داده می‌شوند.</p>
+                        <p className="m-0 mt-1 text-[9px] leading-6 text-[#91a09c]">
+                          فرصت‌ها و رویدادهای واقعی اینجا نمایش داده می‌شوند.
+                        </p>
                       </div>
                     )}
                   </div>
@@ -719,6 +704,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   setNoticeOpen(false);
                   setUserMenuOpen((value) => !value);
                 }}
+                data-tour="account-menu"
                 type="button"
               >
                 <Image
@@ -735,9 +721,15 @@ function PanelShellContent({ children }: { children: ReactNode }) {
               </button>
               {userMenuOpen && (
                 <div className="absolute left-0 top-[46px] z-40 w-[292px] overflow-hidden rounded-[20px] border border-[#dfe6e1] bg-white p-2.5 shadow-[0_22px_54px_rgba(25,57,50,.2)]">
-                  <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3">
+                  <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(15,123,98,.08)]">
                     <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-[#e7f5ee] ring-2 ring-[#c9e7da]">
-                      <Image alt="آواتار پیش‌فرض حساب کاربری" className="size-full" height={40} src="/illustrations/default-profile-avatar.svg" width={40} />
+                      <Image
+                        alt="آواتار پیش‌فرض حساب کاربری"
+                        className="size-full"
+                        height={40}
+                        src="/illustrations/default-profile-avatar.svg"
+                        width={40}
+                      />
                     </span>
                     <div className="min-w-0">
                       <strong className="block truncate text-[11px] text-[#19312f]">
@@ -781,13 +773,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   <nav aria-label="دسترسی‌های حساب" className="mt-2 grid gap-0.5">
                     {(isManagement
                       ? [{ href: "/settings", label: "امنیت", icon: Settings }]
-                      : [
-                          { href: "/account", label: "حساب کاربری", icon: UserRound },
-                          { href: "/settings", label: "تنظیمات", icon: Settings },
-                          { href: "/orders", label: "سفارش‌ها", icon: ReceiptText },
-                          { href: "/referrals", label: "دعوت دوستان", icon: Gift },
-                          { href: "/upgrade", label: "خرید و ارتقای بسته", icon: CreditCard },
-                        ]
+                      : [{ href: "/account-center", label: "مرکز حساب", icon: UserRound }]
                     ).map(({ href, label, icon: Icon }) => (
                       <Link
                         className="group flex min-h-10 items-center gap-3 rounded-[11px] px-2.5 text-[11px] font-semibold text-[#536762] no-underline transition hover:bg-[#edf7f2] hover:text-[#0f7b62]"
@@ -795,29 +781,36 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                         key={href}
                         onClick={() => setUserMenuOpen(false)}
                       >
-                        <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[#f2f6f4] text-[#61756f] transition group-hover:bg-white group-hover:text-[#0f7b62] group-hover:shadow-sm">
+                        <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[#f2f6f4] text-[#61756f] transition group-hover:bg-white group-hover:text-[#0f7b62]">
                           <Icon size={17} />
                         </span>
                         <span className="min-w-0 flex-1">{label}</span>
-                        <ChevronLeft className="shrink-0 text-[#a5b2ad] transition group-hover:-translate-x-0.5 group-hover:text-[#0f7b62]" size={14} />
+                        <ChevronLeft
+                          className="shrink-0 text-[#a5b2ad] transition group-hover:-translate-x-0.5 group-hover:text-[#0f7b62]"
+                          size={14}
+                        />
                       </Link>
                     ))}
                   </nav>
-                  <div className="mt-2 border-t border-[#edf0ec] pt-2" />
                   <button
-                    className="group flex min-h-10 w-full items-center gap-3 rounded-[11px] border-0 bg-transparent px-2.5 text-right text-[11px] font-semibold text-[#a13f37] transition hover:bg-[#fff1ef]"
+                    className="group mt-0.5 flex min-h-10 w-full items-center gap-3 rounded-[11px] border-0 bg-transparent px-2.5 text-right text-[11px] font-semibold text-[#536762] transition hover:bg-[#fff1ef] hover:text-[#a13f37]"
                     onClick={() => {
                       setUserMenuOpen(false);
                       void logout().catch(() => notify("خروج از حساب ناموفق بود؛ دوباره تلاش کن.", "error"));
                     }}
                     type="button"
                   >
-                    <span className="grid size-8 place-items-center rounded-[9px] bg-[#fff4f2] text-[#b14b43] transition group-hover:bg-white group-hover:shadow-sm">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-[#f2f6f4] text-[#61756f] transition group-hover:bg-white group-hover:text-[#b14b43]">
                       <LogOut size={17} />
                     </span>
                     <span className="flex-1">خروج از حساب</span>
-                    <ChevronLeft className="text-[#d9aaa4] transition group-hover:-translate-x-0.5" size={14} />
+                    <ChevronLeft className="shrink-0 text-[#a5b2ad] transition group-hover:-translate-x-0.5 group-hover:text-[#d9aaa4]" size={14} />
                   </button>
+                  {!isManagement && (
+                    <div className="flex justify-center pt-1">
+                      <ProductUpdatesNavLink active={pathname === "/updates"} onClick={() => setUserMenuOpen(false)} />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1034,7 +1027,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 <div
                   key={item.id}
                   className={cn(
-                    "flex min-h-[62px] w-full items-center gap-[10px] rounded-xl border p-[10px] transition-[border-color,background-color,box-shadow]",
+                    "relative flex min-h-[62px] w-full items-center gap-[10px] rounded-xl border p-[10px] transition-[border-color,background-color,box-shadow]",
                     active
                       ? "border-[#8fc8b7] border-r-[5px] border-r-[#0f7b62] bg-[#edf7f2] shadow-[0_8px_20px_rgba(15,123,98,.1)]"
                       : "border-[#e7ebe6] bg-[#fbfcfa]",
@@ -1071,16 +1064,16 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   ) : (
                     <>
                       <button
-                        className="flex min-w-0 flex-1 items-center gap-[10px] border-0 bg-transparent p-0 text-right"
+                        aria-label={`انتخاب فضای کاری ${item.workspaceName}`}
+                        className="absolute inset-0 z-0 rounded-xl border-0 bg-transparent p-0"
                         type="button"
                         onClick={() => void switchProfile(item.id)}
-                      >
-                        <span className="min-w-0 flex-1 truncate text-[10px] font-bold text-[#19312f]">
-                          {item.workspaceName}
-                        </span>
-                      </button>
+                      />
+                      <span className="min-w-0 flex-1 truncate text-[10px] font-bold text-[#19312f]">
+                        {item.workspaceName}
+                      </span>
                       <button
-                        className="grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#71817e] transition-colors hover:text-[#0f7b62]"
+                        className="relative z-10 grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#71817e] transition-colors hover:text-[#0f7b62]"
                         type="button"
                         aria-label={`ویرایش ${item.workspaceName}`}
                         onClick={() => {
@@ -1091,7 +1084,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                         <Pencil size={13} />
                       </button>
                       <button
-                        className="-mr-2 grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#c25b50] transition-colors hover:text-[#a93f36]"
+                        className="relative z-10 -mr-2 grid size-7 shrink-0 place-items-center border-0 bg-transparent p-0 text-[#c25b50] transition-colors hover:text-[#a93f36]"
                         type="button"
                         aria-label={`حذف ${item.workspaceName}`}
                         onClick={() => {

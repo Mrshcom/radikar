@@ -141,6 +141,9 @@ export type InterviewSessionRecord = BaseRecord & {
   questions: string[];
   cards: Array<{ title: string; text: string; tone: string }>;
   feedbacks: InterviewFeedbackRecord[];
+  answers?: string[];
+  currentQuestionIndex?: number;
+  report?: import("@radikar/shared-types").InterviewReport & { createdAt: string };
 };
 
 export type MatchAnalysisData = {

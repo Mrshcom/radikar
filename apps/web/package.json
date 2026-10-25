@@ -24,6 +24,7 @@
     "@radikar/shared-types": "*",
     "@radikar/validators": "*",
     "@tanstack/react-query": "^5.101.4",
+    "framer-motion": "^14.0.0",
     "lucide-react": "^1.24.0",
     "next": "^16.3.3",
     "nuqs": "^2.10.1",
@@ -31,6 +32,7 @@
     "react-dom": "19.2.6",
     "react-hook-form": "^7.84.0",
     "react-joyride": "^3.2.0",
+    "thinking-orbs": "^0.3.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

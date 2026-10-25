@@ -7,7 +7,7 @@ import { ApiError, apiRequest } from "@/lib/api-client";
 import { PageLoader } from "./page-loader";
 
 export type UserRole = "user" | "admin" | "superadmin";
-export type OnboardingStepId = "profile" | "match" | "resume" | "application";
+export type OnboardingStepId = "profile" | "match" | "resume" | "application" | "referral" | "interview";
 export type OnboardingState = {
   version: number;
   status: "not_started" | "active" | "dismissed" | "completed";

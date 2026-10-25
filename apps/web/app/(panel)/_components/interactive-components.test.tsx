@@ -17,6 +17,7 @@ describe("interactive panel controls", () => {
     );
     expect(screen.getByText("*")).toBeVisible();
     expect(screen.getByRole("alert")).toHaveTextContent("این فیلد الزامی است.");
+    expect(screen.getByRole("alert")).toHaveClass("text-[11px]");
     expect(screen.getByRole("textbox")).toHaveClass("aria-[invalid=true]:border-[#c44d4d]");
   });
   it("opens, selects and clears Jalali dates", () => {
@@ -25,11 +26,7 @@ describe("interactive panel controls", () => {
     fireEvent.click(screen.getByLabelText("تاریخ"));
     const calendar = screen.getByRole("dialog");
     expect(calendar).toBeVisible();
-    expect(screen.getByLabelText("تاریخ")).toHaveClass(
-      "border-[#0f7b62]",
-      "ring-4",
-      "ring-[#0f7b62]/10",
-    );
+    expect(screen.getByLabelText("تاریخ")).toHaveClass("border-[#0f7b62]", "ring-4", "ring-[#0f7b62]/10");
     expect(calendar).toHaveClass("fixed", "z-100");
     expect(screen.getByLabelText("تاریخ").parentElement).not.toContainElement(calendar);
     fireEvent.click(screen.getByLabelText("پاک‌کردن تاریخ"));

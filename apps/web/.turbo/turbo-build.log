@@ -4,26 +4,27 @@
 
 ▲ Next.js 16.3.3 (webpack)
 - Environments: .env.local
-✓ Running next.config.ts took 85ms
+✓ Running next.config.ts took 44ms
 
   Creating an optimized production build ...
-✓ Compiled successfully in 3.2s
+✓ Compiled successfully in 10.7s
   Running TypeScript ...
-  Finished TypeScript in 1472ms ...
+  Finished TypeScript in 3.3s ...
   Collecting page data using 7 workers ...
-  Generating static pages using 7 workers (0/43) ...
-  Generating static pages using 7 workers (10/43) 
-  Generating static pages using 7 workers (21/43) 
-  Generating static pages using 7 workers (32/43) 
-✓ Generating static pages using 7 workers (43/43) in 477ms
+  Generating static pages using 7 workers (0/46) ...
+  Generating static pages using 7 workers (11/46)
+  Generating static pages using 7 workers (22/46)
+  Generating static pages using 7 workers (34/46)
+✓ Generating static pages using 7 workers (46/46) in 588ms
   Finalizing page optimization ...
   Collecting build traces ...
 
-Route (app)                Revalidate  Expire
-┌ ○ /                              1h      1y
+Route (app)                         Revalidate  Expire
+┌ ○ /                                       1h      1y
 ├ ○ /_not-found
-├ ○ /about                         1h      1y
+├ ○ /about                                  1h      1y
 ├ ○ /account
+├ ○ /account-center
 ├ ○ /admin
 ├ ○ /admin/job-pool
 ├ ○ /admin/memberships
@@ -34,17 +35,19 @@ Route (app)                Revalidate  Expire
 ├ ○ /admin/records
 ├ ○ /admin/referrals
 ├ ○ /admin/settings
+├ ○ /admin/updates
 ├ ○ /admin/users
-├ ○ /ai-resume-builder             1h      1y
+├ ○ /ai-resume-builder                      1h      1y
 ├ ƒ /api/[...path]
-├ ○ /application-tracker           1h      1y
+├ ○ /application-tracker                    1h      1y
 ├ ○ /applications
 ├ ○ /billing/result
-├ ○ /contact                       1h      1y
+├ ○ /contact                                1h      1y
 ├ ○ /dashboard
-├ ○ /guides                        1h      1y
+├ ○ /guides                                 1h      1y
 ├ ○ /interview
-├ ○ /interview-practice            1h      1y
+├ ○ /interview-practice                     1h      1y
+├ ƒ /interview/results/[sessionId]
 ├ ○ /jobs
 ├ ○ /join
 ├ ○ /knowledge-base
@@ -52,16 +55,17 @@ Route (app)                Revalidate  Expire
 ├ ○ /manifest.webmanifest
 ├ ○ /match
 ├ ○ /orders
-├ ○ /privacy                       1h      1y
+├ ○ /privacy                                1h      1y
 ├ ○ /radicoins
 ├ ○ /referrals
-├ ○ /resume-builder                1h      1y
-├ ○ /resume-job-match              1h      1y
+├ ○ /resume-builder                         1h      1y
+├ ○ /resume-job-match                       1h      1y
 ├ ○ /resumes
 ├ ○ /robots.txt
 ├ ○ /settings
 ├ ○ /sitemap.xml
-├ ○ /terms                         1h      1y
+├ ○ /terms                                  1h      1y
+├ ○ /updates
 ├ ○ /upgrade
 └ ƒ /v1/[...path]
 

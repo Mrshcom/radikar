@@ -83,14 +83,15 @@ stack را recreate و endpoint آماده‌بودن را روی آدرس HTTPS
 
 قبل از انتشار عمومی دامنه، همهٔ موارد زیر باید انجام شوند:
 
-- مقادیر واقعی `SMSIR_USERNAME`، `SMSIR_API_KEY` و `SMSIR_LINE_NUMBER` تنظیم شوند؛ `OTP_WEBHOOK_URL` فقط fallback قدیمی است.
+- provider فعال OTP را با `OTP_PROVIDER` انتخاب کنید. adapter فعلی `kavenegar` است: یک الگوی Verify تأییدشده شامل `%token` بسازید، سپس `OTP_PROVIDER_API_KEY` و نام انگلیسی الگو را در `OTP_PROVIDER_TEMPLATE` تنظیم کنید.
+- فعلاً `OTP_DELIVERY_MODE=console` در همهٔ محیط‌ها چالش معتبر می‌سازد اما کاوه‌نگار را فراخوانی نمی‌کند و با `OTP_LOG_REVERSED_CODE=true` کد معکوس را در کنسول API و مرورگر ثبت می‌کند. این حالت کد ورود را به درخواست‌کنندهٔ ناشناس می‌دهد و امکان تصاحب حساب دارد. پس از پایداری کاوه‌نگار، هر دو تنظیم را هم‌زمان به `OTP_DELIVERY_MODE=provider` و `OTP_LOG_REVERSED_CODE=false` تغییر دهید.
 - `NEXT_PUBLIC_API_BASE_URL` و `API_PUBLIC_URL` به آدرس HTTPS دامنه تغییر کنند.
 - `CORS_ORIGINS` فقط شامل originهای HTTPS دامنه باشد و `http://IP:5000` حذف شود.
 - cookie امن `__Host-radikar_session` و پرچم `Secure` در Production فعال هستند؛ سپس imageهای API و Web را دوباره build و سرویس‌ها را restart کنید.
 - پس از انتشار، درخواست OTP، ورود، `/health` و `/ready` با دامنهٔ HTTPS تست شوند.
 
-تا قبل از تکمیل این چک‌لیست، حالت OTP آزمایشی نباید روی آدرس production عمومی
-فعال بماند.
+حالت موقت `console` بنا به تصمیم فعلی در Production هم فعال می‌شود؛ تا زمان
+دریافت مجوز کاوه‌نگار، خطر تصاحب حساب با شمارهٔ دیگران پابرجاست.
 
 ## پشتیبان‌گیری PostgreSQL
 

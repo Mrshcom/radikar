@@ -5,6 +5,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { ClipboardList, Info, MoreHorizontal, ShieldCheck } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Controller, useForm } from "react-hook-form";
 import { normalizeDigits } from "@radikar/validators";
 import { z } from "zod";
@@ -56,6 +57,9 @@ type PendingMembershipAction = {
   body?: unknown;
 };
 type MembershipAction = "grant" | "switch" | "extend" | "credit" | "cancel";
+type MembershipActionMenu = { userId: string; top: number; left: number };
+const actionMenuWidth = 176;
+const actionMenuHeight = 192;
 const grantSchema = z.object({ planId: z.string().min(1) });
 function localizedNumber<T extends z.ZodType>(schema: T) {
   return z.preprocess((value) => (typeof value === "string" ? normalizeDigits(value) : value), schema);
@@ -160,7 +164,7 @@ export default function MembershipsAdminPage() {
   const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } = useUrlTablePagination();
   const [selected, setSelected] = useState<MembershipUser | null>(null);
   const [selectedAction, setSelectedAction] = useState<MembershipAction | null>(null);
-  const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
+  const [openActionMenu, setOpenActionMenu] = useState<MembershipActionMenu | null>(null);
   useEffect(() => {
     if (!openActionMenu) return;
 
@@ -172,11 +176,19 @@ export default function MembershipsAdminPage() {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpenActionMenu(null);
     };
+    const closeOnViewportChange = (event: Event) => {
+      if (event.target instanceof Element && event.target.closest("[data-membership-action-menu]")) return;
+      setOpenActionMenu(null);
+    };
     document.addEventListener("pointerdown", closeOnOutsidePointerDown);
     document.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("scroll", closeOnViewportChange, true);
+    window.addEventListener("resize", closeOnViewportChange);
     return () => {
       document.removeEventListener("pointerdown", closeOnOutsidePointerDown);
       document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("scroll", closeOnViewportChange, true);
+      window.removeEventListener("resize", closeOnViewportChange);
     };
   }, [openActionMenu]);
   const sort: SortState =
@@ -264,6 +276,7 @@ export default function MembershipsAdminPage() {
           <TableActionButton
             label={`اطلاعات تکمیلی ${userDisplayName(item.user)}`}
             onClick={() => {
+              setOpenActionMenu(null);
               setDetailsUser(item);
               setDetailsTab("usage");
             }}
@@ -272,34 +285,60 @@ export default function MembershipsAdminPage() {
           </TableActionButton>
           <TableActionButton
             label={`عملیات عضویت ${userDisplayName(item.user)}`}
-            onClick={() => setOpenActionMenu((current) => (current === item.user.id ? null : item.user.id))}
+            aria-haspopup="menu"
+            aria-expanded={openActionMenu?.userId === item.user.id}
+            onClick={(event) => {
+              const bounds = event.currentTarget.getBoundingClientRect();
+              const gap = 6;
+              const top =
+                bounds.bottom + actionMenuHeight + gap <= window.innerHeight
+                  ? bounds.bottom + gap
+                  : Math.max(8, bounds.top - actionMenuHeight - gap);
+              const left = Math.min(
+                Math.max(8, bounds.right - actionMenuWidth),
+                Math.max(8, window.innerWidth - actionMenuWidth - 8),
+              );
+              setOpenActionMenu((current) =>
+                current?.userId === item.user.id ? null : { userId: item.user.id, top, left },
+              );
+            }}
           >
             <MoreHorizontal size={15} />
           </TableActionButton>
-          {openActionMenu === item.user.id && (
-            <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-44 rounded-[12px] border border-[#dfe8e2] bg-white p-1.5 shadow-[0_12px_30px_rgba(25,57,50,.14)]">
-              {([
-                ["grant", "اعطای پلن"],
-                ["switch", "تعویض پلن"],
-                ["extend", "تمدید عضویت"],
-                ["credit", "تغییر اعتبار"],
-                ["cancel", "لغو عضویت"],
-              ] as const).map(([actionName, label]) => (
-                <button
-                  className={`flex min-h-9 w-full items-center rounded-lg px-2.5 text-right text-[12px] font-normal hover:bg-[#f1f6f3] ${actionName === "cancel" ? "text-[#b14848] hover:bg-[#fff0ed]" : "text-[#405753]"}`}
-                  key={actionName}
-                  onClick={() => {
-                    setSelected(item);
-                    setSelectedAction(actionName);
-                    setOpenActionMenu(null);
-                  }}
-                  type="button"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
+          {openActionMenu?.userId === item.user.id &&
+            createPortal(
+              <div
+                className="fixed z-100 max-h-[calc(100vh-16px)] w-44 overflow-y-auto rounded-[12px] border border-[#dfe8e2] bg-white p-1.5 shadow-[0_12px_30px_rgba(25,57,50,.14)]"
+                data-membership-action-menu
+                role="menu"
+                style={{ top: openActionMenu.top, left: openActionMenu.left }}
+              >
+                {(
+                  [
+                    ["grant", "اعطای پلن"],
+                    ["switch", "تعویض پلن"],
+                    ["extend", "تمدید عضویت"],
+                    ["credit", "تغییر اعتبار"],
+                    ["cancel", "لغو عضویت"],
+                  ] as const
+                ).map(([actionName, label]) => (
+                  <button
+                    className={`flex min-h-9 w-full items-center rounded-lg px-2.5 text-right text-[12px] font-normal hover:bg-[#f1f6f3] ${actionName === "cancel" ? "text-[#b14848] hover:bg-[#fff0ed]" : "text-[#405753]"}`}
+                    key={actionName}
+                    role="menuitem"
+                    onClick={() => {
+                      setSelected(item);
+                      setSelectedAction(actionName);
+                      setOpenActionMenu(null);
+                    }}
+                    type="button"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>,
+              document.body,
+            )}
         </div>
       ),
     },
@@ -499,8 +538,8 @@ export default function MembershipsAdminPage() {
                   {...creditForm.register("units")}
                 />
               </div>
-              {creditForm.formState.errors.resource?.message && <small className="text-[#c44d4d]">{creditForm.formState.errors.resource.message}</small>}
-              {creditForm.formState.errors.units?.message && <small className="text-[#c44d4d]">{creditForm.formState.errors.units.message}</small>}
+              {creditForm.formState.errors.resource?.message && <small className="text-[11px] text-[#c44d4d]">{creditForm.formState.errors.resource.message}</small>}
+              {creditForm.formState.errors.units?.message && <small className="text-[11px] text-[#c44d4d]">{creditForm.formState.errors.units.message}</small>}
               <input
                 className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]"
                 placeholder="دلیل تغییر (اختیاری)"

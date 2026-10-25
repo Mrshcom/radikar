@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/app/_components/auth";
 import { useAdminBillingStats, useAdminStats } from "@/lib/admin-stats";
+import { HoverTooltip } from "../_components/hover-tooltip";
 import { SectionTitle } from "../_components/ui";
 
 const collectionLabels: Record<string, string> = {
@@ -59,12 +60,16 @@ export default function AdminPage() {
       label: "فروش امروز (تومان)",
       value: Math.round((billingStats.data?.revenueTodayRials ?? 0) / 10),
       icon: BadgeDollarSign,
+      unit: "تومان",
+      tooltip: "مجموع مبلغ خریدهای موفقِ ثبت‌شده امروز، به تومان.",
     },
     { label: "کل خریدهای موفق", value: billingStats.data?.paidOrders ?? 0, icon: CircleDollarSign },
     {
       label: "کل فروش تأییدشده (تومان)",
       value: Math.round((billingStats.data?.revenueRials ?? 0) / 10),
       icon: BadgeDollarSign,
+      unit: "تومان",
+      tooltip: "مجموع مبلغ تمام خریدهای تأییدشده، به تومان.",
     },
     { label: "سفارش‌های در انتظار", value: billingStats.data?.pendingOrders ?? 0, icon: ReceiptText },
   ];
@@ -77,9 +82,11 @@ export default function AdminPage() {
       />
 
       <section className="grid grid-cols-4 gap-4 max-[1050px]:grid-cols-2">
-        {cards.map(({ label, value, icon: Icon }) => (
-          <article
+        {cards.map(({ label, value, icon: Icon, unit, tooltip }) => (
+          <HoverTooltip
+            as="article"
             className="flex min-w-0 items-center gap-3 rounded-[15px] border border-[#e3e9e3] bg-white p-3.5 shadow-[0_8px_24px_rgba(30,61,53,.05)] max-[520px]:grid max-[520px]:grid-cols-[auto_auto] max-[520px]:justify-center max-[520px]:gap-x-2 max-[520px]:gap-y-1 max-[520px]:text-center"
+            content={tooltip ?? null}
             key={label}
           >
             <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#eaf5f0] text-[#0f7b62] max-[520px]:size-8">
@@ -91,10 +98,11 @@ export default function AdminPage() {
             >
               {label}
             </small>
-            <strong className="shrink-0 text-[18px] font-black text-[#19312f] max-[520px]:col-span-2 max-[520px]:justify-self-center">
-              {formatNumber(value)}
-            </strong>
-          </article>
+            <div className="flex shrink-0 items-baseline gap-1.5 max-[520px]:col-span-2 max-[520px]:justify-self-center">
+              <strong className="text-[18px] font-black text-[#19312f]">{formatNumber(value)}</strong>
+              {unit && <span className="text-[10px] font-semibold text-[#71817d]">{unit}</span>}
+            </div>
+          </HoverTooltip>
         ))}
       </section>
 

@@ -1,8 +1,9 @@
 "use client";
 
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "./api-client";
 import { buildQueryString } from "./build-query-string";
+import type { OnboardingRewardStatus } from "@radikar/shared-types";
 
 export type RadicoinTransaction = {
   id: string;
@@ -25,6 +26,7 @@ export type RadicoinWallet = {
   } | null;
   transactions: RadicoinTransaction[];
 };
+export type RadicoinHistoryPage = { items: RadicoinTransaction[]; nextCursor: string | null };
 export type RadicoinSettings = {
   dailyLoginCoins: number;
   dailyActivityCoinCap: number;
@@ -52,16 +54,57 @@ export type AdminWalletItem = {
 
 export const radicoinKeys = {
   wallet: ["radicoin", "wallet"] as const,
+  history: ["radicoin", "history"] as const,
+  onboardingReward: ["radicoin", "onboarding-reward"] as const,
   settings: ["admin", "radicoin", "settings"] as const,
   wallets: (search: string, page: number, pageSize: number) =>
     ["admin", "radicoin", "wallets", search, page, pageSize] as const,
 };
+export function useOnboardingReward() {
+  return useQuery({
+    queryKey: radicoinKeys.onboardingReward,
+    queryFn: () => apiRequest<OnboardingRewardStatus>("/api/radicoin/onboarding-reward"),
+    staleTime: 15_000,
+  });
+}
+export function useClaimOnboardingReward() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      apiRequest<OnboardingRewardStatus & { credited: boolean }>("/api/radicoin/onboarding-reward/claim", {
+        method: "POST",
+      }),
+    onSuccess: async (result) => {
+      client.setQueryData(radicoinKeys.onboardingReward, result);
+      await Promise.all([
+        client.invalidateQueries({ queryKey: radicoinKeys.wallet }),
+        client.resetQueries({ queryKey: radicoinKeys.history }),
+        client.invalidateQueries({ queryKey: ["auth", "me"] }),
+      ]);
+    },
+    onError: () => client.invalidateQueries({ queryKey: radicoinKeys.onboardingReward }),
+  });
+}
 export function useRadicoinWallet(enabled = true) {
   return useQuery({
     queryKey: radicoinKeys.wallet,
-    queryFn: () => apiRequest<RadicoinWallet>("/api/radicoin/wallet?limit=100"),
+    queryFn: () => apiRequest<RadicoinWallet>("/api/radicoin/wallet?limit=0"),
     enabled,
     staleTime: 30_000,
+  });
+}
+export function useRadicoinHistory(enabled = true) {
+  return useInfiniteQuery({
+    queryKey: radicoinKeys.history,
+    queryFn: ({ pageParam }) =>
+      apiRequest<RadicoinHistoryPage>(
+        `/api/radicoin/transactions?${buildQueryString({ limit: 20, cursor: pageParam || undefined })}`,
+      ),
+    initialPageParam: "",
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    enabled,
+    staleTime: 2 * 60_000,
+    gcTime: 5 * 60_000,
   });
 }
 export function useRedeemRadicoinPlan() {
@@ -75,6 +118,7 @@ export function useRedeemRadicoinPlan() {
     onSuccess: async () => {
       await Promise.all([
         client.invalidateQueries({ queryKey: radicoinKeys.wallet }),
+        client.resetQueries({ queryKey: radicoinKeys.history }),
         client.invalidateQueries({ queryKey: ["billing", "membership"] }),
       ]);
     },

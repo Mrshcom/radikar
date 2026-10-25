@@ -12,7 +12,7 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
     <StatusState
       variant="error"
       title="مشکلی در نمایش این بخش پیش آمد"
-      description="اطلاعات شما حذف نشده است. دوباره تلاش کنید و اگر مشکل ادامه داشت، صفحه را تازه‌سازی کنید."
+      description=" بعدا دوباره تلاش کنید و اگر مشکل ادامه داشت، صفحه را تازه‌سازی کنید."
       actionLabel="تلاش مجدد"
       onAction={reset}
     />

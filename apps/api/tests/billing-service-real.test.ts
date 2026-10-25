@@ -8,6 +8,7 @@ import postgres from "postgres";
 import { BillingError, BillingService } from "../src/modules/billing/service";
 import { ZarinpalError } from "../src/modules/billing/zarinpal-client";
 import { RadicoinService } from "../src/modules/radicoin/service";
+import { onboardingRewardKey } from "../src/modules/radicoin/onboarding-reward";
 
 const execFileAsync = promisify(execFile);
 const root = new URL("../../../", import.meta.url).pathname;
@@ -279,6 +280,57 @@ test("Radicoin daily rewards and plan redemption stay idempotent in PostgreSQL",
       )[0].count,
       1,
     );
+  });
+});
+
+test("Onboarding reward is claimed explicitly once even with concurrent requests", { timeout: 60_000 }, async () => {
+  await withDatabase(async (database, sql) => {
+    const id = await user(sql, "09120000120");
+    const friendId = await user(sql, "09120000121");
+    const radicoin = new RadicoinService(database);
+    const blank = await radicoin.getOnboardingRewardStatus(id);
+    assert.equal(blank.eligible, false);
+    await assert.rejects(() => radicoin.claimOnboardingReward(id), /مرحله/);
+    const records = [
+      ["knowledgeProfiles", { skills: "React" }],
+      ["resumes", { data: { fullName: "کاربر" } }],
+      ["matchAnalyses", {}],
+      ["applications", {}],
+      ["interviewSessions", { feedbacks: [], report: { questions: [{ score: 70 }] } }],
+    ] as const;
+    for (const [collection, fields] of records) {
+      const recordId = randomUUID();
+      const payload = {
+        id: recordId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        ...fields,
+      };
+      await sql`insert into data_records (collection, id, owner_user_id, payload, created_at, updated_at) values (${collection}, ${recordId}, ${id}, ${sql.json(payload)}, now(), now())`;
+    }
+    const codeId = randomUUID();
+    await sql`insert into referral_codes (id, user_id, code, created_at, updated_at) values (${codeId}, ${id}, 'onboarding-test', now(), now())`;
+    await sql`insert into referrals (id, referral_code_id, referrer_user_id, referred_user_id, status, created_at, confirmed_at) values (${randomUUID()}, ${codeId}, ${id}, ${friendId}, 'confirmed', now(), now())`;
+    const eligible = await radicoin.getOnboardingRewardStatus(id);
+    assert.equal(eligible.eligible, true);
+    assert.equal(eligible.claimed, false);
+    assert.equal(
+      (await sql`select count(*)::int as count from radicoin_transactions where user_id = ${id}`)[0].count,
+      0,
+    );
+    const attempts = await Promise.all(Array.from({ length: 6 }, () => radicoin.claimOnboardingReward(id)));
+    assert.equal(attempts.filter((attempt) => attempt.credited).length, 1);
+    const wallet = (await radicoin.getWallet(id, 0)).wallet!;
+    assert.deepEqual([wallet.availableCoins, wallet.lifetimeEarnedCoins], [100, 100]);
+    assert.equal(
+      (
+        await sql`select count(*)::int as count from radicoin_transactions where idempotency_key = ${onboardingRewardKey(id)}`
+      )[0].count,
+      1,
+    );
+    assert.equal((await radicoin.getOnboardingRewardStatus(id)).claimed, true);
+    await sql`delete from data_records where owner_user_id = ${id}`;
+    assert.equal((await radicoin.claimOnboardingReward(id)).credited, false);
   });
 });
 

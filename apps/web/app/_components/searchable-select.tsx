@@ -156,7 +156,7 @@ export function SearchableSelect({
         onKeyDown={onKeyDown}
         type="button"
       >
-        <span className={cn("min-w-0 flex-1", multiple && "flex max-h-7 flex-wrap items-center gap-1 overflow-hidden")}>
+        <span className={cn("min-w-0 flex-1", multiple && "flex flex-wrap items-center gap-1")}>
           {selectedOptions.length ? (
             multiple ? (
               selectedOptions.map((option) => (

@@ -304,7 +304,8 @@ test("superadmin dashboard statistics use compact single-line cards", async () =
 
   assert.match(adminPage, /className="flex min-w-0 items-center gap-3 rounded-\[15px\]/);
   assert.match(adminPage, /className="min-w-0 flex-1 truncate whitespace-nowrap/);
-  assert.match(adminPage, /className="shrink-0 text-\[18px\] font-black/);
+  assert.match(adminPage, /className="flex shrink-0 items-baseline gap-1\.5/);
+  assert.match(adminPage, /<strong className="text-\[18px\] font-black/);
   assert.doesNotMatch(adminPage, /mb-4 grid size-10/);
 });
 
@@ -439,7 +440,7 @@ test("knowledge base organizes every form section in an accessible responsive ta
   }
   assert.match(knowledgeBase, /role="tablist"/);
   assert.match(knowledgeBase, /aria-orientation="vertical"/);
-  assert.match(knowledgeBase, /بخش‌های پایگاه دانش[\s\S]*?text-\[9px\][\s\S]*?tab\.description/);
+  assert.match(knowledgeBase, /بخش‌های پایگاه دانش[\s\S]*?text-\[10px\][\s\S]*?tab\.description/);
   assert.match(knowledgeBase, /تکمیل خودکار با رزومه فعلی[\s\S]*?my-1 text-\[11px\][\s\S]*?PDF، DOCX یا TXT/);
   assert.match(
     knowledgeBase,
@@ -521,15 +522,16 @@ test("persists domain data only through the Node API and PostgreSQL", async () =
 
 test("starts with empty user data and does not persist panel domain data in browser storage", async () => {
   const resumeData = await readFile(new URL("app/(panel)/resumes/resume-data.ts", projectRoot), "utf8");
+  const domainFiles = await sourceFiles(new URL("lib/data/", projectRoot));
   const files = [
     ...(await sourceFiles(new URL("app/(panel)/", projectRoot))),
     ...(await sourceFiles(new URL("lib/", projectRoot))),
   ];
   const source = (await Promise.all(files.map((file) => readFile(file, "utf8")))).join("\n");
+  const domainSource = (await Promise.all(domainFiles.map((file) => readFile(file, "utf8")))).join("\n");
 
   assert.match(resumeData, /export const emptyResumeData/);
-  assert.doesNotMatch(source, /\blocalStorage\b|\bsessionStorage\b/);
-  assert.doesNotMatch(source, /\bindexedDB\b/);
+  assert.doesNotMatch(domainSource, /\blocalStorage\b|\bsessionStorage\b|\bindexedDB\b/);
   assert.doesNotMatch(source, /سینا احمدی|شرکت پیشنهادی|موقعیت مرتبط|Product Lead/);
 });
 
@@ -1217,7 +1219,7 @@ test("plan expiry and quota errors open one global upgrade modal", async () => {
   assert.match(dashboard, /"\/api\/panel\/dashboard"/);
   assert.match(builder, /"\/api\/resume\/generate"/);
   assert.match(interview, /"\/api\/interview\/session"/);
-  assert.match(interview, /"\/api\/interview\/feedback"/);
+  assert.match(interview, /"\/api\/interview\/report"/);
 });
 
 test("job cards keep imported logos safe and localize saved state and dates", async () => {
@@ -1265,9 +1267,9 @@ test("data-changing forms show contextual success toasts and account fields use 
   assert.match(account, /grid items-start gap-5 md:grid-cols-2/);
   assert.match(account, /notify\("اطلاعات فردی با موفقیت ذخیره شد\."\)/);
   assert.doesNotMatch(account, /update\.isSuccess/);
-  assert.match(login, /notify\("کد ورود با موفقیت ارسال شد\."\)/);
+  assert.match(login, /result\.deliveryMode === "console" \? "کد ورود آماده است\." : "کد ورود با موفقیت ارسال شد\."/);
   assert.match(login, /notify\("با موفقیت وارد حساب کاربری شدی\."\)/);
-  assert.match(login, /notify\("کد ورود مجدداً ارسال شد\."\)/);
+  assert.match(login, /result\.deliveryMode === "console" \? "کد ورود جدید آماده است\." : "کد ورود مجدداً ارسال شد\."/);
   for (const message of [
     "پلن جدید با موفقیت به عضویت کاربر افزوده شد.",
     "مدت عضویت کاربر با موفقیت تمدید شد.",
@@ -1807,7 +1809,7 @@ test("profile band template matches the supplied identity-band structure", async
   assert.match(template, /grid-cols-\[7em_1fr\]/);
   assert.match(template, /<ProfileBandHeading palette=\{palette\}>/);
   assert.match(template, /<LanguageList/);
-  assert.match(template, /ps-\[9\.5em\][^\"]*text-balance/);
+  assert.match(template, /<h1 className="[^"]*min-w-0 break-words ps-\[5\.75em\][^"]*text-pretty"/);
   assert.match(template, /grid[^\"]*min-w-0[^\"]*grid-cols-2[^\"]*ps-\[13em\]/);
   assert.match(template, /<ResumeFullName fullName=\{data\.fullName\} \/>/);
   assert.match(template, /<MapPin className=\{cn\("size-\[1\.15em\] shrink-0"/);
@@ -2504,9 +2506,10 @@ test("resume modals scale complete A4 pages instead of squeezing their layout", 
 });
 
 test("model work stays in the panel shell and exposes completed destinations", async () => {
-  const [provider, shell, appProviders] = await Promise.all([
+  const [provider, shell, taskStack, appProviders] = await Promise.all([
     readFile(new URL("app/(panel)/_components/model-task-provider.tsx", projectRoot), "utf8"),
     readFile(new URL("app/(panel)/_components/panel-shell.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/_components/model-task-stack.tsx", projectRoot), "utf8"),
     readFile(new URL("app/providers.tsx", projectRoot), "utf8"),
   ]);
 
@@ -2524,9 +2527,11 @@ test("model work stays in the panel shell and exposes completed destinations", a
   assert.doesNotMatch(provider, /\.slice\(0, 5\)/);
   assert.match(provider, /setTasks\(\(current\) => \[task, \.\.\.current\]\)/);
   assert.match(provider, /if \(task\.status !== "running"\) dismissTask\(task\.id\)/);
-  assert.match(shell, /فعالیت‌های مدل/);
-  assert.match(shell, /لغو/);
-  assert.ok(shell.indexOf('aria-label="فعالیت‌های مدل"') < shell.indexOf('{ href: "/account", label: "حساب کاربری"'));
+  assert.match(shell, /<ModelTaskStack \/>/);
+  assert.match(taskStack, /فعالیت‌های هوشمند/);
+  assert.match(taskStack, /aria-expanded=\{showHistory\}/);
+  assert.match(taskStack, /cancelTask\(task\.id\)/);
+  assert.ok(shell.indexOf("<ModelTaskStack />") < shell.indexOf("مدیریت فضاهای کاری"));
 });
 
 test("running match analysis restores its exact inputs and can be canceled", async () => {
@@ -2540,8 +2545,12 @@ test("running match analysis restores its exact inputs and can be canceled", asy
   assert.match(matchPage, /jobDescription: selectedDescription/);
   assert.match(matchPage, /resumeId: selectedResume\.id/);
   assert.match(matchPage, /signal,/);
-  assert.match(matchPage, /در حال تحلیل/);
+  assert.match(matchPage, /importControllerRef\.current\.abort\(\)/);
+  assert.match(matchPage, /disabled=\{!hasSelectedInput \|\| !selectedResume \|\| analysisBusy \|\| importingUrl\}/);
+  assert.match(matchPage, /aria-busy=\{analysisBusy\}/);
+  assert.match(matchPage, /در حال تحلیل با مدل/);
   assert.match(matchPage, /لغو تحلیل/);
+  assert.ok(matchPage.indexOf("در حال تحلیل با مدل") < matchPage.indexOf("لغو تحلیل"));
   assert.match(matchPage, /cancelTask\(runningAnalysisTask\.id\)/);
   assert.match(matchPage, /normalizeMatchAnalysisInput\(rawResult\)/);
   assert.match(matchPage, /normalizeMatchAnalysisInput\(previousAnalysis\.analysis\)/);
@@ -2550,6 +2559,23 @@ test("running match analysis restores its exact inputs and can be canceled", asy
   assert.match(apiRoutes, /getMatchAnalyzeConfig\(\)/);
   assert.match(apiRoutes, /model: "deepseek-chat"/);
   assert.match(apiRoutes, /maxOutputTokens: 2_048/);
+});
+
+test("match resume picker previews any saved resume without changing the selection", async () => {
+  const matchPage = await readFile(new URL("app/(panel)/match/page.tsx", projectRoot), "utf8");
+
+  assert.match(matchPage, /label: resume\.name\?\.trim\(\)/);
+  assert.match(matchPage, /className="grid min-w-0 grid-cols-\[minmax\(0,1fr\)\] gap-1\.5"/);
+  assert.match(matchPage, /className="block max-w-full truncate text-xs/);
+  assert.match(
+    matchPage,
+    /resumeOptions\.map\(\(resume\) => \{[\s\S]*?<ScaledResumePreview[\s\S]*?data=\{resume\.data\}/,
+  );
+  assert.match(matchPage, /aria-label=\{`پیش‌نمایش \$\{resume\.label\}`\}/);
+  assert.match(matchPage, /onClick=\{\(\) => setPreviewResumeId\(resume\.id\)\}/);
+  assert.match(matchPage, /const previewResume = resumeOptions\.find/);
+  assert.match(matchPage, /previewResume\.id !== baseResumeId/);
+  assert.match(matchPage, /onClick=\{\(\) => selectResume\(previewResume\.id\)\}/);
 });
 
 test("every model-backed panel operation uses the shared background task manager", async () => {

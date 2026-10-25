@@ -138,7 +138,7 @@ test("AuthService resolves, refreshes and revokes real PostgreSQL sessions", { t
 });
 
 test(
-  "AuthService creates users, memberships and sessions and reports OTP webhook failures",
+  "AuthService creates users, memberships and sessions and reports OTP provider failures",
   { timeout: 60_000 },
   async () => {
     await withDatabase(async ({ database, sql }) => {
@@ -169,10 +169,25 @@ test(
         "free",
       );
 
+      const consoleCodes: string[] = [];
+      const consoleMode = new AuthService(database, {
+        ...options,
+        otpDeliveryMode: "console",
+        logReversedOtp: (reversedCode) => consoleCodes.push(reversedCode),
+        deliverOtp: async () => {
+          throw new Error("SMS provider must not be called in console mode");
+        },
+      });
+      const consoleChallenge = await consoleMode.requestOtp("09120000010");
+      assert.equal(consoleChallenge.deliveryMode, "console");
+      assert.deepEqual(consoleCodes, ["654321"]);
+      const consoleLogin = await consoleMode.verifyOtp(consoleChallenge.challengeId, "09120000010", otpCode);
+      assert.equal(consoleLogin.user.phone, "09120000010");
+
       const originalFetch = globalThis.fetch;
       try {
         globalThis.fetch = async () => new Response("down", { status: 503 });
-        const failedWebhook = new AuthService(database, {
+        const failedProvider = new AuthService(database, {
           ...options,
           deliverOtp: async () => {
             const response = await fetch("https://sms.test/send");
@@ -180,11 +195,29 @@ test(
           },
         });
         await assert.rejects(
-          () => failedWebhook.requestOtp("09120000005"),
+          () => failedProvider.requestOtp("09120000005"),
           (error: unknown) => error instanceof AuthError && error.statusCode === 502,
         );
         assert.equal(
           (await sql`select count(*)::int as count from otp_challenges where phone = '09120000005'`)[0].count,
+          0,
+        );
+
+        const loggedCodes: string[] = [];
+        const loggedFailure = new AuthService(database, {
+          ...options,
+          logReversedOtp: (reversedCode) => loggedCodes.push(reversedCode),
+          deliverOtp: async () => {
+            throw new Error("delivery failed");
+          },
+        });
+        await assert.rejects(
+          () => loggedFailure.requestOtp("09120000009"),
+          (error: unknown) => error instanceof AuthError && error.statusCode === 502,
+        );
+        assert.deepEqual(loggedCodes, ["654321"]);
+        assert.equal(
+          (await sql`select count(*)::int as count from otp_challenges where phone = '09120000009'`)[0].count,
           0,
         );
 
@@ -195,7 +228,7 @@ test(
             throw new DOMException("aborted", "AbortError");
           };
           await assert.rejects(
-            () => failedWebhook.requestOtp("09120000006"),
+            () => failedProvider.requestOtp("09120000006"),
             (error: unknown) => error instanceof AuthError && error.statusCode === 502,
           );
         } finally {
@@ -350,7 +383,7 @@ test(
         "account_activated",
       );
 
-      await sql`insert into data_records (collection, id, owner_user_id, profile_id, payload, created_at, updated_at) values ('resumes', 'resume-auth-test', ${user.user.id}, 'profile-auth-test', '{"id":"resume-auth-test"}'::jsonb, now(), now())`;
+      await sql`insert into data_records (collection, id, owner_user_id, profile_id, payload, created_at, updated_at) values ('resumes', 'resume-auth-test', ${user.user.id}, 'profile-auth-test', '{"id":"resume-auth-test","name":"رزومه فنی"}'::jsonb, now(), now())`;
       await sql`insert into orders (id, order_number, user_id, plan_id, amount_rials, status, authority, ref_id, paid_at, created_at, updated_at) values (${randomUUID()}, 'RM-AUTH-TEST', ${user.user.id}, 'free', 0, 'paid', 'AUTH-TEST', '42', now(), now(), now())`;
 
       const users = await auth.listUsers("کاربر آزمون", 1, 20, "admin", "active");
@@ -361,6 +394,7 @@ test(
       assert.equal(users.items[0].recordsCount, 1);
       const records = await auth.listAllRecords(1, 20, "resume-auth", "resumes");
       assert.equal(records.items[0].ownerUserId, user.user.id);
+      assert.equal(records.items[0].summary, "رزومه فنی");
       const details = await auth.getUserDetails(user.user.id);
       assert.deepEqual(details.records, [{ collection: "resumes", total: 1 }]);
       const stats = await auth.getStats();
