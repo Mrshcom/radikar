@@ -90,6 +90,106 @@ test("AuthService validates phones, rate limits OTP and records a safe challenge
   assert.ok(inserted.expiresAt > new Date());
 });
 
+test("AuthService delivers OTP without exposing the code in its response", async () => {
+  const { db } = queuedDatabase([[{ value: 0 }]]);
+  const sent: Array<{ phone: string; code: string }> = [];
+  const logged: string[] = [];
+  const events: string[] = [];
+  const service = new AuthService(db as never, {
+    ...authOptions,
+    logReversedOtp: (reversedCode) => {
+      logged.push(reversedCode);
+      events.push("logged");
+    },
+    deliverOtp: async ({ phone, code }) => {
+      sent.push({ phone, code });
+      events.push("delivered");
+    },
+  });
+
+  const result = await service.requestOtp("09121234567");
+  assert.deepEqual(sent, [{ phone: "09121234567", code: otpCode }]);
+  assert.deepEqual(logged, ["654321"]);
+  assert.deepEqual(events, ["logged", "delivered"]);
+  assert.deepEqual(Object.keys(result).sort(), ["challengeId", "expiresInSeconds"]);
+});
+
+test("console delivery mode keeps a valid challenge without calling the SMS provider", async () => {
+  const { db, writes } = queuedDatabase([[{ value: 0 }]]);
+  const logged: string[] = [];
+  const browserCodes: string[] = [];
+  let providerCalls = 0;
+  const service = new AuthService(db as never, {
+    ...authOptions,
+    otpDeliveryMode: "console",
+    logReversedOtp: (reversedCode) => logged.push(reversedCode),
+    deliverOtp: async () => {
+      providerCalls += 1;
+      throw new Error("provider must not be called");
+    },
+  });
+
+  const result = await service.requestOtp("09121234567", (reversedCode) => browserCodes.push(reversedCode));
+  assert.equal(result.deliveryMode, "console");
+  assert.equal(providerCalls, 0);
+  assert.deepEqual(logged, ["654321"]);
+  assert.deepEqual(browserCodes, ["654321"]);
+  assert.ok(!writes.some((write) => write.kind === "delete"));
+});
+
+test("AuthService logs before delivery but rejects and deletes the challenge when delivery fails", async () => {
+  const { db, writes } = queuedDatabase([[{ value: 0 }]]);
+  const logged: string[] = [];
+  const service = new AuthService(db as never, {
+    ...authOptions,
+    logReversedOtp: (reversedCode) => logged.push(reversedCode),
+    deliverOtp: async () => {
+      throw new Error("delivery failed");
+    },
+  });
+
+  await assert.rejects(
+    () => service.requestOtp("09121234567"),
+    (error: unknown) => error instanceof AuthError && error.statusCode === 502,
+  );
+  assert.deepEqual(logged, ["654321"]);
+  assert.ok(writes.some((write) => write.kind === "delete"));
+});
+
+test("AuthService fails closed when delivery fails and reversed logging is disabled", async () => {
+  const { db, writes } = queuedDatabase([[{ value: 0 }]]);
+  const service = new AuthService(db as never, {
+    ...authOptions,
+    deliverOtp: async () => {
+      throw new Error("delivery failed");
+    },
+  });
+
+  await assert.rejects(
+    () => service.requestOtp("09121234567"),
+    (error: unknown) => error instanceof AuthError && error.statusCode === 502,
+  );
+  assert.ok(writes.some((write) => write.kind === "delete"));
+});
+
+test("AuthService still sends SMS when OTP logging fails", async () => {
+  const { db } = queuedDatabase([[{ value: 0 }]]);
+  let delivered = false;
+  const service = new AuthService(db as never, {
+    ...authOptions,
+    logReversedOtp: () => {
+      throw new Error("logging failed");
+    },
+    deliverOtp: async () => {
+      delivered = true;
+    },
+  });
+
+  const result = await service.requestOtp("09121234567");
+  assert.equal(delivered, true);
+  assert.equal(result.expiresInSeconds, 180);
+});
+
 test("AuthService rejects expired, exhausted and wrong OTP challenges without creating sessions", async () => {
   const now = new Date();
   for (const challenge of [

@@ -38,7 +38,11 @@ function notifyPlanUpgradeRequired(message: string) {
   );
 }
 
-export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function apiRequest<T>(
+  path: string,
+  init: RequestInit = {},
+  onResponse?: (response: Response) => void,
+): Promise<T> {
   const hasJsonBody = init.body != null && !(init.body instanceof FormData);
   let response: Response;
   try {
@@ -57,6 +61,11 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
     )
       throw error;
     throw new ApiError(0, toPersianServiceErrorMessage(error, networkErrorMessage));
+  }
+  try {
+    onResponse?.(response);
+  } catch {
+    // Diagnostic hooks must not change request success or error handling.
   }
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { error?: string };

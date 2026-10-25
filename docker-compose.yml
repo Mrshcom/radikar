@@ -25,7 +25,7 @@ services:
       - apps/api/.env
     environment:
       # The compose profile is intended for local development. Production
-      # requires a real OTP webhook and hardened auth settings.
+      # requires provider credentials and hardened auth settings.
       NODE_ENV: development
       API_HOST: 0.0.0.0
       API_PORT: 3162

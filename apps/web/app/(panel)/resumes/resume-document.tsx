@@ -1085,13 +1085,15 @@ function TwoColumnResume({ templateId, data, compact, colorId, continuation }: R
       )}
     >
       <div aria-hidden="true" className={cn("absolute inset-y-0 start-0 w-[34%]", theme.side)} />
-      <div
-        className={cn(
-          "absolute inset-x-0 z-2 h-[1.2%]",
-          templateId === "sector-yellow" ? "top-[2.34%]" : "top-0",
-          theme.avatar,
-        )}
-      />
+      {!continuation && (
+        <div
+          className={cn(
+            "absolute inset-x-0 z-2 h-[1.2%]",
+            templateId === "sector-yellow" ? "top-[2.34%]" : "top-0",
+            theme.avatar,
+          )}
+        />
+      )}
       {!continuation && (
         <header
           className={cn(
@@ -3792,7 +3794,7 @@ function ProfileBandResume({ templateId, data, compact, colorId, continuation }:
         <>
           <header
             className={cn(
-              "relative -mx-[15.8%] mt-[10%] flex h-[8.5%] items-center justify-center px-[18%] text-white",
+              "relative -mx-[15.8%] mt-[10%] flex min-h-[8.5%] items-center justify-center px-[10%] py-[.5em] text-white",
               palette.background,
             )}
           >
@@ -3800,7 +3802,7 @@ function ProfileBandResume({ templateId, data, compact, colorId, continuation }:
               data={data}
               className="absolute start-[12%] size-[8.5em] rounded-full border-[.45em] border-white/55 bg-[#e8ecea] shadow-sm"
             />
-            <h1 className="m-0 w-full min-w-0 break-words ps-[9.5em] text-center text-[2.3em] font-bold leading-[1.08] text-balance">
+            <h1 className="m-0 w-full min-w-0 break-words ps-[5.75em] text-center text-[2.3em] font-bold leading-[1.08] text-pretty">
               <ResumeFullName fullName={data.fullName} />
             </h1>
           </header>

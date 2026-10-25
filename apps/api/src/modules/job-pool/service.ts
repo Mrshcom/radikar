@@ -569,9 +569,9 @@ export class JobPoolService {
     return this.getSettings();
   }
 
-  async syncDailyPool(options: { ignoreInterval?: boolean } = {}) {
+  async syncDailyPool(options: { ignoreInterval?: boolean; ignoreEnabled?: boolean } = {}) {
     const settings = await this.getSettings();
-    if (!settings.enabled) throw new Error("Job Pool در پنل سوپرادمین غیرفعال است.");
+    if (!options.ignoreEnabled && !settings.enabled) throw new Error("Job Pool در پنل سوپرادمین غیرفعال است.");
     if (!settings.locations.length)
       throw new Error("حداقل یک موقعیت جست‌وجو را در تنظیمات Job Pool وارد کن؛ هیچ درخواست Apify ارسال نشد.");
     if (!this.options.apifyApiToken) throw new Error("APIFY_API_TOKEN برای Job Pool تنظیم نشده است.");

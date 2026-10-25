@@ -10,6 +10,7 @@ const state = vi.hoisted(() => ({
   put: vi.fn(),
   remove: vi.fn(),
   jobs: [] as Array<{ role: string; company: string; match: number }>,
+  adminEvents: [] as Array<{ id: string; type: string; createdAt: string; user: Record<string, string>; details: Record<string, unknown> }>,
   profiles: [
     { id: "profile-default", workspaceName: "فضای کاری شخصی", createdAt: "2026-01-01", updatedAt: "2026-01-01" },
   ],
@@ -30,7 +31,7 @@ vi.mock("@/app/_components/auth", () => ({
 }));
 vi.mock("@/app/_components/toast", () => ({ useToast: () => state.notify }));
 vi.mock("@/lib/field-direction", () => ({ useFieldDirectionManager: () => undefined }));
-vi.mock("@/lib/admin-stats", () => ({ useAdminEvents: () => ({ data: { items: [] } }) }));
+vi.mock("@/lib/admin-stats", () => ({ useAdminEvents: () => ({ data: { items: state.adminEvents } }) }));
 vi.mock("./model-task-provider", () => ({
   ModelTaskProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
   useModelTasks: () => ({ tasks: [], openTask: vi.fn(), cancelTask: vi.fn() }),
@@ -63,6 +64,8 @@ describe("PanelShell behavior", () => {
     vi.clearAllMocks();
     state.role = "user";
     state.jobs = [];
+    state.adminEvents = [];
+    window.localStorage.clear();
     state.put.mockResolvedValue(undefined);
     state.remove.mockResolvedValue(undefined);
   });
@@ -118,6 +121,29 @@ describe("PanelShell behavior", () => {
     expect(jobLink).toHaveTextContent("تطابق ۸۲٪");
     expect(jobLink).toHaveTextContent("WebstaurantStore");
     expect(jobLink).not.toHaveTextContent("مشاهده فرصت‌ها");
+  });
+
+  it("persists seen superadmin events after a page refresh", async () => {
+    state.role = "superadmin";
+    state.adminEvents = [
+      {
+        id: "admin-event-1",
+        type: "signup",
+        createdAt: "2026-10-17T12:00:00.000Z",
+        user: { id: "new-user", fullName: "کاربر جدید", phone: "09120000000" },
+        details: {},
+      },
+    ];
+    const firstRender = renderShell();
+    const noticeButton = screen.getByRole("button", { name: "اعلان‌های آماری مدیریت" });
+    await waitFor(() => expect(noticeButton).toHaveTextContent("۱"));
+
+    fireEvent.click(noticeButton);
+    expect(JSON.parse(window.localStorage.getItem("radikar:admin-events:seen:u1") ?? "[]")).toEqual(["admin-event-1"]);
+
+    firstRender.unmount();
+    renderShell();
+    await waitFor(() => expect(screen.getByRole("button", { name: "اعلان‌های آماری مدیریت" })).not.toHaveTextContent("۱"));
   });
 
   it("opens and closes the mobile menu with Escape and restores overflow", () => {

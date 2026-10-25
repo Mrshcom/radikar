@@ -7,115 +7,100 @@ export type OtpDeliveryPayload = {
 
 export type OtpDelivery = (payload: OtpDeliveryPayload) => Promise<void>;
 
-type SmsIrResponse = {
-  status?: number;
-  message?: string;
-  data?: {
-    messageId?: number;
-    cost?: number;
+type VerifyTemplateResponse = {
+  return?: {
+    status?: number;
+    message?: string;
   };
+  entries?: Array<{
+    messageid?: number;
+    cost?: number;
+  }>;
 };
 
-export type SmsIrClientOptions = {
-  username: string;
+export type OtpProviderName = "kavenegar";
+
+export type OtpProviderClientOptions = {
+  provider: OtpProviderName;
   apiKey: string;
-  lineNumber: string;
+  template: string;
   baseUrl?: string;
   timeoutMs?: number;
   fetcher?: typeof fetch;
 };
 
-export type SmsIrSendResult = {
+export type OtpProviderSendResult = {
   messageId: number;
   cost: number | null;
 };
 
-export class SmsIrError extends Error {
+export class OtpProviderError extends Error {
   constructor(
     message: string,
     readonly statusCode?: number,
   ) {
     super(message);
-    this.name = "SmsIrError";
+    this.name = "OtpProviderError";
   }
 }
 
-export class SmsIrClient {
+export class OtpProviderClient {
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private readonly fetcher: typeof fetch;
 
-  constructor(private readonly options: SmsIrClientOptions) {
-    this.baseUrl = (options.baseUrl ?? "https://api.sms.ir/v1").replace(/\/$/, "");
+  constructor(private readonly options: OtpProviderClientOptions) {
+    this.baseUrl = (options.baseUrl ?? "https://api.kavenegar.com/v1").replace(/\/$/, "");
     this.timeoutMs = options.timeoutMs ?? 8_000;
     this.fetcher = options.fetcher ?? fetch;
   }
 
-  async sendMessage(mobile: string, text: string): Promise<SmsIrSendResult> {
-    const query = new URLSearchParams({
-      username: this.options.username,
-      password: this.options.apiKey,
-      line: this.options.lineNumber,
-      mobile,
-      text,
-    });
-
+  async sendVerifyCode(mobile: string, code: string): Promise<OtpProviderSendResult> {
     let response: Response;
     try {
-      // SMS.ir's documented Node.js example sends this URL with GET. Keeping
-      // credentials in the query is required by this legacy endpoint, so this
-      // request must never be logged with its full URL.
-      response = await this.fetcher(`${this.baseUrl}/send?${query.toString()}`, {
-        method: "GET",
-        headers: { accept: "application/json" },
+      response = await this.fetcher(this.buildVerifyUrl(), {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
+        },
+        body: new URLSearchParams({ receptor: mobile, token: code, template: this.options.template }),
         redirect: "error",
         signal: AbortSignal.timeout(this.timeoutMs),
       });
     } catch {
-      throw new SmsIrError("SMS.ir is unavailable");
+      throw new OtpProviderError("OTP provider is unavailable");
     }
 
-    let body: SmsIrResponse;
+    let body: VerifyTemplateResponse;
     try {
-      body = (await response.json()) as SmsIrResponse;
+      body = (await response.json()) as VerifyTemplateResponse;
     } catch {
-      throw new SmsIrError("SMS.ir returned an invalid response", response.status);
+      throw new OtpProviderError("OTP provider returned an invalid response", response.status);
     }
 
-    const messageId = body.data?.messageId;
-    if (!response.ok || body.status !== 1 || typeof messageId !== "number" || !Number.isInteger(messageId)) {
-      throw new SmsIrError(body.message?.trim() || "SMS.ir rejected the message", response.status);
+    const entry = body?.entries?.[0];
+    const messageId = entry?.messageid;
+    if (!response.ok || body?.return?.status !== 200 || typeof messageId !== "number" || !Number.isInteger(messageId)) {
+      throw new OtpProviderError(body?.return?.message?.trim() || "OTP provider rejected the message", response.status);
     }
 
     return {
       messageId,
-      cost: typeof body.data?.cost === "number" ? body.data.cost : null,
+      cost: typeof entry?.cost === "number" ? entry.cost : null,
     };
+  }
+
+  private buildVerifyUrl() {
+    switch (this.options.provider) {
+      case "kavenegar":
+        return `${this.baseUrl}/${encodeURIComponent(this.options.apiKey)}/verify/lookup.json`;
+    }
   }
 }
 
-function otpMessage(code: string, expiresInSeconds: number) {
-  const expiresInMinutes = Math.max(1, Math.ceil(expiresInSeconds / 60));
-  return `کد ورود رادیکار: ${code}\nاعتبار کد: ${expiresInMinutes} دقیقه\nاین کد را در اختیار دیگران قرار ندهید.`;
-}
-
-export function createSmsIrOtpDelivery(client: SmsIrClient): OtpDelivery {
-  return async ({ phone, code, expiresInSeconds }) => {
-    await client.sendMessage(phone, otpMessage(code, expiresInSeconds));
-  };
-}
-
-export function createWebhookOtpDelivery(url: string, token?: string): OtpDelivery {
-  return async ({ phone, code, purpose, expiresInSeconds }) => {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(token ? { authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ phone, code, purpose, expiresInSeconds }),
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (!response.ok) throw new Error("OTP webhook rejected the request");
+export function createProviderOtpDelivery(client: OtpProviderClient): OtpDelivery {
+  return async ({ phone, code }) => {
+    await client.sendVerifyCode(phone, code);
   };
 }

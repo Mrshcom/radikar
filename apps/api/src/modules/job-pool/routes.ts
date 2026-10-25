@@ -53,7 +53,7 @@ export function registerJobPoolRoutes(app: FastifyInstance, jobPool: JobPoolServ
 
   app.post("/api/admin/job-pool/sync", async (request, reply) => {
     if (!requirePermission(request, reply, "job-pool:manage:any")) return;
-    const result = await jobPool.syncDailyPool({ ignoreInterval: true });
+    const result = await jobPool.syncDailyPool({ ignoreInterval: true, ignoreEnabled: true });
     return reply.code(201).send(result);
   });
 

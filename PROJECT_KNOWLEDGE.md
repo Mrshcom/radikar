@@ -95,6 +95,7 @@ npm run dev:stack
   یا Git ثبت نکنید.
 - API برای توسعه به `DATABASE_URL` محلی یا اتصال Neon نیاز دارد.
 - Production باید `AUTH_SECRET` تصادفی، ارسال OTP واقعی و CORS محدود داشته باشد.
+- OTP در همهٔ محیط‌ها از abstraction عمومی provider استفاده می‌کند. adapter فعلی `kavenegar` است و با `POST /v1/{API-KEY}/verify/lookup.json` کار می‌کند؛ در حالت ارسال واقعی `OTP_PROVIDER=kavenegar`، `OTP_PROVIDER_API_KEY` و `OTP_PROVIDER_TEMPLATE` الزامی‌اند و الگو باید شامل `%token` باشد. حالت موقت پیش‌فرض `OTP_DELIVERY_MODE=console` حتی بدون کلید provider چالش معتبر می‌سازد اما تابع ارسال را فراخوانی نمی‌کند. با `OTP_LOG_REVERSED_CODE=true` کد معکوس در کنسول API و از طریق هدر پاسخ در کنسول مرورگر ثبت می‌شود. این حالت در Production کد را به درخواست‌کنندهٔ ناشناس می‌دهد و خطر تصاحب حساب دارد. برای فعال‌سازی ارسال واقعی و حذف لاگ، هر دو متغیر را به‌ترتیب `provider` و `false` تنظیم کنید. در حالت provider خطای ارسال به کاربر نمایش داده شده و چالش ناموفق حذف می‌شود. افزودن provider بعدی فقط به adapter/factory عمومی OTP محدود است.
 - شماره bootstrap فقط برای راه‌اندازی کنترل‌شدهٔ سوپرادمین استفاده شود و بعد
   حذف شود.
 
@@ -139,7 +140,7 @@ graphify path "A" "B"
 - VPS فعلی رادیکار در مسیر `/home/sport724/mampel/radikar` اجرا می‌شود؛ دامنهٔ
   production از پورت‌های استاندارد HTTP `80` و HTTPS `443` استفاده می‌کند و
   پورت‌های داخلی API/Web عمومی نیستند.
-- OTP در همهٔ محیط‌ها فقط از مسیر ارسالکنندهٔ پیکربندی‌شدهٔ پیامک تحویل داده می‌شود و هرگز در پاسخ API نمایش داده نمی‌شود.
+- OTP فعلاً در همهٔ محیط‌ها با `OTP_DELIVERY_MODE=console` بدون ارسال پیامک ساخته می‌شود و کد معکوس در هدر پاسخ API برای کنسول مرورگر قرار می‌گیرد؛ فعال‌سازی بعدی کاوه‌نگار با `provider` و خاموش‌کردن لاگ انجام می‌شود.
 - خروجی provider هوش مصنوعی از کانتینر API روی HTTPS استفاده می‌کند و برای
   پایداری، `api.gapgpt.app` در Compose به edge سالم pin شده است.
 - CI/CD در `.github/workflows/deploy-production.yml` با push تگ‌هایی مثل
@@ -234,3 +235,5 @@ graphify path "A" "B"
 > Automated review: 2026-10-05 — project changes were committed; review the affected sections if behavior or architecture changed.
 
 > Automated review: 2026-10-09 — project changes were committed; review the affected sections if behavior or architecture changed.
+
+> Automated review: 2026-10-13 — project changes were committed; review the affected sections if behavior or architecture changed.

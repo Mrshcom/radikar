@@ -12,7 +12,7 @@ import { eq } from "drizzle-orm";
 import { JobPoolService } from "./modules/job-pool/service";
 import { RadicoinService } from "./modules/radicoin/service";
 import { ProductEventService } from "./modules/analytics/service";
-import { createSmsIrOtpDelivery, createWebhookOtpDelivery, SmsIrClient } from "./modules/notifications/otp-delivery";
+import { createProviderOtpDelivery, OtpProviderClient } from "./modules/notifications/otp-delivery";
 
 loadLocalEnvironment();
 const config = readConfig();
@@ -27,19 +27,17 @@ if (savedAiSettings)
 const radicoinService = new RadicoinService(database.db);
 const productEvents = new ProductEventService(database.db);
 const deliverOtp =
-  config.NODE_ENV === "production" && config.SMSIR_USERNAME && config.SMSIR_API_KEY && config.SMSIR_LINE_NUMBER
-    ? createSmsIrOtpDelivery(
-        new SmsIrClient({
-          username: config.SMSIR_USERNAME,
-          apiKey: config.SMSIR_API_KEY,
-          lineNumber: config.SMSIR_LINE_NUMBER,
-          baseUrl: config.SMSIR_BASE_URL,
-          timeoutMs: config.SMSIR_TIMEOUT_MS,
+  config.OTP_PROVIDER && config.OTP_PROVIDER_API_KEY && config.OTP_PROVIDER_TEMPLATE
+    ? createProviderOtpDelivery(
+        new OtpProviderClient({
+          provider: config.OTP_PROVIDER,
+          apiKey: config.OTP_PROVIDER_API_KEY,
+          template: config.OTP_PROVIDER_TEMPLATE,
+          baseUrl: config.OTP_PROVIDER_BASE_URL,
+          timeoutMs: config.OTP_PROVIDER_TIMEOUT_MS,
         }),
       )
-    : config.NODE_ENV === "production" && config.OTP_WEBHOOK_URL
-      ? createWebhookOtpDelivery(config.OTP_WEBHOOK_URL, config.OTP_WEBHOOK_TOKEN)
-      : undefined;
+    : undefined;
 const billingService = new BillingService(database.db, {
   apiPublicUrl: config.API_PUBLIC_URL,
   webAppUrl: config.WEB_APP_URL,
@@ -75,9 +73,12 @@ const app = buildApp({
     sessionTtlDays: config.SESSION_TTL_DAYS,
     bootstrapSuperadminPhone: config.BOOTSTRAP_SUPERADMIN_PHONE,
     allowFirstUserSuperadmin: config.ALLOW_FIRST_USER_SUPERADMIN,
-    exposeOtpDeliveryError: config.NODE_ENV !== "production",
-    logDevelopmentOtp: config.NODE_ENV !== "production",
+    exposeOtpDeliveryError: true,
+    otpDeliveryMode: config.OTP_DELIVERY_MODE,
     deliverOtp,
+    logReversedOtp: config.OTP_LOG_REVERSED_CODE
+      ? (reversedCode) => console.info(`[radikar:otp-reversed] ${reversedCode}`)
+      : undefined,
     googleClientId: config.GOOGLE_CLIENT_ID,
     googleClientSecret: config.GOOGLE_CLIENT_SECRET,
     googleRedirectUri: config.GOOGLE_OAUTH_REDIRECT_URI ?? `${config.WEB_APP_URL}/api/auth/google/callback`,
@@ -88,6 +89,7 @@ const app = buildApp({
   radicoinService,
   jobPoolService,
   productEvents,
+  exposeReversedOtp: config.OTP_LOG_REVERSED_CODE,
   database: database.db,
   sessionCookieName: config.NODE_ENV === "production" ? "__Host-radikar_session" : "radikar_session",
   secureCookies: config.NODE_ENV === "production",

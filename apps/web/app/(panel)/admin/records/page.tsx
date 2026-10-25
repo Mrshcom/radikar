@@ -16,6 +16,7 @@ import {
   tableSortDirectionParser,
 } from "@/lib/table-search-params";
 import { AdminFilterSelect, AdminTablePagination, AdminTableToolbar } from "../_components/admin-table-controls";
+import { HoverTooltip } from "../../_components/hover-tooltip";
 import { SectionTitle } from "../../_components/ui";
 
 type RecordsResponse = {
@@ -26,6 +27,7 @@ type RecordsResponse = {
     ownerUserId: string | null;
     ownerPhone: string | null;
     ownerEmail: string | null;
+    summary: string;
     updatedAt: string;
   }[];
   total: number;
@@ -33,13 +35,16 @@ type RecordsResponse = {
 type RecordRow = RecordsResponse["items"][number];
 const collectionOptions = [
   { value: "", label: "همه انواع اطلاعات" },
-  { value: "profiles", label: "فضاهای کاری" },
-  { value: "knowledge", label: "پایگاه دانش" },
+  { value: "appProfiles", label: "فضاهای کاری" },
+  { value: "workspaceState", label: "وضعیت فضای کاری" },
+  { value: "userProfiles", label: "پروفایل کاربر" },
+  { value: "knowledgeProfiles", label: "پایگاه دانش" },
   { value: "resumes", label: "رزومه‌ها" },
   { value: "jobs", label: "فرصت‌های شغلی" },
   { value: "applications", label: "اپلای‌ها" },
-  { value: "interviews", label: "مصاحبه‌ها" },
-  { value: "dashboard", label: "داده‌های داشبورد" },
+  { value: "interviewSessions", label: "جلسات مصاحبه" },
+  { value: "matchAnalyses", label: "تحلیل‌های تطابق" },
+  { value: "dashboardSnapshots", label: "داده‌های داشبورد" },
 ];
 const recordFilterParsers = {
   search: tableSearchParser,
@@ -77,10 +82,14 @@ export default function AdminRecordsPage() {
       render: (item) => collectionOptions.find((option) => option.value === item.collection)?.label ?? item.collection,
     },
     {
-      key: "id",
-      title: "شناسه",
-      className: "max-w-[230px] truncate text-[#71817e]",
-      render: (item) => <span dir="ltr">{item.id}</span>,
+      key: "summary",
+      title: "شرح رکورد",
+      className: "max-w-[280px] truncate text-[#405753]",
+      render: (item) => (
+        <HoverTooltip content={<span dir="ltr">شناسه: {item.id}</span>}>
+          <span className="truncate">{item.summary}</span>
+        </HoverTooltip>
+      ),
     },
     {
       key: "owner",

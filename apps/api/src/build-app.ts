@@ -41,6 +41,7 @@ type BuildAppOptions = {
   database?: Database;
   jobPoolService?: JobPoolService;
   productEvents?: ProductEventService;
+  exposeReversedOtp?: boolean;
 };
 
 export function buildApp({
@@ -62,6 +63,7 @@ export function buildApp({
   database,
   jobPoolService,
   productEvents,
+  exposeReversedOtp = false,
 }: BuildAppOptions) {
   const app = fastifyFactory({
     logger,
@@ -75,6 +77,7 @@ export function buildApp({
     origin: corsOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true,
+    ...(exposeReversedOtp ? { exposedHeaders: ["x-radikar-otp-reversed"] } : {}),
   });
   app.register(cookie);
   app.addHook("preValidation", async (request) => {
@@ -104,6 +107,7 @@ export function buildApp({
     sessionTtlDays,
     webAppUrl,
     productEvents,
+    exposeReversedOtp,
   });
   app.addHook("preHandler", async (request, reply) => {
     const publicPaths = new Set([

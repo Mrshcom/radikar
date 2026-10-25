@@ -213,8 +213,9 @@ docker compose down
 
 ## ورود با OTP در محیط توسعه
 
-کد یک‌بارمصرف در همهٔ محیط‌ها فقط از مسیر ارسال‌کنندهٔ پیکربندی‌شدهٔ پیامک دریافت می‌شود و هرگز در پاسخ API یا صفحهٔ ورود نمایش داده نمی‌شود. 3. اولین کاربری که در دیتابیس خالی ثبت شود نقش `superadmin` می‌گیرد. 4. سوپرادمین بعد از ورود به `/admin` هدایت می‌شود؛ کاربران معمولی به
-`/dashboard` می‌روند.
+در همهٔ محیط‌ها ارسال‌کنندهٔ پیامک باید در `apps/api/.env` یا env همان محیط تنظیم شده باشد؛ API بدون تنظیمات کامل provider یا webhook شروع نمی‌شود. کد یک‌بارمصرف فقط از طریق پیامک فرستاده می‌شود و در پاسخ API یا کنسول نمایش داده نمی‌شود.
+
+اولین کاربری که در دیتابیس خالی ثبت شود نقش `superadmin` می‌گیرد. سوپرادمین بعد از ورود به `/admin` هدایت می‌شود و کاربران معمولی به `/dashboard` می‌روند.
 
 برای تعیین یک سوپرادمین مشخص می‌توانید در `apps/api/.env` مقدار زیر را فعال کنید:
 
@@ -360,15 +361,15 @@ FREE_DEEPSEEK_PORT=9655
 | `AUTH_SECRET`                 | فقط مقدار توسعه                | کلید امضای session و OTP؛ در Production حتماً عوض شود                      |
 | `SESSION_TTL_DAYS`            | `30`                           | عمر session                                                                |
 | `OTP_TTL_SECONDS`             | `180`                          | عمر کد یک‌بارمصرف                                                          |
+| `OTP_DELIVERY_MODE`           | `console`                      | موقت: `console` چالش معتبر می‌سازد ولی تابع ارسال را صدا نمی‌زند؛ `provider` ارسال واقعی را با کاوه‌نگار فعال می‌کند |
+| `OTP_LOG_REVERSED_CODE`        | `true`                         | کد معکوس را در کنسول API و مرورگر نشان می‌دهد؛ در حالت `console` الزامی است. برای ارسال واقعی و حذف لاگ، همراه با `OTP_DELIVERY_MODE=provider` آن را `false` کنید. فعال‌بودنش در Production امکان ورود با شمارهٔ دیگران را ایجاد می‌کند |
 | `ALLOW_FIRST_USER_SUPERADMIN` | `true` در env نمونه            | ارتقای اولین کاربر دیتابیس خالی                                            |
 | `BOOTSTRAP_SUPERADMIN_PHONE`  | خالی                           | شماره مجاز برای bootstrap سوپرادمین                                        |
-| `SMSIR_USERNAME`              | خالی                           | نام کاربری SMS.ir؛ فقط سمت سرور                                            |
-| `SMSIR_API_KEY`               | خالی                           | کلید خصوصی SMS.ir؛ فقط سمت سرور و هرگز با پیشوند `NEXT_PUBLIC_` تعریف نشود |
-| `SMSIR_LINE_NUMBER`           | خالی                           | شماره خط ارسال‌کننده در SMS.ir                                             |
-| `SMSIR_BASE_URL`              | `https://api.sms.ir/v1`        | آدرس پایه API سامانه SMS.ir                                                |
-| `SMSIR_TIMEOUT_MS`            | `8000`                         | مهلت پاسخ‌گویی سامانه پیامکی بر حسب میلی‌ثانیه                             |
-| `OTP_WEBHOOK_URL`             | خالی                           | fallback قدیمی ارسال OTP، فقط وقتی SMS.ir تنظیم نشده باشد                  |
-| `OTP_WEBHOOK_TOKEN`           | خالی                           | Bearer token اختیاری fallback پیامک                                        |
+| `OTP_PROVIDER`                | خالی                           | adapter فعال ارسال OTP؛ فعلاً `kavenegar`                                  |
+| `OTP_PROVIDER_API_KEY`        | خالی                           | کلید خصوصی provider؛ فقط سمت سرور و هرگز با پیشوند `NEXT_PUBLIC_` تعریف نشود |
+| `OTP_PROVIDER_TEMPLATE`       | خالی                           | نام الگوی تأییدشدهٔ provider؛ در adapter فعلی باید شامل `%token` باشد       |
+| `OTP_PROVIDER_BASE_URL`       | `https://api.kavenegar.com/v1` | آدرس پایه adapter فعال                                                     |
+| `OTP_PROVIDER_TIMEOUT_MS`     | `8000`                         | مهلت پاسخ‌گویی provider بر حسب میلی‌ثانیه                                  |
 | `API_PUBLIC_URL`              | `http://localhost:3162`        | آدرس عمومی callback بک‌اند                                                 |
 | `WEB_APP_URL`                 | `http://localhost:3161`        | آدرس Web برای redirect نتیجه پرداخت                                        |
 | `ZARINPAL_BASE_URL`           | `https://sandbox.zarinpal.com` | آدرس درگاه؛ در توسعه Sandbox                                               |
@@ -472,13 +473,17 @@ PostgreSQL باید قبل از start شدن API در دسترس باشد و mig
 - `ALLOW_FIRST_USER_SUPERADMIN=false`
 - تنظیم `BOOTSTRAP_SUPERADMIN_PHONE` برای bootstrap کنترل‌شده یا مدیریت نقش از
   قبل
-- تنظیم هر سه مقدار `SMSIR_USERNAME`، `SMSIR_API_KEY` و `SMSIR_LINE_NUMBER`؛ webhook قدیمی فقط fallback است
+- انتخاب provider با `OTP_PROVIDER` و تنظیم credentialهای عمومی `OTP_PROVIDER_*`؛ adapter فعلی `kavenegar` است و به یک الگوی Verify تأییدشده شامل `%token` نیاز دارد
 - محدودکردن `CORS_ORIGINS` به دامنه واقعی Web
 - استفاده از PostgreSQL production با backup، connection pooling و SSL
 - نگهداری secretها در Secret Manager، نه داخل repository یا Docker image
 
-API در حالت Production با secret توسعه، بدون webhook پیامک یا با نمایش OTP بالا
-نمی‌آید و عمداً startup را متوقف می‌کند.
+API در حالت Production با secret توسعه بالا نمی‌آید؛ در حالت `provider` تنظیم کامل
+کاوه‌نگار نیز برای شروع الزامی است. فعلاً `OTP_DELIVERY_MODE=console` تابع ارسال را
+فراخوانی نمی‌کند، چالش معتبر می‌سازد و کد معکوس را در کنسول API و مرورگر نشان می‌دهد.
+برای بازگشت به ارسال واقعی با کاوه‌نگار، `OTP_DELIVERY_MODE=provider` و
+`OTP_LOG_REVERSED_CODE=false` را با هم تنظیم کنید. در حالت `provider` خطای ارسال
+باعث شکست درخواست و حذف چالش می‌شود. حالت `console` امن نیست و امکان ورود با شمارهٔ دیگران را می‌دهد.
 
 ## فرمان‌های مهم Monorepo
 

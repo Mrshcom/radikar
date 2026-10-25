@@ -30,13 +30,19 @@ const environmentSchema = z
     AUTH_SECRET: z.string().min(32).default("development-only-secret-change-before-production"),
     SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(90).default(30),
     OTP_TTL_SECONDS: z.coerce.number().int().min(60).max(600).default(180),
-    OTP_WEBHOOK_URL: z.url().optional(),
-    OTP_WEBHOOK_TOKEN: z.string().optional(),
-    SMSIR_BASE_URL: z.url().default("https://api.sms.ir/v1"),
-    SMSIR_USERNAME: z.string().trim().min(1).optional(),
-    SMSIR_API_KEY: z.string().trim().min(1).optional(),
-    SMSIR_LINE_NUMBER: z.string().trim().regex(/^\d+$/).optional(),
-    SMSIR_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(15_000).default(8_000),
+    OTP_DELIVERY_MODE: z.enum(["console", "provider"]).default("console"),
+    OTP_LOG_REVERSED_CODE: z.stringbool().default(true),
+    OTP_PROVIDER: z.enum(["kavenegar"]).optional(),
+    OTP_PROVIDER_BASE_URL: z.url().default("https://api.kavenegar.com/v1"),
+    OTP_PROVIDER_API_KEY: z.string().trim().min(1).optional(),
+    OTP_PROVIDER_TEMPLATE: z
+      .string()
+      .trim()
+      .min(1)
+      .max(100)
+      .regex(/^[A-Za-z0-9-]+$/)
+      .optional(),
+    OTP_PROVIDER_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(15_000).default(8_000),
     BOOTSTRAP_SUPERADMIN_PHONE: z
       .string()
       .regex(/^09\d{9}$/)
@@ -71,25 +77,31 @@ const environmentSchema = z
         message: "Google OAuth client id and secret must be configured together",
       });
     }
-    const smsIrFields = [config.SMSIR_USERNAME, config.SMSIR_API_KEY, config.SMSIR_LINE_NUMBER];
-    const configuredSmsIrFields = smsIrFields.filter(Boolean).length;
-    if (configuredSmsIrFields > 0 && configuredSmsIrFields < smsIrFields.length) {
+    const otpProviderFields = [config.OTP_PROVIDER, config.OTP_PROVIDER_API_KEY, config.OTP_PROVIDER_TEMPLATE];
+    const configuredOtpProviderFields = otpProviderFields.filter(Boolean).length;
+    if (configuredOtpProviderFields > 0 && configuredOtpProviderFields < otpProviderFields.length) {
       context.addIssue({
         code: "custom",
-        path: ["SMSIR_USERNAME"],
-        message: "SMSIR_USERNAME, SMSIR_API_KEY and SMSIR_LINE_NUMBER must be configured together",
+        path: ["OTP_PROVIDER"],
+        message: "OTP_PROVIDER, OTP_PROVIDER_API_KEY and OTP_PROVIDER_TEMPLATE must be configured together",
       });
     }
-    if (config.NODE_ENV !== "production") return;
-    if (config.AUTH_SECRET === "development-only-secret-change-before-production") {
+    if (config.OTP_DELIVERY_MODE === "provider" && configuredOtpProviderFields !== otpProviderFields.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["OTP_PROVIDER"],
+        message: "OTP provider credentials are required in provider delivery mode",
+      });
+    }
+    if (config.OTP_DELIVERY_MODE === "console" && !config.OTP_LOG_REVERSED_CODE) {
+      context.addIssue({
+        code: "custom",
+        path: ["OTP_LOG_REVERSED_CODE"],
+        message: "OTP_LOG_REVERSED_CODE must stay enabled in console delivery mode",
+      });
+    }
+    if (config.NODE_ENV === "production" && config.AUTH_SECRET === "development-only-secret-change-before-production") {
       context.addIssue({ code: "custom", path: ["AUTH_SECRET"], message: "AUTH_SECRET must be changed in production" });
-    }
-    if (configuredSmsIrFields !== smsIrFields.length && !config.OTP_WEBHOOK_URL) {
-      context.addIssue({
-        code: "custom",
-        path: ["SMSIR_API_KEY"],
-        message: "SMS.ir credentials or OTP_WEBHOOK_URL are required in production",
-      });
     }
   });
 

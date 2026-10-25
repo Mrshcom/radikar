@@ -64,10 +64,6 @@ export function StatusState({ variant, title, description, actionLabel, href, on
               <RefreshCw size={16} /> {actionLabel}
             </button>
           )}
-          <span aria-hidden="true" className="mx-auto mt-7 flex w-fit items-center gap-1 text-[9px] text-[#a1afaa]">
-            {isError ? "اگر مشکل ادامه داشت، صفحه را تازه‌سازی کن" : "از منوی پنل مسیر دیگری را انتخاب کن"}{" "}
-            <ArrowRight size={12} className="rotate-180" />
-          </span>
         </div>
       </section>
     </main>

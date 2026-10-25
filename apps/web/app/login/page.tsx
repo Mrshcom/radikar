@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/api-client";
 import { apiUrl } from "@/lib/api-url";
 import { authQueryKey, type CurrentUser } from "@/app/_components/auth";
 import { useToast } from "@/app/_components/toast";
+import { toPersianDigits } from "@/lib/fa-number";
 import { normalizeDigits } from "@radikar/validators";
 
 const localizedNumericString = z.string().trim().transform(normalizeDigits);
@@ -36,15 +37,20 @@ type OtpValues = z.infer<typeof otpSchema>;
 const fieldClass =
   "h-11 w-full rounded-[12px] border border-[#dce5df] bg-white ps-11 pe-4 text-left text-[13px] font-normal text-[#233936] outline-none transition placeholder:text-[#a3afac] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 sm:h-12";
 
+function logReversedOtpFromResponse(response: Response) {
+  const reversedCode = response.headers.get("x-radikar-otp-reversed");
+  if (reversedCode) console.info(`[radikar:otp-reversed] ${reversedCode}`);
+}
+
 function GoogleMark() {
   return (
     <svg aria-hidden="true" className="size-5 shrink-0" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
       <path
-        fill="#EA4335"
+        fill="#4285F4"
         d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.715v2.258h2.909c1.702-1.567 2.684-3.875 2.684-6.614Z"
       />
       <path
-        fill="#4285F4"
+        fill="#34A853"
         d="M9 18c2.43 0 4.467-.806 5.956-2.181l-2.909-2.258c-.806.54-1.837.859-3.047.859-2.344 0-4.328-1.584-5.037-3.711H.956v2.332A9 9 0 0 0 9 18Z"
       />
       <path
@@ -52,7 +58,7 @@ function GoogleMark() {
         d="M3.963 10.709A5.41 5.41 0 0 1 3.681 9c0-.594.102-1.171.282-1.709V4.96H.956A9 9 0 0 0 0 9c0 1.453.348 2.83.956 4.04l3.007-2.331Z"
       />
       <path
-        fill="#34A853"
+        fill="#EA4335"
         d="M9 3.58c1.32 0 2.506.454 3.438 1.346l2.58-2.58C13.462.89 11.425 0 9 0A9 9 0 0 0 .956 4.96l3.007 2.331C4.672 5.164 6.656 3.58 9 3.58Z"
       />
     </svg>
@@ -63,6 +69,7 @@ export default function LoginPage() {
   const router = useRouter();
   const notify = useToast();
   const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [deliveryMode, setDeliveryMode] = useState<"console" | "provider">("provider");
   const [submittedPhone, setSubmittedPhone] = useState("");
   const [challengeId, setChallengeId] = useState("");
   const [serverError, setServerError] = useState("");
@@ -127,10 +134,11 @@ export default function LoginPage() {
 
   const requestOtp = useMutation({
     mutationFn: (phone: string) =>
-      apiRequest<{ challengeId: string; expiresInSeconds: number; devOtp?: string }>("/api/auth/request-otp", {
-        method: "POST",
-        body: JSON.stringify({ phone }),
-      }),
+      apiRequest<{ challengeId: string; expiresInSeconds: number; deliveryMode?: "console" }>(
+        "/api/auth/request-otp",
+        { method: "POST", body: JSON.stringify({ phone }) },
+        logReversedOtpFromResponse,
+      ),
   });
   const verifyOtpMutation = useMutation({
     mutationFn: (input: { phone: string; challengeId: string; code: string; referralCode?: string }) =>
@@ -144,15 +152,15 @@ export default function LoginPage() {
     setServerError("");
     try {
       const result = await requestOtp.mutateAsync(phone);
-      if (result.devOtp) console.info(`[radikar:dev-otp] ${result.devOtp}`);
       setSubmittedPhone(phone);
       setChallengeId(result.challengeId);
+      setDeliveryMode(result.deliveryMode ?? "provider");
       resetOtp({ otp: "" });
       setOtpDigits(Array(6).fill(""));
       setStep("otp");
-      notify("کد ورود با موفقیت ارسال شد.");
+      notify(result.deliveryMode === "console" ? "کد ورود آماده است." : "کد ورود با موفقیت ارسال شد.");
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : "ارسال کد ورود ناموفق بود.");
+      setServerError(error instanceof Error ? error.message : "دریافت کد ورود ناموفق بود.");
     }
   };
 
@@ -187,11 +195,11 @@ export default function LoginPage() {
     setServerError("");
     try {
       const result = await requestOtp.mutateAsync(submittedPhone);
-      if (result.devOtp) console.info(`[radikar:dev-otp] ${result.devOtp}`);
       setChallengeId(result.challengeId);
-      notify("کد ورود مجدداً ارسال شد.");
+      setDeliveryMode(result.deliveryMode ?? "provider");
+      notify(result.deliveryMode === "console" ? "کد ورود جدید آماده است." : "کد ورود مجدداً ارسال شد.");
     } catch (error) {
-      setServerError(error instanceof Error ? error.message : "ارسال مجدد کد ناموفق بود.");
+      setServerError(error instanceof Error ? error.message : "دریافت کد جدید ناموفق بود.");
     }
     otpInputRefs.current[0]?.focus();
   };
@@ -310,8 +318,10 @@ export default function LoginPage() {
                 </h2>
                 <p className="mb-0 mt-2 text-[11px] leading-7 text-[#7b8b87] sm:mt-3 sm:leading-[1.9]">
                   {step === "phone"
-                    ? "شماره همراهت را وارد کن تا کد ورود برایت ارسال شود."
-                    : `کد ۶ رقمی ارسال‌شده به ${submittedPhone} را وارد کن.`}
+                    ? "شماره همراهت را وارد کن تا کد ورود برایت آماده شود."
+                    : deliveryMode === "console"
+                      ? `کد ۶ رقمی ورود برای ${toPersianDigits(submittedPhone)} را وارد کن.`
+                      : `کد ۶ رقمی ارسال‌شده به ${toPersianDigits(submittedPhone)} را وارد کن.`}
                 </p>
               </div>
 
@@ -345,7 +355,7 @@ export default function LoginPage() {
                       type="submit"
                       disabled={isSending}
                     >
-                      {isSending ? "در حال ارسال..." : "دریافت کد ورود"}
+                      {isSending ? "در حال آماده‌سازی..." : "دریافت کد ورود"}
                       {!isSending && <ArrowLeft size={17} />}
                     </button>
                   </form>
@@ -404,7 +414,7 @@ export default function LoginPage() {
                       onClick={() => void resendOtp()}
                     >
                       <RefreshCw size={14} />
-                      ارسال مجدد کد
+                      {deliveryMode === "console" ? "دریافت کد جدید" : "ارسال مجدد کد"}
                     </button>
                     <button
                       className="inline-flex items-center gap-1.5 border-0 bg-transparent p-0 text-[#687a76]"

@@ -99,6 +99,7 @@ export type AuthRouteOptions = {
   sessionTtlDays: number;
   webAppUrl: string;
   productEvents?: ProductEventService;
+  exposeReversedOtp?: boolean;
 };
 
 export type AuthServicePort = Pick<
@@ -167,12 +168,16 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
   });
 
   app.post("/api/auth/request-otp", async (request, reply) => {
+    reply.header("cache-control", "no-store");
     const input = requestOtpSchema.parse(request.body);
     await options.productEvents?.record("auth_otp_requested", `otp-request:${request.id}`, undefined, {
       auth_method: "phone",
     });
     try {
-      const result = await authService.requestOtp(input.phone);
+      const result = await authService.requestOtp(
+        input.phone,
+        options.exposeReversedOtp ? (reversedCode) => reply.header("x-radikar-otp-reversed", reversedCode) : undefined,
+      );
       await options.productEvents?.record("auth_otp_delivery_result", `otp-delivery:${request.id}`, undefined, {
         auth_method: "phone",
         result: "success",

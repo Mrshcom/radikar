@@ -3,11 +3,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CalendarDays, Eye, FilePlus2, Pencil, Plus, Send, Trash2, Undo2 } from "lucide-react";
 import { useState } from "react";
-import { useFieldArray, useForm, useWatch } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { productTimelineInputSchema } from "@radikar/validators";
 import type { ProductTimelineEntry, ProductTimelineKind } from "@radikar/shared-types";
 import type { z } from "zod";
 import { useAuth } from "@/app/_components/auth";
+import { SearchableSelect } from "@/app/_components/searchable-select";
 import { useToast } from "@/app/_components/toast";
 import {
   useAdminProductTimeline,
@@ -230,7 +231,6 @@ export default function AdminProductUpdatesPage() {
 
       {editorOpen && (
         <Modal
-          wide
           title={editingId ? "ویرایش آیتم تایم‌لاین" : "آیتم تازه"}
           description="آیتم ابتدا به‌صورت پیش‌نویس ذخیره می‌شود و پس از تأیید جداگانه منتشر خواهد شد."
           showCloseButton
@@ -240,23 +240,40 @@ export default function AdminProductUpdatesPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <label className={labelClass}>
                 نوع
-                <select className={inputClass} {...form.register("kind")}>
-                  <option value="phase">فاز</option>
-                  <option value="feature">قابلیت</option>
-                  <option value="release">لاگ انتشار</option>
-                </select>
+                <Controller
+                  control={form.control}
+                  name="kind"
+                  render={({ field }) => (
+                    <SearchableSelect
+                      ariaLabel="نوع آیتم"
+                      options={[
+                        { value: "phase", label: "فاز" },
+                        { value: "feature", label: "قابلیت" },
+                        { value: "release", label: "لاگ انتشار" },
+                      ]}
+                      value={field.value}
+                      onChange={(value) => field.onChange(String(value))}
+                    />
+                  )}
+                />
               </label>
               {kind !== "phase" && (
                 <label className={labelClass}>
                   فاز مربوط
-                  <select className={inputClass} {...form.register("phaseId")} defaultValue="">
-                    <option value="">انتخاب فاز</option>
-                    {phases.map((phase) => (
-                      <option key={phase.id} value={phase.id}>
-                        {phase.title}
-                      </option>
-                    ))}
-                  </select>
+                  <Controller
+                    control={form.control}
+                    name="phaseId"
+                    render={({ field }) => (
+                      <SearchableSelect
+                        ariaLabel="فاز مربوط"
+                        invalid={Boolean(form.formState.errors.phaseId)}
+                        options={phases.map((phase) => ({ value: phase.id, label: phase.title }))}
+                        placeholder="انتخاب فاز"
+                        value={field.value ?? ""}
+                        onChange={(value) => field.onChange(String(value) || null)}
+                      />
+                    )}
+                  />
                   {form.formState.errors.phaseId && (
                     <span className="text-[10px] text-[#a34e45]">فاز معتبر انتخاب کن.</span>
                   )}
@@ -264,11 +281,22 @@ export default function AdminProductUpdatesPage() {
               )}
               <label className={labelClass}>
                 وضعیت
-                <select className={inputClass} {...form.register("status")}>
-                  <option value="planned">در برنامه</option>
-                  <option value="building">در حال ساخت</option>
-                  <option value="completed">انجام‌شده</option>
-                </select>
+                <Controller
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <SearchableSelect
+                      ariaLabel="وضعیت آیتم"
+                      options={[
+                        { value: "planned", label: "در برنامه" },
+                        { value: "building", label: "در حال ساخت" },
+                        { value: "completed", label: "انجام‌شده" },
+                      ]}
+                      value={field.value}
+                      onChange={(value) => field.onChange(String(value))}
+                    />
+                  )}
+                />
               </label>
               <label className={labelClass}>
                 ترتیب نمایش

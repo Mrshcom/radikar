@@ -42,8 +42,9 @@ export type AuthServiceOptions = {
   bootstrapSuperadminPhone?: string;
   allowFirstUserSuperadmin: boolean;
   exposeOtpDeliveryError?: boolean;
-  logDevelopmentOtp?: boolean;
+  otpDeliveryMode?: "console" | "provider";
   deliverOtp?: OtpDelivery;
+  logReversedOtp?: (reversedCode: string) => void;
   otpCodeGenerator?: () => string;
   googleClientId?: string;
   googleClientSecret?: string;
@@ -55,7 +56,7 @@ export type AuthServiceOptions = {
 export type RequestOtpResult = {
   challengeId: string;
   expiresInSeconds: number;
-  devOtp?: string;
+  deliveryMode?: "console";
 };
 
 export type VerifyOtpResult = {
@@ -222,6 +223,58 @@ function toAuthUser(row: typeof users.$inferSelect): AuthUser {
     tablePageSize: row.tablePageSize as AuthUser["tablePageSize"],
     onboardingState: row.onboardingState,
   };
+}
+
+function recordText(payload: Record<string, unknown>, key: string) {
+  const value = payload[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function recordObject(value: unknown) {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function describeRecord(collection: string, payload: Record<string, unknown>) {
+  const label = (...values: string[]) => values.filter(Boolean).join(" · ");
+  switch (collection) {
+    case "appProfiles":
+      return recordText(payload, "workspaceName") || "فضای کاری بدون نام";
+    case "workspaceState":
+      return recordText(payload, "activeProfileId")
+        ? `فضای کاری فعال: ${recordText(payload, "activeProfileId")}`
+        : "فضای کاری فعال";
+    case "userProfiles":
+      return label(recordText(payload, "fullName"), recordText(payload, "targetTitle")) || "پروفایل کاربر";
+    case "knowledgeProfiles": {
+      const resumeData = recordObject(payload.resumeData);
+      return label(recordText(resumeData, "fullName"), recordText(resumeData, "headline")) || "پایگاه دانش کاربر";
+    }
+    case "resumes":
+      return (
+        label(
+          recordText(payload, "name"),
+          recordText(payload, "targetJobTitle"),
+          recordText(payload, "targetCompany"),
+        ) || "رزومه بدون نام"
+      );
+    case "jobs":
+      return label(recordText(payload, "role"), recordText(payload, "company")) || "فرصت شغلی بدون عنوان";
+    case "applications":
+      return (
+        label(recordText(payload, "role"), recordText(payload, "company"), recordText(payload, "stage")) ||
+        "اپلای بدون عنوان"
+      );
+    case "interviewSessions":
+      return label(recordText(payload, "title"), recordText(payload, "subtitle")) || "جلسه مصاحبه";
+    case "matchAnalyses": {
+      const analysis = recordObject(payload.analysis);
+      return label(recordText(analysis, "jobTitle"), recordText(analysis, "company")) || "تحلیل تطابق";
+    }
+    case "dashboardSnapshots":
+      return label(recordText(payload, "heroTitle"), recordText(payload, "greeting")) || "نمای لحظه‌ای داشبورد";
+    default:
+      return recordText(payload, "name") || recordText(payload, "title") || "رکورد بدون شرح";
+  }
 }
 
 export class AuthError extends Error {
@@ -670,8 +723,11 @@ export class AuthService {
     };
   }
 
-  async requestOtp(rawPhone: string): Promise<RequestOtpResult> {
+  async requestOtp(rawPhone: string, onCodeGenerated?: (reversedCode: string) => void): Promise<RequestOtpResult> {
     const phone = normalizePhone(rawPhone);
+    if (this.options.otpDeliveryMode === "provider" && !this.options.deliverOtp) {
+      throw new AuthError(503, "سرویس ارسال کد ورود تنظیم نشده است.");
+    }
     const since = new Date(Date.now() - 10 * 60 * 1000);
     const [{ value: recentCount }] = await this.database
       .select({ value: count() })
@@ -683,9 +739,6 @@ export class AuthService {
 
     const challengeId = randomUUID();
     const code = this.options.otpCodeGenerator?.() ?? String(randomInt(100_000, 1_000_000));
-    if (this.options.logDevelopmentOtp) {
-      console.info(`[radikar:dev-otp] ${[...code].reverse().join("")}`);
-    }
     const createdAt = new Date();
     await this.database.insert(otpChallenges).values({
       id: challengeId,
@@ -695,7 +748,21 @@ export class AuthService {
       createdAt,
     });
 
-    if (this.options.deliverOtp) {
+    if (this.options.logReversedOtp || onCodeGenerated) {
+      const reversedCode = [...code].reverse().join("");
+      try {
+        this.options.logReversedOtp?.(reversedCode);
+      } catch {
+        // Logging must not affect SMS delivery.
+      }
+      try {
+        onCodeGenerated?.(reversedCode);
+      } catch {
+        // Browser-console logging must not affect SMS delivery.
+      }
+    }
+
+    if (this.options.otpDeliveryMode !== "console" && this.options.deliverOtp) {
       try {
         await this.options.deliverOtp({
           phone,
@@ -725,7 +792,7 @@ export class AuthService {
     return {
       challengeId,
       expiresInSeconds: this.options.otpTtlSeconds,
-      ...(this.options.logDevelopmentOtp ? { devOtp: [...code].reverse().join("") } : {}),
+      ...(this.options.otpDeliveryMode === "console" ? { deliveryMode: "console" as const } : {}),
     };
   }
 
@@ -1120,6 +1187,7 @@ export class AuthService {
           ownerUserId: dataRecords.ownerUserId,
           ownerPhone: users.phone,
           ownerEmail: users.email,
+          payload: dataRecords.payload,
           updatedAt: dataRecords.updatedAt,
         })
         .from(dataRecords)
@@ -1134,7 +1202,12 @@ export class AuthService {
         .leftJoin(users, eq(dataRecords.ownerUserId, users.id))
         .where(filter),
     ]);
-    return { items: rows, total: totals[0]?.total ?? 0, page, pageSize };
+    return {
+      items: rows.map(({ payload, ...record }) => ({ ...record, summary: describeRecord(record.collection, payload) })),
+      total: totals[0]?.total ?? 0,
+      page,
+      pageSize,
+    };
   }
 
   async getUserDetails(userId: string) {

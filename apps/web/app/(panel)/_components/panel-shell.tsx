@@ -88,8 +88,8 @@ const menuItems: MenuItem[] = [
   { href: "/admin/job-pool", label: "گزارش Job Pool", icon: BriefcaseBusiness, roles: ["superadmin"] },
   { href: "/admin/referrals", label: "ریفرال و دعوت", icon: Gift, roles: ["superadmin"] },
   { href: "/admin/radicoins", label: "مدیریت رادیکوین", icon: RadicoinIcon, roles: ["superadmin"] },
-  { href: "/admin/settings", label: "تنظیمات", icon: Settings, roles: ["superadmin"] },
   { href: "/admin/updates", label: "مدیریت مسیر محصول", icon: CalendarDays, roles: ["admin", "superadmin"] },
+  { href: "/admin/settings", label: "تنظیمات", icon: Settings, roles: ["superadmin"] },
 ];
 
 const pageTitles: Record<string, string> = {
@@ -153,6 +153,23 @@ function adminEventTime(value: string) {
   return <PersianDateTime value={value} />;
 }
 
+function adminEventSeenStorageKey(userId: string) {
+  return `radikar:admin-events:seen:${userId}`;
+}
+
+function readSeenAdminEventIds(userId: string) {
+  try {
+    const storedValue = window.localStorage.getItem(adminEventSeenStorageKey(userId));
+    const eventIds = storedValue ? JSON.parse(storedValue) : [];
+    const stringEventIds = Array.isArray(eventIds)
+      ? eventIds.filter((eventId): eventId is string => typeof eventId === "string")
+      : [];
+    return new Set(stringEventIds);
+  } catch {
+    return new Set<string>();
+  }
+}
+
 export function PanelShell({ children }: { children: ReactNode }) {
   return (
     <ModelTaskProvider>
@@ -192,7 +209,10 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const isManagement = userRole === "admin" || userRole === "superadmin";
   const isSuperadmin = userRole === "superadmin";
   const adminEvents = useAdminEvents(isSuperadmin);
-  const [seenAdminEventIds, setSeenAdminEventIds] = useState<Set<string>>(() => new Set());
+  const userId = user?.id;
+  const [seenAdminEventIds, setSeenAdminEventIds] = useState<Set<string>>(() =>
+    typeof window !== "undefined" && isSuperadmin && userId ? readSeenAdminEventIds(userId) : new Set(),
+  );
   const visibleMenuItems = useMemo(
     () => menuItems.filter((item) => userRole && item.roles.includes(userRole)),
     [userRole],
@@ -214,6 +234,19 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const latestJob = jobs[0];
   const activeWorkspace = profiles.find((item) => item.id === activeProfileId);
   const unreadAdminEvents = (adminEvents.data?.items ?? []).filter((event) => !seenAdminEventIds.has(event.id));
+
+  const markAdminEventsAsSeen = useCallback(() => {
+    if (!userId) return;
+
+    const eventIds = (adminEvents.data?.items ?? []).map((event) => event.id);
+    setSeenAdminEventIds(new Set(eventIds));
+
+    try {
+      window.localStorage.setItem(adminEventSeenStorageKey(userId), JSON.stringify(eventIds));
+    } catch {
+      // The notification badge continues to work for the current session when browser storage is unavailable.
+    }
+  }, [adminEvents.data?.items, userId]);
 
   const openMobileMenu = useCallback(() => {
     if (mobileMenuCloseTimerRef.current !== null) {
@@ -528,7 +561,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   onClick={() => {
                     setUserMenuOpen(false);
                     if (!noticeOpen && isSuperadmin) {
-                      setSeenAdminEventIds(new Set((adminEvents.data?.items ?? []).map((event) => event.id)));
+                      markAdminEventsAsSeen();
                     }
                     setNoticeOpen((value) => !value);
                   }}
