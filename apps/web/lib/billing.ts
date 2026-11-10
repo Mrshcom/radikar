@@ -7,8 +7,10 @@ import { buildQueryString } from "./build-query-string";
 
 export type Plan = {
   id: string;
+  accountType: "candidate" | "employer";
   name: string;
   description: string;
+  features: string[];
   priceRials: number;
   radicoinCost: number | null;
   durationDays: number;
@@ -63,9 +65,17 @@ export type AdminMembershipDetails = {
     phone: string | null;
     email: string | null;
     fullName: string | null;
+    accountType: "candidate" | "employer";
     status: "active" | "suspended";
   };
   membership: Membership;
+  employerStats: {
+    positions: number;
+    candidates: number;
+    screenedCandidates: number;
+    interviewInvitations: number;
+    radicoinBalance: number;
+  } | null;
   history: AdminMembershipEvent[];
 };
 

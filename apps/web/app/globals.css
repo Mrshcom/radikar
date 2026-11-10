@@ -82,6 +82,15 @@ input[inputmode="numeric"]::placeholder {
   }
 }
 
+@keyframes interview-text-shimmer {
+  from {
+    background-position: 0% center;
+  }
+  to {
+    background-position: 100% center;
+  }
+}
+
 @keyframes meteor {
   0% {
     opacity: 0;

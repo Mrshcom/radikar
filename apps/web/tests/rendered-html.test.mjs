@@ -76,8 +76,9 @@ test("login page uses a two-step validated mobile OTP flow backed by the auth AP
   assert.match(loginPage, /"\/api\/auth\/request-otp"/);
   assert.match(loginPage, /"\/api\/auth\/verify-otp"/);
   assert.match(loginPage, /queryClient\.setQueryData\(authQueryKey/);
-  assert.match(loginPage, /router\.replace\(result\.user\.role === "user" \? "\/dashboard" : "\/admin"\)/);
-  assert.match(loginPage, /ورود به حساب کاربری/);
+  assert.match(loginPage, /router\.replace\(\s*loginDestination\(/);
+  assert.match(loginPage, /ورود به‌عنوان/);
+  assert.match(loginPage, /registerPhone\("portal"\)/);
   assert.match(loginPage, /src="\/radikar-logo\.png"/);
 });
 
@@ -149,8 +150,8 @@ test("management roles receive dedicated monitoring pages instead of customer to
     /href: "\/admin\/records", label: "داده‌های سامانه", icon: Database, roles: \["superadmin"\]/,
   );
   assert.match(panelShell, /href: "\/dashboard"[\s\S]*?roles: \["user"\]/);
-  assert.match(panelShell, /if \(userRole !== "user"\) return/);
-  assert.match(panelShell, /\{!isManagement && \([\s\S]*?مدیریت فضاهای کاری/);
+  assert.match(panelShell, /if \(userRole !== "user" \|\| isEmployer\) return/);
+  assert.match(panelShell, /\{!isManagement && !isEmployer && \([\s\S]*?مدیریت فضاهای کاری/);
   assert.match(panelShell, /isManagement[\s\S]*?href: "\/settings", label: "امنیت"/);
   assert.doesNotMatch(panelShell.match(/isManagement\s*\?[\s\S]*?: \[/)?.[0] ?? "", /خرید و ارتقای بسته/);
   for (const page of adminPages) {
@@ -180,10 +181,12 @@ test("superadmin notifications show individual live system events for non-supera
 });
 
 test("superadmins stay out of user and membership management lists", async () => {
-  const [authService, billingService, usersPage] = await Promise.all([
+  const [authService, billingService, usersPage, membershipsPage, radicoinsPage] = await Promise.all([
     readFile(new URL("apps/api/src/modules/auth/service.ts", repositoryRoot), "utf8"),
     readFile(new URL("apps/api/src/modules/billing/service.ts", repositoryRoot), "utf8"),
     readFile(new URL("app/(panel)/admin/users/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/admin/memberships/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/admin/radicoins/page.tsx", projectRoot), "utf8"),
   ]);
 
   assert.match(authService, /async listUsers[\s\S]*?const filter = and\(\s*ne\(users\.role, "superadmin"\)/);
@@ -197,8 +200,28 @@ test("superadmins stay out of user and membership management lists", async () =>
     billingService,
     /async getBillingStats[\s\S]*?\.innerJoin\(users, eq\(orders\.userId, users\.id\)\)[\s\S]*?\.where\(ne\(users\.role, "superadmin"\)\)/,
   );
-  assert.match(usersPage, /buildQueryString\(\{ search, role, status, page, pageSize, sortBy, sortDirection \}\)/);
+  assert.match(
+    usersPage,
+    /buildQueryString\(\{ search, role, accountType, status, page, pageSize, sortBy, sortDirection \}\)/,
+  );
+  assert.match(
+    membershipsPage,
+    /buildQueryString\(\{ search, accountType, planId, membershipStatus, page, pageSize, sortBy, sortDirection \}\)/,
+  );
+  assert.match(radicoinsPage, /useAdminRadicoinWallets\(search, page, pageSize, accountType\)/);
   assert.doesNotMatch(usersPage, /role=\$\{role\}&status=\$\{status\}/);
+});
+
+test("radicoin grants live in membership credit actions, not access management", async () => {
+  const [usersPage, membershipsPage] = await Promise.all([
+    readFile(new URL("app/(panel)/admin/users/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/admin/memberships/page.tsx", projectRoot), "utf8"),
+  ]);
+  assert.doesNotMatch(usersPage, /useAdjustRadicoins|RadicoinGrantModal|افزودن رادیکوین/);
+  assert.match(membershipsPage, /selectedAction === "credit"/);
+  assert.match(membershipsPage, /value: "radicoin", label: "رادیکوین"/);
+  assert.match(membershipsPage, /useAdjustRadicoins\(\)/);
+  assert.match(membershipsPage, /kind: "radicoin"/);
 });
 
 test("all project data tables share controls, loading skeleton, zero state and pagination", async () => {
@@ -399,13 +422,92 @@ test("membership management exposes shared usage cards and attributed admin logs
   assert.match(page, /لاگ مدیریتی/);
   assert.match(page, /flex flex-wrap items-center gap-x-4 gap-y-1/);
   assert.match(page, /line-clamp-2 min-w-\[14rem\] flex-1/);
-  assert.match(page, /MembershipSummary membership=/);
+  assert.match(page, /<MembershipSummary[\s\S]*?membership=\{memberDetails\.data\.membership\}/);
+  assert.match(page, /accountType=\{memberDetails\.data\.user\.accountType\}/);
+  assert.match(page, /employerStats=\{memberDetails\.data\.employerStats\}/);
   assert.match(billingClient, /useAdminMembership/);
   assert.match(billingService, /isNotNull\(membershipEvents\.actorUserId\)/);
   assert.match(billingService, /actorById/);
   assert.match(authService, /account_suspended/);
   assert.match(authService, /account_activated/);
   assert.match(authService, /actorUserId/);
+});
+
+test("employer position list uses the shared eyebrow-free page title", async () => {
+  const page = await readFile(new URL("app/(employer)/employer/positions/page.tsx", projectRoot), "utf8");
+  const editPage = await readFile(new URL("app/(employer)/employer/positions/[id]/edit/page.tsx", projectRoot), "utf8");
+  const detailsPage = await readFile(new URL("app/(employer)/employer/positions/[id]/page.tsx", projectRoot), "utf8");
+
+  assert.match(page, /<SectionTitle/);
+  assert.match(page, /title="پوزیشن‌های من"/);
+  assert.doesNotMatch(page, /profile\.data\.profile\.companyName/);
+  assert.match(editPage, /<SectionTitle title="ویرایش پوزیشن کاری"/);
+  assert.doesNotMatch(editPage, /position\.companyName/);
+  assert.match(detailsPage, /<SectionTitle[\s\S]*?title=\{position\.title\}/);
+  assert.doesNotMatch(detailsPage, /position\.companyName/);
+});
+
+test("employer resume previews reserve the viewport height for the original document", async () => {
+  const [positionPreview, bankPage] = await Promise.all([
+    readFile(new URL("app/(employer)/employer/positions/[id]/resume-preview.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(employer)/employer/resume-bank/page.tsx", projectRoot), "utf8"),
+  ]);
+
+  for (const source of [positionPreview, bankPage]) {
+    assert.match(source, /modalClassName="max-h-\[calc\(100dvh-16px\)\] p-3 pb-3/);
+    assert.match(source, /mt-2/);
+    assert.match(source, /h-\[calc\(100dvh-106px\)\]/);
+    assert.doesNotMatch(source, /h-\[min\(72vh,920px\)\]/);
+  }
+});
+
+test("employer resume bank preview uses one concise header line", async () => {
+  const bankPage = await readFile(new URL("app/(employer)/employer/resume-bank/page.tsx", projectRoot), "utf8");
+
+  assert.match(bankPage, /title=\{`پیش نمایش رزومه \$\{resume\.name \|\| resume\.fileName\}`\}/);
+  assert.doesNotMatch(bankPage, /description="پیش‌نمایش رزومهٔ بانک"/);
+});
+
+test("employer resume bank exposes clear, actionable contact links", async () => {
+  const bankPage = await readFile(new URL("app/(employer)/employer/resume-bank/page.tsx", projectRoot), "utf8");
+
+  assert.match(bankPage, /href=\{`tel:\$\{resume\.phone\}`\}/);
+  assert.match(bankPage, /href=\{`mailto:\$\{resume\.email\}`\}/);
+  assert.match(bankPage, /resume\.phone && resume\.email && <span aria-hidden className="h-4 w-px bg-\[#dbe7e1\]" \/>/);
+  assert.match(bankPage, /<Mail size=\{13\} \/>\s*\{resume\.email\}/);
+});
+
+test("employer resume bank supports searching and filtering important resume details", async () => {
+  const bankPage = await readFile(new URL("app/(employer)/employer/resume-bank/page.tsx", projectRoot), "utf8");
+
+  assert.match(bankPage, /<TableToolbar/);
+  assert.match(bankPage, /نام، تخصص، ایمیل، موبایل یا نام فایل/);
+  for (const label of ["تخصص استخراج‌شده", "اطلاعات تماس", "فایل اصلی", "وضعیت استخراج"]) {
+    assert.match(bankPage, new RegExp(`label="${label}"`));
+  }
+  assert.match(bankPage, /رزومه‌ای مطابق جست‌وجو و فیلترهای انتخاب‌شده پیدا نشد/);
+});
+
+test("employer screening feedback keeps a clear gap before retrying", async () => {
+  const positionPage = await readFile(new URL("app/(employer)/employer/positions/[id]/page.tsx", projectRoot), "utf8");
+
+  assert.match(positionPage, /const hasScreeningFeedback = Boolean\(position\.screeningError \|\| screen\.error\)/);
+  assert.match(positionPage, /hasScreeningFeedback \? "mt-3 " : ""/);
+});
+
+test("expired interview invitations never offer a secure interview entry", async () => {
+  const invitedInterview = await readFile(
+    new URL("app/(panel)/interview-invites/[value]/invited-interview.tsx", projectRoot),
+    "utf8",
+  );
+
+  assert.match(invitedInterview, /const interviewIsActive =\s*!invitationExpired/);
+  assert.match(invitedInterview, /interviewStarted && !expired && questions\.length > 0 && !fullscreenReady/);
+  assert.match(invitedInterview, /مهلت این دعوت به پایان رسیده است/);
+  assert.ok(
+    invitedInterview.indexOf('{expired && data.status !== "completed" && (') < invitedInterview.indexOf("<header"),
+    "expired invitation alert must appear before the interview information card",
+  );
 });
 
 test("higher plans use the upgrade and activate action label", async () => {
@@ -1208,7 +1310,8 @@ test("plan expiry and quota errors open one global upgrade modal", async () => {
   assert.match(apiClient, /pendingPlanUpgradeMessage = message/);
   assert.match(toast, /برای ادامه پلن را ارتقا دهید/);
   assert.match(toast, /برای ادامه، لطفاً پلن فعلی خود را ارتقا دهید/);
-  assert.match(toast, /router\.push\("\/upgrade"\)/);
+  assert.match(toast, /href="\/upgrade"/);
+  assert.match(toast, /onClick=\{closeUpgradeModal\}/);
   assert.match(toast, /event\.reason\.status === 402/);
 
   for (const source of [knowledge, match, dashboard, builder, interview]) {
@@ -1216,6 +1319,7 @@ test("plan expiry and quota errors open one global upgrade modal", async () => {
   }
   assert.match(knowledge, /apiRequest<unknown>\("\/api\/knowledge\/import"/);
   assert.match(match, /apiRequest<ImportJobResponse>\("\/api\/job-import"/);
+  assert.match(interview, /<UpgradeLink[^>]*message=\{error\}/);
   assert.match(dashboard, /"\/api\/panel\/dashboard"/);
   assert.match(builder, /"\/api\/resume\/generate"/);
   assert.match(interview, /"\/api\/interview\/session"/);
@@ -2516,8 +2620,9 @@ test("model work stays in the panel shell and exposes completed destinations", a
   assert.match(appProviders, /QueryClientProvider/);
   assert.match(provider, /status: "running"/);
   assert.match(provider, /status: "completed"/);
-  assert.match(provider, /status: "error"/);
-  assert.match(provider, /status: "canceled"/);
+  assert.doesNotMatch(provider, /status: "error"/);
+  assert.doesNotMatch(provider, /status: "canceled"/);
+  assert.match(taskStack, /task\.status === "running" \|\| task\.status === "completed"/);
   assert.match(provider, /getCompletedHref/);
   assert.match(provider, /new AbortController\(\)/);
   assert.match(provider, /input\.run\(controller\.signal\)/);
@@ -2602,6 +2707,7 @@ test("every model-backed panel operation uses the shared background task manager
     assert.match(source, new RegExp(key));
   }
   assert.ok(files.every((file) => file.includes("runModelTask")));
+  assert.match(files[4], /showInSidebar: false/);
 });
 
 test("a completed tailored resume opens the exact saved resume", async () => {

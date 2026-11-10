@@ -1,5 +1,6 @@
 import {
   type AnyPgColumn,
+  customType,
   boolean,
   index,
   integer,
@@ -11,6 +12,12 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { DataRecord, ProductStorySlide } from "@radikar/shared-types";
+
+const bytea = customType<{ data: Buffer; driverData: Uint8Array }>({
+  dataType: () => "bytea",
+  toDriver: (value) => value,
+  fromDriver: (value) => Buffer.from(value),
+});
 
 export type OnboardingStepId = "profile" | "match" | "resume" | "application" | "referral" | "interview";
 
@@ -65,6 +72,9 @@ export const users = pgTable(
     role: text("role", { enum: ["user", "admin", "superadmin"] })
       .notNull()
       .default("user"),
+    accountType: text("account_type", { enum: ["candidate", "employer"] })
+      .notNull()
+      .default("candidate"),
     status: text("status", { enum: ["active", "suspended"] })
       .notNull()
       .default("active"),
@@ -75,6 +85,37 @@ export const users = pgTable(
     onboardingState: jsonb("onboarding_state").$type<OnboardingState>().notNull().default(defaultOnboardingState),
   },
   (table) => [uniqueIndex("users_phone_unique").on(table.phone)],
+);
+
+export const supportTickets = pgTable(
+  "support_tickets",
+  {
+    id: uuid("id").primaryKey(),
+    ownerUserId: uuid("owner_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    accountType: text("account_type", { enum: ["candidate", "employer"] }).notNull(),
+    subject: text("subject").notNull(),
+    category: text("category", { enum: ["technical", "account", "payment", "other"] }).notNull(),
+    status: text("status", { enum: ["open", "answered", "closed"] }).notNull().default("open"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index("support_tickets_owner_updated_idx").on(table.ownerUserId, table.updatedAt),
+    index("support_tickets_status_updated_idx").on(table.status, table.updatedAt),
+  ],
+);
+
+export const supportMessages = pgTable(
+  "support_messages",
+  {
+    id: uuid("id").primaryKey(),
+    ticketId: uuid("ticket_id").notNull().references(() => supportTickets.id, { onDelete: "cascade" }),
+    authorUserId: uuid("author_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    authorRole: text("author_role", { enum: ["user", "support"] }).notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("support_messages_ticket_created_idx").on(table.ticketId, table.createdAt)],
 );
 
 export const productEvents = pgTable(
@@ -148,6 +189,9 @@ export const oauthLoginAttempts = pgTable(
     nonce: text("nonce").notNull(),
     codeVerifier: text("code_verifier").notNull(),
     nextPath: text("next_path").notNull().default("/dashboard"),
+    accountType: text("account_type", { enum: ["candidate", "employer"] })
+      .notNull()
+      .default("candidate"),
     referralCode: text("referral_code"),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     consumedAt: timestamp("consumed_at", { withTimezone: true }),
@@ -358,8 +402,12 @@ export const plans = pgTable(
   "plans",
   {
     id: text("id").primaryKey(),
+    accountType: text("account_type", { enum: ["candidate", "employer"] })
+      .notNull()
+      .default("candidate"),
     name: text("name").notNull(),
     description: text("description").notNull(),
+    features: jsonb("features").$type<string[]>().notNull().default([]),
     priceRials: integer("price_rials").notNull(),
     radicoinCost: integer("radicoin_cost"),
     durationDays: integer("duration_days").notNull().default(30),
@@ -375,7 +423,7 @@ export const plans = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
-  (table) => [index("plans_active_sort_idx").on(table.isActive, table.sortOrder)],
+  (table) => [index("plans_account_active_sort_idx").on(table.accountType, table.isActive, table.sortOrder)],
 );
 
 export const userMemberships = pgTable(
@@ -434,6 +482,7 @@ export const orders = pgTable(
       .default("pending"),
     gateway: text("gateway").notNull().default("zarinpal_sandbox"),
     authority: text("authority"),
+    redirectUrl: text("redirect_url"),
     refId: text("ref_id"),
     callbackStatus: text("callback_status"),
     failureCode: integer("failure_code"),
@@ -448,6 +497,70 @@ export const orders = pgTable(
     uniqueIndex("orders_authority_unique").on(table.authority),
     index("orders_user_created_idx").on(table.userId, table.createdAt),
     index("orders_status_created_idx").on(table.status, table.createdAt),
+  ],
+);
+
+export const creditPackOrders = pgTable(
+  "credit_pack_orders",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    checkoutKey: uuid("checkout_key").notNull(),
+    packId: text("pack_id").notNull(),
+    amountRials: integer("amount_rials").notNull(),
+    radicoinCost: integer("radicoin_cost").notNull(),
+    aiCredits: integer("ai_credits").notNull(),
+    interviewCredits: integer("interview_credits").notNull(),
+    paymentMethod: text("payment_method", { enum: ["gateway", "radicoin"] }).notNull(),
+    provider: text("provider").notNull().default("zarinpal_sandbox"),
+    status: text("status", { enum: ["pending", "paid", "failed", "canceled"] })
+      .notNull()
+      .default("pending"),
+    authority: text("authority"),
+    redirectUrl: text("redirect_url"),
+    refId: text("ref_id"),
+    failureMessage: text("failure_message"),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("credit_pack_orders_user_checkout_unique").on(table.userId, table.checkoutKey),
+    uniqueIndex("credit_pack_orders_authority_unique").on(table.authority),
+    index("credit_pack_orders_pending_idx").on(table.status, table.createdAt),
+  ],
+);
+
+export const radicoinPackOrders = pgTable(
+  "radicoin_pack_orders",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    checkoutKey: uuid("checkout_key").notNull(),
+    packId: text("pack_id").notNull(),
+    amountRials: integer("amount_rials").notNull(),
+    coins: integer("coins").notNull(),
+    provider: text("provider").notNull().default("zarinpal_sandbox"),
+    status: text("status", { enum: ["pending", "paid", "failed", "canceled"] })
+      .notNull()
+      .default("pending"),
+    authority: text("authority"),
+    redirectUrl: text("redirect_url"),
+    refId: text("ref_id"),
+    failureMessage: text("failure_message"),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("radicoin_pack_orders_user_checkout_unique").on(table.userId, table.checkoutKey),
+    uniqueIndex("radicoin_pack_orders_authority_unique").on(table.authority),
+    index("radicoin_pack_orders_user_created_idx").on(table.userId, table.createdAt),
+    index("radicoin_pack_orders_pending_idx").on(table.status, table.createdAt),
   ],
 );
 
@@ -507,6 +620,7 @@ export const membershipEvents = pgTable(
         "purchase",
         "renewal",
         "upgrade",
+        "credit_pack",
         "admin_grant",
         "admin_extend",
         "admin_adjust",
@@ -690,5 +804,124 @@ export const jobRecommendationDeliveries = pgTable(
     uniqueIndex("job_recommendation_deliveries_user_job_unique").on(table.userId, table.jobListingId),
     index("job_recommendation_deliveries_user_delivered_idx").on(table.userId, table.deliveredAt),
     index("job_recommendation_deliveries_user_status_idx").on(table.userId, table.status),
+  ],
+);
+
+export type EmployerMatchEvidence = {
+  score: number;
+  matched: string[];
+  missing: string[];
+  unknown: string[];
+  summary: string;
+};
+
+export type EmployerInterviewReport = {
+  score: number;
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+};
+
+export const employerProfiles = pgTable("employer_profiles", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  companyName: text("company_name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+});
+
+export const employerPositions = pgTable(
+  "employer_positions",
+  {
+    id: uuid("id").primaryKey(),
+    ownerUserId: uuid("owner_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    companyName: text("company_name").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    workflowStage: integer("workflow_stage").notNull().default(2),
+    reviewMethod: text("review_method", { enum: ["manual", "smart"] }),
+    screeningStatus: text("screening_status", { enum: ["not_started", "processing", "completed", "failed"] })
+      .notNull()
+      .default("not_started"),
+    screeningError: text("screening_error"),
+    interviewQuestions: jsonb("interview_questions").$type<string[]>(),
+    screeningStartedAt: timestamp("screening_started_at", { withTimezone: true }),
+    screeningCompletedAt: timestamp("screening_completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("employer_positions_owner_created_idx").on(table.ownerUserId, table.createdAt)],
+);
+
+export const employerResumeBank = pgTable(
+  "employer_resume_bank",
+  {
+    id: uuid("id").primaryKey(),
+    ownerUserId: uuid("owner_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    fileName: text("file_name").notNull(),
+    fileHash: text("file_hash").notNull(),
+    fileData: bytea("file_data"),
+    resumeText: text("resume_text").notNull().default(""),
+    extractionError: text("extraction_error"),
+    name: text("name"),
+    specialty: text("specialty"),
+    email: text("email"),
+    phone: text("phone"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index("employer_resume_bank_owner_created_idx").on(table.ownerUserId, table.createdAt),
+    index("employer_resume_bank_owner_hash_idx").on(table.ownerUserId, table.fileHash),
+  ],
+);
+
+export const employerCandidates = pgTable(
+  "employer_candidates",
+  {
+    id: uuid("id").primaryKey(),
+    positionId: uuid("position_id")
+      .notNull()
+      .references(() => employerPositions.id, { onDelete: "cascade" }),
+    resumeBankId: uuid("resume_bank_id").references(() => employerResumeBank.id, { onDelete: "set null" }),
+    fileName: text("file_name").notNull(),
+    fileHash: text("file_hash").notNull(),
+    fileData: bytea("file_data"),
+    resumeText: text("resume_text").notNull().default(""),
+    extractionError: text("extraction_error"),
+    name: text("name"),
+    email: text("email"),
+    phone: text("phone"),
+    screeningStatus: text("screening_status", { enum: ["pending", "ready", "duplicate", "unreadable", "failed"] })
+      .notNull()
+      .default("pending"),
+    matchEvidence: jsonb("match_evidence").$type<EmployerMatchEvidence>(),
+    invitationTokenHash: text("invitation_token_hash"),
+    invitationDeadline: timestamp("invitation_deadline", { withTimezone: true }),
+    invitationStatus: text("invitation_status", {
+      enum: ["not_invited", "invited", "accepted", "started", "completed", "expired"],
+    })
+      .notNull()
+      .default("not_invited"),
+    invitedUserId: uuid("invited_user_id").references(() => users.id, { onDelete: "set null" }),
+    interviewAnswers: jsonb("interview_answers").$type<string[]>(),
+    conversationQuestions: jsonb("conversation_questions").$type<string[]>(),
+    conversationReplies: jsonb("conversation_replies").$type<string[]>(),
+    agentChatUuid: uuid("agent_chat_uuid"),
+    conversationClarifications:
+      jsonb("conversation_clarifications").$type<Array<{ questionIndex: number; user: string; reply: string }>>(),
+    interviewReport: jsonb("interview_report").$type<EmployerInterviewReport>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index("employer_candidates_position_idx").on(table.positionId),
+    uniqueIndex("employer_candidates_invitation_token_unique").on(table.invitationTokenHash),
+    index("employer_candidates_invited_user_idx").on(table.invitedUserId),
   ],
 );

@@ -58,6 +58,7 @@ export type InterviewReport = {
   summary: string;
   strengths: string[];
   improvements: string[];
+  topics?: Array<{ title: string; score: number; evidence: string }>;
   questions: Array<{
     questionIndex: number;
     score: number;
@@ -67,6 +68,9 @@ export type InterviewReport = {
     suggestedAnswer: string;
   }>;
 };
+
+export const interviewDepthMinutes = { quick: 8, standard: 15, deep: 25 } as const;
+export type InterviewDepth = keyof typeof interviewDepthMinutes;
 
 export type OnboardingRewardStep = "profile" | "match" | "resume" | "application" | "referral" | "interview";
 export type OnboardingRewardStatus = {

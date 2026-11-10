@@ -13,6 +13,7 @@ const user: AuthUser = {
   email: null,
   fullName: "کاربر",
   role: "user",
+  accountType: "candidate",
   status: "active",
   tablePageSize: 20,
   onboardingState: { version: 1, status: "not_started", completedSteps: [] },
@@ -26,8 +27,15 @@ const superadmin: AuthUser = {
   phone: "09122222222",
   role: "superadmin",
 };
+const employer: AuthUser = {
+  ...user,
+  id: "44444444-4444-4444-8444-444444444444",
+  phone: "09123333333",
+  accountType: "employer",
+};
 const identities: Record<string, SessionIdentity> = {
   "user-token": { user, sessionId: "user-session" },
+  "employer-token": { user: employer, sessionId: "employer-session" },
   "admin-token": { user: admin, sessionId: "admin-session" },
   "super-token": { user: superadmin, sessionId: "super-session" },
 };
@@ -69,6 +77,28 @@ function createApp(overrides: Partial<Record<keyof BillingService, unknown>> = {
       return result;
     };
   const billing = {
+    creditPacks: {
+      catalog: () => [{ id: "interview-3", amountRials: 390_000, interviewCredits: 3 }],
+      createOrder: method("createCreditPackOrder", { checkout: "activated", orderId: "pack-order-1" }),
+      getOrder: method("getCreditPackOrder", { id: "pack-order-1", status: "paid" }),
+      handleCallback: method(
+        "handleCreditPackCallback",
+        "http://localhost:3161/billing/result?packOrder=pack-order-1&status=success",
+      ),
+    },
+    radicoinPacks: {
+      catalog: () => [{ id: "radicoin-100", coins: 100, amountRials: 599_000 }],
+      createOrder: method("createRadicoinPackOrder", {
+        checkout: "gateway",
+        orderId: "radicoin-order-1",
+        paymentUrl: "https://pay.test/radicoin",
+      }),
+      listOrders: method("listRadicoinPackOrders", []),
+      handleCallback: method(
+        "handleRadicoinPackCallback",
+        "http://localhost:3161/billing/result?radicoinOrder=radicoin-order-1&status=success",
+      ),
+    },
     listPlans: method("listPlans", []),
     getMembership: method("getMembership"),
     listUserOrders: method("listUserOrders", { items: [], total: 0 }),
@@ -109,6 +139,103 @@ function createApp(overrides: Partial<Record<keyof BillingService, unknown>> = {
   });
   return { app, calls };
 }
+
+test("credit pack routes validate checkout and keep customer orders private", async () => {
+  const { app, calls } = createApp();
+  const key = "55555555-5555-4555-8555-555555555555";
+  const anonymous = await app.inject({ method: "GET", url: "/api/billing/credit-packs" });
+  assert.equal(anonymous.statusCode, 401);
+  const manager = await app.inject({
+    method: "GET",
+    url: "/api/billing/credit-packs",
+    cookies: { radikar_session: "admin-token" },
+  });
+  assert.equal(manager.statusCode, 403);
+  const invalid = await app.inject({
+    method: "POST",
+    url: "/api/billing/credit-packs/orders",
+    cookies: { radikar_session: "user-token" },
+    payload: { packId: "other", paymentMethod: "gateway", idempotencyKey: key },
+  });
+  assert.equal(invalid.statusCode, 400);
+  const created = await app.inject({
+    method: "POST",
+    url: "/api/billing/credit-packs/orders",
+    cookies: { radikar_session: "user-token" },
+    payload: { packId: "interview-3", paymentMethod: "radicoin", idempotencyKey: key },
+  });
+  assert.equal(created.statusCode, 201);
+  assert.deepEqual(calls.find((call) => call.name === "createCreditPackOrder")?.args, [
+    user.id,
+    user.phone,
+    "radicoin",
+    key,
+  ]);
+  const order = await app.inject({
+    method: "GET",
+    url: `/api/billing/credit-packs/orders/${key}`,
+    cookies: { radikar_session: "user-token" },
+  });
+  assert.equal(order.statusCode, 200);
+  assert.deepEqual(calls.find((call) => call.name === "getCreditPackOrder")?.args, [user.id, key]);
+  await app.close();
+});
+
+test("radicoin pack routes create a gateway order and expose customer purchase history", async () => {
+  const { app, calls } = createApp();
+  const key = "77777777-7777-4777-8777-777777777777";
+  const catalog = await app.inject({
+    method: "GET",
+    url: "/api/billing/radicoin-packs",
+    cookies: { radikar_session: "user-token" },
+  });
+  assert.equal(catalog.statusCode, 200);
+  const created = await app.inject({
+    method: "POST",
+    url: "/api/billing/radicoin-packs/orders",
+    cookies: { radikar_session: "user-token" },
+    payload: { packId: "radicoin-100", idempotencyKey: key },
+  });
+  assert.equal(created.statusCode, 201);
+  assert.deepEqual(calls.find((call) => call.name === "createRadicoinPackOrder")?.args, [
+    user.id,
+    user.phone,
+    "radicoin-100",
+    key,
+  ]);
+  const history = await app.inject({
+    method: "GET",
+    url: "/api/billing/radicoin-packs/orders",
+    cookies: { radikar_session: "user-token" },
+  });
+  assert.equal(history.statusCode, 200);
+  assert.deepEqual(calls.find((call) => call.name === "listRadicoinPackOrders")?.args, [user.id]);
+  await app.close();
+});
+
+test("Abropay callback parameters reach verification rather than granting access from browser status", async () => {
+  const { app, calls } = createApp();
+  const transactionId = "66666666-6666-4666-8666-666666666666";
+  const response = await app.inject({
+    method: "GET",
+    url: `/api/billing/callback?transaction_id=${transactionId}&status=verified`,
+  });
+  assert.equal(response.statusCode, 302);
+  assert.deepEqual(calls.find((call) => call.name === "handleCallback")?.args, [transactionId, "verified"]);
+  const packResponse = await app.inject({
+    method: "GET",
+    url: `/api/billing/credit-packs/callback?transaction_id=${transactionId}&status=canceled`,
+  });
+  assert.equal(packResponse.statusCode, 302);
+  assert.deepEqual(calls.find((call) => call.name === "handleCreditPackCallback")?.args, [transactionId]);
+  const radicoinResponse = await app.inject({
+    method: "GET",
+    url: `/api/billing/radicoin-packs/callback?transaction_id=${transactionId}&status=verified`,
+  });
+  assert.equal(radicoinResponse.statusCode, 302);
+  assert.deepEqual(calls.find((call) => call.name === "handleRadicoinPackCallback")?.args, [transactionId]);
+  await app.close();
+});
 
 test("billing routes require a session and reject customer operations for managers", async () => {
   const { app } = createApp();
@@ -187,11 +314,24 @@ test("customer billing reads and PDF usage forward pagination, filters and usage
   assert.equal(membership.statusCode, 200);
   assert.equal(orders.statusCode, 200);
   assert.equal(pdf.statusCode, 204);
+  assert.deepEqual(calls.find((call) => call.name === "listPlans")?.args, ["candidate"]);
   assert.deepEqual(calls.find((call) => call.name === "getMembership")?.args, [user.id]);
   assert.deepEqual(calls.find((call) => call.name === "listUserOrders")?.args, [user.id, 2, 10, "RK", "paid"]);
   const pdfUsage = calls.find((call) => call.name === "consumeUsage")?.args;
   assert.deepEqual(pdfUsage?.slice(0, 3), [user.id, { pdf: 1 }, "resume_pdf_export"]);
   assert.match(String(pdfUsage?.[3]), /^[0-9a-f-]{36}$/i);
+  await app.close();
+});
+
+test("plan catalog follows the signed-in account type", async () => {
+  const { app, calls } = createApp();
+  const response = await app.inject({
+    method: "GET",
+    url: "/api/billing/plans",
+    cookies: { radikar_session: "employer-token" },
+  });
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(calls.find((call) => call.name === "listPlans")?.args, ["employer"]);
   await app.close();
 });
 
@@ -246,6 +386,40 @@ test("superadmin billing lists and membership mutations forward validated input"
     "starter",
     "active",
     "active",
+  ]);
+  const employerMembers = await app.inject({
+    method: "GET",
+    url: "/api/admin/memberships?accountType=employer",
+    cookies,
+  });
+  assert.equal(employerMembers.statusCode, 200);
+  assert.deepEqual(calls.filter((call) => call.name === "listMembershipUsers").at(-1)?.args, [
+    "",
+    1,
+    20,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    "employer",
+  ]);
+  const sortedMembers = await app.inject({
+    method: "GET",
+    url: "/api/admin/memberships?sortBy=accountType&sortDirection=asc",
+    cookies,
+  });
+  assert.equal(sortedMembers.statusCode, 200);
+  assert.deepEqual(calls.filter((call) => call.name === "listMembershipUsers").at(-1)?.args, [
+    "",
+    1,
+    20,
+    undefined,
+    undefined,
+    undefined,
+    "accountType",
+    "asc",
+    undefined,
   ]);
   assert.deepEqual(calls.find((call) => call.name === "getAdminMembership")?.args, [targetId]);
   assert.deepEqual(calls.find((call) => call.name === "adminGrantPlan")?.args, [targetId, "starter", superadmin.id]);

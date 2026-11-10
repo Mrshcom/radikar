@@ -19,6 +19,7 @@ export type CurrentUser = {
   email: string | null;
   fullName: string | null;
   role: UserRole;
+  accountType: "candidate" | "employer";
   status: "active" | "suspended";
   createdAt: string;
   lastLoginAt: string | null;
@@ -27,6 +28,7 @@ export type CurrentUser = {
 };
 
 export const authQueryKey = ["auth", "me"] as const;
+const sharedCustomerPaths = ["/account", "/orders", "/settings", "/referrals", "/radicoins", "/billing/result"];
 
 export function useAuth() {
   const query = useQuery({
@@ -44,19 +46,25 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const { user, isLoading, error } = useAuth();
   const isManagement = user?.role === "admin" || user?.role === "superadmin";
   const isManagementPath = pathname.startsWith("/admin") || pathname === "/settings";
+  const wrongAccountPanel =
+    user?.role === "user" &&
+    (user.accountType === "employer") !== pathname.startsWith("/employer") &&
+    !sharedCustomerPaths.includes(pathname);
   useEffect(() => {
     if (!isLoading && !user && error) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
     if (!isLoading && isManagement && !isManagementPath) router.replace("/admin");
     if (!isLoading && user?.role === "user" && pathname.startsWith("/admin")) {
-      router.replace("/dashboard");
+      router.replace(user.accountType === "employer" ? "/employer" : "/dashboard");
     }
-  }, [error, isLoading, isManagement, isManagementPath, pathname, router, user]);
+    if (!isLoading && wrongAccountPanel) router.replace(user?.accountType === "employer" ? "/employer" : "/dashboard");
+  }, [error, isLoading, isManagement, isManagementPath, pathname, router, user, wrongAccountPanel]);
 
   if (
     isLoading ||
     !user ||
     (isManagement && !isManagementPath) ||
-    (user.role === "user" && pathname.startsWith("/admin"))
+    (user.role === "user" && pathname.startsWith("/admin")) ||
+    wrongAccountPanel
   ) {
     return <PageLoader />;
   }

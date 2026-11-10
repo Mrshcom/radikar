@@ -7,6 +7,7 @@ import { createDatabase } from "@radikar/database";
 import postgres from "postgres";
 import { buildApp } from "../src/build-app";
 import { getMatchAnalyzeConfig } from "../src/modules/ai/routes";
+import { InterviewAgentClient } from "../src/modules/ai/interview-agent";
 
 const user = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -61,7 +62,7 @@ function response(value: unknown, status = 200) {
   );
 }
 
-function appWithBilling(events: string[]) {
+function appWithBilling(events: string[], interviewAgent?: InterviewAgentClient) {
   const billing: any = {
     refundUsage: async (_id: string, _cost: unknown, operation: string) => events.push(`refund:${operation}`),
     recordModelUsage: async (_id: string, _request: string, operation: string, event: { successful: boolean }) =>
@@ -83,8 +84,145 @@ function appWithBilling(events: string[]) {
     secureCookies: false,
     sessionTtlDays: 30,
     billingService: billing,
+    interviewAgent,
   });
 }
+
+test("the interviewer agent handles sessions and reports while retaining response shapes", async () => {
+  const events: string[] = [];
+  const paths: string[] = [];
+  const bodies: Array<Record<string, string>> = [];
+  const uuid = "9b2f6c1e-4d7a-4b8e-a1f3-2c5d8e9f0a1b";
+  const agent = new InterviewAgentClient({
+    baseUrl: "https://agents.example.test",
+    apiKey: "12.private-secret",
+    interviewerAgent: "interviewer",
+    resumeRankerAgent: "ranker",
+    timeoutMs: 5_000,
+    pollIntervalMs: 0,
+    fetcher: (async (url: URL | RequestInfo, init?: RequestInit) => {
+      paths.push(String(url));
+      if (init?.method === "GET")
+        return new Response(JSON.stringify({ success: true, data: { uuid, status: "completed", reply: "previous" } }));
+      bodies.push(JSON.parse(String(init?.body)));
+      const prompt = JSON.parse(String(init?.body)).message as string;
+      const requestedCount = Number(prompt.match(/دقیقاً (\d+) موضوع آغازین/)?.[1] ?? 4);
+      const output = prompt.includes('ساختار: {"reply":string,"question":string,"complete":boolean}')
+        ? { reply: "دربارهٔ همکاری تیمی توضیح دادی.", question: "در همان تجربه چه تصمیمی گرفتی؟" }
+        : !prompt.includes('"responses"')
+          ? {
+              title: "جلسه",
+              subtitle: "تمرین",
+              duration: "۱۰ دقیقه",
+              questions: Array.from({ length: requestedCount }, (_, index) => `سؤال ${index + 1}؟`),
+              cards: [],
+            }
+          : {
+              summary: "خلاصه",
+              strengths: [],
+              improvements: [],
+              questions: [
+                { questionIndex: 0, score: 80, feedback: "خوب", strengths: [], issues: [], suggestedAnswer: "نمونه" },
+              ],
+            };
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "",
+          errors: {},
+          data: { uuid, status: "completed", reply: JSON.stringify(output) },
+        }),
+      );
+    }) as typeof fetch,
+  });
+  const app = appWithBilling(events, agent);
+  try {
+    const cookie = { radikar_session: "token" };
+    const session = await app.inject({
+      method: "POST",
+      url: "/api/interview/session",
+      cookies: cookie,
+      payload: { resume },
+    });
+    const report = await app.inject({
+      method: "POST",
+      url: "/api/interview/report",
+      cookies: cookie,
+      payload: { mode: "جامع", responses: [{ question: "یک؟", answer: "پاسخ" }] },
+    });
+    assert.equal(session.statusCode, 200);
+    assert.equal(session.json().questions.length, 4);
+    assert.ok(session.json().chatToken);
+    const turn = await app.inject({
+      method: "POST",
+      url: "/api/interview/next-question",
+      cookies: cookie,
+      payload: {
+        mode: "جامع",
+        chatToken: session.json().chatToken,
+        nextTopic: "دربارهٔ همکاری تیمی توضیح بده.",
+        history: [{ question: "یک؟", answer: "در یک تیم محصول همکاری کردم." }],
+      },
+    });
+    assert.equal(turn.statusCode, 200);
+    assert.equal(turn.json().chatToken, session.json().chatToken);
+    assert.ok(bodies.some((body) => body.chat_uuid === uuid));
+    for (const depth of ["quick", "standard", "deep"] as const) {
+      const selected = await app.inject({
+        method: "POST",
+        url: "/api/interview/session",
+        cookies: cookie,
+        payload: { resume, depth },
+      });
+      assert.equal(selected.statusCode, 200);
+      assert.equal(selected.json().questions.length, 4);
+    }
+    assert.equal(report.statusCode, 200);
+    assert.equal(report.json().score, 80);
+    assert.ok(paths.some((path) => path.includes("/interviewer/chat/")));
+    assert.ok(events.includes("consume:interview_session"));
+    assert.ok(events.includes("usage:interview_report:true"));
+  } finally {
+    await app.close();
+  }
+});
+
+test("interview agent failure refunds session credits without falling back to the legacy model", async () => {
+  const events: string[] = [];
+  const agent = new InterviewAgentClient({
+    baseUrl: "https://agents.example.test",
+    apiKey: "12.private-secret",
+    interviewerAgent: "interviewer",
+    resumeRankerAgent: "ranker",
+    timeoutMs: 5_000,
+    fetcher: (async () =>
+      new Response(
+        JSON.stringify({
+          success: true,
+          message: "",
+          errors: {},
+          data: { uuid: "9b2f6c1e-4d7a-4b8e-a1f3-2c5d8e9f0a1b", status: "failed", error: "ایجنت آماده نیست" },
+        }),
+      )) as typeof fetch,
+  });
+  const app = appWithBilling(events, agent);
+  try {
+    const result = await app.inject({
+      method: "POST",
+      url: "/api/interview/session",
+      cookies: { radikar_session: "token" },
+      payload: { resume },
+    });
+    assert.equal(result.statusCode, 502);
+    assert.match(result.json().error, /ایجنت آماده نیست/);
+    assert.deepEqual(
+      events.filter((event) => event.includes("interview_session")),
+      ["consume:interview_session", "refund:interview_session"],
+    );
+  } finally {
+    await app.close();
+  }
+});
 
 test("all six AI routes accept successful provider JSON and record model usage", async () => {
   const previous = globalThis.fetch;
@@ -163,6 +301,39 @@ test("all six AI routes accept successful provider JSON and record model usage",
   }
 });
 
+test("dashboard reports provider quota failures without exposing provider balance details", async () => {
+  const previous = globalThis.fetch;
+  const events: string[] = [];
+  const app = appWithBilling(events);
+  let requestedMaxTokens: number | undefined;
+  try {
+    globalThis.fetch = async (_url, init) => {
+      requestedMaxTokens = JSON.parse(String(init?.body)).max_tokens;
+      return new Response(
+        JSON.stringify({ error: { message: "pre-consume quota failed, remaining user quota: $0.008" } }),
+        {
+          status: 403,
+          headers: { "content-type": "application/json" },
+        },
+      );
+    };
+    const result = await app.inject({
+      method: "POST",
+      url: "/api/panel/dashboard",
+      cookies: { radikar_session: "token" },
+      payload: { resume, knowledge: {} },
+    });
+
+    assert.equal(result.statusCode, 502);
+    assert.equal(result.json().error, "اعتبار سرویس هوش مصنوعی کافی نیست؛ لطفاً بعداً دوباره تلاش کنید.");
+    assert.equal(requestedMaxTokens, 1_024);
+    assert.ok(events.includes("usage:dashboard:false"));
+  } finally {
+    globalThis.fetch = previous;
+    await app.close();
+  }
+});
+
 test("interview session scopes comprehensive and focused questions separately", async () => {
   const previous = globalThis.fetch;
   const prompts: string[] = [];
@@ -171,12 +342,14 @@ test("interview session scopes comprehensive and focused questions separately", 
     globalThis.fetch = async (_url, options) => {
       const request = JSON.parse(String(options?.body));
       const messages = request.messages ?? request.input;
-      prompts.push(messages.find((message: { role: string }) => message.role === "user").content);
+      const prompt = String(messages.find((message: { role: string }) => message.role === "user").content);
+      prompts.push(prompt);
+      const requestedCount = Number(prompt.match(/دقیقاً (\d+) موضوع آغازین/)?.[1] ?? 4);
       return response({
         title: "جلسه",
         subtitle: "تمرین",
         duration: "۱۰ دقیقه",
-        questions: ["سؤال اول؟"],
+        questions: Array.from({ length: requestedCount }, (_, index) => `سؤال ${index + 1}؟`),
         cards: [],
       });
     };
@@ -198,6 +371,15 @@ test("interview session scopes comprehensive and focused questions separately", 
     assert.match(prompts[0], /مصاحبه جامع.*مهارت‌های اصلی.*تجربه‌های واقعی/);
     assert.match(prompts[1], /مصاحبه تخصصی فقط درباره «معماری و مقیاس‌پذیری»/);
     assert.match(prompts[1], /به حوزه‌های دیگر نرو/);
+    const deep = await app.inject({
+      method: "POST",
+      url: "/api/interview/session",
+      cookies,
+      payload: { resume, type: "focused", focusArea: "معماری", mode: "تمرین تخصصی", depth: "deep" },
+    });
+    assert.equal(deep.statusCode, 200);
+    assert.equal(deep.json().questions.length, 4);
+    assert.match(prompts[2], /۲۵ دقیقه|25 دقیقه/);
     const invalid = await app.inject({
       method: "POST",
       url: "/api/interview/session",
@@ -205,7 +387,7 @@ test("interview session scopes comprehensive and focused questions separately", 
       payload: { resume, type: "focused", mode: "تمرین تخصصی" },
     });
     assert.equal(invalid.statusCode, 422);
-    assert.equal(prompts.length, 2);
+    assert.equal(prompts.length, 3);
   } finally {
     globalThis.fetch = previous;
     await app.close();

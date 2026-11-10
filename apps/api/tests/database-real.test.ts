@@ -45,7 +45,7 @@ test(
             is_active: boolean;
             sort_order: number;
           }[]
-        >`select id, price_rials, radicoin_cost, duration_days, resume_limit, pdf_download_limit, ai_credits, match_credits, interview_credits, is_free, is_purchasable, is_active, sort_order from plans order by sort_order`;
+        >`select id, price_rials, radicoin_cost, duration_days, resume_limit, pdf_download_limit, ai_credits, match_credits, interview_credits, is_free, is_purchasable, is_active, sort_order from plans where account_type = 'candidate' order by sort_order`;
         assert.deepEqual(
           [...plans],
           [
@@ -93,6 +93,45 @@ test(
               is_purchasable: true,
               is_active: true,
               sort_order: 30,
+            },
+          ],
+        );
+        assert.deepEqual(
+          [
+            ...(await db`select id, account_type, features from plans where account_type = 'employer' order by sort_order`),
+          ],
+          [
+            {
+              id: "employer-free",
+              account_type: "employer",
+              features: [
+                "ساخت و مدیریت ۱ پوزیشن فعال",
+                "ورود رزومه و مشاهده فایل اصلی",
+                "مدیریت نامزدها در مراحل استخدام",
+                "پایش و دعوت به مصاحبه با رادیکوین",
+              ],
+            },
+            {
+              id: "employer-growth",
+              account_type: "employer",
+              features: [
+                "مدیریت هم‌زمان پوزیشن‌های استخدامی",
+                "ورود گروهی رزومه‌ها",
+                "پایش هوشمند و رتبه‌بندی نامزدها",
+                "دعوت مستقیم به مصاحبه",
+                "نمای یکپارچه فرایند جذب",
+              ],
+            },
+            {
+              id: "employer-scale",
+              account_type: "employer",
+              features: [
+                "همه امکانات جذب حرفه‌ای",
+                "مدیریت حجم بالاتر رزومه و نامزد",
+                "گردش‌کار یکپارچه پایش تا مصاحبه",
+                "دسترسی سریع به سوابق سفارش و اعتبار",
+                "مناسب تیم‌های در حال رشد",
+              ],
             },
           ],
         );

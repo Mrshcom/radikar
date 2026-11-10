@@ -12,6 +12,7 @@ const user: AuthUser = {
   email: null,
   fullName: "کاربر",
   role: "user",
+  accountType: "candidate",
   status: "active",
   tablePageSize: 20,
   onboardingState: { version: 1, status: "not_started", completedSteps: [] },
@@ -176,6 +177,7 @@ test("auth request and verify routes normalize input, set a cookie and expose th
     "123456",
     "127.0.0.1",
     undefined,
+    "candidate",
   ]);
   const me = await app.inject({ method: "GET", url: "/api/auth/me", cookies: { radikar_session: "user" } });
   assert.equal(me.statusCode, 200);
@@ -192,7 +194,7 @@ test("Google provider, start and callback routes preserve state and create a ses
   assert.equal(started.statusCode, 302);
   assert.equal(started.headers.location, "https://accounts.google.com/o/oauth2/v2/auth?state=google-state");
   assert.match(String(started.headers["set-cookie"]), /radikar_session_google_oauth=google-state/);
-  assert.deepEqual(calls.find((call) => call.name === "beginGoogleLogin")?.args, ["/jobs", undefined]);
+  assert.deepEqual(calls.find((call) => call.name === "beginGoogleLogin")?.args, ["/jobs", undefined, "candidate"]);
 
   const callback = await app.inject({
     method: "GET",
@@ -244,6 +246,38 @@ test("account preferences, admin filters and permission boundaries are enforced"
   });
   assert.equal(users.statusCode, 200);
   assert.deepEqual(calls.find((call) => call.name === "listUsers")?.args, ["ali", 2, 10, "user", "active"]);
+  const employers = await app.inject({
+    method: "GET",
+    url: "/api/admin/users?accountType=employer",
+    cookies: { radikar_session: "superadmin" },
+  });
+  assert.equal(employers.statusCode, 200);
+  assert.deepEqual(calls.filter((call) => call.name === "listUsers").at(-1)?.args, [
+    "",
+    1,
+    20,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    "employer",
+  ]);
+  const sortedUsers = await app.inject({
+    method: "GET",
+    url: "/api/admin/users?sortBy=accountType&sortDirection=asc",
+    cookies: { radikar_session: "superadmin" },
+  });
+  assert.equal(sortedUsers.statusCode, 200);
+  assert.deepEqual(calls.filter((call) => call.name === "listUsers").at(-1)?.args, [
+    "",
+    1,
+    20,
+    undefined,
+    undefined,
+    "accountType",
+    "asc",
+    undefined,
+  ]);
   const forbidden = await app.inject({ method: "GET", url: "/api/admin/users", cookies: { radikar_session: "user" } });
   assert.equal(forbidden.statusCode, 403);
   const malformed = await app.inject({

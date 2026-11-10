@@ -1,7 +1,7 @@
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import multipart from "@fastify/multipart";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import Fastify, { type FastifyServerOptions } from "fastify";
 import { normalizeDigitsDeep } from "@radikar/validators";
 import { ZodError } from "zod";
@@ -21,6 +21,9 @@ import type { Database } from "@radikar/database";
 import type { ProductEventService } from "./modules/analytics/service";
 import { handleProductTimelineError, registerProductTimelineRoutes } from "./modules/product-timeline/routes";
 import { ProductTimelineService } from "./modules/product-timeline/service";
+import type { InterviewAgentClient } from "./modules/ai/interview-agent";
+import { registerEmployerRoutes } from "./modules/employer/routes";
+import { registerSupportRoutes } from "./modules/support/routes";
 
 type BuildAppOptions = {
   fastifyFactory?: typeof Fastify;
@@ -42,7 +45,14 @@ type BuildAppOptions = {
   jobPoolService?: JobPoolService;
   productEvents?: ProductEventService;
   exposeReversedOtp?: boolean;
+  interviewAgent?: InterviewAgentClient;
+  interviewChatSecret?: string;
 };
+
+const fallbackInterviewChatSecret = randomBytes(32).toString("hex");
+
+const employerResumeBatchSizeBytes = 40 * 1024 * 1024;
+const multipartFileLimit = 100;
 
 export function buildApp({
   fastifyFactory = Fastify,
@@ -64,11 +74,15 @@ export function buildApp({
   jobPoolService,
   productEvents,
   exposeReversedOtp = false,
+  interviewAgent,
+  interviewChatSecret = fallbackInterviewChatSecret,
 }: BuildAppOptions) {
   const app = fastifyFactory({
     logger,
     trustProxy: true,
-    bodyLimit: maxUploadSizeBytes + 512 * 1024,
+    // Employer resume-bank uploads allow up to 100 files with a 40 MB combined cap.
+    // The former per-file body limit rejected otherwise valid batches before the route could parse them.
+    bodyLimit: Math.max(maxUploadSizeBytes, employerResumeBatchSizeBytes) + 512 * 1024,
     requestIdHeader: "x-request-id",
     genReqId: () => randomUUID(),
   });
@@ -96,7 +110,9 @@ export function buildApp({
     }
   });
   app.register(multipart, {
-    limits: { files: 1, fileSize: maxUploadSizeBytes },
+    // Routes that accept a single document still call request.file(); employer routes
+    // explicitly enforce their tighter 5 MB-per-file and 40 MB-per-batch limits.
+    limits: { files: multipartFileLimit, fileSize: maxUploadSizeBytes },
   });
 
   registerHealthRoutes(app, readinessCheck);
@@ -122,6 +138,8 @@ export function buildApp({
       "/api/referrals/visits",
       "/api/referrals/leaderboard",
       "/api/billing/callback",
+      "/api/billing/credit-packs/callback",
+      "/api/billing/radicoin-packs/callback",
     ]);
     if (request.method === "OPTIONS" || publicPaths.has(request.url.split("?")[0])) return;
     if (!request.auth) {
@@ -130,17 +148,36 @@ export function buildApp({
         requestId: request.id,
       });
     }
+    const path = request.url.split("?")[0];
+    const candidateOnly = [
+      "/v1/data/",
+      "/api/match/",
+      "/api/resume/",
+      "/api/interview/",
+      "/api/knowledge/",
+      "/api/job-import",
+      "/api/panel/dashboard",
+    ];
+    if (
+      request.auth.user.role === "user" &&
+      request.auth.user.accountType === "employer" &&
+      candidateOnly.some((prefix) => path.startsWith(prefix))
+    ) {
+      return reply.code(403).send({ error: "این بخش برای حساب کارجو است.", requestId: request.id });
+    }
   });
   registerDataRoutes(app, repository, billingService, radicoinService, productEvents);
   if (billingService) registerBillingRoutes(app, billingService);
   if (radicoinService) registerRadicoinRoutes(app, radicoinService);
-  registerAiRoutes(app, billingService, database, productEvents);
+  registerAiRoutes(app, billingService, database, productEvents, interviewAgent, interviewChatSecret);
   registerImportRoutes(app, billingService, maxUploadSizeBytes, {
     apiToken: apifyApiToken,
     linkedInActorId: apifyLinkedInActorId,
   });
   if (jobPoolService) registerJobPoolRoutes(app, jobPoolService);
   if (database) registerProductTimelineRoutes(app, new ProductTimelineService(database));
+  if (database) registerSupportRoutes(app, database);
+  if (database && radicoinService) registerEmployerRoutes(app, database, radicoinService, webAppUrl, interviewAgent);
 
   app.setNotFoundHandler((request, reply) =>
     reply.code(404).send({
@@ -161,6 +198,13 @@ export function buildApp({
         requestId: request.id,
       });
     }
+    const errorCode = error instanceof Error && "code" in error ? (error as Error & { code?: string }).code : undefined;
+    if (errorCode === "FST_FILES_LIMIT")
+      return reply.code(413).send({ error: "تعداد فایل‌های ارسالی بیش از حد مجاز است.", requestId: request.id });
+    if (errorCode === "FST_REQ_FILE_TOO_LARGE")
+      return reply.code(413).send({ error: "حجم یکی از فایل‌های ارسالی بیش از حد مجاز است.", requestId: request.id });
+    if (errorCode === "FST_ERR_CTP_BODY_TOO_LARGE")
+      return reply.code(413).send({ error: "حجم مجموع فایل‌های ارسالی بیش از حد مجاز است.", requestId: request.id });
 
     request.log.error(error);
     return reply.code(500).send({

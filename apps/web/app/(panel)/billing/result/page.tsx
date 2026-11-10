@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, BadgeCheck, Clock3, ReceiptText, ShieldCheck, TriangleAlert } from "lucide-react";
+import { useAuth } from "@/app/_components/auth";
 
 const results = {
   success: {
@@ -46,10 +47,39 @@ const results = {
 } as const;
 
 export default function BillingResultPage() {
+  const { user } = useAuth();
+  const isEmployer = user?.accountType === "employer";
   const params = useSearchParams();
+  const isCreditPack = Boolean(params.get("packOrder"));
+  const isRadicoinPack = Boolean(params.get("radicoinOrder"));
   const status =
     params.get("status") === "success" ? "success" : params.get("status") === "pending" ? "pending" : "failed";
-  const result = results[status];
+  const result = isRadicoinPack
+    ? {
+        ...results[status],
+        description:
+          status === "success"
+            ? "پرداخت تأیید شد و رادیکوین‌های خریداری‌شده به کیف پولت اضافه شدند."
+            : results[status].description,
+        note: "وضعیت خرید و موجودی جدید را در فروشگاه رادیکوین ببین.",
+        primaryHref: isEmployer ? "/employer/radicoins" : "/radicoins",
+        primaryLabel: status === "success" ? "مشاهده کیف پول و خریدها" : "بازگشت به خرید رادیکوین",
+      }
+    : isCreditPack
+      ? {
+          ...results[status],
+          description:
+            status === "success"
+              ? "بستهٔ ۳ جلسهٔ مصاحبه و اعتبار AI همراه آن به حسابت اضافه شد."
+              : results[status].description,
+          note:
+            status === "pending"
+              ? "تأیید بسته هنوز قطعی نیست؛ پیش از خرید دوباره، اعتبار مصاحبه را در حساب بررسی کن."
+              : "وضعیت اعتبارهای مصاحبه را در اطلاعات حساب و مصرف ببین.",
+          primaryHref: "/account",
+          primaryLabel: status === "success" ? "مشاهده اعتبارهای حساب" : "بازگشت به حساب",
+        }
+      : results[status];
   const StatusIcon = status === "success" ? BadgeCheck : status === "pending" ? Clock3 : TriangleAlert;
 
   return (
@@ -94,7 +124,7 @@ export default function BillingResultPage() {
               <ArrowLeft aria-hidden="true" className="size-5" />
             </Link>
             <Link
-              href="/dashboard"
+              href={isEmployer ? "/employer" : "/dashboard"}
               className="inline-flex min-h-14 items-center justify-center text-base font-bold text-[#38564e] underline-offset-8 transition-colors duration-200 hover:text-[#0f7b62] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0f7b62]"
             >
               بازگشت به پنل
@@ -102,7 +132,11 @@ export default function BillingResultPage() {
           </div>
           <p className="mb-0 mt-10 flex items-center gap-2 text-xs leading-6 text-[#83948d]">
             <ShieldCheck aria-hidden="true" className="size-4 shrink-0" />
-            وضعیت نهایی سفارش همیشه در بخش سفارش‌ها قابل مشاهده است.
+            {isRadicoinPack
+              ? "افزایش موجودی فقط پس از تأیید نهایی درگاه انجام می‌شود."
+              : isCreditPack
+                ? "پس از تأیید نهایی پرداخت، اعتبارهای بسته در صفحهٔ حساب نمایش داده می‌شوند."
+                : "وضعیت نهایی سفارش همیشه در بخش سفارش‌ها قابل مشاهده است."}
           </p>
         </div>
 

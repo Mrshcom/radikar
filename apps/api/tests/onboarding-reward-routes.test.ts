@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import Fastify from "fastify";
+import { ZodError } from "zod";
 import { registerRadicoinRoutes } from "../src/modules/radicoin/routes";
 import type { RadicoinService } from "../src/modules/radicoin/service";
 
@@ -39,6 +40,33 @@ test("onboarding claim is customer-only and uses the authenticated account, not 
     assert.equal(claim.statusCode, 200);
     assert.equal(claim.json().amount, 100);
     assert.deepEqual(claims, ["current-user"]);
+  } finally {
+    await app.close();
+  }
+});
+
+test("admin wallet list forwards the account type filter and rejects unknown types", async () => {
+  const app = Fastify();
+  app.setErrorHandler((error, _request, reply) => reply.code(error instanceof ZodError ? 400 : 500).send(error));
+  const calls: unknown[][] = [];
+  app.addHook("preHandler", async (request) => {
+    request.auth = {
+      user: { id: "admin-user", role: "superadmin" },
+      sessionId: "session",
+    } as NonNullable<typeof request.auth>;
+  });
+  registerRadicoinRoutes(app, {
+    listWallets: async (...args: unknown[]) => {
+      calls.push(args);
+      return { items: [], total: 0 };
+    },
+  } as unknown as RadicoinService);
+  try {
+    const filtered = await app.inject({ method: "GET", url: "/api/admin/radicoin/wallets?accountType=employer" });
+    assert.equal(filtered.statusCode, 200);
+    assert.deepEqual(calls, [["", 1, 20, "employer"]]);
+    const invalid = await app.inject({ method: "GET", url: "/api/admin/radicoin/wallets?accountType=manager" });
+    assert.equal(invalid.statusCode, 400);
   } finally {
     await app.close();
   }

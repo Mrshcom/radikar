@@ -6,7 +6,7 @@ import { ClipboardList, Info, MoreHorizontal, ShieldCheck } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { normalizeDigits } from "@radikar/validators";
 import { z } from "zod";
 import { useAuth } from "@/app/_components/auth";
@@ -24,6 +24,13 @@ import { buildQueryString } from "@/lib/build-query-string";
 import { useAdminMembership, usePlans, type AdminMembershipEvent, type Membership, type Plan } from "@/lib/billing";
 import { useUrlTablePagination } from "@/lib/table-page-size";
 import { userDisplayName, userIdentifier } from "@/lib/user-identity";
+import { useAdjustRadicoins } from "@/lib/radicoins";
+import {
+  accountTypeFilterOptions,
+  accountTypeFilterParser,
+  accountTypeLabels,
+  type AccountType,
+} from "@/lib/account-type";
 import {
   createTableFilterParser,
   tableOptionalFilterParser,
@@ -40,22 +47,26 @@ type MembershipUser = {
     phone: string | null;
     email: string | null;
     fullName: string | null;
+    accountType: AccountType;
+    role: "user" | "admin" | "superadmin";
     status: "active" | "suspended";
   };
   membership: Omit<Membership, "plan"> | null;
   plan: Plan | null;
 };
 type Response = { items: MembershipUser[]; total: number; page: number; pageSize: number };
-type PendingMembershipAction = {
-  kind: "membership";
+type PendingActionBase = {
   title: string;
   description: string;
   confirmLabel: string;
   successMessage: string;
   tone?: "primary" | "danger";
-  path?: string;
-  body?: unknown;
 };
+type PendingMembershipAction = PendingActionBase &
+  (
+    | { kind: "membership"; path: string; body: unknown }
+    | { kind: "radicoin"; userId: string; amount: number; reason: string }
+  );
 type MembershipAction = "grant" | "switch" | "extend" | "credit" | "cancel";
 type MembershipActionMenu = { userId: string; top: number; left: number };
 const actionMenuWidth = 176;
@@ -67,18 +78,33 @@ function localizedNumber<T extends z.ZodType>(schema: T) {
 const extendSchema = z.object({
   days: localizedNumber(z.coerce.number().int().min(1).max(3650)),
 });
-const creditSchema = z.object({
-  resource: z.enum(["resume", "pdf", "ai", "match", "interview"]),
-  units: localizedNumber(
-    z.coerce
-      .number()
-      .int()
-      .min(-100000)
-      .max(100000)
-      .refine((value) => value !== 0),
-  ),
-  reason: z.string().trim().max(500).optional(),
-});
+const creditSchema = z
+  .object({
+    resource: z.enum(["resume", "pdf", "ai", "match", "interview", "radicoin"]),
+    units: localizedNumber(
+      z.coerce
+        .number()
+        .int()
+        .min(-100000)
+        .max(1_000_000)
+        .refine((value) => value !== 0),
+    ),
+    reason: z.string().trim().max(500).optional(),
+  })
+  .superRefine(({ resource, units, reason }, context) => {
+    if (resource === "radicoin") {
+      if (units < 1)
+        context.addIssue({ code: "custom", path: ["units"], message: "برای افزودن رادیکوین، مقدار باید مثبت باشد." });
+      if (!reason || reason.length < 3 || reason.length > 200)
+        context.addIssue({
+          code: "custom",
+          path: ["reason"],
+          message: "دلیل افزودن رادیکوین را بنویس (۳ تا ۲۰۰ نویسه).",
+        });
+    } else if (units > 100_000) {
+      context.addIssue({ code: "custom", path: ["units"], message: "حداکثر تغییر اعتبار ۱۰۰٬۰۰۰ واحد است." });
+    }
+  });
 const cancelSchema = z.object({ reason: z.string().trim().max(500).optional() });
 
 const resourceLabels: Record<string, string> = {
@@ -87,10 +113,12 @@ const resourceLabels: Record<string, string> = {
   ai: "هوش مصنوعی",
   match: "تطبیق شغلی",
   interview: "مصاحبه آزمایشی",
+  radicoin: "رادیکوین",
 };
 
 const membershipFilterParsers = {
   search: tableSearchParser,
+  accountType: accountTypeFilterParser,
   planId: tableOptionalFilterParser,
   membershipStatus: createTableFilterParser(["active", "expired", "canceled"]),
   sortBy: tableSortByParser,
@@ -150,7 +178,7 @@ export default function MembershipsAdminPage() {
   const notify = useToast();
   const queryClient = useQueryClient();
   const plans = usePlans();
-  const [{ search, planId, membershipStatus, sortBy, sortDirection }, setFilters] = useQueryStates(
+  const [{ search, accountType, planId, membershipStatus, sortBy, sortDirection }, setFilters] = useQueryStates(
     membershipFilterParsers,
     {
       ...tableQueryStateOptions,
@@ -203,13 +231,26 @@ export default function MembershipsAdminPage() {
     resolver: zodResolver(creditSchema),
     defaultValues: { resource: "ai" as const, units: 10, reason: "" },
   });
+  const creditResource = useWatch({ control: creditForm.control, name: "resource" });
+  const adjustRadicoins = useAdjustRadicoins();
   const cancelForm = useForm({ resolver: zodResolver(cancelSchema), defaultValues: { reason: "" } });
   const memberDetails = useAdminMembership(detailsUser?.user.id);
   const users = useQuery({
-    queryKey: ["admin", "memberships", search, planId, membershipStatus, page, pageSize, sortBy, sortDirection],
+    queryKey: [
+      "admin",
+      "memberships",
+      search,
+      accountType,
+      planId,
+      membershipStatus,
+      page,
+      pageSize,
+      sortBy,
+      sortDirection,
+    ],
     queryFn: () =>
       apiRequest<Response>(
-        `/api/admin/memberships?${buildQueryString({ search, planId, membershipStatus, page, pageSize, sortBy, sortDirection })}`,
+        `/api/admin/memberships?${buildQueryString({ search, accountType, planId, membershipStatus, page, pageSize, sortBy, sortDirection })}`,
       ),
     enabled: user?.role !== "user",
     staleTime: 15_000,
@@ -247,6 +288,11 @@ export default function MembershipsAdminPage() {
           </span>
         </>
       ),
+    },
+    {
+      key: "accountType",
+      title: "نوع حساب",
+      render: (item) => <span className="font-bold text-[#526461]">{accountTypeLabels[item.user.accountType]}</span>,
     },
     { key: "plan", title: "پلن", render: (item) => item.plan?.name || "ثبت‌نشده" },
     { key: "account", title: "وضعیت حساب", render: (item) => (item.user.status === "active" ? "فعال" : "تعلیق‌شده") },
@@ -327,8 +373,18 @@ export default function MembershipsAdminPage() {
                     key={actionName}
                     role="menuitem"
                     onClick={() => {
+                      const firstMatchingPlan = plans.data?.find(
+                        (plan) => plan.accountType === item.user.accountType && plan.isPurchasable,
+                      );
                       setSelected(item);
                       setSelectedAction(actionName);
+                      if (actionName === "grant" && firstMatchingPlan) {
+                        grantForm.reset({ planId: firstMatchingPlan.id });
+                      }
+                      if (actionName === "switch" && firstMatchingPlan) {
+                        switchForm.reset({ planId: firstMatchingPlan.id });
+                      }
+                      if (actionName === "credit") creditForm.reset({ resource: "ai", units: 10, reason: "" });
                       setOpenActionMenu(null);
                     }}
                     type="button"
@@ -350,16 +406,25 @@ export default function MembershipsAdminPage() {
         <AdminTableToolbar
           search={search}
           searchPlaceholder="نام، شماره همراه یا ایمیل"
-          activeFilterCount={Number(Boolean(planId)) + Number(Boolean(membershipStatus))}
+          activeFilterCount={Number(Boolean(accountType)) + Number(Boolean(planId)) + Number(Boolean(membershipStatus))}
           onSearch={(value) => {
             void setFilters({ search: value });
             setPage(1);
           }}
           onResetFilters={() => {
-            void setFilters({ planId: "", membershipStatus: "" });
+            void setFilters({ accountType: "", planId: "", membershipStatus: "" });
             setPage(1);
           }}
         >
+          <AdminFilterSelect
+            label="نوع حساب"
+            value={accountType}
+            onChange={(value) => {
+              void setFilters({ accountType: value as typeof accountType });
+              setPage(1);
+            }}
+            options={accountTypeFilterOptions}
+          />
           <AdminFilterSelect
             label="پلن"
             value={planId}
@@ -395,7 +460,7 @@ export default function MembershipsAdminPage() {
           error={users.error}
           retrying={users.isFetching}
           onRetry={() => void users.refetch()}
-          filtered={Boolean(search || planId || membershipStatus)}
+          filtered={Boolean(search || accountType || planId || membershipStatus)}
           sort={sort}
           onSortChange={(next) => {
             void setFilters({ sortBy: next?.key ?? "", sortDirection: next?.direction ?? "" });
@@ -416,7 +481,15 @@ export default function MembershipsAdminPage() {
       </section>
       {selected && selectedAction && (
         <Modal
-          title={{ grant: "اعطای پلن", switch: "تعویض پلن", extend: "تمدید عضویت", credit: "تغییر اعتبار", cancel: "لغو عضویت" }[selectedAction]}
+          title={
+            {
+              grant: "اعطای پلن",
+              switch: "تعویض پلن",
+              extend: "تمدید عضویت",
+              credit: "تغییر اعتبار",
+              cancel: "لغو عضویت",
+            }[selectedAction]
+          }
           description={userDisplayName(selected.user)}
           showCloseButton
           onClose={() => {
@@ -426,153 +499,220 @@ export default function MembershipsAdminPage() {
         >
           <div className="mt-5 grid gap-3">
             {selectedAction === "grant" && (
-            <form
-              className="grid gap-4"
-              onSubmit={grantForm.handleSubmit((body) =>
-                setPendingAction({
-                  kind: "membership",
-                  path: endpoint("grant"),
-                  body: { ...body, mode: "add" },
-                  title: "تأیید اعطای پلن",
-                  description: `پلن انتخاب‌شده برای ${userDisplayName(selected.user)} فعال شود و مدت و اعتبار آن به عضویت فعلی افزوده شود؟`,
-                  confirmLabel: "اعطا و افزودن مدت",
-                  successMessage: "پلن جدید با موفقیت به عضویت کاربر افزوده شد.",
-                }),
-              )}
-            >
-              <FormField label="پلن" required error={grantForm.formState.errors.planId?.message}>
-                <Controller control={grantForm.control} name="planId" render={({ field }) => (
-                  <SearchableSelect invalid={Boolean(grantForm.formState.errors.planId)} options={(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))} value={field.value} onChange={(value) => field.onChange(String(value))} placeholder="انتخاب پلن" />
-                )} />
-              </FormField>
-              <button className="min-h-10 rounded-[10px] bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">
-                اعطا و افزودن مدت
-              </button>
-            </form>
+              <form
+                className="grid gap-4"
+                onSubmit={grantForm.handleSubmit((body) =>
+                  setPendingAction({
+                    kind: "membership",
+                    path: endpoint("grant"),
+                    body: { ...body, mode: "add" },
+                    title: "تأیید اعطای پلن",
+                    description: `پلن انتخاب‌شده برای ${userDisplayName(selected.user)} فعال شود و مدت و اعتبار آن به عضویت فعلی افزوده شود؟`,
+                    confirmLabel: "اعطا و افزودن مدت",
+                    successMessage: "پلن جدید با موفقیت به عضویت کاربر افزوده شد.",
+                  }),
+                )}
+              >
+                <FormField label="پلن" required error={grantForm.formState.errors.planId?.message}>
+                  <Controller
+                    control={grantForm.control}
+                    name="planId"
+                    render={({ field }) => (
+                      <SearchableSelect
+                        invalid={Boolean(grantForm.formState.errors.planId)}
+                        options={(plans.data ?? [])
+                          .filter((plan) => plan.accountType === selected.user.accountType)
+                          .map((plan) => ({ value: plan.id, label: plan.name }))}
+                        value={field.value}
+                        onChange={(value) => field.onChange(String(value))}
+                        placeholder="انتخاب پلن"
+                      />
+                    )}
+                  />
+                </FormField>
+                <button className="min-h-10 rounded-[10px] bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">
+                  اعطا و افزودن مدت
+                </button>
+              </form>
             )}
             {selectedAction === "switch" && (
-            <form
-              className="grid gap-4"
-              onSubmit={switchForm.handleSubmit((body) =>
-                setPendingAction({
-                  kind: "membership",
-                  path: endpoint("grant"),
-                  body: { ...body, mode: "replace" },
-                  title: "تأیید تعویض پلن",
-                  description: `پلن ${userDisplayName(selected.user)} به پلن انتخاب‌شده تغییر کند؟ تاریخ انقضا تمدید نمی‌شود و سهمیه‌ها مطابق پلن جدید تنظیم می‌شوند.`,
-                  confirmLabel: "تعویض بدون تمدید",
-                  successMessage: "پلن کاربر بدون تمدید زمان تعویض شد.",
-                }),
-              )}
-            >
-              <FormField label="پلن" required error={switchForm.formState.errors.planId?.message}>
-                <Controller control={switchForm.control} name="planId" render={({ field }) => (
-                  <SearchableSelect invalid={Boolean(switchForm.formState.errors.planId)} options={(plans.data ?? []).map((plan) => ({ value: plan.id, label: plan.name }))} value={field.value} onChange={(value) => field.onChange(String(value))} placeholder="انتخاب پلن" />
-                )} />
-              </FormField>
-              <button className="rounded-lg border border-[#94c9b1] bg-white px-3 py-2 text-[10px] font-bold text-[#0f7b62]">
-                اصلاح پلن
-              </button>
-            </form>
+              <form
+                className="grid gap-4"
+                onSubmit={switchForm.handleSubmit((body) =>
+                  setPendingAction({
+                    kind: "membership",
+                    path: endpoint("grant"),
+                    body: { ...body, mode: "replace" },
+                    title: "تأیید تعویض پلن",
+                    description: `پلن ${userDisplayName(selected.user)} به پلن انتخاب‌شده تغییر کند؟ تاریخ انقضا تمدید نمی‌شود و سهمیه‌ها مطابق پلن جدید تنظیم می‌شوند.`,
+                    confirmLabel: "تعویض بدون تمدید",
+                    successMessage: "پلن کاربر بدون تمدید زمان تعویض شد.",
+                  }),
+                )}
+              >
+                <FormField label="پلن" required error={switchForm.formState.errors.planId?.message}>
+                  <Controller
+                    control={switchForm.control}
+                    name="planId"
+                    render={({ field }) => (
+                      <SearchableSelect
+                        invalid={Boolean(switchForm.formState.errors.planId)}
+                        options={(plans.data ?? [])
+                          .filter((plan) => plan.accountType === selected.user.accountType)
+                          .map((plan) => ({ value: plan.id, label: plan.name }))}
+                        value={field.value}
+                        onChange={(value) => field.onChange(String(value))}
+                        placeholder="انتخاب پلن"
+                      />
+                    )}
+                  />
+                </FormField>
+                <button className="rounded-lg border border-[#94c9b1] bg-white px-3 py-2 text-[10px] font-bold text-[#0f7b62]">
+                  اصلاح پلن
+                </button>
+              </form>
             )}
             {selectedAction === "extend" && (
-            <form
-              className="grid gap-4"
-              onSubmit={extendForm.handleSubmit((body) =>
-                setPendingAction({
-                  kind: "membership",
-                  path: endpoint("extend"),
-                  body,
-                  title: "تأیید تمدید عضویت",
-                  description: `${body.days.toLocaleString("fa-IR")} روز به عضویت ${userDisplayName(selected.user)} افزوده شود؟`,
-                  confirmLabel: "تأیید تمدید",
-                  successMessage: "مدت عضویت کاربر با موفقیت تمدید شد.",
-                }),
-              )}
-            >
-              <FormField label="تعداد روز" required error={extendForm.formState.errors.days?.message}>
-                <input aria-invalid={Boolean(extendForm.formState.errors.days)} className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px] aria-[invalid=true]:border-[#c44d4d] aria-[invalid=true]:ring-4 aria-[invalid=true]:ring-[#c44d4d]/10" type="number" {...extendForm.register("days")} />
-              </FormField>
-              <button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">افزودن روز</button>
-            </form>
+              <form
+                className="grid gap-4"
+                onSubmit={extendForm.handleSubmit((body) =>
+                  setPendingAction({
+                    kind: "membership",
+                    path: endpoint("extend"),
+                    body,
+                    title: "تأیید تمدید عضویت",
+                    description: `${body.days.toLocaleString("fa-IR")} روز به عضویت ${userDisplayName(selected.user)} افزوده شود؟`,
+                    confirmLabel: "تأیید تمدید",
+                    successMessage: "مدت عضویت کاربر با موفقیت تمدید شد.",
+                  }),
+                )}
+              >
+                <FormField label="تعداد روز" required error={extendForm.formState.errors.days?.message}>
+                  <input
+                    aria-invalid={Boolean(extendForm.formState.errors.days)}
+                    className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px] aria-[invalid=true]:border-[#c44d4d] aria-[invalid=true]:ring-4 aria-[invalid=true]:ring-[#c44d4d]/10"
+                    type="number"
+                    {...extendForm.register("days")}
+                  />
+                </FormField>
+                <button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">
+                  افزودن روز
+                </button>
+              </form>
             )}
             {selectedAction === "credit" && (
-            <form
-              className="grid gap-4"
-              onSubmit={creditForm.handleSubmit((body) =>
-                setPendingAction({
-                  kind: "membership",
-                  path: endpoint("credits"),
-                  body,
-                  title: "تأیید تغییر اعتبار",
-                  description: `اعتبار ${userDisplayName(selected.user)} به میزان ${body.units.toLocaleString("fa-IR")} واحد تغییر کند؟`,
-                  confirmLabel: "ثبت تغییر اعتبار",
-                  successMessage: "اعتبار کاربر با موفقیت به‌روزرسانی شد.",
-                  tone: body.units < 0 ? "danger" : "primary",
-                }),
-              )}
-            >
-              <div className="grid grid-cols-2 gap-2">
-                <Controller
-                  control={creditForm.control}
-                  name="resource"
-                  render={({ field }) => (
-                    <SearchableSelect
-                      invalid={Boolean(creditForm.formState.errors.resource)}
-                      options={[
-                        { value: "ai", label: "هوش مصنوعی" },
-                        { value: "match", label: "تطبیق" },
-                        { value: "interview", label: "مصاحبه" },
-                        { value: "resume", label: "رزومه" },
-                        { value: "pdf", label: "PDF" },
-                      ]}
-                      value={field.value}
-                      onChange={(value) => field.onChange(String(value))}
-                    />
-                  )}
-                />
+              <form
+                className="grid gap-4"
+                onSubmit={creditForm.handleSubmit((body) => {
+                  if (body.resource === "radicoin") {
+                    setPendingAction({
+                      kind: "radicoin",
+                      userId: selected.user.id,
+                      amount: body.units,
+                      reason: body.reason?.trim() ?? "",
+                      title: "تأیید افزودن رادیکوین",
+                      description: `${body.units.toLocaleString("fa-IR")} رادیکوین به کیف پول ${userDisplayName(selected.user)} افزوده شود؟`,
+                      confirmLabel: "افزودن رادیکوین",
+                      successMessage: "رادیکوین به کیف پول کاربر افزوده شد.",
+                    });
+                    return;
+                  }
+                  setPendingAction({
+                    kind: "membership",
+                    path: endpoint("credits"),
+                    body,
+                    title: "تأیید تغییر اعتبار",
+                    description: `اعتبار ${userDisplayName(selected.user)} به میزان ${body.units.toLocaleString("fa-IR")} واحد تغییر کند؟`,
+                    confirmLabel: "ثبت تغییر اعتبار",
+                    successMessage: "اعتبار کاربر با موفقیت به‌روزرسانی شد.",
+                    tone: body.units < 0 ? "danger" : "primary",
+                  });
+                })}
+              >
+                <div className="grid grid-cols-2 gap-2">
+                  <Controller
+                    control={creditForm.control}
+                    name="resource"
+                    render={({ field }) => (
+                      <SearchableSelect
+                        invalid={Boolean(creditForm.formState.errors.resource)}
+                        options={[
+                          { value: "ai", label: "هوش مصنوعی" },
+                          { value: "match", label: "تطبیق" },
+                          { value: "interview", label: "مصاحبه" },
+                          { value: "resume", label: "رزومه" },
+                          { value: "pdf", label: "PDF" },
+                          ...(user?.role === "superadmin" && selected.user.role === "user"
+                            ? [{ value: "radicoin", label: "رادیکوین" }]
+                            : []),
+                        ]}
+                        value={field.value}
+                        onChange={(value) => field.onChange(String(value))}
+                      />
+                    )}
+                  />
+                  <input
+                    aria-invalid={Boolean(creditForm.formState.errors.units)}
+                    aria-label={creditResource === "radicoin" ? "تعداد رادیکوین" : "مقدار اعتبار"}
+                    className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px] aria-[invalid=true]:border-[#c44d4d] aria-[invalid=true]:ring-4 aria-[invalid=true]:ring-[#c44d4d]/10"
+                    type="number"
+                    min={creditResource === "radicoin" ? 1 : -100000}
+                    max={creditResource === "radicoin" ? 1000000 : 100000}
+                    {...creditForm.register("units")}
+                  />
+                </div>
+                {creditForm.formState.errors.resource?.message && (
+                  <small className="text-[11px] text-[#c44d4d]">{creditForm.formState.errors.resource.message}</small>
+                )}
+                {creditForm.formState.errors.units?.message && (
+                  <small className="text-[11px] text-[#c44d4d]">{creditForm.formState.errors.units.message}</small>
+                )}
                 <input
-                  aria-invalid={Boolean(creditForm.formState.errors.units)}
-                  className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px] aria-[invalid=true]:border-[#c44d4d] aria-[invalid=true]:ring-4 aria-[invalid=true]:ring-[#c44d4d]/10"
-                  type="number"
-                  {...creditForm.register("units")}
+                  className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]"
+                  aria-label="دلیل تغییر اعتبار"
+                  placeholder={creditResource === "radicoin" ? "دلیل افزودن رادیکوین (الزامی)" : "دلیل تغییر (اختیاری)"}
+                  {...creditForm.register("reason")}
                 />
-              </div>
-              {creditForm.formState.errors.resource?.message && <small className="text-[11px] text-[#c44d4d]">{creditForm.formState.errors.resource.message}</small>}
-              {creditForm.formState.errors.units?.message && <small className="text-[11px] text-[#c44d4d]">{creditForm.formState.errors.units.message}</small>}
-              <input
-                className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px]"
-                placeholder="دلیل تغییر (اختیاری)"
-                {...creditForm.register("reason")}
-              />
-              <button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">ثبت اعتبار</button>
-            </form>
+                {creditForm.formState.errors.reason?.message && (
+                  <small role="alert" className="text-[11px] text-[#c44d4d]">
+                    {creditForm.formState.errors.reason.message}
+                  </small>
+                )}
+                {creditResource === "radicoin" && (
+                  <p className="m-0 text-[11px] leading-5 text-[#637c70]">
+                    این مقدار به کیف پول رادیکوین افزوده و به‌عنوان تراکنش مدیریتی ثبت می‌شود؛ اعتبار پلن تغییر نمی‌کند.
+                  </p>
+                )}
+                <button className="rounded-lg bg-[#0f7b62] px-3 py-2 text-[10px] font-bold text-white">
+                  {creditResource === "radicoin" ? "افزودن رادیکوین" : "ثبت اعتبار"}
+                </button>
+              </form>
             )}
             {selectedAction === "cancel" && (
-            <form
-              className="grid gap-4"
-              onSubmit={cancelForm.handleSubmit((body) =>
-                setPendingAction({
-                  kind: "membership",
-                  path: endpoint("cancel"),
-                  body,
-                  title: "تأیید لغو عضویت",
-                  description: `عضویت ${userDisplayName(selected.user)} لغو و تمام اعتبار باقی‌مانده حذف شود؟`,
-                  confirmLabel: "لغو فوری عضویت",
-                  successMessage: "عضویت کاربر با موفقیت لغو شد.",
-                  tone: "danger",
-                }),
-              )}
-            >
-              <input
-                className="h-10 rounded-lg border border-[#e8d5d1] px-3 text-[10px]"
-                placeholder="دلیل لغو (اختیاری)"
-                {...cancelForm.register("reason")}
-              />
-              <button className="rounded-lg bg-[#b14848] px-3 py-2 text-[10px] font-bold text-white">
-                لغو فوری و حذف اعتبار باقی‌مانده
-              </button>
-            </form>
+              <form
+                className="grid gap-4"
+                onSubmit={cancelForm.handleSubmit((body) =>
+                  setPendingAction({
+                    kind: "membership",
+                    path: endpoint("cancel"),
+                    body,
+                    title: "تأیید لغو عضویت",
+                    description: `عضویت ${userDisplayName(selected.user)} لغو و تمام اعتبار باقی‌مانده حذف شود؟`,
+                    confirmLabel: "لغو فوری عضویت",
+                    successMessage: "عضویت کاربر با موفقیت لغو شد.",
+                    tone: "danger",
+                  }),
+                )}
+              >
+                <input
+                  className="h-10 rounded-lg border border-[#e8d5d1] px-3 text-[10px]"
+                  placeholder="دلیل لغو (اختیاری)"
+                  {...cancelForm.register("reason")}
+                />
+                <button className="rounded-lg bg-[#b14848] px-3 py-2 text-[10px] font-bold text-white">
+                  لغو فوری و حذف اعتبار باقی‌مانده
+                </button>
+              </form>
             )}
           </div>
         </Modal>
@@ -632,7 +772,11 @@ export default function MembershipsAdminPage() {
               </div>
             )}
             {memberDetails.data && detailsTab === "usage" && (
-              <MembershipSummary membership={memberDetails.data.membership} />
+              <MembershipSummary
+                accountType={memberDetails.data.user.accountType}
+                employerStats={memberDetails.data.employerStats}
+                membership={memberDetails.data.membership}
+              />
             )}
             {memberDetails.data && detailsTab === "logs" && (
               <div className="grid max-h-[55vh] gap-3 overflow-y-auto pl-1">
@@ -686,10 +830,27 @@ export default function MembershipsAdminPage() {
           description={pendingAction.description}
           confirmLabel={pendingAction.confirmLabel}
           tone={pendingAction.tone}
-          pending={action.isPending}
+          pending={action.isPending || adjustRadicoins.isPending}
           onCancel={() => setPendingAction(null)}
           onConfirm={() => {
-            if (pendingAction.path) {
+            if (pendingAction.kind === "radicoin") {
+              adjustRadicoins.mutate(
+                {
+                  userId: pendingAction.userId,
+                  amount: pendingAction.amount,
+                  description: pendingAction.reason,
+                },
+                {
+                  onSuccess: () => {
+                    notify(pendingAction.successMessage);
+                    setPendingAction(null);
+                    setSelected(null);
+                    setSelectedAction(null);
+                  },
+                  onError: (error) => notify(error.message, "error"),
+                },
+              );
+            } else {
               action.mutate({
                 path: pendingAction.path,
                 body: pendingAction.body,

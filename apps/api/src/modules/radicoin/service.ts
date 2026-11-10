@@ -402,6 +402,28 @@ export class RadicoinService {
     );
   }
 
+  async grantPurchasedPackInTransaction(
+    executor: Executor,
+    userId: string,
+    purchaseId: string,
+    amount: number,
+    packId: string,
+    now = new Date(),
+  ) {
+    return this.creditInTransaction(
+      executor,
+      {
+        userId,
+        amount,
+        source: "purchase",
+        idempotencyKey: `radicoin-pack:${purchaseId}`,
+        description: `خرید ${amount.toLocaleString("fa-IR")} رادیکوین`,
+        metadata: { purchaseId, packId },
+      },
+      now,
+    );
+  }
+
   async grantUsageActivityInTransaction(
     executor: Executor,
     userId: string,
@@ -445,6 +467,7 @@ export class RadicoinService {
     return this.database.transaction(async (tx) => {
       const now = new Date();
       await this.ensureWallet(tx, userId, now);
+      await tx.execute(sql`select user_id from radicoin_wallets where user_id = ${userId} for update`);
       await this.expirePromotionalCoins(tx, userId, now);
       const [existing] = await tx
         .select({ id: radicoinTransactions.id })
@@ -483,6 +506,100 @@ export class RadicoinService {
     });
   }
 
+  async reserveOperation(userId: string, coins: number, key: string, description: string) {
+    if (!Number.isInteger(coins) || coins <= 0) throw new RadicoinError(400, "مقدار رزرو رادیکوین معتبر نیست.");
+    return this.database.transaction(async (tx) => {
+      const now = new Date();
+      await this.ensureWallet(tx, userId, now);
+      await tx.execute(sql`select user_id from radicoin_wallets where user_id = ${userId} for update`);
+      await this.expirePromotionalCoins(tx, userId, now);
+      const [existing] = await tx
+        .select({ status: radicoinTransactions.status })
+        .from(radicoinTransactions)
+        .where(eq(radicoinTransactions.idempotencyKey, key))
+        .limit(1);
+      if (existing) return existing.status === "pending";
+      const [wallet] = await tx
+        .select({ availableCoins: radicoinWallets.availableCoins })
+        .from(radicoinWallets)
+        .where(eq(radicoinWallets.userId, userId))
+        .limit(1);
+      if (!wallet || wallet.availableCoins < coins) throw new RadicoinError(402, "موجودی رادیکوین کافی نیست.");
+      await tx.insert(radicoinTransactions).values({
+        id: randomUUID(),
+        userId,
+        source: "redemption",
+        bucket: "earned",
+        status: "pending",
+        amount: -coins,
+        idempotencyKey: key,
+        description,
+        createdAt: now,
+      });
+      await tx
+        .update(radicoinWallets)
+        .set({
+          availableCoins: sql`${radicoinWallets.availableCoins} - ${coins}`,
+          pendingCoins: sql`${radicoinWallets.pendingCoins} + ${coins}`,
+          updatedAt: now,
+        })
+        .where(eq(radicoinWallets.userId, userId));
+      return true;
+    });
+  }
+
+  async settleOperation(userId: string, key: string, outcome: "commit" | "release") {
+    return this.database.transaction(async (tx) => {
+      const now = new Date();
+      await this.ensureWallet(tx, userId, now);
+      await tx.execute(
+        sql`select id from radicoin_transactions where user_id = ${userId} and idempotency_key = ${key} for update`,
+      );
+      const [entry] = await tx
+        .select()
+        .from(radicoinTransactions)
+        .where(and(eq(radicoinTransactions.userId, userId), eq(radicoinTransactions.idempotencyKey, key)))
+        .limit(1);
+      if (!entry || entry.status !== "pending") return false;
+      const coins = Math.abs(entry.amount);
+      await tx
+        .update(radicoinTransactions)
+        .set({
+          status: outcome === "commit" ? "available" : "reversed",
+          availableAt: outcome === "commit" ? now : null,
+        })
+        .where(eq(radicoinTransactions.id, entry.id));
+      await tx
+        .update(radicoinWallets)
+        .set({
+          pendingCoins: sql`${radicoinWallets.pendingCoins} - ${coins}`,
+          ...(outcome === "commit"
+            ? { lifetimeSpentCoins: sql`${radicoinWallets.lifetimeSpentCoins} + ${coins}` }
+            : { availableCoins: sql`${radicoinWallets.availableCoins} + ${coins}` }),
+          updatedAt: now,
+        })
+        .where(eq(radicoinWallets.userId, userId));
+      if (outcome === "release")
+        await tx
+          .insert(radicoinTransactions)
+          .values({
+            id: randomUUID(),
+            userId,
+            source: "reversal",
+            bucket: "earned",
+            status: "available",
+            amount: coins,
+            idempotencyKey: `release:${key}`,
+            description: "آزادسازی اعتبار رزروشده",
+            metadata: { reversedTransactionId: entry.id },
+            availableAt: now,
+            createdAt: now,
+          })
+          .onConflictDoNothing();
+      return true;
+    });
+  }
+
   async spendInTransaction(
     executor: Executor,
     userId: string,
@@ -493,6 +610,7 @@ export class RadicoinService {
   ) {
     if (!Number.isInteger(coins) || coins <= 0) throw new RadicoinError(400, "مقدار مصرف رادیکوین معتبر نیست.");
     await this.ensureWallet(executor, userId, now);
+    await executor.execute(sql`select user_id from radicoin_wallets where user_id = ${userId} for update`);
     await this.expirePromotionalCoins(executor, userId, now);
     const [existing] = await executor
       .select({ id: radicoinTransactions.id })
@@ -686,7 +804,7 @@ export class RadicoinService {
     });
   }
 
-  async listWallets(search = "", page = 1, pageSize = 20) {
+  async listWallets(search = "", page = 1, pageSize = 20, accountType?: typeof users.$inferSelect.accountType) {
     const filter = search.trim()
       ? or(
           ilike(users.fullName, `%${search.trim()}%`),
@@ -697,19 +815,25 @@ export class RadicoinService {
     const [items, totals] = await Promise.all([
       this.database
         .select({
-          user: { id: users.id, fullName: users.fullName, phone: users.phone, email: users.email },
+          user: {
+            id: users.id,
+            fullName: users.fullName,
+            phone: users.phone,
+            email: users.email,
+            accountType: users.accountType,
+          },
           wallet: radicoinWallets,
         })
         .from(users)
         .leftJoin(radicoinWallets, eq(radicoinWallets.userId, users.id))
-        .where(and(eq(users.role, "user"), filter))
+        .where(and(eq(users.role, "user"), accountType ? eq(users.accountType, accountType) : undefined, filter))
         .orderBy(desc(radicoinWallets.availableCoins), desc(users.createdAt))
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       this.database
         .select({ value: count() })
         .from(users)
-        .where(and(eq(users.role, "user"), filter)),
+        .where(and(eq(users.role, "user"), accountType ? eq(users.accountType, accountType) : undefined, filter)),
     ]);
     return { items, total: Number(totals[0]?.value ?? 0), page, pageSize };
   }

@@ -2,19 +2,31 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { and, asc, count, desc, eq, gt, gte, ilike, inArray, isNotNull, lt, ne, or, sql } from "drizzle-orm";
 import type { ModelUsageEvent } from "@radikar/ai";
 import {
+  employerCandidates,
+  employerPositions,
   membershipEvents,
   modelUsageEvents,
   orders,
   payments,
   plans,
   radicoinTransactions,
+  radicoinWallets,
   usageEvents,
   userMemberships,
   users,
   type Database,
 } from "@radikar/database";
-import { ZarinpalClient, ZarinpalError } from "./zarinpal-client";
+import {
+  activePaymentGateway,
+  isRetryablePaymentError,
+  paymentGatewayFor,
+  PaymentGatewayError,
+  type PaymentGatewayOptions,
+} from "./payment-gateway";
+import type { PaymentGateway } from "./payment-gateway-types";
+import { CreditPackService } from "./credit-pack";
 import type { RadicoinService } from "../radicoin/service";
+import { RadicoinPackService } from "./radicoin-pack";
 import type { ProductEventService } from "../analytics/service";
 
 export class BillingError extends Error {
@@ -40,17 +52,16 @@ function orderNumber() {
 }
 
 export type CheckoutPaymentMethod = "gateway" | "radicoin";
+export type BillingAccountType = "candidate" | "employer";
 
 function cashAmountAfterCoins(priceRials: number, fullCoinCost: number, appliedCoins: number) {
   if (appliedCoins <= 0) return priceRials;
   return Math.max(0, Math.ceil((priceRials * (fullCoinCost - appliedCoins)) / fullCoinCost));
 }
 
-export type BillingServiceOptions = {
+export type BillingServiceOptions = PaymentGatewayOptions & {
   apiPublicUrl: string;
   webAppUrl: string;
-  zarinpalBaseUrl: string;
-  zarinpalMerchantId: string;
   radicoinService?: RadicoinService;
   productEvents?: ProductEventService;
 };
@@ -67,17 +78,33 @@ const usageResourceLabels: Record<UsageResource, string> = {
 };
 
 export class BillingService {
-  private readonly gateway: ZarinpalClient;
+  private readonly gateway: PaymentGateway;
+  private readonly activeGatewayId: string;
+  readonly creditPacks: CreditPackService;
+  readonly radicoinPacks: RadicoinPackService;
 
   constructor(
     private readonly database: Database,
     private readonly options: BillingServiceOptions,
   ) {
-    this.gateway = new ZarinpalClient(options.zarinpalBaseUrl, options.zarinpalMerchantId);
+    this.gateway = activePaymentGateway(options);
+    this.activeGatewayId = this.gateway.id;
+    this.creditPacks = new CreditPackService(database, options);
+    this.radicoinPacks = new RadicoinPackService(database, options);
   }
 
-  listPlans() {
-    return this.database.select().from(plans).where(eq(plans.isActive, true)).orderBy(plans.sortOrder);
+  private gatewayFor(provider: string) {
+    return !provider || provider.split("+")[0] === this.activeGatewayId
+      ? this.gateway
+      : paymentGatewayFor(provider, this.options);
+  }
+
+  listPlans(accountType?: BillingAccountType) {
+    return this.database
+      .select()
+      .from(plans)
+      .where(and(eq(plans.isActive, true), accountType ? eq(plans.accountType, accountType) : undefined))
+      .orderBy(plans.accountType, plans.sortOrder);
   }
 
   async ensureSignupMembership(userId: string) {
@@ -88,10 +115,23 @@ export class BillingService {
       .limit(1);
     if (existing) return;
 
+    const [user] = await this.database
+      .select({ accountType: users.accountType })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!user) throw new BillingError(404, "کاربر پیدا نشد.");
+
     const [freePlan] = await this.database
       .select()
       .from(plans)
-      .where(and(eq(plans.id, "free"), eq(plans.isActive, true)))
+      .where(
+        and(
+          eq(plans.id, user.accountType === "employer" ? "employer-free" : "free"),
+          eq(plans.accountType, user.accountType),
+          eq(plans.isActive, true),
+        ),
+      )
       .limit(1);
     if (!freePlan) throw new BillingError(503, "پلن رایگان هنوز پیکربندی نشده است.");
 
@@ -334,6 +374,7 @@ export class BillingService {
     if (!plan || !plan.isPurchasable || plan.priceRials <= 0) {
       throw new BillingError(400, "این پلن قابل خرید نیست.");
     }
+    await this.assertPlanMatchesUser(userId, plan.accountType);
 
     const [existingOrder] = await this.database
       .select()
@@ -361,7 +402,10 @@ export class BillingService {
         checkout: "gateway" as const,
         orderId: existingOrder.id,
         orderNumber: existingOrder.orderNumber,
-        paymentUrl: `${this.options.zarinpalBaseUrl.replace(/\/$/, "")}/pg/StartPay/${existingOrder.authority}`,
+        paymentUrl: paymentGatewayFor(existingOrder.gateway, this.options).paymentUrl(
+          existingOrder.authority,
+          existingOrder.redirectUrl,
+        ),
         amountRials: existingOrder.amountRials,
         appliedCoins: Math.abs(reservation?.amount ?? 0),
       };
@@ -439,7 +483,7 @@ export class BillingService {
           userId,
           planId: plan.id,
           amountRials: plan.priceRials,
-          gateway: "zarinpal_sandbox",
+          gateway: this.activeGatewayId,
           createdAt: now,
           updatedAt: now,
         })
@@ -463,7 +507,7 @@ export class BillingService {
           .update(orders)
           .set({
             amountRials,
-            gateway: reservedCoins > 0 ? "zarinpal_sandbox+radicoin" : "zarinpal_sandbox",
+            gateway: reservedCoins > 0 ? `${this.activeGatewayId}+radicoin` : this.activeGatewayId,
             updatedAt: now,
           })
           .where(eq(orders.id, id));
@@ -476,13 +520,18 @@ export class BillingService {
         callbackUrl: `${this.options.apiPublicUrl}/api/billing/callback`,
         description: `خرید پلن ${plan.name} - سفارش ${number}`,
         mobile: phone ?? undefined,
+        clientReference: id,
       });
       await this.database.transaction(async (tx) => {
-        await tx.update(orders).set({ authority: result.authority, updatedAt: new Date() }).where(eq(orders.id, id));
+        await tx
+          .update(orders)
+          .set({ authority: result.authority, redirectUrl: result.paymentUrl, updatedAt: new Date() })
+          .where(eq(orders.id, id));
         await tx.insert(payments).values({
           id: randomUUID(),
           orderId: id,
           authority: result.authority,
+          provider: this.activeGatewayId,
           amountRials,
           providerData: result.providerData,
           createdAt: new Date(),
@@ -504,7 +553,7 @@ export class BillingService {
         appliedCoins: reservedCoins,
       };
     } catch (error) {
-      const failure = error instanceof ZarinpalError ? error : undefined;
+      const failure = error instanceof PaymentGatewayError ? error : undefined;
       await this.database.transaction(async (tx) => {
         await radicoin?.releaseReservedSpendInTransaction(tx, id, new Date());
         await tx
@@ -517,7 +566,7 @@ export class BillingService {
           })
           .where(eq(orders.id, id));
       });
-      throw new BillingError(502, "ساخت تراکنش در درگاه زرین‌پال ناموفق بود.");
+      throw new BillingError(502, error instanceof Error ? error.message : "ساخت تراکنش در درگاه پرداخت ناموفق بود.");
     }
   }
 
@@ -530,6 +579,7 @@ export class BillingService {
       .where(and(eq(plans.id, planId), eq(plans.isActive, true)))
       .limit(1);
     if (!plan?.radicoinCost || !plan.isPurchasable) throw new BillingError(400, "این پلن با رادیکوین قابل تهیه نیست.");
+    await this.assertPlanMatchesUser(userId, plan.accountType);
     const radicoinCost = plan.radicoinCost;
     return this.database.transaction(async (tx) => {
       await tx.execute(sql`select id from user_memberships where user_id = ${userId} for update`);
@@ -619,9 +669,10 @@ export class BillingService {
       return resultUrl.toString();
     }
     try {
-      const verification = await this.gateway.verifyPayment({
+      const verification = await this.gatewayFor(row.order.gateway).verifyPayment({
         authority,
         amountRials: row.order.amountRials,
+        clientReference: row.order.id,
       });
       const now = new Date();
       await this.database.transaction(async (tx) => {
@@ -737,8 +788,8 @@ export class BillingService {
       resultUrl.searchParams.set("status", "success");
       return resultUrl.toString();
     } catch (error) {
-      const failure = error instanceof ZarinpalError ? error : undefined;
-      const retryable = !failure || failure.code === undefined || failure.code >= 500;
+      const failure = error instanceof PaymentGatewayError ? error : undefined;
+      const retryable = isRetryablePaymentError(error);
       if (retryable) {
         const now = new Date();
         await this.database.transaction(async (tx) => {
@@ -759,9 +810,11 @@ export class BillingService {
         resultUrl.searchParams.set("status", "pending");
         return resultUrl.toString();
       }
+      const canceled =
+        failure?.canceled || (!(row.order.gateway ?? "").startsWith("abropay_") && callbackStatus === "NOK");
       await this.database.transaction(async (tx) => {
         await this.options.radicoinService?.releaseReservedSpendInTransaction(tx, row.order.id, new Date());
-        const terminalStatus = callbackStatus === "NOK" ? "canceled" : "failed";
+        const terminalStatus = canceled ? "canceled" : "failed";
         await tx
           .update(orders)
           .set({
@@ -777,7 +830,7 @@ export class BillingService {
           .set({ status: terminalStatus, providerCode: failure?.code, updatedAt: new Date() })
           .where(eq(payments.authority, authority));
       });
-      resultUrl.searchParams.set("status", callbackStatus === "NOK" ? "canceled" : "failed");
+      resultUrl.searchParams.set("status", canceled ? "canceled" : "failed");
       return resultUrl.toString();
     }
   }
@@ -1111,9 +1164,11 @@ export class BillingService {
     userStatus?: typeof users.$inferSelect.status,
     sortBy?: string,
     sortDirection: "asc" | "desc" = "desc",
+    accountType?: typeof users.$inferSelect.accountType,
   ) {
     const filter = and(
       ne(users.role, "superadmin"),
+      accountType ? eq(users.accountType, accountType) : undefined,
       search.trim()
         ? or(
             ilike(users.phone, `%${search.trim()}%`),
@@ -1128,17 +1183,19 @@ export class BillingService {
     const sortColumn =
       sortBy === "user"
         ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})`
-        : sortBy === "plan"
-          ? plans.name
-          : sortBy === "account"
-            ? users.status
-            : sortBy === "membership"
-              ? userMemberships.status
-              : sortBy === "expiry"
-                ? userMemberships.expiresAt
-                : sortBy === "ai"
-                  ? userMemberships.aiCreditsRemaining
-                  : users.createdAt;
+        : sortBy === "accountType"
+          ? users.accountType
+          : sortBy === "plan"
+            ? plans.name
+            : sortBy === "account"
+              ? users.status
+              : sortBy === "membership"
+                ? userMemberships.status
+                : sortBy === "expiry"
+                  ? userMemberships.expiresAt
+                  : sortBy === "ai"
+                    ? userMemberships.aiCreditsRemaining
+                    : users.createdAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [items, totals] = await Promise.all([
       this.database
@@ -1167,6 +1224,7 @@ export class BillingService {
         phone: users.phone,
         email: users.email,
         fullName: users.fullName,
+        accountType: users.accountType,
         status: users.status,
       })
       .from(users)
@@ -1182,7 +1240,7 @@ export class BillingService {
       .limit(100);
     const actorIds = [...new Set(events.flatMap((event) => (event.actorUserId ? [event.actorUserId] : [])))];
     const planIds = [...new Set(events.flatMap((event) => (event.planId ? [event.planId] : [])))];
-    const [actors, eventPlans] = await Promise.all([
+    const [actors, eventPlans, employerStats] = await Promise.all([
       actorIds.length
         ? this.database
             .select({
@@ -1198,6 +1256,42 @@ export class BillingService {
       planIds.length
         ? this.database.select({ id: plans.id, name: plans.name }).from(plans).where(inArray(plans.id, planIds))
         : [],
+      user.accountType === "employer"
+        ? Promise.all([
+            this.database
+              .select({ value: count() })
+              .from(employerPositions)
+              .where(eq(employerPositions.ownerUserId, userId)),
+            this.database
+              .select({ value: count() })
+              .from(employerCandidates)
+              .innerJoin(employerPositions, eq(employerCandidates.positionId, employerPositions.id))
+              .where(eq(employerPositions.ownerUserId, userId)),
+            this.database
+              .select({ value: count() })
+              .from(employerCandidates)
+              .innerJoin(employerPositions, eq(employerCandidates.positionId, employerPositions.id))
+              .where(and(eq(employerPositions.ownerUserId, userId), eq(employerCandidates.screeningStatus, "ready"))),
+            this.database
+              .select({ value: count() })
+              .from(employerCandidates)
+              .innerJoin(employerPositions, eq(employerCandidates.positionId, employerPositions.id))
+              .where(
+                and(eq(employerPositions.ownerUserId, userId), ne(employerCandidates.invitationStatus, "not_invited")),
+              ),
+            this.database
+              .select({ availableCoins: radicoinWallets.availableCoins })
+              .from(radicoinWallets)
+              .where(eq(radicoinWallets.userId, userId))
+              .limit(1),
+          ]).then(([positions, candidates, screened, invited, wallet]) => ({
+            positions: positions[0]?.value ?? 0,
+            candidates: candidates[0]?.value ?? 0,
+            screenedCandidates: screened[0]?.value ?? 0,
+            interviewInvitations: invited[0]?.value ?? 0,
+            radicoinBalance: wallet[0]?.availableCoins ?? 0,
+          }))
+        : null,
     ]);
     const actorById = new Map(actors.map((actor) => [actor.id, actor]));
     const planById = new Map(eventPlans.map((plan) => [plan.id, plan]));
@@ -1206,7 +1300,7 @@ export class BillingService {
       actor: event.actorUserId ? (actorById.get(event.actorUserId) ?? null) : null,
       plan: event.planId ? (planById.get(event.planId) ?? null) : null,
     }));
-    return { user, membership, history };
+    return { user, membership, employerStats, history };
   }
 
   async adminGrantPlan(userId: string, planId: string, actorUserId: string) {
@@ -1216,6 +1310,7 @@ export class BillingService {
       .where(and(eq(plans.id, planId), eq(plans.isActive, true)))
       .limit(1);
     if (!plan) throw new BillingError(404, "پلن پیدا نشد.");
+    await this.assertPlanMatchesUser(userId, plan.accountType);
     await this.ensureSignupMembership(userId);
     const [membership] = await this.database
       .select()
@@ -1266,6 +1361,7 @@ export class BillingService {
       .where(and(eq(plans.id, planId), eq(plans.isActive, true)))
       .limit(1);
     if (!plan) throw new BillingError(404, "پلن پیدا نشد.");
+    await this.assertPlanMatchesUser(userId, plan.accountType);
     await this.ensureSignupMembership(userId);
     const [membership] = await this.database
       .select()
@@ -1401,12 +1497,18 @@ export class BillingService {
       .where(eq(userMemberships.userId, userId))
       .limit(1);
     if (!membership) throw new BillingError(404, "عضویت کاربر پیدا نشد.");
+    const [user] = await this.database
+      .select({ accountType: users.accountType })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!user) throw new BillingError(404, "کاربر پیدا نشد.");
     const now = new Date();
     await this.database.transaction(async (tx) => {
       await tx
         .update(userMemberships)
         .set({
-          planId: "free",
+          planId: user.accountType === "employer" ? "employer-free" : "free",
           status: "canceled",
           expiresAt: now,
           resumesRemaining: 0,
@@ -1432,5 +1534,17 @@ export class BillingService {
       });
     });
     return this.getMembership(userId);
+  }
+
+  private async assertPlanMatchesUser(userId: string, planAccountType: BillingAccountType) {
+    const [user] = await this.database
+      .select({ accountType: users.accountType })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (!user) throw new BillingError(404, "کاربر پیدا نشد.");
+    if (user.accountType !== planAccountType) {
+      throw new BillingError(400, "این پلن برای نوع حساب شما ارائه نمی‌شود.");
+    }
   }
 }

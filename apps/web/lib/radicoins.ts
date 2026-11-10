@@ -4,6 +4,7 @@ import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClie
 import { apiRequest } from "./api-client";
 import { buildQueryString } from "./build-query-string";
 import type { OnboardingRewardStatus } from "@radikar/shared-types";
+import type { AccountType } from "./account-type";
 
 export type RadicoinTransaction = {
   id: string;
@@ -43,7 +44,7 @@ export type RadicoinAdminSettings = {
   plans: Array<{ id: string; name: string; radicoinCost: number | null; isActive: boolean }>;
 };
 export type AdminWalletItem = {
-  user: { id: string; fullName: string | null; phone: string | null; email: string | null };
+  user: { id: string; fullName: string | null; phone: string | null; email: string | null; accountType: AccountType };
   wallet: {
     availableCoins: number;
     pendingCoins: number;
@@ -57,8 +58,8 @@ export const radicoinKeys = {
   history: ["radicoin", "history"] as const,
   onboardingReward: ["radicoin", "onboarding-reward"] as const,
   settings: ["admin", "radicoin", "settings"] as const,
-  wallets: (search: string, page: number, pageSize: number) =>
-    ["admin", "radicoin", "wallets", search, page, pageSize] as const,
+  wallets: (search: string, page: number, pageSize: number, accountType = "") =>
+    ["admin", "radicoin", "wallets", search, page, pageSize, accountType] as const,
 };
 export function useOnboardingReward() {
   return useQuery({
@@ -139,12 +140,12 @@ export function useUpdateRadicoinSettings() {
     onSuccess: () => client.invalidateQueries({ queryKey: radicoinKeys.settings }),
   });
 }
-export function useAdminRadicoinWallets(search: string, page: number, pageSize: number) {
+export function useAdminRadicoinWallets(search: string, page: number, pageSize: number, accountType = "") {
   return useQuery({
-    queryKey: radicoinKeys.wallets(search, page, pageSize),
+    queryKey: radicoinKeys.wallets(search, page, pageSize, accountType),
     queryFn: () =>
       apiRequest<{ items: AdminWalletItem[]; total: number }>(
-        `/api/admin/radicoin/wallets?${buildQueryString({ search, page, pageSize })}`,
+        `/api/admin/radicoin/wallets?${buildQueryString({ search, page, pageSize, accountType })}`,
       ),
     staleTime: 20_000,
     placeholderData: keepPreviousData,

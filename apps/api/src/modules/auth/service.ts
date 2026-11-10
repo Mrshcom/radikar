@@ -33,7 +33,7 @@ import {
 } from "@radikar/database";
 import type { RadicoinService } from "../radicoin/service";
 import type { OtpDelivery } from "../notifications/otp-delivery";
-import type { AuthUser, OnboardingState, SessionIdentity, UserRole, UserStatus } from "./types";
+import type { AccountType, AuthUser, OnboardingState, SessionIdentity, UserRole, UserStatus } from "./types";
 
 export type AuthServiceOptions = {
   secret: string;
@@ -217,6 +217,7 @@ function toAuthUser(row: typeof users.$inferSelect): AuthUser {
     email: row.email,
     fullName: row.fullName,
     role: row.role as UserRole,
+    accountType: row.accountType as AccountType,
     status: row.status as UserStatus,
     createdAt: row.createdAt.toISOString(),
     lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
@@ -559,7 +560,11 @@ export class AuthService {
     } satisfies VerifyOtpResult;
   }
 
-  async beginGoogleLogin(nextPath?: string, referralCode?: string): Promise<GoogleLoginStart> {
+  async beginGoogleLogin(
+    nextPath?: string,
+    referralCode?: string,
+    accountType: AccountType = "candidate",
+  ): Promise<GoogleLoginStart> {
     const { googleClientId, googleRedirectUri } = this.requireGoogleOptions();
     const state = randomBytes(32).toString("base64url");
     const nonce = randomBytes(32).toString("base64url");
@@ -574,6 +579,7 @@ export class AuthService {
       nonce,
       codeVerifier,
       nextPath: safeNextPath(nextPath),
+      accountType,
       referralCode: normalizeReferralCode(referralCode) || null,
       expiresAt: new Date(now.getTime() + 10 * 60_000),
       createdAt: now,
@@ -664,6 +670,9 @@ export class AuthService {
         .limit(1);
 
       if (existingIdentity) {
+        if (existingIdentity.user.accountType !== attempt.accountType) {
+          throw new AuthError(409, "این حساب با نوع کاربری دیگری ثبت شده است. برای ورود، نوع درست حساب را انتخاب کن.");
+        }
         if (existingIdentity.user.status !== "active") {
           throw new AuthError(403, "حساب کاربری شما غیرفعال است.");
         }
@@ -693,6 +702,7 @@ export class AuthService {
           email,
           fullName: displayName,
           role: "user",
+          accountType: attempt.accountType,
           createdAt: now,
           updatedAt: now,
           lastLoginAt: now,
@@ -719,7 +729,14 @@ export class AuthService {
     }
     return {
       ...(await this.createSession(userRow, now, loginIp)),
-      nextPath: attempt.nextPath,
+      nextPath:
+        attempt.accountType === "employer"
+          ? attempt.nextPath.startsWith("/employer")
+            ? attempt.nextPath
+            : "/employer"
+          : attempt.nextPath.startsWith("/employer")
+            ? "/dashboard"
+            : attempt.nextPath,
     };
   }
 
@@ -802,6 +819,7 @@ export class AuthService {
     code: string,
     loginIp?: string,
     referralCode?: string,
+    accountType: AccountType = "candidate",
   ): Promise<VerifyOtpResult> {
     const phone = normalizePhone(rawPhone);
     const [challenge] = await this.database
@@ -827,6 +845,9 @@ export class AuthService {
 
     const now = new Date();
     const [existingUser] = await this.database.select().from(users).where(eq(users.phone, phone)).limit(1);
+    if (existingUser && existingUser.accountType !== accountType) {
+      throw new AuthError(409, "این شماره با نوع کاربری دیگری ثبت شده است. برای ورود، نوع درست حساب را انتخاب کن.");
+    }
     const [{ value: usersCount }] = await this.database.select({ value: count() }).from(users);
     const bootstrap =
       phone === this.options.bootstrapSuperadminPhone || (usersCount === 0 && this.options.allowFirstUserSuperadmin);
@@ -840,7 +861,7 @@ export class AuthService {
           .returning()
       : await this.database
           .insert(users)
-          .values({ id: randomUUID(), phone, role, createdAt: now, updatedAt: now, lastLoginAt: now })
+          .values({ id: randomUUID(), phone, role, accountType, createdAt: now, updatedAt: now, lastLoginAt: now })
           .returning();
     if (userRow.status !== "active") throw new AuthError(403, "حساب کاربری شما غیرفعال است.");
     await this.options.grantSignupMembership?.(userRow.id);
@@ -1096,14 +1117,14 @@ export class AuthService {
     status?: UserStatus,
     sortBy?: string,
     sortDirection: "asc" | "desc" = "desc",
+    accountType?: AccountType,
   ) {
     const term = `%${search.trim()}%`;
     const filter = and(
       ne(users.role, "superadmin"),
-      search.trim()
-        ? sql`COALESCE(${users.phone}, '') ILIKE ${term} OR COALESCE(${users.email}, '') ILIKE ${term} OR COALESCE(${users.fullName}, '') ILIKE ${term}`
-        : undefined,
+      search.trim() ? or(ilike(users.phone, term), ilike(users.email, term), ilike(users.fullName, term)) : undefined,
       role ? eq(users.role, role) : undefined,
+      accountType ? eq(users.accountType, accountType) : undefined,
       status ? eq(users.status, status) : undefined,
     );
     const sortColumn =
@@ -1111,15 +1132,17 @@ export class AuthService {
         ? sql`coalesce(${users.fullName}, ${users.phone}, ${users.email})`
         : sortBy === "alias"
           ? users.adminAlias
-          : sortBy === "role"
-            ? users.role
-            : sortBy === "status"
-              ? users.status
-              : sortBy === "records"
-                ? sql`count(${dataRecords.id})`
-                : sortBy === "login"
-                  ? users.lastLoginAt
-                  : users.createdAt;
+          : sortBy === "accountType"
+            ? users.accountType
+            : sortBy === "role"
+              ? users.role
+              : sortBy === "status"
+                ? users.status
+                : sortBy === "records"
+                  ? sql`count(${dataRecords.id})`
+                  : sortBy === "login"
+                    ? users.lastLoginAt
+                    : users.createdAt;
     const order = sortDirection === "asc" ? asc(sortColumn) : desc(sortColumn);
     const [rows, totals] = await Promise.all([
       this.database
@@ -1130,6 +1153,7 @@ export class AuthService {
           fullName: users.fullName,
           adminAlias: users.adminAlias,
           role: users.role,
+          accountType: users.accountType,
           status: users.status,
           createdAt: users.createdAt,
           lastLoginAt: users.lastLoginAt,

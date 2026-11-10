@@ -2,6 +2,8 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { requirePermission } from "../auth/routes";
 import { BillingError, BillingService } from "./service";
+import { CreditPackError, interviewPack } from "./credit-pack";
+import { RadicoinPackError, radicoinPacks } from "./radicoin-pack";
 
 const pageSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -22,6 +24,7 @@ const paymentListSchema = adminListSchema.extend({
   status: optionalQueryValue(z.enum(["initiated", "verified", "failed", "canceled", "refunded"])),
 });
 const membershipListSchema = adminListSchema.extend({
+  accountType: optionalQueryValue(z.enum(["candidate", "employer"])),
   planId: optionalQueryValue(z.string().max(64)),
   membershipStatus: optionalQueryValue(z.enum(["active", "expired", "canceled"])),
   userStatus: optionalQueryValue(z.enum(["active", "suspended"])),
@@ -31,11 +34,26 @@ const createOrderSchema = z.object({
   paymentMethod: z.enum(["gateway", "radicoin"]).default("gateway"),
   idempotencyKey: z.uuid().optional(),
 });
-const redeemWithRadicoinSchema = createOrderSchema.extend({ idempotencyKey: z.uuid() });
-const callbackSchema = z.object({
-  Authority: z.string().min(1),
-  Status: z.string().min(1),
+const createCreditPackOrderSchema = z.object({
+  packId: z.literal(interviewPack.id),
+  paymentMethod: z.enum(["gateway", "radicoin"]),
+  idempotencyKey: z.uuid(),
 });
+const createRadicoinPackOrderSchema = z.object({
+  packId: z.enum(radicoinPacks.map((pack) => pack.id) as [string, ...string[]]),
+  idempotencyKey: z.uuid(),
+});
+const redeemWithRadicoinSchema = createOrderSchema.extend({ idempotencyKey: z.uuid() });
+const callbackSchema = z.union([
+  z.object({ Authority: z.string().min(1), Status: z.string().min(1) }),
+  z.object({ transaction_id: z.uuid(), status: z.string().min(1) }),
+]);
+
+function callbackIdentity(query: z.infer<typeof callbackSchema>) {
+  return "Authority" in query
+    ? { authority: query.Authority, status: query.Status }
+    : { authority: query.transaction_id, status: query.status };
+}
 const userParamsSchema = z.object({ id: z.uuid() });
 const grantPlanSchema = z.object({
   planId: z.string().min(1).max(64),
@@ -70,7 +88,64 @@ function requireCustomer(request: FastifyRequest, reply: FastifyReply) {
 }
 
 export function registerBillingRoutes(app: FastifyInstance, billing: BillingService) {
-  app.get("/api/billing/plans", () => billing.listPlans());
+  app.get("/api/billing/plans", (request) =>
+    billing.listPlans(request.auth?.user.role === "user" ? request.auth.user.accountType : undefined),
+  );
+
+  app.get("/api/billing/credit-packs", (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
+    return billing.creditPacks.catalog();
+  });
+
+  app.get("/api/billing/radicoin-packs", (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
+    return billing.radicoinPacks.catalog();
+  });
+
+  app.post("/api/billing/radicoin-packs/orders", async (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
+    const input = createRadicoinPackOrderSchema.parse(request.body);
+    const result = await billing.radicoinPacks.createOrder(
+      request.auth!.user.id,
+      request.auth!.user.phone,
+      input.packId,
+      input.idempotencyKey,
+    );
+    return reply.code(201).send(result);
+  });
+
+  app.get("/api/billing/radicoin-packs/orders", (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
+    return billing.radicoinPacks.listOrders(request.auth!.user.id);
+  });
+
+  app.get("/api/billing/radicoin-packs/callback", async (request, reply) => {
+    const { authority } = callbackIdentity(callbackSchema.parse(request.query));
+    return reply.redirect(await billing.radicoinPacks.handleCallback(authority));
+  });
+
+  app.post("/api/billing/credit-packs/orders", async (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
+    const input = createCreditPackOrderSchema.parse(request.body);
+    const result = await billing.creditPacks.createOrder(
+      request.auth!.user.id,
+      request.auth!.user.phone,
+      input.paymentMethod,
+      input.idempotencyKey,
+    );
+    return reply.code(201).send(result);
+  });
+
+  app.get<{ Params: { id: string } }>("/api/billing/credit-packs/orders/:id", (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
+    const { id } = z.object({ id: z.uuid() }).parse(request.params);
+    return billing.creditPacks.getOrder(request.auth!.user.id, id);
+  });
+
+  app.get("/api/billing/credit-packs/callback", async (request, reply) => {
+    const { authority } = callbackIdentity(callbackSchema.parse(request.query));
+    return reply.redirect(await billing.creditPacks.handleCallback(authority));
+  });
 
   app.get("/api/billing/membership", (request, reply) => {
     if (!requireCustomer(request, reply)) return;
@@ -121,8 +196,8 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
   });
 
   app.get("/api/billing/callback", async (request, reply) => {
-    const query = callbackSchema.parse(request.query);
-    const redirectUrl = await billing.handleCallback(query.Authority, query.Status);
+    const { authority, status } = callbackIdentity(callbackSchema.parse(request.query));
+    const redirectUrl = await billing.handleCallback(authority, status);
     return reply.redirect(redirectUrl);
   });
 
@@ -180,7 +255,7 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
   app.get("/api/admin/memberships", (request, reply) => {
     if (!requirePermission(request, reply, "memberships:manage:any")) return;
     const query = membershipListSchema.parse(request.query);
-    return query.sortBy || query.sortDirection
+    return query.sortBy || query.sortDirection || query.accountType
       ? billing.listMembershipUsers(
           query.search,
           query.page,
@@ -190,6 +265,7 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
           query.userStatus,
           query.sortBy,
           query.sortDirection,
+          query.accountType,
         )
       : billing.listMembershipUsers(
           query.search,
@@ -238,7 +314,8 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
 }
 
 export function handleBillingError(error: unknown, request: FastifyRequest, reply: FastifyReply) {
-  if (!(error instanceof BillingError)) return false;
+  if (!(error instanceof BillingError || error instanceof CreditPackError || error instanceof RadicoinPackError))
+    return false;
   reply.code(error.statusCode).send({ error: error.message, requestId: request.id });
   return true;
 }

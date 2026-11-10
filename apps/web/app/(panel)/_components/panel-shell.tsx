@@ -77,7 +77,7 @@ const menuItems: MenuItem[] = [
   { href: "/match", label: "تحلیل تطابق با آگهی", icon: Target, roles: ["user"] },
   { href: "/resumes", label: "رزومه‌های هدفمند", icon: FileText, roles: ["user"] },
   { href: "/applications", label: "پیگیری اپلای‌ها", icon: BarChart3, roles: ["user"] },
-  { href: "/interview", label: "آمادگی مصاحبه", icon: MessageSquareText, roles: ["user"] },
+  { href: "/interview", label: "مصاحبه‌ها", icon: MessageSquareText, roles: ["user"] },
   { href: "/admin", label: "داشبورد مدیریتی", icon: LayoutDashboard, roles: ["admin", "superadmin"] },
   { href: "/admin/users", label: "کاربران و دسترسی‌ها", icon: Users, roles: ["superadmin"] },
   { href: "/admin/memberships", label: "عضویت و اعتبار", icon: ShieldCheck, roles: ["admin", "superadmin"] },
@@ -89,13 +89,28 @@ const menuItems: MenuItem[] = [
   { href: "/admin/referrals", label: "ریفرال و دعوت", icon: Gift, roles: ["superadmin"] },
   { href: "/admin/radicoins", label: "مدیریت رادیکوین", icon: RadicoinIcon, roles: ["superadmin"] },
   { href: "/admin/updates", label: "مدیریت مسیر محصول", icon: CalendarDays, roles: ["admin", "superadmin"] },
+  { href: "/admin/support", label: "پشتیبانی کاربران", icon: MessageSquareText, roles: ["superadmin"] },
   { href: "/admin/settings", label: "تنظیمات", icon: Settings, roles: ["superadmin"] },
 ];
+
+const employerMenuItems: MenuItem[] = [
+  { href: "/employer", label: "داشبورد کارفرما", icon: LayoutDashboard, roles: ["user"] },
+  { href: "/employer/positions", label: "پوزیشن‌های شغلی", icon: BriefcaseBusiness, roles: ["user"] },
+  { href: "/employer/resume-bank", label: "بانک رزومه‌ها", icon: FileText, roles: ["user"] },
+];
+
+const interviewSubItems = [
+  { href: "/interview-invites", label: "مصاحبه‌های دعوتی" },
+  { href: "/interview", label: "آمادگی برای مصاحبه" },
+] as const;
 
 const pageTitles: Record<string, string> = {
   "/account-center": "مرکز حساب",
   "/account": "حساب کاربری",
   "/settings": "تنظیمات",
+  "/support": "پشتیبانی",
+  "/employer/support": "پشتیبانی",
+  "/admin/support": "پشتیبانی کاربران",
   "/updates": "مسیر و تازه‌های رادیکار",
   "/admin/updates": "مدیریت مسیر محصول",
   "/orders": "سفارش‌ها",
@@ -103,6 +118,15 @@ const pageTitles: Record<string, string> = {
   "/billing/result": "نتیجه پرداخت",
   "/referrals": "دعوت دوستان",
   "/radicoins": "کیف پول رادیکوین",
+  "/interview": "آمادگی برای مصاحبه",
+  "/interview-invites": "مصاحبه‌های دعوتی",
+  "/employer": "داشبورد کارفرما",
+  "/employer/account-center": "مرکز کارفرما",
+  "/employer/profile": "پروفایل شرکت",
+  "/employer/radicoins": "خرید رادیکوین",
+  "/employer/positions": "پوزیشن‌های شغلی",
+  "/employer/positions/new": "افزودن پوزیشن کاری",
+  "/employer/resume-bank": "بانک رزومه‌ها",
   "/admin/memberships": "کاربران و عضویت‌ها",
   "/admin/users": "کاربران و دسترسی‌ها",
   "/admin/orders": "سفارش‌های سامانه",
@@ -127,6 +151,53 @@ function tourTarget(href: string) {
       "/interview": "nav-interview",
     } as Record<string, string>
   )[href];
+}
+
+function menuItemActive(pathname: string, href: string) {
+  return (
+    pathname === href ||
+    (href === "/interview" && (pathname.startsWith("/interview/") || pathname.startsWith("/interview-invites"))) ||
+    (href === "/employer/positions" && pathname.startsWith("/employer/positions/"))
+  );
+}
+
+function InterviewSubmenu({
+  pathname,
+  onNavigate,
+  mobile = false,
+}: {
+  pathname: string;
+  onNavigate?: () => void;
+  mobile?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative mt-1 grid gap-0.5 pr-3 before:absolute before:-top-1 before:right-0 before:bottom-4 before:w-px before:bg-[#c8d9ce] before:content-['']",
+        mobile ? "mr-[30px]" : "mr-[22px]",
+      )}
+    >
+      {interviewSubItems.map((item) => {
+        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onNavigate}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "relative block rounded-lg px-3 py-2 text-right text-xs no-underline transition-colors before:absolute before:-right-3 before:top-1/2 before:h-px before:w-3 before:bg-[#c8d9ce] before:content-['']",
+              active
+                ? "bg-[#e6f4ee] font-bold text-[#0c7058] before:bg-[#8ac6a7]"
+                : "text-[#697a77] hover:bg-[#f5f8f5]",
+            )}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </div>
+  );
 }
 
 const primaryButtonClass =
@@ -171,6 +242,10 @@ function readSeenAdminEventIds(userId: string) {
 }
 
 export function PanelShell({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  if (user?.role === "user" && user.accountType === "employer") {
+    return <PanelShellContent>{children}</PanelShellContent>;
+  }
   return (
     <ModelTaskProvider>
       <OnboardingProvider>
@@ -205,6 +280,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuCloseTimerRef = useRef<number | null>(null);
   const userRole = user?.role;
+  const isEmployer = user?.accountType === "employer" && userRole === "user";
   const radicoinWallet = useRadicoinWallet(userRole === "user");
   const isManagement = userRole === "admin" || userRole === "superadmin";
   const isSuperadmin = userRole === "superadmin";
@@ -214,21 +290,29 @@ function PanelShellContent({ children }: { children: ReactNode }) {
     typeof window !== "undefined" && isSuperadmin && userId ? readSeenAdminEventIds(userId) : new Set(),
   );
   const visibleMenuItems = useMemo(
-    () => menuItems.filter((item) => userRole && item.roles.includes(userRole)),
-    [userRole],
+    () => (isEmployer ? employerMenuItems : menuItems).filter((item) => userRole && item.roles.includes(userRole)),
+    [isEmployer, userRole],
   );
   const mobilePrimaryMenuItems = useMemo(() => {
-    const preferredHrefs = isManagement
-      ? ["/admin/users", "/admin/memberships", "/admin", "/admin/orders", "/admin/payments"]
-      : ["/jobs", "/match", "/dashboard", "/resumes", "/applications"];
+    const preferredHrefs = isEmployer
+      ? ["/employer", "/employer/positions", "/employer/resume-bank"]
+      : isManagement
+        ? ["/admin/users", "/admin/memberships", "/admin", "/admin/orders", "/admin/payments"]
+        : ["/jobs", "/match", "/dashboard", "/resumes", "/applications"];
 
     return preferredHrefs
       .map((href) => visibleMenuItems.find((item) => item.href === href))
       .filter((item): item is MenuItem => Boolean(item))
       .slice(0, 5);
-  }, [isManagement, visibleMenuItems]);
+  }, [isEmployer, isManagement, visibleMenuItems]);
   const title = useMemo(
-    () => pageTitles[pathname] ?? visibleMenuItems.find((item) => item.href === pathname)?.label ?? "نمای کلی",
+    () =>
+      pageTitles[pathname] ??
+      (pathname.startsWith("/employer/positions/")
+        ? pathname.endsWith("/edit")
+          ? "ویرایش پوزیشن کاری"
+          : "جزئیات پوزیشن کاری"
+        : (visibleMenuItems.find((item) => item.href === pathname)?.label ?? "نمای کلی")),
     [pathname, visibleMenuItems],
   );
   const latestJob = jobs[0];
@@ -269,7 +353,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (userRole !== "user") return;
+    if (userRole !== "user" || isEmployer) return;
     let active = true;
     Promise.all([ensureDefaultAppProfile(), getActiveProfileId()])
       .then(async ([storedProfiles, profileId]) => {
@@ -288,7 +372,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [notify, userRole]);
+  }, [isEmployer, notify, userRole]);
 
   useEffect(() => {
     if (!noticeOpen) return;
@@ -346,7 +430,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    if (isManagement) return;
+    if (isManagement || isEmployer) return;
     const openSearch = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
@@ -355,7 +439,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
     };
     window.addEventListener("keydown", openSearch);
     return () => window.removeEventListener("keydown", openSearch);
-  }, [isManagement]);
+  }, [isEmployer, isManagement]);
 
   const saveWorkspaceName = async () => {
     const workspaceName = editingWorkspaceName.trim();
@@ -449,7 +533,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
       <aside className="fixed inset-y-0 start-0 z-20 flex w-[248px] flex-col border-e border-[#e7ebe6] bg-white px-4 pb-[18px] pt-6 max-[820px]:hidden">
         <Link
           className="flex items-center gap-1 border-0 bg-transparent px-[9px] pb-6 text-right text-[#19312f] no-underline"
-          href={isManagement ? "/admin" : "/dashboard"}
+          href={isManagement ? "/admin" : isEmployer ? "/employer" : "/dashboard"}
         >
           <Image
             className="block size-9 shrink-0 object-contain"
@@ -461,44 +545,48 @@ function PanelShellContent({ children }: { children: ReactNode }) {
           />
           <div className="flex flex-col">
             <strong className="text-[16px] tracking-[-.4px]">رادیکار</strong>
-            <small className="mt-0.5 text-[10px] text-[#93a09d]">همراه حرفه‌ای تو کار</small>
+            <small className="mt-0.5 text-[10px] text-[#93a09d]">
+              {isEmployer ? "همراه هوشمند جذب نیرو" : "همراه حرفه‌ای تو کار"}
+            </small>
           </div>
         </Link>
         <nav className="flex min-h-0 flex-1 flex-col gap-[5px] overflow-y-auto" aria-label="منوی اصلی">
           {visibleMenuItems.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href;
+            const active = menuItemActive(pathname, item.href);
             return (
-              <Link
-                key={item.href}
-                className={cn(
-                  "relative flex min-h-[43px] items-center gap-3 rounded-[11px] border-0 px-[13px] text-right text-[13px] no-underline transition-colors hover:bg-[#f5f8f5] hover:text-[#19312f]",
-                  active
-                    ? "bg-[#e6f4ee] font-bold text-[#0c7058] after:absolute after:-right-4 after:h-[21px] after:w-[3px] after:rounded-l-sm after:bg-[#0f7b62] after:content-['']"
-                    : "bg-transparent text-[#697a77]",
-                )}
-                href={item.href}
-                data-tour={tourTarget(item.href)}
-              >
-                <Icon size={19} />
-                <span>{item.label}</span>
-                {item.href === "/jobs" && jobs.length > 0 && (
-                  <em
-                    className={cn(
-                      "mr-auto grid h-[21px] min-w-[23px] place-items-center rounded-[7px] text-[10px] not-italic transition-colors",
-                      active ? "bg-[#0f7b62] text-white" : "bg-[#eff1ee] text-[#61716e]",
-                    )}
-                  >
-                    {jobs.length.toLocaleString("fa-IR")}
-                  </em>
-                )}
-              </Link>
+              <div key={item.href}>
+                <Link
+                  className={cn(
+                    "relative flex min-h-[43px] items-center gap-3 rounded-[11px] border-0 px-[13px] text-right text-[13px] no-underline transition-colors hover:bg-[#f5f8f5] hover:text-[#19312f]",
+                    active
+                      ? "bg-[#e6f4ee] font-bold text-[#0c7058] after:absolute after:-right-4 after:h-[21px] after:w-[3px] after:rounded-l-sm after:bg-[#0f7b62] after:content-['']"
+                      : "bg-transparent text-[#697a77]",
+                  )}
+                  href={item.href}
+                  data-tour={tourTarget(item.href)}
+                >
+                  <Icon size={19} />
+                  <span>{item.label}</span>
+                  {item.href === "/jobs" && jobs.length > 0 && (
+                    <em
+                      className={cn(
+                        "mr-auto grid h-[21px] min-w-[23px] place-items-center rounded-[7px] text-[10px] not-italic transition-colors",
+                        active ? "bg-[#0f7b62] text-white" : "bg-[#eff1ee] text-[#61716e]",
+                      )}
+                    >
+                      {jobs.length.toLocaleString("fa-IR")}
+                    </em>
+                  )}
+                </Link>
+                {item.href === "/interview" && <InterviewSubmenu pathname={pathname} />}
+              </div>
             );
           })}
         </nav>
         <div className="mt-auto grid w-full min-w-0 gap-3">
-          {!isManagement && <ModelTaskStack />}
-          {!isManagement && (
+          {!isManagement && !isEmployer && <ModelTaskStack />}
+          {!isManagement && !isEmployer && (
             <div className="-mx-1 -mb-1 min-w-0 max-w-full border-t border-[#e7ebe6] px-[5px] pt-[17px]">
               <button
                 className="m-0 flex w-full min-w-0 items-center gap-[9px] overflow-hidden border-0 bg-transparent p-0 text-right"
@@ -543,7 +631,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
           </div>
           <span className="text-[11px] text-[#8c9996] max-[820px]:hidden">{title}</span>
           <div className="mr-auto flex items-center gap-[10px]">
-            {!isManagement && (
+            {!isManagement && !isEmployer && (
               <button
                 aria-label="جست‌وجوی سریع"
                 className="grid size-[38px] place-items-center rounded-[11px] border border-[#e4e8e3] bg-white text-[#60716e] max-[820px]:hidden"
@@ -630,7 +718,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                     )}
                   </div>
                 )}
-                {noticeOpen && userRole === "user" && (
+                {noticeOpen && userRole === "user" && !isEmployer && (
                   <div className="absolute left-0 top-[46px] z-40 w-[320px] overflow-hidden rounded-[20px] border border-[#dfe6e1] bg-white p-2.5 shadow-[0_22px_54px_rgba(25,57,50,.2)] max-[420px]:fixed max-[420px]:left-3 max-[420px]:right-auto max-[420px]:top-[68px] max-[420px]:w-[calc(100vw-48px)]">
                     <div className="flex items-center gap-3 rounded-[14px] bg-gradient-to-l from-[#e8f6ef] to-[#fafdfb] px-3.5 py-3 shadow-[inset_0_0_0_1px_rgba(15,123,98,.08)]">
                       <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#d9f0e6] text-[#0f7b62] ring-2 ring-[#c9e7da]">
@@ -691,6 +779,15 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                         </p>
                       </div>
                     )}
+                  </div>
+                )}
+                {noticeOpen && isEmployer && (
+                  <div className="absolute left-0 top-[46px] z-40 w-[320px] rounded-[20px] border border-[#dfe6e1] bg-white p-5 text-center shadow-[0_22px_54px_rgba(25,57,50,.2)] max-[420px]:fixed max-[420px]:left-3 max-[420px]:top-[68px] max-[420px]:w-[calc(100vw-48px)]">
+                    <Bell className="mx-auto mb-2 text-[#9bb0a9]" size={21} />
+                    <strong className="block text-[11px] text-[#19312f]">هنوز اعلانی نیست</strong>
+                    <p className="mb-0 mt-1 text-[9px] leading-6 text-[#91a09c]">
+                      رویدادهای پوزیشن‌ها و مصاحبه‌ها در آینده اینجا نمایش داده می‌شوند.
+                    </p>
                   </div>
                 )}
               </div>
@@ -772,8 +869,20 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                   )}
                   <nav aria-label="دسترسی‌های حساب" className="mt-2 grid gap-0.5">
                     {(isManagement
-                      ? [{ href: "/settings", label: "امنیت", icon: Settings }]
-                      : [{ href: "/account-center", label: "مرکز حساب", icon: UserRound }]
+                      ? [
+                          { href: "/settings", label: "امنیت", icon: Settings },
+                          ...(isSuperadmin ? [{ href: "/admin/support", label: "پشتیبانی کاربران", icon: MessageSquareText }] : []),
+                        ]
+                      : isEmployer
+                        ? [
+                            { href: "/employer/account-center", label: "مرکز کارفرما", icon: UserRound },
+                            { href: "/employer/support", label: "پشتیبانی", icon: MessageSquareText },
+                          ]
+                        : [
+                            { href: "/account-center", label: "مرکز حساب", icon: UserRound },
+                            { href: "/account", label: "اطلاعات حساب و مصرف", icon: BarChart3 },
+                            { href: "/support", label: "پشتیبانی", icon: MessageSquareText },
+                          ]
                     ).map(({ href, label, icon: Icon }) => (
                       <Link
                         className="group flex min-h-10 items-center gap-3 rounded-[11px] px-2.5 text-[11px] font-semibold text-[#536762] no-underline transition hover:bg-[#edf7f2] hover:text-[#0f7b62]"
@@ -804,7 +913,10 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                       <LogOut size={17} />
                     </span>
                     <span className="flex-1">خروج از حساب</span>
-                    <ChevronLeft className="shrink-0 text-[#a5b2ad] transition group-hover:-translate-x-0.5 group-hover:text-[#d9aaa4]" size={14} />
+                    <ChevronLeft
+                      className="shrink-0 text-[#a5b2ad] transition group-hover:-translate-x-0.5 group-hover:text-[#d9aaa4]"
+                      size={14}
+                    />
                   </button>
                   {!isManagement && (
                     <div className="flex justify-center pt-1">
@@ -877,41 +989,45 @@ function PanelShellContent({ children }: { children: ReactNode }) {
             >
               {visibleMenuItems.map((item) => {
                 const Icon = item.icon;
-                const active = pathname === item.href;
+                const active = menuItemActive(pathname, item.href);
                 return (
-                  <Link
-                    className={cn(
-                      "relative flex min-h-12 items-center gap-3 rounded-[12px] px-3 text-[11px] no-underline transition-colors",
-                      active
-                        ? "bg-[#e6f4ee] font-bold text-[#0c7058]"
-                        : "text-[#61736f] hover:bg-[#f3f7f4] hover:text-[#19312f]",
-                    )}
-                    href={item.href}
-                    key={item.href}
-                    onClick={closeMobileMenu}
-                    data-tour={tourTarget(item.href)}
-                  >
-                    <span
+                  <div key={item.href}>
+                    <Link
                       className={cn(
-                        "grid size-9 shrink-0 place-items-center rounded-[10px]",
-                        active ? "bg-[#0f7b62] text-white" : "bg-[#edf3ef]",
+                        "relative flex min-h-12 items-center gap-3 rounded-[12px] px-3 text-[11px] no-underline transition-colors",
+                        active
+                          ? "bg-[#e6f4ee] font-bold text-[#0c7058]"
+                          : "text-[#61736f] hover:bg-[#f3f7f4] hover:text-[#19312f]",
                       )}
+                      href={item.href}
+                      onClick={closeMobileMenu}
+                      data-tour={tourTarget(item.href)}
                     >
-                      <Icon size={18} />
-                    </span>
-                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                    {item.href === "/jobs" && jobs.length > 0 && (
-                      <em className="grid min-h-6 min-w-6 place-items-center rounded-full bg-[#0f7b62] px-1.5 text-[8px] not-italic text-white">
-                        {jobs.length.toLocaleString("fa-IR")}
-                      </em>
+                      <span
+                        className={cn(
+                          "grid size-9 shrink-0 place-items-center rounded-[10px]",
+                          active ? "bg-[#0f7b62] text-white" : "bg-[#edf3ef]",
+                        )}
+                      >
+                        <Icon size={18} />
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      {item.href === "/jobs" && jobs.length > 0 && (
+                        <em className="grid min-h-6 min-w-6 place-items-center rounded-full bg-[#0f7b62] px-1.5 text-[8px] not-italic text-white">
+                          {jobs.length.toLocaleString("fa-IR")}
+                        </em>
+                      )}
+                      <ChevronLeft size={15} className="shrink-0 opacity-50" />
+                    </Link>
+                    {item.href === "/interview" && (
+                      <InterviewSubmenu pathname={pathname} onNavigate={closeMobileMenu} mobile />
                     )}
-                    <ChevronLeft size={15} className="shrink-0 opacity-50" />
-                  </Link>
+                  </div>
                 );
               })}
             </nav>
 
-            {!isManagement && (
+            {!isManagement && !isEmployer && (
               <button
                 className="flex min-h-12 w-full items-center gap-3 rounded-[12px] border border-[#e1e8e3] bg-[#f8faf8] px-3 text-right text-[10px] text-[#526762]"
                 onClick={() => {
@@ -950,8 +1066,8 @@ function PanelShellContent({ children }: { children: ReactNode }) {
         </div>
         {mobilePrimaryMenuItems.map((item) => {
           const Icon = item.icon;
-          const active = pathname === item.href;
-          const dashboardItem = item.href === (isManagement ? "/admin" : "/dashboard");
+          const active = menuItemActive(pathname, item.href);
+          const dashboardItem = item.href === (isManagement ? "/admin" : isEmployer ? "/employer" : "/dashboard");
           return (
             <Link
               key={item.href}
@@ -983,8 +1099,8 @@ function PanelShellContent({ children }: { children: ReactNode }) {
           );
         })}
       </nav>
-      {userRole === "user" && <OnboardingLauncher />}
-      {dialog === "search" && (
+      {userRole === "user" && !isEmployer && <OnboardingLauncher />}
+      {dialog === "search" && !isEmployer && (
         <Modal title="جست‌وجوی سریع" description="مستقیم به هر بخش یا اقدام برو." onClose={() => setDialog(null)}>
           <div className="pt-4">
             <div className="mb-[9px] flex h-[46px] items-center gap-[9px] rounded-[11px] border border-[#dfe5df] bg-[#fafbf9] px-3">
@@ -1013,7 +1129,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
           </div>
         </Modal>
       )}
-      {dialog === "profiles" && (
+      {dialog === "profiles" && !isEmployer && (
         <Modal
           title="فضاهای کاری"
           description="هر فضای کاری رزومه‌ها، فرصت‌ها، اپلای‌ها و جلسه‌های مستقل خودش را دارد و نام آن به اطلاعات پایگاه دانش ارتباطی ندارد."

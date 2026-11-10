@@ -14,17 +14,18 @@ type ZarinpalResponse = {
   errors?: Array<{ code?: number; message?: string }> | Record<string, unknown>;
 };
 
-export class ZarinpalError extends Error {
+export class ZarinpalError extends PaymentGatewayError {
   constructor(
     message: string,
     readonly code?: number,
     readonly response?: ZarinpalResponse,
   ) {
-    super(message);
+    super(message, code, code === undefined || code >= 500);
   }
 }
 
-export class ZarinpalClient {
+export class ZarinpalClient implements PaymentGateway {
+  readonly id = "zarinpal_sandbox" as const;
   private readonly baseUrl: string;
 
   constructor(
@@ -94,4 +95,9 @@ export class ZarinpalClient {
       providerData: response.data ?? {},
     };
   }
+
+  paymentUrl(authority: string) {
+    return `${this.baseUrl}/pg/StartPay/${authority}`;
+  }
 }
+import { PaymentGatewayError, type PaymentGateway } from "./payment-gateway-types";

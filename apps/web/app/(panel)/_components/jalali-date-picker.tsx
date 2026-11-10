@@ -37,6 +37,9 @@ export function JalaliDatePicker({ value, onChange, ariaLabel, min, max, invalid
   const rootRef = useRef<HTMLDivElement>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
   const selectedDate = parseLocalIsoDate(value);
+  const today = new Date();
+  const todayIsoDate = toLocalIsoDate(today);
+  const todayLabel = formatPersianCalendarDate(today);
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => selectedDate ?? new Date());
   const [calendarPosition, setCalendarPosition] = useState<CalendarPosition | null>(null);
@@ -112,22 +115,26 @@ export function JalaliDatePicker({ value, onChange, ariaLabel, min, max, invalid
           invalid && "border-[#c44d4d] ring-4 ring-[#c44d4d]/10",
         )}
       >
-        <span className={cn("min-w-0 flex-1 truncate !font-normal", !selectedDate && "text-[#91a09b]")}>
+        {selectedDate && (
+          <X
+            size={13}
+            aria-label="پاک‌کردن تاریخ"
+            className="shrink-0 text-[#6f817b]"
+            onClick={(event) => {
+              event.stopPropagation();
+              onChange("");
+            }}
+          />
+        )}
+        <span
+          className={cn(
+            "min-w-0 flex-1 truncate text-left [direction:ltr] !font-normal",
+            !selectedDate && "text-[#91a09b]",
+          )}
+        >
           {selectedDate ? formatPersianCalendarDate(selectedDate) : "انتخاب تاریخ"}
         </span>
-        <span className="flex shrink-0 items-center gap-1.5 text-[#6f817b]">
-          {selectedDate && (
-            <X
-              size={13}
-              aria-label="پاک‌کردن تاریخ"
-              onClick={(event) => {
-                event.stopPropagation();
-                onChange("");
-              }}
-            />
-          )}
-          <CalendarDays size={15} />
-        </span>
+        <CalendarDays className="shrink-0 text-[#6f817b]" size={15} />
       </button>
 
       {open &&
@@ -162,6 +169,7 @@ export function JalaliDatePicker({ value, onChange, ariaLabel, min, max, invalid
                 <ChevronLeft size={16} />
               </button>
             </div>
+            <p className="mb-2 text-center text-[10px] font-bold text-[#628071]">امروز: {todayLabel}</p>
             <div className="grid grid-cols-7 gap-1 text-center">
               {weekDays.map((day) => (
                 <span key={day} className="py-1 text-[10px] font-bold text-[#91a09c]">
@@ -177,12 +185,15 @@ export function JalaliDatePicker({ value, onChange, ariaLabel, min, max, invalid
                 const disabled =
                   (minDate !== undefined && time < minDate) || (maxDate !== undefined && time > maxDate);
                 const selected = isoDate === value;
+                const isToday = isoDate === todayIsoDate;
                 return (
                   <button
                     key={isoDate}
                     type="button"
                     disabled={disabled}
                     aria-pressed={selected}
+                    aria-label={isToday ? `امروز، ${formatPersianCalendarDate(date)}` : formatPersianCalendarDate(date)}
+                    data-today={isToday ? "true" : undefined}
                     onClick={() => {
                       onChange(isoDate);
                       setOpen(false);
@@ -192,6 +203,7 @@ export function JalaliDatePicker({ value, onChange, ariaLabel, min, max, invalid
                       selected
                         ? "bg-[#0f7b62] font-bold text-white"
                         : "text-[#415650] hover:bg-[#edf6f2] hover:text-[#0f7b62]",
+                      isToday && !selected && "bg-[#e8f5ef] font-bold ring-1 ring-inset ring-[#0f7b62] text-[#0f7b62]",
                       disabled && "cursor-not-allowed opacity-25 hover:bg-transparent",
                     )}
                   >

@@ -1,6 +1,7 @@
 export const roles = ["user", "admin", "superadmin"] as const;
 export type UserRole = (typeof roles)[number];
 export type UserStatus = "active" | "suspended";
+export type AccountType = "candidate" | "employer";
 export type OnboardingStepId = "profile" | "match" | "resume" | "application" | "referral" | "interview";
 export type OnboardingState = {
   version: number;
@@ -14,6 +15,7 @@ export type AuthUser = {
   email: string | null;
   fullName: string | null;
   role: UserRole;
+  accountType: AccountType;
   status: UserStatus;
   createdAt: string;
   lastLoginAt: string | null;

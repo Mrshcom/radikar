@@ -14,6 +14,7 @@ declare module "fastify" {
 
 const requestOtpSchema = z.object({ phone: z.string().min(1).max(32) });
 const verifyOtpSchema = requestOtpSchema.extend({
+  accountType: z.enum(["candidate", "employer"]).default("candidate"),
   challengeId: z.uuid(),
   code: z
     .string()
@@ -22,6 +23,7 @@ const verifyOtpSchema = requestOtpSchema.extend({
   referralCode: z.string().max(20).optional(),
 });
 const googleStartSchema = z.object({
+  accountType: z.enum(["candidate", "employer"]).default("candidate"),
   next: z.string().max(500).optional(),
   ref: z.string().max(20).optional(),
 });
@@ -52,6 +54,7 @@ const userListSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(200).default(20),
   role: optionalQueryValue(z.enum(["user", "admin", "superadmin"])),
+  accountType: optionalQueryValue(z.enum(["candidate", "employer"])),
   status: optionalQueryValue(z.enum(["active", "suspended"])),
   sortBy: optionalQueryValue(z.string().max(40)),
   sortDirection: optionalQueryValue(z.enum(["asc", "desc"])),
@@ -155,6 +158,10 @@ export function requirePermission(request: FastifyRequest, reply: FastifyReply, 
     reply.code(403).send({ error: "اجازه دسترسی به این بخش را نداری.", requestId: request.id });
     return false;
   }
+  if (permission.startsWith("own:data:") && request.auth.user.accountType !== "candidate") {
+    reply.code(403).send({ error: "این بخش برای حساب کارجو است.", requestId: request.id });
+    return false;
+  }
   return true;
 }
 
@@ -200,6 +207,7 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
       input.code,
       request.ip,
       input.referralCode,
+      input.accountType,
     );
     await options.productEvents?.record("auth_signup_completed", `signup:phone:${input.challengeId}`, result.user.id, {
       auth_method: "phone",
@@ -219,7 +227,7 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
     }
     try {
       const input = googleStartSchema.parse(request.query);
-      const result = await authService.beginGoogleLogin(input.next, input.ref);
+      const result = await authService.beginGoogleLogin(input.next, input.ref, input.accountType);
       reply.setCookie(googleStateCookieName, result.state, {
         path: "/",
         httpOnly: true,
@@ -252,7 +260,9 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
     } catch (error) {
       request.log.warn({ error }, "Google login callback failed");
       reply.clearCookie(googleStateCookieName, { path: "/" });
-      return reply.redirect(`${options.webAppUrl}/login?authError=google_failed`);
+      return reply.redirect(
+        `${options.webAppUrl}/login?authError=${error instanceof AuthError && error.statusCode === 409 ? "account_type_mismatch" : "google_failed"}`,
+      );
     }
   });
 
@@ -364,7 +374,7 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
   app.get("/api/admin/users", async (request, reply) => {
     if (!requirePermission(request, reply, "users:read:any")) return;
     const query = userListSchema.parse(request.query);
-    return query.sortBy || query.sortDirection
+    return query.sortBy || query.sortDirection || query.accountType
       ? authService.listUsers(
           query.search,
           query.page,
@@ -373,6 +383,7 @@ export function registerAuthRoutes(app: FastifyInstance, options: AuthRouteOptio
           query.status,
           query.sortBy,
           query.sortDirection,
+          query.accountType,
         )
       : authService.listUsers(query.search, query.page, query.pageSize, query.role, query.status);
   });

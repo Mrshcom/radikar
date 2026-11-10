@@ -11,6 +11,7 @@ import { JalaliDatePicker } from "../_components/jalali-date-picker";
 import { JobCardsSkeleton } from "../_components/skeletons";
 import { SectionTitle } from "../_components/ui";
 import { useToast } from "@/app/_components/toast";
+import { UpgradeLink } from "@/app/_components/upgrade-link";
 import { RangeSlider } from "@/app/_components/range-slider";
 import { applicationStore, createRecordId, jobStore } from "@/lib/data/stores";
 import type { ApplicationRecord, JobRecord } from "@/lib/data/models";
@@ -388,6 +389,7 @@ export default function JobsPage() {
               <Search size={34} />
               <h3>خواندن فرصت‌ها ناموفق بود</h3>
               <p>{error}</p>
+              <UpgradeLink className="mb-3 text-[11px]" message={error} />
               <button className={secondaryButton} onClick={loadJobs}>
                 تلاش دوباره
               </button>

@@ -1,8 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { ArrowLeft, CheckCircle2, CircleAlert, Info } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import {
@@ -13,6 +13,7 @@ import {
   type PlanUpgradeRequiredEventDetail,
 } from "@/lib/api-client";
 import { Modal } from "@/app/(panel)/_components/ui";
+import { UpgradeLink } from "./upgrade-link";
 
 type ToastVariant = "success" | "error" | "info";
 type ToastState = { message: string; variant: ToastVariant };
@@ -25,7 +26,6 @@ export function useToast() {
 }
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
   const shouldReduceMotion = useReducedMotion();
   const [toast, setToast] = useState<ToastState | null>(null);
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
@@ -40,11 +40,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     upgradeMessageRef.current = null;
     setUpgradeMessage(null);
   }, []);
-
-  const openPlans = useCallback(() => {
-    closeUpgradeModal();
-    router.push("/upgrade");
-  }, [closeUpgradeModal, router]);
 
   useEffect(() => {
     if (!toast) return;
@@ -108,14 +103,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             >
               فعلاً نه
             </button>
-            <button
+            <Link
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-[10px] border border-[#0f7b62] bg-[#0f7b62] px-4 text-[12px] font-bold text-white transition-colors hover:bg-[#0c6b55]"
-              type="button"
-              onClick={openPlans}
+              href="/upgrade"
+              onClick={closeUpgradeModal}
             >
               مشاهده و ارتقای پلن
               <ArrowLeft size={16} />
-            </button>
+            </Link>
           </div>
         </Modal>
       )}
@@ -149,7 +144,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             ) : (
               <CheckCircle2 className="shrink-0" size={19} />
             )}
-            <span className="min-w-0 break-words text-center leading-6 [overflow-wrap:anywhere]">{toast.message}</span>
+            <span className="min-w-0 break-words text-center leading-6 [overflow-wrap:anywhere]">
+              {toast.message}
+              {toast.variant === "error" && <UpgradeLink className="mx-auto mt-1 text-[11px]" message={toast.message} />}
+            </span>
           </motion.div>
         )}
       </AnimatePresence>

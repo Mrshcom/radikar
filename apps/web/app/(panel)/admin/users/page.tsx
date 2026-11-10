@@ -9,6 +9,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { adminUserEditSchema, type AdminUserEditInput } from "@radikar/validators";
 import { useAuth, type UserRole } from "@/app/_components/auth";
 import { SearchableSelect } from "@/app/_components/searchable-select";
+import { UpgradeLink } from "@/app/_components/upgrade-link";
 import { DataTable, type DataTableColumn, type SortState } from "../../_components/data-table";
 import { FormField } from "../../_components/form-field";
 import { TableActionButton } from "../../_components/table-action-button";
@@ -18,6 +19,12 @@ import { buildQueryString } from "@/lib/build-query-string";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { useUrlTablePagination } from "@/lib/table-page-size";
 import { userDisplayName, userIdentifier } from "@/lib/user-identity";
+import {
+  accountTypeFilterOptions,
+  accountTypeFilterParser,
+  accountTypeLabels,
+  type AccountType,
+} from "@/lib/account-type";
 import {
   createTableFilterParser,
   tableQueryStateOptions,
@@ -34,6 +41,7 @@ type AdminUser = {
   fullName: string | null;
   adminAlias: string | null;
   role: UserRole;
+  accountType: AccountType;
   status: "active" | "suspended";
   createdAt: string;
   lastLoginAt: string | null;
@@ -119,7 +127,10 @@ function UserEditModal({
           خالی گذاشتن نام مستعار، آن را حذف می‌کند و نام ثبت‌شده‌ی خود کاربر تغییر نمی‌کند.
         </p>
         {error && (
-          <p className="m-0 rounded-[10px] bg-[#fff0ed] p-3 text-[10px] font-bold text-[#b14848]">{error.message}</p>
+          <div className="rounded-[10px] bg-[#fff0ed] p-3 text-[10px] font-bold text-[#b14848]">
+            <p className="m-0">{error.message}</p>
+            <UpgradeLink className="mt-2 text-[10px]" message={error.message} />
+          </div>
         )}
         <div className="flex justify-end gap-2">
           <button
@@ -146,6 +157,7 @@ const roleLabels: Record<UserRole, string> = { user: "کاربر", admin: "اد�
 const userFilterParsers = {
   search: tableSearchParser,
   role: createTableFilterParser(["user", "admin", "superadmin"]),
+  accountType: accountTypeFilterParser,
   status: createTableFilterParser(["active", "suspended"]),
   sortBy: tableSortByParser,
   sortDirection: tableSortDirectionParser,
@@ -154,7 +166,7 @@ const userFilterParsers = {
 export default function AdminUsersPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [{ search, role, status, sortBy, sortDirection }, setFilters] = useQueryStates(userFilterParsers, {
+  const [{ search, role, accountType, status, sortBy, sortDirection }, setFilters] = useQueryStates(userFilterParsers, {
     ...tableQueryStateOptions,
     urlKeys: { search: "q" },
   });
@@ -167,10 +179,10 @@ export default function AdminUsersPage() {
   const sort: SortState =
     sortBy && (sortDirection === "asc" || sortDirection === "desc") ? { key: sortBy, direction: sortDirection } : null;
   const users = useQuery({
-    queryKey: ["admin", "users", search, role, status, page, pageSize, sortBy, sortDirection],
+    queryKey: ["admin", "users", search, role, accountType, status, page, pageSize, sortBy, sortDirection],
     queryFn: () =>
       apiRequest<UsersResponse>(
-        `/api/admin/users?${buildQueryString({ search, role, status, page, pageSize, sortBy, sortDirection })}`,
+        `/api/admin/users?${buildQueryString({ search, role, accountType, status, page, pageSize, sortBy, sortDirection })}`,
       ),
     enabled: user?.role === "superadmin",
     staleTime: 15_000,
@@ -223,6 +235,11 @@ export default function AdminUsersPage() {
         ),
     },
     {
+      key: "accountType",
+      title: "نوع حساب",
+      render: (item) => <span className="font-bold text-[#526461]">{accountTypeLabels[item.accountType]}</span>,
+    },
+    {
       key: "role",
       title: "نقش",
       render: (item) => <span className="font-bold text-[#526461]">{roleLabels[item.role]}</span>,
@@ -254,16 +271,18 @@ export default function AdminUsersPage() {
       title: "عملیات",
       sortable: false,
       render: (item) => (
-        <TableActionButton
-          label={`ویرایش ${userDisplayName(item)}`}
-          disabled={updateUser.isPending}
-          onClick={() => {
-            updateUser.reset();
-            setEditUser(item);
-          }}
-        >
-          <Pencil size={14} />
-        </TableActionButton>
+        <div className="flex items-center gap-1">
+          <TableActionButton
+            label={`ویرایش ${userDisplayName(item)}`}
+            disabled={updateUser.isPending}
+            onClick={() => {
+              updateUser.reset();
+              setEditUser(item);
+            }}
+          >
+            <Pencil size={14} />
+          </TableActionButton>
+        </div>
       ),
     },
   ];
@@ -274,16 +293,25 @@ export default function AdminUsersPage() {
         <AdminTableToolbar
           search={search}
           searchPlaceholder="نام، شماره همراه یا ایمیل"
-          activeFilterCount={Number(Boolean(role)) + Number(Boolean(status))}
+          activeFilterCount={Number(Boolean(role)) + Number(Boolean(accountType)) + Number(Boolean(status))}
           onSearch={(value) => {
             void setFilters({ search: value });
             setPage(1);
           }}
           onResetFilters={() => {
-            void setFilters({ role: "", status: "" });
+            void setFilters({ role: "", accountType: "", status: "" });
             setPage(1);
           }}
         >
+          <AdminFilterSelect
+            label="نوع حساب"
+            value={accountType}
+            onChange={(value) => {
+              void setFilters({ accountType: value as typeof accountType });
+              setPage(1);
+            }}
+            options={accountTypeFilterOptions}
+          />
           <AdminFilterSelect
             label="نقش"
             value={role}
@@ -320,7 +348,7 @@ export default function AdminUsersPage() {
           error={users.error}
           retrying={users.isFetching}
           onRetry={() => void users.refetch()}
-          filtered={Boolean(search || role || status)}
+          filtered={Boolean(search || role || accountType || status)}
           sort={sort}
           onSortChange={(next) => {
             void setFilters({ sortBy: next?.key ?? "", sortDirection: next?.direction ?? "" });

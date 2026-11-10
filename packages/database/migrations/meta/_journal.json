@@ -183,6 +183,118 @@
       "when": 1791621718867,
       "tag": "0025_product_timeline",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793133966955,
+      "tag": "0026_credit_pack_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1793133966956,
+      "tag": "0027_payment_provider",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1793290000000,
+      "tag": "0028_employer_hiring",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1793290000001,
+      "tag": "0029_employer_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793290000002,
+      "tag": "0030_account_types",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793290000003,
+      "tag": "0031_employer_resume_files",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793372400000,
+      "tag": "0032_radicoin_pack_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793376000000,
+      "tag": "0033_account_specific_plans",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793379600000,
+      "tag": "0034_employer_resume_bank",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793388564989,
+      "tag": "0035_employer_resume_specialty",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793600430761,
+      "tag": "0036_conscious_firelord",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793600430762,
+      "tag": "0037_employer_workflow_backfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1794170000000,
+      "tag": "0038_employer_interview_conversation",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1794170000001,
+      "tag": "0039_employer_interview_clarifications",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1794230922838,
+      "tag": "0040_employer_interview_agent_chat",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1794255000000,
+      "tag": "0041_support_tickets",
+      "breakpoints": true
     }
   ]
 }

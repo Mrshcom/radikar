@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { z } from "zod";
 import { useToast } from "@/app/_components/toast";
+import { useAuth } from "@/app/_components/auth";
 import { ApiError } from "@/lib/api-client";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { formatLimit, formatTomans, type Plan, useCreateOrder, useMembership, usePlans } from "@/lib/billing";
@@ -41,9 +42,23 @@ const planMascots: Record<string, { src: string; alt: string }> = {
     src: "/illustrations/radikar-plan-professional-v1.png",
     alt: "ماسکات حرفه‌ای رادیکار با نشان موفقیت",
   },
+  "employer-free": {
+    src: "/illustrations/radikar-plan-free-v1.png",
+    alt: "ماسکات رادیکار برای شروع استخدام",
+  },
+  "employer-growth": {
+    src: "/illustrations/radikar-plan-job-search-v1.png",
+    alt: "ماسکات رادیکار برای جذب حرفه‌ای",
+  },
+  "employer-scale": {
+    src: "/illustrations/radikar-plan-professional-v1.png",
+    alt: "ماسکات رادیکار برای استخدام تیمی",
+  },
 };
 
 export default function UpgradePage() {
+  const { user } = useAuth();
+  const isEmployer = user?.accountType === "employer";
   const plans = usePlans();
   const membership = useMembership();
   const wallet = useRadicoinWallet();
@@ -99,8 +114,12 @@ export default function UpgradePage() {
     <div className="grid gap-7">
       <SectionTitle
         className="max-w-2xl"
-        description="همه پلن‌ها ۳۰ روزه‌اند. تمدید همان پلن به زمان و اعتبار فعلی اضافه می‌شود و ارتقا بلافاصله فعال خواهد شد."
-        title="پلن مناسب مسیر شغلی‌ات را انتخاب کن"
+        description={
+          isEmployer
+            ? "پلن‌های کارفرما برای مدیریت جذب، پایش رزومه و دعوت نامزدها طراحی شده‌اند؛ رادیکوین موردنیاز عملیات استخدام را هم می‌توانی جداگانه شارژ کنی."
+            : "همه پلن‌ها ۳۰ روزه‌اند. تمدید همان پلن به زمان و اعتبار فعلی اضافه می‌شود و ارتقا بلافاصله فعال خواهد شد."
+        }
+        title={isEmployer ? "پلن مناسب فرایند استخدامت را انتخاب کن" : "پلن مناسب مسیر شغلی‌ات را انتخاب کن"}
       />
 
       {membership.data && (
@@ -150,19 +169,22 @@ export default function UpgradePage() {
           const downgradeBlocked = Boolean(
             membership.data?.status === "active" && membership.data.plan.sortOrder > plan.sortOrder,
           );
-          const features = [
-            `${formatLimit(plan.resumeLimit)} رزومه`,
-            `${formatLimit(plan.pdfDownloadLimit)} خروجی PDF`,
-            `${plan.aiCredits.toLocaleString("fa-IR")} اعتبار هوش مصنوعی`,
-            `${plan.matchCredits.toLocaleString("fa-IR")} تحلیل تطبیق شغلی`,
-            `${plan.interviewCredits.toLocaleString("fa-IR")} جلسه آمادگی مصاحبه`,
-          ];
+          const features = plan.features.length
+            ? plan.features
+            : [
+                `${formatLimit(plan.resumeLimit)} رزومه`,
+                `${formatLimit(plan.pdfDownloadLimit)} خروجی PDF`,
+                `${plan.aiCredits.toLocaleString("fa-IR")} اعتبار هوش مصنوعی`,
+                `${plan.matchCredits.toLocaleString("fa-IR")} تحلیل تطبیق شغلی`,
+                `${plan.interviewCredits.toLocaleString("fa-IR")} جلسه آمادگی مصاحبه`,
+              ];
+          const recommendedPlanId = isEmployer ? "employer-growth" : "job-search";
           return (
             <article
-              className={`relative flex min-h-[430px] flex-col rounded-[22px] border bg-white p-6 shadow-[0_14px_40px_rgba(27,63,54,.06)] max-md:min-h-[380px] max-md:p-4 ${showRecommendedPlan && plan.id === "job-search" ? "border-[#69b39c] ring-4 ring-[#e9f5f0]" : upgrading ? "border-[#69b39c]" : "border-[#e1e8e2]"}`}
+              className={`relative flex min-h-[430px] flex-col rounded-[22px] border bg-white p-6 shadow-[0_14px_40px_rgba(27,63,54,.06)] max-md:min-h-[380px] max-md:p-4 ${showRecommendedPlan && plan.id === recommendedPlanId ? "border-[#69b39c] ring-4 ring-[#e9f5f0]" : upgrading ? "border-[#69b39c]" : "border-[#e1e8e2]"}`}
               key={plan.id}
             >
-              {showRecommendedPlan && plan.id === "job-search" && (
+              {showRecommendedPlan && plan.id === recommendedPlanId && (
                 <span className="absolute -top-3 left-6 rounded-full bg-[#0f7b62] px-3 py-1 text-[11px] text-white">
                   پیشنهاد رادیکار
                 </span>

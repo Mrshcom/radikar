@@ -6,6 +6,7 @@ import { DeleteConfirmModal, Modal, SectionTitle } from "../_components/ui";
 import { JobDetailsModal, JobLogo } from "../_components/job-card";
 import { ApplicationsSkeleton } from "../_components/skeletons";
 import { useToast } from "@/app/_components/toast";
+import { UpgradeLink } from "@/app/_components/upgrade-link";
 import { applicationStore, createRecordId, jobStore } from "@/lib/data/stores";
 import type { ApplicationRecord, ApplicationStage, JobRecord } from "@/lib/data/models";
 import { formatPersianNumber } from "@/lib/fa-number";
@@ -225,6 +226,7 @@ export default function ApplicationsPage() {
         <Target size={34} />
         <h3>خواندن اپلای‌ها ناموفق بود</h3>
         <p>{error}</p>
+        <UpgradeLink className="mb-3 text-[11px]" message={error} />
         <button className={secondaryButton} onClick={loadPipeline}>
           تلاش دوباره
         </button>

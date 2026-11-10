@@ -5,8 +5,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from "react";
-import { useForm } from "react-hook-form";
-import { ArrowLeft, ArrowRight, LoaderCircle, Phone, RefreshCw, Sparkles } from "lucide-react";
+import { useForm, useWatch } from "react-hook-form";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BriefcaseBusiness,
+  LoaderCircle,
+  Phone,
+  RefreshCw,
+  Sparkles,
+  UserRound,
+} from "lucide-react";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api-client";
@@ -15,10 +24,12 @@ import { authQueryKey, type CurrentUser } from "@/app/_components/auth";
 import { useToast } from "@/app/_components/toast";
 import { toPersianDigits } from "@/lib/fa-number";
 import { normalizeDigits } from "@radikar/validators";
+import { loginDestination, portalFromLoginQuery } from "@/lib/login-destination";
 
 const localizedNumericString = z.string().trim().transform(normalizeDigits);
 
 const phoneSchema = z.object({
+  portal: z.enum(["candidate", "employer"]),
   phone: localizedNumericString.pipe(
     z
       .string()
@@ -39,7 +50,7 @@ const fieldClass =
 
 function logReversedOtpFromResponse(response: Response) {
   const reversedCode = response.headers.get("x-radikar-otp-reversed");
-  if (reversedCode) console.info(`[radikar:otp-reversed] ${reversedCode}`);
+  if (reversedCode) console.info(`[radikar:otp] ${reversedCode}`);
 }
 
 function GoogleMark() {
@@ -78,11 +89,14 @@ export default function LoginPage() {
   const {
     register: registerPhone,
     handleSubmit: handlePhoneSubmit,
+    control: phoneControl,
+    setValue: setPhoneValue,
     formState: { errors: phoneErrors, isSubmitting: isSending },
   } = useForm<PhoneValues>({
     resolver: zodResolver(phoneSchema),
-    defaultValues: { phone: "" },
+    defaultValues: { portal: "candidate", phone: "" },
   });
+  const portal = useWatch({ control: phoneControl, name: "portal" });
   const {
     register: registerOtp,
     handleSubmit: handleOtpSubmit,
@@ -103,21 +117,28 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
+    setPhoneValue("portal", portalFromLoginQuery(window.location.search));
+  }, [setPhoneValue]);
+
+  useEffect(() => {
     const error = new URLSearchParams(window.location.search).get("authError");
     if (!error) return;
     const message =
       error === "google_denied"
         ? "ورود با Google لغو شد. می‌توانی دوباره تلاش کنی."
-        : error === "google_unavailable"
-          ? "ورود با Google در حال حاضر در دسترس نیست."
-          : "ورود با Google کامل نشد. لطفاً دوباره تلاش کن.";
+        : error === "account_type_mismatch"
+          ? "این حساب با نوع کاربری دیگری ثبت شده است. نوع درست حساب را انتخاب کن."
+          : error === "google_unavailable"
+            ? "ورود با Google در حال حاضر در دسترس نیست."
+            : "ورود با Google کامل نشد. لطفاً دوباره تلاش کن.";
     const timer = window.setTimeout(() => setServerError(message), 0);
     return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    if (step === "otp") router.prefetch("/dashboard");
-  }, [router, step]);
+    if (step === "otp")
+      router.prefetch(loginDestination(portal, new URLSearchParams(window.location.search).get("next")));
+  }, [portal, router, step]);
 
   const startGoogleLogin = () => {
     const next = new URLSearchParams(window.location.search).get("next");
@@ -126,7 +147,8 @@ export default function LoginPage() {
       window.localStorage.getItem("radikar_referral_code") ||
       "";
     const query = new URLSearchParams({
-      ...(next ? { next } : {}),
+      next: loginDestination(portal, next),
+      accountType: portal,
       ...(referralCode ? { ref: referralCode } : {}),
     }).toString();
     window.location.assign(apiUrl(`/api/auth/google/start${query ? `?${query}` : ""}`));
@@ -141,7 +163,13 @@ export default function LoginPage() {
       ),
   });
   const verifyOtpMutation = useMutation({
-    mutationFn: (input: { phone: string; challengeId: string; code: string; referralCode?: string }) =>
+    mutationFn: (input: {
+      phone: string;
+      challengeId: string;
+      code: string;
+      referralCode?: string;
+      accountType: "candidate" | "employer";
+    }) =>
       apiRequest<{ user: CurrentUser; expiresAt: string }>("/api/auth/verify-otp", {
         method: "POST",
         body: JSON.stringify(input),
@@ -172,6 +200,7 @@ export default function LoginPage() {
         phone: submittedPhone,
         challengeId,
         code: otp,
+        accountType: portal,
         referralCode:
           new URLSearchParams(window.location.search).get("ref") ||
           window.localStorage.getItem("radikar_referral_code") ||
@@ -182,7 +211,9 @@ export default function LoginPage() {
       window.localStorage.removeItem("radikar_referral_code");
       setIsRedirecting(true);
       notify("با موفقیت وارد حساب کاربری شدی.");
-      router.replace(result.user.role === "user" ? "/dashboard" : "/admin");
+      router.replace(
+        loginDestination(portal, new URLSearchParams(window.location.search).get("next"), result.user.role),
+      );
     } catch (error) {
       setIsRedirecting(false);
       setServerError(error instanceof Error ? error.message : "بررسی کد ورود ناموفق بود.");
@@ -273,12 +304,14 @@ export default function LoginPage() {
               <Sparkles size={22} />
             </span>
             <h1 className="m-0 text-[34px] font-black leading-[1.55] tracking-[-.8px]">
-              مسیر شغلی بعدی‌ات،
+              {portal === "employer" ? "نیروی مناسب بعدی‌ات،" : "مسیر شغلی بعدی‌ات،"}
               <br />
               از همین‌جا شروع می‌شود.
             </h1>
             <p className="mb-0 mt-5 text-[13px] leading-[2] text-white/72">
-              رزومه حرفه‌ای بساز، فرصت‌های مناسب را پیدا کن و روند اپلای‌هایت را یک‌جا مدیریت کن.
+              {portal === "employer"
+                ? "پوزیشن شغلی بساز، رزومه‌ها را هوشمند پایش کن و مصاحبه‌ها را یک‌جا پیگیری کن."
+                : "رزومه حرفه‌ای بساز، فرصت‌های مناسب را پیدا کن و روند اپلای‌هایت را یک‌جا مدیریت کن."}
             </p>
           </div>
 
@@ -314,7 +347,7 @@ export default function LoginPage() {
             <>
               <div className="mb-6">
                 <h2 className="m-0 text-[25px] font-black tracking-[-.5px] text-[#19312f] sm:text-[27px]">
-                  ورود به حساب کاربری
+                  ورود به‌عنوان {portal === "employer" ? "کارفرما" : "کارجو"}
                 </h2>
                 <p className="mb-0 mt-2 text-[11px] leading-7 text-[#7b8b87] sm:mt-3 sm:leading-[1.9]">
                   {step === "phone"
@@ -328,6 +361,25 @@ export default function LoginPage() {
               {step === "phone" ? (
                 <div className="grid gap-4">
                   <form className="grid gap-4" onSubmit={handlePhoneSubmit(sendOtp)} noValidate>
+                    <fieldset className="grid gap-2">
+                      <legend className="mb-2 text-[11px] font-bold text-[#354b47]">
+                        چطور می‌خواهی وارد رادیکار شوی؟
+                      </legend>
+                      <div className="grid grid-cols-2 gap-2">
+                        <label
+                          className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-3 text-xs font-bold transition ${portal === "candidate" ? "border-[#0f7b62] bg-[#edf7f1] text-[#0f7b62]" : "border-[#dce5df] text-[#677a72]"}`}
+                        >
+                          <input type="radio" value="candidate" className="sr-only" {...registerPhone("portal")} />
+                          <UserRound size={18} aria-hidden="true" /> کارجو
+                        </label>
+                        <label
+                          className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-3 text-xs font-bold transition ${portal === "employer" ? "border-[#0f7b62] bg-[#edf7f1] text-[#0f7b62]" : "border-[#dce5df] text-[#677a72]"}`}
+                        >
+                          <input type="radio" value="employer" className="sr-only" {...registerPhone("portal")} />
+                          <BriefcaseBusiness size={18} aria-hidden="true" /> کارفرما
+                        </label>
+                      </div>
+                    </fieldset>
                     <label className="grid gap-2 text-[11px] font-bold text-[#354b47]">
                       شماره همراه
                       <span className="relative block" dir="ltr">

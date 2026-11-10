@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/app/_components/auth";
 import { useMembership, usePlans } from "@/lib/billing";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { useRadicoinHistory, useRadicoinWallet } from "@/lib/radicoins";
@@ -71,6 +72,8 @@ function TransactionSkeletons({ count = 3 }: { count?: number }) {
 }
 
 export default function RadicoinsPage() {
+  const { user } = useAuth();
+  const isEmployer = user?.accountType === "employer";
   const wallet = useRadicoinWallet();
   const history = useRadicoinHistory();
   const historyEndRef = useRef<HTMLDivElement>(null);
@@ -106,11 +109,13 @@ export default function RadicoinsPage() {
         <div className="relative grid items-center gap-4 lg:min-h-[430px] lg:grid-cols-[.9fr_1.1fr] lg:gap-8">
           <div className="relative z-20 flex flex-col justify-center px-2 pb-2 pt-7 md:px-5 lg:px-7 lg:py-10">
             <h1 className="m-0 max-w-lg text-[30px] font-black leading-[1.55] text-[#19312f]">
-              رادیکوین‌های تو، <span className="text-[#0f7b62]">سوخت مسیر حرفه‌ای تو</span>
+              رادیکوین‌های تو،{" "}
+              <span className="text-[#0f7b62]">{isEmployer ? "اعتبار عملیات استخدام" : "سوخت مسیر حرفه‌ای تو"}</span>
             </h1>
             <p className="mb-0 mt-3 max-w-xl text-[12px] leading-7 text-[#61746f]">
-              با حضور و فعالیت واقعی در رادیکار سکه جمع کن و آن‌ها را برای ارتقای پلن خرج کن. رادیکوین‌های عادی منقضی
-              نمی‌شوند.
+              {isEmployer
+                ? "موجودی و گردش رادیکوین را ببین و برای پایش رزومه‌ها، دعوت نامزدها یا ارتقای پلن کارفرما از آن استفاده کن."
+                : "با حضور و فعالیت واقعی در رادیکار سکه جمع کن و آن‌ها را برای ارتقای پلن خرج کن. رادیکوین‌های عادی منقضی نمی‌شوند."}
             </p>
             <div className="mt-6 flex w-fit min-w-56 items-center gap-4 rounded-[18px] bg-white/95 px-5 py-4 shadow-[0_16px_45px_rgba(31,76,64,.12)] backdrop-blur-md">
               <Image
@@ -223,7 +228,7 @@ export default function RadicoinsPage() {
           </div>
           <Link
             className="inline-flex min-h-10 items-center gap-2 rounded-[11px] bg-[#0f7b62] px-4 text-[10px] font-bold text-white no-underline"
-            href="/upgrade"
+            href={isEmployer ? "/employer/plans" : "/upgrade"}
           >
             مشاهده پلن‌ها و ارتقا <ArrowLeft size={15} />
           </Link>
@@ -302,9 +307,7 @@ export default function RadicoinsPage() {
                     width={144}
                   />
                   <div className="relative z-10 flex min-w-0 items-start gap-3">
-                    <span
-                      className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#ffedb5] text-[#8d6814]"
-                    >
+                    <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#ffedb5] text-[#8d6814]">
                       <TransactionIcon size={17} />
                     </span>
                     <div className="min-w-0 flex-1 pl-44">
@@ -312,14 +315,14 @@ export default function RadicoinsPage() {
                       <span className="mt-1 flex items-center gap-1.5 text-[10px] text-[#7d908a]">
                         {source}
                         {reversedDebit && (
-                          <span className="rounded-full bg-[#fff0bf] px-1.5 py-0.5 font-bold text-[#8d6814]">برگشت‌خورده</span>
+                          <span className="rounded-full bg-[#fff0bf] px-1.5 py-0.5 font-bold text-[#8d6814]">
+                            برگشت‌خورده
+                          </span>
                         )}
                       </span>
                     </div>
                     <div className="absolute left-4 top-4 z-10 flex items-center gap-2" dir="ltr">
-                      <strong
-                        className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#ffedb5] px-2.5 py-1 text-[12px] text-[#8d6814]"
-                      >
+                      <strong className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#ffedb5] px-2.5 py-1 text-[12px] text-[#8d6814]">
                         {`${isCredit ? "+" : "−"}${Math.abs(displayAmount).toLocaleString("fa-IR")}`}
                         <Image
                           alt=""

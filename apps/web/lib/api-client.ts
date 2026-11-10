@@ -21,10 +21,12 @@ export function clearPendingPlanUpgradeMessage() {
 
 export class ApiError extends Error {
   readonly status: number;
+  readonly code?: string;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -68,10 +70,10 @@ export async function apiRequest<T>(
     // Diagnostic hooks must not change request success or error handling.
   }
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { error?: string };
+    const body = (await response.json().catch(() => ({}))) as { error?: string; code?: string };
     const message = toPersianServiceErrorMessage(body.error);
-    if (response.status === 402) notifyPlanUpgradeRequired(message);
-    throw new ApiError(response.status, message);
+    if (response.status === 402 && body.code !== "INSUFFICIENT_RADICOIN") notifyPlanUpgradeRequired(message);
+    throw new ApiError(response.status, message, body.code);
   }
   if (response.status === 204) return undefined as T;
   try {

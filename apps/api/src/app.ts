@@ -13,6 +13,7 @@ import { JobPoolService } from "./modules/job-pool/service";
 import { RadicoinService } from "./modules/radicoin/service";
 import { ProductEventService } from "./modules/analytics/service";
 import { createProviderOtpDelivery, OtpProviderClient } from "./modules/notifications/otp-delivery";
+import { InterviewAgentClient } from "./modules/ai/interview-agent";
 
 loadLocalEnvironment();
 const config = readConfig();
@@ -41,6 +42,10 @@ const deliverOtp =
 const billingService = new BillingService(database.db, {
   apiPublicUrl: config.API_PUBLIC_URL,
   webAppUrl: config.WEB_APP_URL,
+  paymentProvider: config.PAYMENT_PROVIDER,
+  paymentProviderEnvironment: config.PAYMENT_PROVIDER_ENVIRONMENT,
+  paymentProviderBaseUrl: config.PAYMENT_PROVIDER_BASE_URL,
+  paymentProviderSecretKey: config.PAYMENT_PROVIDER_SECRET_KEY,
   zarinpalBaseUrl: config.ZARINPAL_BASE_URL,
   zarinpalMerchantId: config.ZARINPAL_MERCHANT_ID,
   radicoinService,
@@ -77,7 +82,7 @@ const app = buildApp({
     otpDeliveryMode: config.OTP_DELIVERY_MODE,
     deliverOtp,
     logReversedOtp: config.OTP_LOG_REVERSED_CODE
-      ? (reversedCode) => console.info(`[radikar:otp-reversed] ${reversedCode}`)
+      ? (reversedCode) => console.info(`[radikar:otp] ${reversedCode}`)
       : undefined,
     googleClientId: config.GOOGLE_CLIENT_ID,
     googleClientSecret: config.GOOGLE_CLIENT_SECRET,
@@ -89,6 +94,17 @@ const app = buildApp({
   radicoinService,
   jobPoolService,
   productEvents,
+  interviewAgent:
+    config.LLM_PROVIDER === "agent"
+      ? new InterviewAgentClient({
+          baseUrl: config.LLM_BASE_URL!,
+          apiKey: config.LLM_API_KEY!,
+          interviewerAgent: config.LLM_AGENT_INTERVIEWER!,
+          resumeRankerAgent: config.LLM_AGENT_RESUME_RANKER!,
+          timeoutMs: config.LLM_TIMEOUT_MS,
+        })
+      : undefined,
+  interviewChatSecret: config.AUTH_SECRET,
   exposeReversedOtp: config.OTP_LOG_REVERSED_CODE,
   database: database.db,
   sessionCookieName: config.NODE_ENV === "production" ? "__Host-radikar_session" : "radikar_session",

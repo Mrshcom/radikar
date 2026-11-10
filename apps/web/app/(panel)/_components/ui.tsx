@@ -9,6 +9,7 @@ export function Modal({
   headerActions,
   headerClassName,
   titleClassName,
+  modalClassName,
   children,
   onClose,
   wide = false,
@@ -20,6 +21,7 @@ export function Modal({
   headerActions?: ReactNode;
   headerClassName?: string;
   titleClassName?: string;
+  modalClassName?: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
@@ -39,7 +41,7 @@ export function Modal({
       onMouseDown={onClose}
     >
       <section
-        className={`${document ? "w-[min(804px,calc(100vw-32px))] max-w-[804px]" : wide ? "w-[min(1440px,calc(100vw-32px))] max-w-[1440px]" : "w-[min(520px,100%)]"} max-h-[calc(100dvh-40px)] cursor-default overflow-y-auto overscroll-contain rounded-[19px] border border-white/65 bg-white p-[22px] pb-8 text-[12px] shadow-[0_26px_80px_rgba(10,38,33,.25)] [-webkit-overflow-scrolling:touch] max-[560px]:max-h-[calc(100dvh-20px)] max-[560px]:rounded-[15px] max-[560px]:p-[17px] max-[560px]:pb-6`}
+        className={`${document ? "w-[min(804px,calc(100vw-32px))] max-w-[804px]" : wide ? "w-[min(1440px,calc(100vw-32px))] max-w-[1440px]" : "w-[min(520px,100%)]"} max-h-[calc(100dvh-40px)] cursor-default overflow-y-auto overscroll-contain rounded-[19px] border border-white/65 bg-white p-[22px] pb-8 text-[12px] shadow-[0_26px_80px_rgba(10,38,33,.25)] [-webkit-overflow-scrolling:touch] max-[560px]:max-h-[calc(100dvh-20px)] max-[560px]:rounded-[15px] max-[560px]:p-[17px] max-[560px]:pb-6 ${modalClassName || ""}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -160,7 +162,7 @@ export function SectionTitle({
   className,
 }: {
   title: string;
-  description: string;
+  description?: string;
   action?: ReactNode;
   className?: string;
 }) {
@@ -168,7 +170,7 @@ export function SectionTitle({
     <div className={`mb-8 flex items-start justify-between gap-5 max-[560px]:block ${className || ""}`}>
       <div>
         <h1 className="m-0 text-[30px] font-black leading-[1.4] tracking-[-1px] text-[#19312f]">{title}</h1>
-        <p className="m-0 mt-1 text-[12px] leading-7 text-[#758582]">{description}</p>
+        {description && <p className="m-0 mt-1 text-[12px] leading-7 text-[#758582]">{description}</p>}
       </div>
       {action && <div className="max-[560px]:mt-4 max-[560px]:w-full">{action}</div>}
     </div>

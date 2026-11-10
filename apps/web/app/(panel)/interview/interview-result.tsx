@@ -1,8 +1,9 @@
 import Image from "next/image";
-import { CheckCircle2, ChevronDown, Lightbulb, Trophy, TrendingUp } from "lucide-react";
+import { CheckCircle2, Trophy, TrendingUp } from "lucide-react";
 import type { InterviewSessionRecord } from "@/lib/data/models";
 import { formatPersianNumber } from "@/lib/fa-number";
 import { CircularProgress } from "../_components/circular-progress";
+import { InterviewTopicRadar } from "./interview-topic-radar";
 
 export function InterviewResult({ session, onRestart }: { session: InterviewSessionRecord; onRestart: () => void }) {
   const report = session.report;
@@ -82,69 +83,7 @@ export function InterviewResult({ session, onRestart }: { session: InterviewSess
           </div>
         ))}
       </div>
-      <div>
-        <h3 className="mb-3 mt-6 text-base font-bold text-[#19312f]">بررسی سؤال‌به‌سؤال</h3>
-        <p className="mb-4 text-sm text-[#61746f]">
-          هر سؤال را باز کن تا پاسخ خودت، نکته‌های بهبود و نمونهٔ پاسخ بهتر را ببینی.
-        </p>
-        <div className="space-y-3">
-          {report.questions.map((item) => (
-            <details
-              key={item.questionIndex}
-              className="group overflow-hidden rounded-[18px] border border-[#e1e8e2] bg-white"
-            >
-              <summary className="flex cursor-pointer list-none items-center gap-3 p-5 [&::-webkit-details-marker]:hidden">
-                <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#e6f4ee] text-sm font-bold text-[#0f7b62]">
-                  {formatPersianNumber(item.questionIndex + 1)}
-                </span>
-                <p className="min-w-0 flex-1 text-sm leading-7 text-[#19312f]">
-                  {session.questions[item.questionIndex]}
-                </p>
-                <span className="shrink-0 text-sm font-bold text-[#0f7b62]">
-                  {formatPersianNumber(item.score)} از ۱۰۰
-                </span>
-                <ChevronDown size={18} className="shrink-0 text-[#61746f] transition-transform group-open:rotate-180" />
-              </summary>
-              <div className="space-y-4 border-t border-[#e9eeea] p-5 text-sm leading-8">
-                <div className="rounded-xl bg-[#f6f8f5] p-4">
-                  <h4 className="m-0 text-[#19312f]">پاسخ تو</h4>
-                  <p className="mb-0 mt-1 whitespace-pre-wrap text-[#61746f]">
-                    {session.answers?.[item.questionIndex]}
-                  </p>
-                </div>
-                <p className="m-0 text-[#19312f]">{item.feedback}</p>
-                {item.strengths.length > 0 && (
-                  <div>
-                    <h4 className="m-0 text-[#176b57]">چه چیزی خوب بود؟</h4>
-                    <ul className="my-1 list-disc ps-5 text-[#61746f]">
-                      {item.strengths.map((text, index) => (
-                        <li key={index}>{text}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {item.issues.length > 0 && (
-                  <div>
-                    <h4 className="m-0 text-[#986624]">چه چیزی بهتر شود؟</h4>
-                    <ul className="my-1 list-disc ps-5 text-[#61746f]">
-                      {item.issues.map((text, index) => (
-                        <li key={index}>{text}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <div className="rounded-xl border border-[#d5eadf] bg-[#eff9f4] p-4">
-                  <h4 className="m-0 flex items-center gap-2 text-[#176b57]">
-                    <Lightbulb size={18} />
-                    نمونهٔ پاسخ بهتر
-                  </h4>
-                  <p className="mb-0 mt-2 whitespace-pre-wrap text-[#365e52]">{item.suggestedAnswer}</p>
-                </div>
-              </div>
-            </details>
-          ))}
-        </div>
-      </div>
+      <InterviewTopicRadar report={report} questions={session.questions} />
       <div className="flex justify-end">
         <button
           type="button"

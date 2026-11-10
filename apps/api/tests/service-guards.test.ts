@@ -244,7 +244,7 @@ test("BillingService grants a free plan once and protects usage quotas", async (
     interviewCredits: 1,
     isActive: true,
   };
-  const { db, writes } = queuedDatabase([[], [freePlan]]);
+  const { db, writes } = queuedDatabase([[], [{ accountType: "candidate" }], [freePlan]]);
   const service = new BillingService(db as never, {
     apiPublicUrl: "http://api",
     webAppUrl: "http://web",
@@ -335,8 +335,16 @@ const activeMembership = {
 };
 
 test("BillingService creates gateway orders and marks failed gateway requests", async () => {
-  const plan = { id: "pro", name: "حرفه‌ای", isActive: true, isPurchasable: true, priceRials: 100_000, sortOrder: 20 };
-  const { db, writes } = queuedDatabase([[plan]]);
+  const plan = {
+    id: "pro",
+    name: "حرفه‌ای",
+    accountType: "candidate",
+    isActive: true,
+    isPurchasable: true,
+    priceRials: 100_000,
+    sortOrder: 20,
+  };
+  const { db, writes } = queuedDatabase([[plan], [{ accountType: "candidate" }]]);
   const service = new BillingService(db as never, billingOptions);
   (service as any).getMembership = async () => ({ ...activeMembership, plan: { sortOrder: 10 } });
   (service as any).gateway = {
@@ -345,7 +353,7 @@ test("BillingService creates gateway orders and marks failed gateway requests", 
   const created = await service.createOrder(activeMembership.userId, "09121234567", "pro");
   assert.equal(created.paymentUrl, "https://pay.test/A1");
   assert.equal(writes.filter((item) => item.kind === "insert").length, 2);
-  const failedDb = queuedDatabase([[plan]]);
+  const failedDb = queuedDatabase([[plan], [{ accountType: "candidate" }]]);
   const failed = new BillingService(failedDb.db as never, billingOptions);
   (failed as any).getMembership = async () => ({ ...activeMembership, plan: { sortOrder: 10 } });
   (failed as any).gateway = {
@@ -360,6 +368,24 @@ test("BillingService creates gateway orders and marks failed gateway requests", 
   assert.equal(
     failedDb.writes.some((item) => item.kind === "update"),
     true,
+  );
+});
+
+test("BillingService rejects a plan that belongs to another account type", async () => {
+  const plan = {
+    id: "candidate-pro",
+    accountType: "candidate",
+    isActive: true,
+    isPurchasable: true,
+    priceRials: 100_000,
+  };
+  const service = new BillingService(
+    queuedDatabase([[plan], [{ accountType: "employer" }]]).db as never,
+    billingOptions,
+  );
+  await assert.rejects(
+    () => service.createOrder(activeMembership.userId, "09121234567", plan.id),
+    (error: unknown) => error instanceof BillingError && error.statusCode === 400 && /نوع حساب/.test(error.message),
   );
 });
 
@@ -386,6 +412,7 @@ test("BillingService verifies every callback before it cancels a rejected paymen
 test("BillingService admin membership mutations write the expected membership events", async () => {
   const plan = {
     id: "pro",
+    accountType: "candidate",
     isActive: true,
     durationDays: 30,
     resumeLimit: 2,
@@ -398,7 +425,7 @@ test("BillingService admin membership mutations write the expected membership ev
     [
       "grant",
       (service) => service.adminGrantPlan(activeMembership.userId, "pro", "actor"),
-      [[plan], [{ id: "membership" }], [activeMembership]],
+      [[plan], [{ accountType: "candidate" }], [{ id: "membership" }], [activeMembership]],
     ],
     [
       "extend",
@@ -413,7 +440,7 @@ test("BillingService admin membership mutations write the expected membership ev
     [
       "cancel",
       (service) => service.adminCancelMembership(activeMembership.userId, "actor", "reason"),
-      [[{ id: "membership" }], [activeMembership]],
+      [[{ id: "membership" }], [activeMembership], [{ accountType: "candidate" }]],
     ],
   ];
   for (const [name, run, selects] of scenarios) {

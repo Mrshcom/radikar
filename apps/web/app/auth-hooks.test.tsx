@@ -3,14 +3,18 @@ import { render, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
-const { apiRequest, replace } = vi.hoisted(() => ({ apiRequest: vi.fn(), replace: vi.fn() }));
+const { apiRequest, replace, route } = vi.hoisted(() => ({
+  apiRequest: vi.fn(),
+  replace: vi.fn(),
+  route: { pathname: "/dashboard" },
+}));
 vi.mock("@/lib/api-client", () => ({
   apiRequest,
   ApiError: class ApiError extends Error {
     status = 401;
   },
 }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard", useRouter: () => ({ replace }) }));
+vi.mock("next/navigation", () => ({ usePathname: () => route.pathname, useRouter: () => ({ replace }) }));
 
 import { AuthGate, authQueryKey, useAuth, useLogout } from "@/app/_components/auth";
 
@@ -31,6 +35,7 @@ describe("auth hooks", () => {
           phone: "0912",
           fullName: null,
           role: "user",
+          accountType: "candidate",
           status: "active",
           createdAt: "x",
           lastLoginAt: null,
@@ -59,5 +64,28 @@ describe("auth hooks", () => {
     );
     expect(getByText("در حال بارگذاری")).toBeTruthy();
     expect(authQueryKey).toEqual(["auth", "me"]);
+  });
+
+  it("blocks cross-account panel routes in both directions", async () => {
+    for (const [accountType, pathname, destination] of [
+      ["employer", "/dashboard", "/employer"],
+      ["candidate", "/employer", "/dashboard"],
+    ] as const) {
+      replace.mockClear();
+      route.pathname = pathname;
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      client.setQueryData(authQueryKey, { user: { id: "u", role: "user", accountType } });
+      const page = render(
+        <QueryClientProvider client={client}>
+          <AuthGate>
+            <span>صفحهٔ خصوصی</span>
+          </AuthGate>
+        </QueryClientProvider>,
+      );
+      await waitFor(() => expect(replace).toHaveBeenCalledWith(destination));
+      expect(page.queryByText("صفحهٔ خصوصی")).toBeNull();
+      page.unmount();
+    }
+    route.pathname = "/dashboard";
   });
 });

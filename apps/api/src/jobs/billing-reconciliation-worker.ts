@@ -12,6 +12,10 @@ const radicoinService = new RadicoinService(database.db);
 const billingService = new BillingService(database.db, {
   apiPublicUrl: config.API_PUBLIC_URL,
   webAppUrl: config.WEB_APP_URL,
+  paymentProvider: config.PAYMENT_PROVIDER,
+  paymentProviderEnvironment: config.PAYMENT_PROVIDER_ENVIRONMENT,
+  paymentProviderBaseUrl: config.PAYMENT_PROVIDER_BASE_URL,
+  paymentProviderSecretKey: config.PAYMENT_PROVIDER_SECRET_KEY,
   zarinpalBaseUrl: config.ZARINPAL_BASE_URL,
   zarinpalMerchantId: config.ZARINPAL_MERCHANT_ID,
   radicoinService,
@@ -21,6 +25,8 @@ async function tick() {
   try {
     const result = await billingService.reconcilePendingOrders();
     if (result.scanned > 0) console.info(JSON.stringify({ worker: "billing-reconciliation", ...result }));
+    const creditPacks = await billingService.creditPacks.reconcilePendingOrders();
+    if (creditPacks.scanned > 0) console.info(JSON.stringify({ worker: "credit-pack-reconciliation", ...creditPacks }));
   } catch (error) {
     console.error(error);
   }

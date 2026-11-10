@@ -50,6 +50,47 @@ const billingOptions = {
 };
 const otpCode = "123456";
 
+test("OTP identity cannot switch between candidate and employer accounts", { timeout: 60_000 }, async () => {
+  await withDatabase(async ({ database, sql }) => {
+    const auth = new AuthService(database, {
+      secret: "account-type-test",
+      otpTtlSeconds: 180,
+      sessionTtlDays: 30,
+      allowFirstUserSuperadmin: false,
+      otpCodeGenerator: () => otpCode,
+    });
+    const first = await auth.requestOtp("09120000888");
+    const employer = await auth.verifyOtp(first.challengeId, "09120000888", otpCode, undefined, undefined, "employer");
+    assert.equal(employer.user.accountType, "employer");
+    const employerList = await auth.listUsers("09120000888", 1, 20, "user", undefined, undefined, "desc", "employer");
+    assert.deepEqual(
+      employerList.items.map((item) => item.id),
+      [employer.user.id],
+    );
+    assert.equal(
+      (await auth.listUsers("09120000888", 1, 20, "user", undefined, undefined, "desc", "candidate")).total,
+      0,
+    );
+    const candidateChallenge = await auth.requestOtp("09120000889");
+    await auth.verifyOtp(candidateChallenge.challengeId, "09120000889", otpCode, undefined, undefined, "candidate");
+    const sortedAccounts = await auth.listUsers("", 1, 20, "user", undefined, "accountType", "asc");
+    assert.deepEqual(
+      sortedAccounts.items.map((item) => item.accountType),
+      ["candidate", "employer"],
+    );
+    const second = await auth.requestOtp("09120000888");
+    await assert.rejects(
+      () => auth.verifyOtp(second.challengeId, "09120000888", otpCode, undefined, undefined, "candidate"),
+      (error: unknown) => error instanceof AuthError && error.statusCode === 409,
+    );
+    assert.equal((await sql`select count(*)::int as count from users where phone = '09120000888'`)[0].count, 1);
+    assert.equal(
+      (await sql`select count(*)::int as count from auth_sessions where user_id = ${employer.user.id}`)[0].count,
+      1,
+    );
+  });
+});
+
 function encodeJwtPart(value: unknown) {
   return Buffer.from(JSON.stringify(value)).toString("base64url");
 }
@@ -324,6 +365,17 @@ test(
         const secondLogin = await auth.completeGoogleLogin("second-code", secondStart.state, secondStart.state);
         assert.equal(secondLogin.user.id, firstLogin.user.id);
         assert.equal(secondLogin.nextPath, "/dashboard");
+        const wrongTypeStart = await auth.beginGoogleLogin("/employer", undefined, "employer");
+        activeIdToken = signedGoogleIdToken({
+          clientId,
+          nonce: new URL(wrongTypeStart.authorizationUrl).searchParams.get("nonce")!,
+          privateKey,
+          kid: keyId,
+        });
+        await assert.rejects(
+          () => auth.completeGoogleLogin("wrong-type-code", wrongTypeStart.state, wrongTypeStart.state),
+          (error: unknown) => error instanceof AuthError && error.statusCode === 409,
+        );
         assert.equal((await sql`select count(*)::int as count from users`)[0].count, 1);
         assert.equal(
           (await sql`select count(*)::int as count from auth_sessions where user_id = ${firstLogin.user.id}`)[0].count,
@@ -392,6 +444,15 @@ test(
         [user.user.id],
       );
       assert.equal(users.items[0].recordsCount, 1);
+      assert.equal(users.items[0].accountType, "candidate");
+      assert.equal(
+        (await auth.listUsers("کاربر آزمون", 1, 20, "admin", "active", undefined, "desc", "candidate")).total,
+        1,
+      );
+      assert.equal(
+        (await auth.listUsers("کاربر آزمون", 1, 20, "admin", "active", undefined, "desc", "employer")).total,
+        0,
+      );
       const records = await auth.listAllRecords(1, 20, "resume-auth", "resumes");
       assert.equal(records.items[0].ownerUserId, user.user.id);
       assert.equal(records.items[0].summary, "رزومه فنی");

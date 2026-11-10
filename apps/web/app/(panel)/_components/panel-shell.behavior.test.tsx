@@ -5,18 +5,26 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   role: "user" as "user" | "admin" | "superadmin",
+  accountType: "candidate" as "candidate" | "employer",
+  pathname: "/dashboard",
   logout: vi.fn(),
   notify: vi.fn(),
   put: vi.fn(),
   remove: vi.fn(),
   jobs: [] as Array<{ role: string; company: string; match: number }>,
-  adminEvents: [] as Array<{ id: string; type: string; createdAt: string; user: Record<string, string>; details: Record<string, unknown> }>,
+  adminEvents: [] as Array<{
+    id: string;
+    type: string;
+    createdAt: string;
+    user: Record<string, string>;
+    details: Record<string, unknown>;
+  }>,
   profiles: [
     { id: "profile-default", workspaceName: "فضای کاری شخصی", createdAt: "2026-01-01", updatedAt: "2026-01-01" },
   ],
 }));
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard" }));
+vi.mock("next/navigation", () => ({ usePathname: () => state.pathname }));
 vi.mock("next/image", () => ({ default: () => null }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...props }: any) => (
@@ -26,7 +34,9 @@ vi.mock("next/link", () => ({
   ),
 }));
 vi.mock("@/app/_components/auth", () => ({
-  useAuth: () => ({ user: { id: "u1", role: state.role, fullName: "کاربر آزمایشی", phone: "0912" } }),
+  useAuth: () => ({
+    user: { id: "u1", role: state.role, accountType: state.accountType, fullName: "کاربر آزمایشی", phone: "0912" },
+  }),
   useLogout: () => state.logout,
 }));
 vi.mock("@/app/_components/toast", () => ({ useToast: () => state.notify }));
@@ -63,6 +73,8 @@ describe("PanelShell behavior", () => {
   afterEach(() => {
     vi.clearAllMocks();
     state.role = "user";
+    state.accountType = "candidate";
+    state.pathname = "/dashboard";
     state.jobs = [];
     state.adminEvents = [];
     window.localStorage.clear();
@@ -78,8 +90,10 @@ describe("PanelShell behavior", () => {
       "data-tour",
       "nav-applications",
     );
-    expect(screen.getAllByRole("link", { name: "آمادگی مصاحبه" })[0]).toHaveAttribute("data-tour", "nav-interview");
-    expect(within(screen.getByRole("navigation", { name: "منوی اصلی" })).queryByRole("link", { name: "کیف پول رادیکوین" })).toBeNull();
+    expect(screen.getAllByRole("link", { name: "مصاحبه‌ها" })[0]).toHaveAttribute("data-tour", "nav-interview");
+    expect(
+      within(screen.getByRole("navigation", { name: "منوی اصلی" })).queryByRole("link", { name: "کیف پول رادیکوین" }),
+    ).toBeNull();
     expect(
       within(screen.getByRole("navigation", { name: "منوی اصلی" })).queryByRole("link", { name: /مشاهدهٔ تغییرات/ }),
     ).toBeNull();
@@ -88,6 +102,14 @@ describe("PanelShell behavior", () => {
     const accountCenter = screen.getByRole("link", { name: "مرکز حساب" });
     expect(accountCenter).toHaveAttribute("href", "/account-center");
     expect(accountCenter.querySelector("span")?.className).not.toContain("group-hover:shadow");
+    const accountUsage = within(screen.getByRole("navigation", { name: "دسترسی‌های حساب" })).getByRole("link", {
+      name: "اطلاعات حساب و مصرف",
+    });
+    expect(accountUsage).toHaveAttribute("href", "/account");
+    accountUsage.addEventListener("click", (event) => event.preventDefault());
+    fireEvent.click(accountUsage);
+    expect(screen.queryByRole("navigation", { name: "دسترسی‌های حساب" })).toBeNull();
+    fireEvent.click(screen.getByLabelText("منوی حساب کاربری"));
     expect(screen.getByRole("link", { name: /موجودی رادیکوین/ })).toHaveAttribute("href", "/radicoins");
     expect(screen.queryByRole("link", { name: "سفارش‌ها" })).toBeNull();
     const versionLink = screen.getByRole("link", { name: /نسخه 0\.1\.0؛ مشاهدهٔ تغییرات/ });
@@ -102,13 +124,45 @@ describe("PanelShell behavior", () => {
     expect(screen.getByLabelText("منوی حساب کاربری")).toHaveAttribute("data-tour", "account-menu");
   });
 
+  it("shows dedicated interview pages below the interview item", async () => {
+    state.pathname = "/interview-invites";
+    renderShell();
+    const nav = screen.getByRole("navigation", { name: "منوی اصلی" });
+    expect(within(nav).getByRole("link", { name: "مصاحبه‌ها" })).toHaveAttribute("href", "/interview");
+    expect(within(nav).getByRole("link", { name: "مصاحبه‌های دعوتی" })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: "آمادگی برای مصاحبه" })).toHaveAttribute("href", "/interview");
+    fireEvent.click(screen.getByRole("button", { name: "بازکردن منوی اصلی" }));
+    await waitFor(() =>
+      expect(document.querySelector('nav[aria-label="همه بخش‌های پنل"]')).toHaveTextContent("مصاحبه‌های دعوتی"),
+    );
+  });
+
   it("renders management navigation for an admin", async () => {
     state.role = "admin";
     renderShell();
     await waitFor(() => expect(screen.getAllByRole("link", { name: "داشبورد مدیریتی" })[0]).toBeVisible());
     expect(screen.queryByRole("link", { name: "کاربران و دسترسی‌ها" })).toBeNull();
     fireEvent.click(screen.getByLabelText("منوی حساب کاربری"));
+    expect(screen.queryByRole("link", { name: "اطلاعات حساب و مصرف" })).toBeNull();
     expect(screen.queryByRole("link", { name: /نسخه .* مشاهدهٔ تغییرات/ })).toBeNull();
+  });
+
+  it("uses the shared account shell with employer-only navigation", async () => {
+    state.accountType = "employer";
+    renderShell();
+    const nav = screen.getByRole("navigation", { name: "منوی اصلی" });
+    expect(within(nav).getByRole("link", { name: "داشبورد کارفرما" })).toHaveAttribute("href", "/employer");
+    expect(within(nav).getByRole("link", { name: "پوزیشن‌های شغلی" })).toHaveAttribute("href", "/employer/positions");
+    expect(within(nav).queryByRole("link", { name: "مرکز کارفرما" })).toBeNull();
+    expect(within(nav).queryByRole("link", { name: "فرصت‌های مناسب من" })).toBeNull();
+    expect(screen.queryByText("بازگشت به پنل کارجو")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "اعلان‌ها" }));
+    expect(screen.getByText("هنوز اعلانی نیست")).toBeVisible();
+    fireEvent.click(screen.getByLabelText("منوی حساب کاربری"));
+    for (const link of screen.getAllByRole("link", { name: "مرکز کارفرما" })) {
+      expect(link).toHaveAttribute("href", "/employer/account-center");
+    }
+    expect(screen.getByRole("button", { name: "خروج از حساب" })).toBeVisible();
   });
 
   it("shows a compact clickable job notification with its match", async () => {
@@ -143,7 +197,9 @@ describe("PanelShell behavior", () => {
 
     firstRender.unmount();
     renderShell();
-    await waitFor(() => expect(screen.getByRole("button", { name: "اعلان‌های آماری مدیریت" })).not.toHaveTextContent("۱"));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "اعلان‌های آماری مدیریت" })).not.toHaveTextContent("۱"),
+    );
   });
 
   it("opens and closes the mobile menu with Escape and restores overflow", () => {

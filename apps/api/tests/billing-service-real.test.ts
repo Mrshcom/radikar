@@ -6,6 +6,8 @@ import { promisify } from "node:util";
 import { createDatabase } from "@radikar/database";
 import postgres from "postgres";
 import { BillingError, BillingService } from "../src/modules/billing/service";
+import { interviewPack } from "../src/modules/billing/credit-pack";
+import { PaymentGatewayError } from "../src/modules/billing/payment-gateway";
 import { ZarinpalError } from "../src/modules/billing/zarinpal-client";
 import { RadicoinService } from "../src/modules/radicoin/service";
 import { onboardingRewardKey } from "../src/modules/radicoin/onboarding-reward";
@@ -70,6 +72,145 @@ function gateway(billing: BillingService, authority: string, verify: boolean | "
     },
   };
 }
+
+function packGateway(billing: BillingService, authority: string, verify = true) {
+  (billing.creditPacks as any).gateway = {
+    requestPayment: async () => ({ authority, paymentUrl: `http://gateway.test/pg/StartPay/${authority}` }),
+    verifyPayment: async () => {
+      if (!verify) throw new ZarinpalError("gateway verification failed", -51);
+      return { refId: `ref-${authority}` };
+    },
+  };
+}
+
+test("Interview pack purchases grant credits exactly once without changing the plan", { timeout: 60_000 }, async () => {
+  await withDatabase(async (database, sql) => {
+    const coinUser = await user(sql, "09120000121");
+    const gatewayUser = await user(sql, "09120000122");
+    const actor = await user(sql, "09120000123");
+    const radicoin = new RadicoinService(database);
+    const billing = new BillingService(database, { ...options, radicoinService: radicoin });
+    await billing.ensureSignupMembership(coinUser);
+    await billing.ensureSignupMembership(gatewayUser);
+    await sql`update user_memberships set plan_id = 'professional', interview_credits_remaining = 0, ai_credits_remaining = 0, expires_at = now() + interval '30 days' where user_id in (${coinUser}, ${gatewayUser})`;
+    await radicoin.adjust(coinUser, interviewPack.radicoinCost, "اعتبار تست بسته", actor, "fund-credit-pack-test");
+
+    const coinKey = randomUUID();
+    const coinOrder = await billing.creditPacks.createOrder(coinUser, null, "radicoin", coinKey);
+    assert.equal(coinOrder.checkout, "activated");
+    assert.deepEqual(await billing.creditPacks.createOrder(coinUser, null, "radicoin", coinKey), coinOrder);
+    assert.equal(
+      (await sql`select available_coins from radicoin_wallets where user_id = ${coinUser}`)[0].available_coins,
+      0,
+    );
+
+    packGateway(billing, "PACK-AUTH-ONE");
+    const gatewayKey = randomUUID();
+    const gatewayOrder = await billing.creditPacks.createOrder(gatewayUser, null, "gateway", gatewayKey);
+    assert.equal(gatewayOrder.checkout, "gateway");
+    assert.deepEqual(await billing.creditPacks.createOrder(gatewayUser, null, "gateway", gatewayKey), gatewayOrder);
+    const callbacks = await Promise.all([
+      billing.creditPacks.handleCallback("PACK-AUTH-ONE"),
+      billing.creditPacks.handleCallback("PACK-AUTH-ONE"),
+    ]);
+    assert.ok(callbacks.every((url) => url.includes("status=success")));
+
+    for (const id of [coinUser, gatewayUser]) {
+      const membership = (
+        await sql`select plan_id, interview_credits_remaining, ai_credits_remaining from user_memberships where user_id = ${id}`
+      )[0];
+      assert.deepEqual(
+        [membership.plan_id, membership.interview_credits_remaining, membership.ai_credits_remaining],
+        ["professional", interviewPack.interviewCredits, interviewPack.aiCredits],
+      );
+      assert.equal(
+        (
+          await sql`select count(*)::int as count from membership_events where user_id = ${id} and type = 'credit_pack'`
+        )[0].count,
+        1,
+      );
+    }
+    assert.equal(
+      (await sql`select status from credit_pack_orders where id = ${gatewayOrder.orderId}`)[0].status,
+      "paid",
+    );
+  });
+});
+
+test(
+  "Abropay orders retain their provider and grant only after server-side verification",
+  { timeout: 60_000 },
+  async () => {
+    await withDatabase(async (database, sql) => {
+      const id = await user(sql, "09120000124");
+      const billing = new BillingService(database, {
+        ...options,
+        paymentProvider: "abropay",
+        paymentProviderEnvironment: "sandbox",
+        paymentProviderSecretKey: "sk_test_private",
+      });
+      await billing.ensureSignupMembership(id);
+      let verified = false;
+      (billing as any).gateway = {
+        requestPayment: async ({ clientReference }: { clientReference: string }) => ({
+          authority: "77777777-7777-4777-8777-777777777777",
+          paymentUrl: "https://pay.abrotech.ir/payments/77777777-7777-4777-8777-777777777777/redirect",
+          providerData: { clientReference },
+        }),
+        verifyPayment: async () => {
+          if (!verified) throw new PaymentGatewayError("هنوز قطعی نیست.");
+          return {
+            code: 200,
+            refId: "77777777-7777-4777-8777-777777777777",
+            cardPan: null,
+            cardHash: null,
+            providerData: {},
+          };
+        },
+      };
+      const checkoutKey = randomUUID();
+      const created = await billing.createOrder(id, "09120000124", "job-search", "gateway", checkoutKey);
+      assert.equal(created.checkout, "gateway");
+      if (created.checkout !== "gateway") throw new Error("expected gateway checkout");
+      assert.deepEqual(await billing.createOrder(id, "09120000124", "job-search", "gateway", checkoutKey), created);
+      const pending = await billing.handleCallback("77777777-7777-4777-8777-777777777777", "verified");
+      assert.match(pending, /status=pending/);
+      assert.equal((await sql`select status from orders where id = ${created.orderId}`)[0].status, "pending");
+      verified = true;
+      const paid = await billing.handleCallback("77777777-7777-4777-8777-777777777777", "canceled");
+      assert.match(paid, /status=success/);
+      const row = (await sql`select gateway, redirect_url, status from orders where id = ${created.orderId}`)[0];
+      assert.equal(row.gateway, "abropay_sandbox");
+      assert.equal(row.redirect_url, created.paymentUrl);
+      assert.equal(row.status, "paid");
+
+      await sql`update user_memberships set plan_id = 'professional', interview_credits_remaining = 0, ai_credits_remaining = 0 where user_id = ${id}`;
+      (billing.creditPacks as any).gateway = {
+        requestPayment: async () => ({
+          authority: "88888888-8888-4888-8888-888888888888",
+          paymentUrl: "https://pay.abrotech.ir/payments/88888888-8888-4888-8888-888888888888/redirect",
+          providerData: {},
+        }),
+        verifyPayment: async () => ({
+          code: 200,
+          refId: "88888888-8888-4888-8888-888888888888",
+          cardPan: null,
+          cardHash: null,
+          providerData: {},
+        }),
+      };
+      const pack = await billing.creditPacks.createOrder(id, null, "gateway", randomUUID());
+      assert.equal(pack.checkout, "gateway");
+      assert.match(await billing.creditPacks.handleCallback("88888888-8888-4888-8888-888888888888"), /status=success/);
+      const packRow = (
+        await sql`select provider, redirect_url, status from credit_pack_orders where id = ${pack.orderId}`
+      )[0];
+      assert.equal(packRow.provider, "abropay_sandbox");
+      assert.equal(packRow.redirect_url, pack.paymentUrl);
+      assert.equal(packRow.status, "paid");
+    });
+  },
+);
 
 test(
   "BillingService commits successful, concurrent, renewal, upgrade and expired callbacks in PostgreSQL",
@@ -177,8 +318,31 @@ test("BillingService filters real reports and persists every admin mutation", { 
   await withDatabase(async (database, sql) => {
     const id = await user(sql, "09120000103");
     const actor = await user(sql, "09120000104");
+    const employerId = await user(sql, "09120000109");
+    await sql`update users set account_type = 'employer' where id = ${employerId}`;
     const billing = new BillingService(database, options);
     await billing.ensureSignupMembership(id);
+    await billing.ensureSignupMembership(employerId);
+    const employerPositionId = randomUUID();
+    await sql`
+      insert into employer_positions (
+        id, owner_user_id, company_name, title, description, screening_status, created_at, updated_at
+      ) values (
+        ${employerPositionId}, ${employerId}, 'رادیکار', 'توسعه‌دهنده', 'شرح موقعیت', 'completed', now(), now()
+      )
+    `;
+    await sql`
+      insert into employer_candidates (
+        id, position_id, file_name, file_hash, resume_text, screening_status, invitation_status, created_at, updated_at
+      ) values
+        (${randomUUID()}, ${employerPositionId}, 'ready.pdf', 'hash-ready', 'resume', 'ready', 'invited', now(), now()),
+        (${randomUUID()}, ${employerPositionId}, 'pending.pdf', 'hash-pending', 'resume', 'pending', 'not_invited', now(), now())
+    `;
+    await sql`
+      insert into radicoin_wallets (user_id, available_coins, pending_coins, lifetime_earned_coins, lifetime_spent_coins, updated_at)
+      values (${employerId}, 350, 0, 350, 0, now())
+      on conflict (user_id) do update set available_coins = 350
+    `;
     await billing.adminGrantPlan(id, "job-search", actor);
     await billing.adminExtendMembership(id, 7, actor);
     await billing.adminAdjustCredit(id, "ai", -999, actor, "audit");
@@ -236,8 +400,85 @@ test("BillingService filters real reports and persists every admin mutation", { 
     assert.equal(usage.recentRequests.items.length, 1);
     const memberships = await billing.listMembershipUsers("09120000103", 1, 20, "free", "canceled", "active");
     assert.equal(memberships.total, 1);
+    assert.equal(memberships.items[0].user.accountType, "candidate");
+    assert.equal(
+      (
+        await billing.listMembershipUsers(
+          "09120000103",
+          1,
+          20,
+          "free",
+          "canceled",
+          "active",
+          undefined,
+          "desc",
+          "candidate",
+        )
+      ).total,
+      1,
+    );
+    assert.equal(
+      (
+        await billing.listMembershipUsers(
+          "09120000103",
+          1,
+          20,
+          "free",
+          "canceled",
+          "active",
+          undefined,
+          "desc",
+          "employer",
+        )
+      ).total,
+      0,
+    );
+    const employerMemberships = await billing.listMembershipUsers(
+      "09120000109",
+      1,
+      20,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      "desc",
+      "employer",
+    );
+    assert.deepEqual(
+      employerMemberships.items.map((item) => item.user.id),
+      [employerId],
+    );
+    const membershipsByAccountType = await billing.listMembershipUsers(
+      "",
+      1,
+      200,
+      undefined,
+      undefined,
+      undefined,
+      "accountType",
+      "asc",
+    );
+    const sortedAccountTypes = membershipsByAccountType.items.map((item) => item.user.accountType);
+    assert.deepEqual(sortedAccountTypes, [...sortedAccountTypes].sort());
+    const radicoin = new RadicoinService(database);
+    assert.equal((await radicoin.listWallets("09120000103", 1, 20, "candidate")).total, 1);
+    assert.equal((await radicoin.listWallets("09120000103", 1, 20, "employer")).total, 0);
+    const employerWallets = await radicoin.listWallets("09120000109", 1, 20, "employer");
+    assert.deepEqual(
+      employerWallets.items.map((item) => item.user.id),
+      [employerId],
+    );
     const history = await billing.getAdminMembership(id);
     assert.equal(history.history.length, 4);
+    const employerDetails = await billing.getAdminMembership(employerId);
+    assert.equal(employerDetails.user.accountType, "employer");
+    assert.deepEqual(employerDetails.employerStats, {
+      positions: 1,
+      candidates: 2,
+      screenedCandidates: 1,
+      interviewInvitations: 1,
+      radicoinBalance: 350,
+    });
   });
 });
 

@@ -2,6 +2,11 @@ import { z } from "zod";
 import { loadEnvFile } from "node:process";
 import { fileURLToPath } from "node:url";
 
+function isLoopbackUrl(value: string) {
+  const hostname = new URL(value).hostname;
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+}
+
 export function loadLocalEnvironment() {
   const environmentFiles = [
     new URL("../../../.env.local", import.meta.url),
@@ -51,8 +56,18 @@ const environmentSchema = z
     GOOGLE_CLIENT_ID: z.string().trim().min(1).optional(),
     GOOGLE_CLIENT_SECRET: z.string().trim().min(1).optional(),
     GOOGLE_OAUTH_REDIRECT_URI: z.url().optional(),
+    LLM_PROVIDER: z.enum(["agent", "gapgpt", "openai-compatible", "local", "freeDeepseekAPI"]).default("gapgpt"),
+    LLM_BASE_URL: z.url().optional(),
+    LLM_API_KEY: z.string().trim().min(1).optional(),
+    LLM_AGENT_RESUME_RANKER: z.string().trim().min(1).max(120).optional(),
+    LLM_AGENT_INTERVIEWER: z.string().trim().min(1).max(120).optional(),
+    LLM_TIMEOUT_MS: z.coerce.number().int().min(5_000).max(180_000).default(90_000),
     API_PUBLIC_URL: z.url().default("http://localhost:3162"),
     WEB_APP_URL: z.url().default("http://localhost:3161"),
+    PAYMENT_PROVIDER: z.enum(["zarinpal", "abropay"]).default("zarinpal"),
+    PAYMENT_PROVIDER_ENVIRONMENT: z.enum(["sandbox", "live"]).default("sandbox"),
+    PAYMENT_PROVIDER_BASE_URL: z.url().default("https://pay.abrotech.ir"),
+    PAYMENT_PROVIDER_SECRET_KEY: z.string().trim().min(1).optional(),
     ZARINPAL_BASE_URL: z.url().default("https://sandbox.zarinpal.com"),
     ZARINPAL_MERCHANT_ID: z.uuid().default("00000000-0000-4000-8000-000000000000"),
     APIFY_API_TOKEN: z.string().trim().min(1).optional(),
@@ -70,6 +85,52 @@ const environmentSchema = z
     JOB_POOL_ACTOR_START_COST_USD_MICROS: z.coerce.number().int().min(0).default(20_000),
   })
   .superRefine((config, context) => {
+    if (config.PAYMENT_PROVIDER === "abropay") {
+      const prefix = config.PAYMENT_PROVIDER_ENVIRONMENT === "sandbox" ? "sk_test_" : "sk_live_";
+      if (!config.PAYMENT_PROVIDER_SECRET_KEY?.startsWith(prefix)) {
+        context.addIssue({
+          code: "custom",
+          path: ["PAYMENT_PROVIDER_SECRET_KEY"],
+          message: `Abropay ${config.PAYMENT_PROVIDER_ENVIRONMENT} requires a ${prefix} secret key`,
+        });
+      }
+      if (
+        config.PAYMENT_PROVIDER_ENVIRONMENT === "live" &&
+        (!config.API_PUBLIC_URL.startsWith("https://") || isLoopbackUrl(config.API_PUBLIC_URL))
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["API_PUBLIC_URL"],
+          message: "Live payment callbacks require a public HTTPS API_PUBLIC_URL",
+        });
+      }
+      const localWebResult =
+        config.NODE_ENV !== "production" &&
+        config.WEB_APP_URL.startsWith("http://") &&
+        isLoopbackUrl(config.WEB_APP_URL);
+      if (
+        config.PAYMENT_PROVIDER_ENVIRONMENT === "live" &&
+        !config.WEB_APP_URL.startsWith("https://") &&
+        !localWebResult
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["WEB_APP_URL"],
+          message: "Live payment results require HTTPS, except a loopback WEB_APP_URL in local development",
+        });
+      }
+    }
+    if (config.LLM_PROVIDER === "agent") {
+      for (const field of [
+        "LLM_BASE_URL",
+        "LLM_API_KEY",
+        "LLM_AGENT_RESUME_RANKER",
+        "LLM_AGENT_INTERVIEWER",
+      ] as const) {
+        if (!config[field])
+          context.addIssue({ code: "custom", path: [field], message: `${field} is required in agent mode` });
+      }
+    }
     if (Boolean(config.GOOGLE_CLIENT_ID) !== Boolean(config.GOOGLE_CLIENT_SECRET)) {
       context.addIssue({
         code: "custom",

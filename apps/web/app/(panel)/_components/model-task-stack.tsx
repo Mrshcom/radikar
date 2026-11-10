@@ -27,14 +27,14 @@ function TaskCard({ task, featured }: { task: ModelTask; featured?: boolean }) {
   return (
     <div
       className={cn(
-        "flex min-w-0 items-center rounded-xl border transition-[border-color,background-color,box-shadow] hover:border-[#a9ccbb]",
+        "flex w-full min-w-0 items-center rounded-xl border transition-[border-color,background-color,box-shadow] hover:border-[#a9ccbb]",
         taskTone[task.status],
         featured && "shadow-[0_3px_12px_rgba(27,55,50,.05)]",
       )}
     >
       <button
         type="button"
-        className={cn("flex min-w-0 flex-1 items-center gap-2 px-2.5 py-2 text-right", featured && "py-2.5")}
+        className={cn("flex w-full min-w-0 flex-1 items-center gap-2 px-2.5 py-2 text-right", featured && "py-2.5")}
         onClick={() => openTask(task)}
         aria-label={`${task.title}، ${task.status === "running" ? task.pendingLabel : taskDescription(task)}`}
       >
@@ -74,15 +74,18 @@ function TaskCard({ task, featured }: { task: ModelTask; featured?: boolean }) {
 
 export function ModelTaskStack() {
   const { tasks } = useModelTasks();
+  const visibleTasks = tasks.filter(
+    (task) => task.showInSidebar !== false && (task.status === "running" || task.status === "completed"),
+  );
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [suppressHover, setSuppressHover] = useState(false);
   const expanded = pinned || (hovered && !suppressHover);
-  const latest = tasks[0];
+  const latest = visibleTasks[0];
 
   if (!latest) return null;
 
-  const older = tasks.slice(1);
+  const older = visibleTasks.slice(1);
   const hasHistory = older.length > 0;
   const showHistory = hasHistory && expanded;
 
@@ -92,8 +95,11 @@ export function ModelTaskStack() {
       <strong className="min-w-0 flex-1 text-[11px]">فعالیت‌های هوشمند</strong>
       {hasHistory && (
         <>
-          <span className="text-[10px] font-medium tabular-nums text-[#7c9087]" aria-label={`${formatPersianNumber(tasks.length)} فعالیت`}>
-            {formatPersianNumber(tasks.length)}
+          <span
+            className="text-[10px] font-medium tabular-nums text-[#7c9087]"
+            aria-label={`${formatPersianNumber(visibleTasks.length)} فعالیت`}
+          >
+            {formatPersianNumber(visibleTasks.length)}
           </span>
           <ChevronDown
             size={14}
@@ -111,7 +117,7 @@ export function ModelTaskStack() {
     <section
       aria-label="فعالیت‌های هوشمند"
       aria-live="polite"
-      className="min-h-0 rounded-2xl border border-[#dde9e2] bg-white p-2.5 shadow-[0_8px_24px_rgba(24,73,60,.06)]"
+      className="min-h-0 min-w-0 w-full max-w-full rounded-2xl border border-[#dde9e2] bg-white p-2.5 shadow-[0_8px_24px_rgba(24,73,60,.06)]"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => {
         setHovered(false);

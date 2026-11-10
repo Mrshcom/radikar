@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { JalaliDatePicker } from "./jalali-date-picker";
+import { TimePicker } from "./time-picker";
 import { RangeSlider } from "@/app/_components/range-slider";
 import { TableFilterSelect, TableToolbar } from "./table-controls";
 import { TableActionButton } from "./table-action-button";
@@ -23,6 +24,8 @@ describe("interactive panel controls", () => {
   it("opens, selects and clears Jalali dates", () => {
     const change = vi.fn();
     render(<JalaliDatePicker value="2026-03-21" onChange={change} ariaLabel="تاریخ" />);
+    const dateTrigger = screen.getByLabelText("تاریخ");
+    expect(dateTrigger.querySelector("span")).toHaveClass("text-left", "[direction:ltr]");
     fireEvent.click(screen.getByLabelText("تاریخ"));
     const calendar = screen.getByRole("dialog");
     expect(calendar).toBeVisible();
@@ -33,6 +36,32 @@ describe("interactive panel controls", () => {
     expect(change).toHaveBeenCalledWith("");
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+  it("shows and marks today in the Jalali calendar dialog", () => {
+    render(<JalaliDatePicker value="" onChange={vi.fn()} ariaLabel="تاریخ" />);
+
+    fireEvent.click(screen.getByLabelText("تاریخ"));
+
+    expect(screen.getByText(/^امروز:/)).toBeVisible();
+    const today = screen.getByRole("button", { name: /^امروز،/ });
+    expect(today).toHaveAttribute("data-today", "true");
+    expect(today).toHaveClass("bg-[#e8f5ef]", "ring-1", "ring-[#0f7b62]");
+  });
+  it("uses a Persian themed custom time picker instead of the browser time control", () => {
+    const change = vi.fn();
+    render(<TimePicker value="23:59" onChange={change} ariaLabel="ساعت مهلت" />);
+
+    expect(screen.queryByDisplayValue("23:59")).toBeNull();
+    expect(screen.getByLabelText("ساعت مهلت")).toHaveTextContent("۲۳:۵۹");
+    expect(screen.getByLabelText("ساعت مهلت").querySelector("span")).toHaveClass("text-left", "[direction:ltr]");
+    fireEvent.click(screen.getByLabelText("ساعت مهلت"));
+    expect(screen.getByRole("dialog", { name: "انتخاب ساعت ساعت مهلت" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "دقیقه" }).compareDocumentPosition(screen.getByRole("region", { name: "ساعت" }))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "۵۸" }));
+    fireEvent.click(screen.getByRole("button", { name: /تأیید ساعت/ }));
+    expect(change).toHaveBeenCalledWith("23:58");
   });
   it("clamps slider and supports toolbar/filter actions", () => {
     const change = vi.fn();
@@ -93,5 +122,33 @@ describe("interactive panel controls", () => {
     expect(screen.getByText("تمام شده")).toBeVisible();
     expect(screen.getByText("نامحدود")).toBeVisible();
     expect(screen.getByRole("link", { name: /خرید یا ارتقای بسته/ })).toHaveAttribute("href", "/upgrade");
+  });
+  it("renders employer hiring activity instead of candidate usage", () => {
+    render(
+      <MembershipSummary
+        accountType="employer"
+        employerStats={{
+          positions: 2,
+          candidates: 18,
+          screenedCandidates: 12,
+          interviewInvitations: 4,
+          radicoinBalance: 350,
+        }}
+        membership={
+          {
+            status: "active",
+            expiresAt: "2030-01-01",
+            plan: { name: "جذب حرفه‌ای", features: ["ورود گروهی رزومه‌ها", "دعوت مستقیم به مصاحبه"] },
+          } as any
+        }
+      />,
+    );
+    expect(screen.getByText("پوزیشن‌های استخدامی")).toBeVisible();
+    expect(screen.getByText("رزومه‌های واردشده")).toBeVisible();
+    expect(screen.getByText("موجودی رادیکوین")).toBeVisible();
+    expect(screen.getByText("دعوت مستقیم به مصاحبه")).toBeVisible();
+    expect(screen.queryByText("ساخت رزومه")).toBeNull();
+    expect(screen.queryByText("دانلود PDF")).toBeNull();
+    expect(screen.queryByText("تطبیق شغلی")).toBeNull();
   });
 });

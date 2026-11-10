@@ -9,8 +9,6 @@ type MotionDivProps = ComponentPropsWithoutRef<"div"> & {
   transition?: unknown;
 };
 
-const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: { children: ReactNode }) => children,
   motion: {
@@ -32,6 +30,11 @@ function Trigger() {
 function LongMessageTrigger() {
   const notify = useToast();
   return <button onClick={() => notify("اطلاعات ذخیره شد و برای استفاده از ابزارهای رادیکار آماده است.")}>اعلان بلند</button>;
+}
+
+function UpgradeErrorTrigger() {
+  const notify = useToast();
+  return <button onClick={() => notify("سهمیه این پلن تمام شده است؛ برای ادامه پلن را ارتقا دهید.", "error")}>خطای سهمیه</button>;
 }
 
 describe("ToastProvider", () => {
@@ -64,6 +67,15 @@ describe("ToastProvider", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("خطای پیش‌بینی‌نشده");
     vi.useRealTimers();
   });
+  it("includes an upgrade link when an error toast asks the user to upgrade", () => {
+    render(
+      <ToastProvider>
+        <UpgradeErrorTrigger />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "خطای سهمیه" }));
+    expect(screen.getByRole("link", { name: /مشاهده و ارتقای پلن/ })).toHaveAttribute("href", "/upgrade");
+  });
   it("handles rejections and the upgrade modal close/navigation flows", () => {
     render(
       <ToastProvider>
@@ -91,7 +103,10 @@ describe("ToastProvider", () => {
     fireEvent.click(screen.getByRole("button", { name: "فعلاً نه" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     act(() => window.dispatchEvent(new CustomEvent(PLAN_UPGRADE_REQUIRED_EVENT, { detail: { message: "ارتقا" } })));
-    fireEvent.click(screen.getByRole("button", { name: /مشاهده و ارتقای پلن/ }));
-    expect(push).toHaveBeenCalledWith("/upgrade");
+    const upgradeLink = screen.getByRole("link", { name: /مشاهده و ارتقای پلن/ });
+    expect(upgradeLink).toHaveAttribute("href", "/upgrade");
+    upgradeLink.addEventListener("click", (event) => event.preventDefault(), { once: true });
+    fireEvent.click(upgradeLink);
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

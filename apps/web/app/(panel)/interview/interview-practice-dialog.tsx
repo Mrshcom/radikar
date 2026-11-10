@@ -3,12 +3,16 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ArrowLeft, LogOut, Sparkles, X } from "lucide-react";
+import { ArrowLeft, LogOut, X } from "lucide-react";
 import { HoverTooltip } from "../_components/hover-tooltip";
 import { ModelThinkingOrb } from "../_components/model-thinking-orb";
 
 type InterviewPracticeDialogProps = {
   title: string;
+  chatLayout?: boolean;
+  timeLabel?: string;
+  timeValue?: string;
+  timePaused?: boolean;
   closeDisabled?: boolean;
   analysisPending?: boolean;
   exitDescription?: string;
@@ -19,6 +23,10 @@ type InterviewPracticeDialogProps = {
 
 export function InterviewPracticeDialog({
   title,
+  chatLayout = false,
+  timeLabel,
+  timeValue,
+  timePaused = false,
   closeDisabled = false,
   analysisPending = false,
   exitDescription = "پاسخ‌های فعلی‌ات ذخیره می‌شوند و بعداً می‌توانی مصاحبه را ادامه بدهی.",
@@ -160,12 +168,18 @@ export function InterviewPracticeDialog({
           inert={confirmOpen}
         >
           <div className="min-w-0">
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-[#0f7b62]">
-              <Sparkles size={13} /> فضای مصاحبه
-            </span>
             <h2 id="interview-dialog-title" className="m-0 truncate text-base font-bold text-[#19312f] sm:text-lg">
               {title}
             </h2>
+            {timeLabel && (
+              <p className="m-0 mt-1 text-xs text-[#6a8075]">
+                {timeLabel}{" "}
+                <span className={timePaused ? "animate-pulse motion-reduce:animate-none" : undefined}>{timeValue}</span>
+                {timePaused && (
+                  <span className="mr-2 text-[10px] text-[#a36b37]">(مکث؛ زمان پاسخ مصاحبه‌گر حساب نمی‌شود)</span>
+                )}
+              </p>
+            )}
           </div>
           <HoverTooltip
             key={confirmOpen ? "confirm-open" : "confirm-closed"}
@@ -185,7 +199,11 @@ export function InterviewPracticeDialog({
           </HoverTooltip>
         </header>
         <div
-          className="relative min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-10"
+          className={
+            chatLayout
+              ? "relative flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-3 sm:px-8 sm:py-5"
+              : "relative min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-10"
+          }
           aria-hidden={analysisPending}
           inert={analysisPending || confirmOpen}
         >

@@ -44,7 +44,9 @@ function gapGptPrices(model: string) {
 }
 
 function getEnv(prefix: "LLM" | "LLM_WRITE", key: string) {
-  return process.env[`${prefix}_${key}`] ?? process.env[`LLM_${key}`] ?? "";
+  if (prefix === "LLM_WRITE" && process.env[`LLM_WRITE_${key}`]) return process.env[`LLM_WRITE_${key}`]!;
+  const modelPrefix = process.env.LLM_PROVIDER === "agent" ? "LLM_GENERAL" : "LLM";
+  return process.env[`${modelPrefix}_${key}`] ?? "";
 }
 
 function getNonNegativeNumber(prefix: "LLM" | "LLM_WRITE", key: string) {
@@ -104,7 +106,10 @@ export function setAnalyzeProvider(provider: ProviderName, model?: string) {
 }
 
 export function getAnalyzeConfig(): ProviderConfig {
-  const provider = analyzeProviderOverride?.provider ?? process.env.LLM_PROVIDER ?? "gapgpt";
+  const provider =
+    analyzeProviderOverride?.provider ??
+    (process.env.LLM_PROVIDER === "agent" ? process.env.LLM_GENERAL_PROVIDER : process.env.LLM_PROVIDER) ??
+    "gapgpt";
 
   switch (provider) {
     case "freeDeepseekAPI":
@@ -123,7 +128,10 @@ export function getAnalyzeConfig(): ProviderConfig {
 }
 
 export function getWriteConfig(): ProviderConfig {
-  const provider = process.env.LLM_WRITE_PROVIDER ?? process.env.LLM_PROVIDER ?? "gapgpt";
+  const provider =
+    process.env.LLM_WRITE_PROVIDER ??
+    (process.env.LLM_PROVIDER === "agent" ? process.env.LLM_GENERAL_PROVIDER : process.env.LLM_PROVIDER) ??
+    "gapgpt";
 
   switch (provider) {
     case "freeDeepseekAPI":

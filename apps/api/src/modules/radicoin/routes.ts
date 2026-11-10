@@ -10,6 +10,10 @@ const transactionHistorySchema = z.object({
 });
 const pageSchema = z.object({
   search: z.string().max(100).default(""),
+  accountType: z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    z.enum(["candidate", "employer"]).optional(),
+  ),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(200).default(20),
 });
@@ -99,7 +103,7 @@ export function registerRadicoinRoutes(app: FastifyInstance, radicoin: RadicoinS
   app.get("/api/admin/radicoin/wallets", async (request, reply) => {
     if (!requirePermission(request, reply, "reports:read:any")) return;
     const query = pageSchema.parse(request.query);
-    return radicoin.listWallets(query.search, query.page, query.pageSize);
+    return radicoin.listWallets(query.search, query.page, query.pageSize, query.accountType);
   });
   app.post("/api/admin/radicoin/wallets/:id/promotional", async (request, reply) => {
     if (!requirePermission(request, reply, "radicoin:manage:any")) return;
@@ -126,6 +130,10 @@ export function registerRadicoinRoutes(app: FastifyInstance, radicoin: RadicoinS
 
 export function handleRadicoinError(error: unknown, request: FastifyRequest, reply: FastifyReply) {
   if (!(error instanceof RadicoinError)) return false;
-  reply.code(error.statusCode).send({ error: error.message, requestId: request.id });
+  reply.code(error.statusCode).send({
+    error: error.message,
+    ...(error.statusCode === 402 ? { code: "INSUFFICIENT_RADICOIN" } : {}),
+    requestId: request.id,
+  });
   return true;
 }

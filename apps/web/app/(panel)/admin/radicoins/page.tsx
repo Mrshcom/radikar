@@ -23,7 +23,8 @@ import {
 } from "@/lib/radicoins";
 import { useUrlTablePagination } from "@/lib/table-page-size";
 import { tableQueryStateOptions, tableSearchParser } from "@/lib/table-search-params";
-import { AdminTablePagination, AdminTableToolbar } from "../_components/admin-table-controls";
+import { accountTypeFilterOptions, accountTypeFilterParser, accountTypeLabels } from "@/lib/account-type";
+import { AdminFilterSelect, AdminTablePagination, AdminTableToolbar } from "../_components/admin-table-controls";
 
 const actionSchema = z.object({
   amount: z
@@ -39,12 +40,12 @@ const userName = (item: AdminWalletItem) => item.user.fullName || item.user.phon
 
 export default function AdminRadicoinsPage() {
   const notify = useToast();
-  const [{ search }, setFilters] = useQueryStates(
-    { search: tableSearchParser },
+  const [{ search, accountType }, setFilters] = useQueryStates(
+    { search: tableSearchParser, accountType: accountTypeFilterParser },
     { ...tableQueryStateOptions, urlKeys: { search: "q" } },
   );
   const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } = useUrlTablePagination();
-  const wallets = useAdminRadicoinWallets(search, page, pageSize);
+  const wallets = useAdminRadicoinWallets(search, page, pageSize, accountType);
   const [target, setTarget] = useState<AdminWalletItem | null>(null);
   const [mode, setMode] = useState<"adjust" | "gift">("gift");
   const grant = useGrantPromotionalRadicoins();
@@ -87,6 +88,12 @@ export default function AdminRadicoinsPage() {
           <span className="text-[9px] text-[#899692]">{item.user.phone || item.user.email}</span>
         </div>
       ),
+    },
+    {
+      key: "accountType",
+      title: "نوع حساب",
+      sortable: false,
+      render: (item) => <span className="font-bold text-[#0f7b62]">{accountTypeLabels[item.user.accountType]}</span>,
     },
     {
       key: "available",
@@ -137,15 +144,26 @@ export default function AdminRadicoinsPage() {
         <AdminTableToolbar
           search={search}
           searchPlaceholder="نام، موبایل یا ایمیل"
+          activeFilterCount={Number(Boolean(accountType))}
           onSearch={(value) => {
             void setFilters({ search: value });
             setPage(1);
           }}
           onResetFilters={() => {
-            void setFilters({ search: "" });
+            void setFilters({ search: "", accountType: "" });
             setPage(1);
           }}
-        />
+        >
+          <AdminFilterSelect
+            label="نوع حساب"
+            value={accountType}
+            onChange={(value) => {
+              void setFilters({ accountType: value as typeof accountType });
+              setPage(1);
+            }}
+            options={accountTypeFilterOptions}
+          />
+        </AdminTableToolbar>
         <DataTable
           columns={columns}
           rows={wallets.data?.items ?? []}
@@ -154,7 +172,7 @@ export default function AdminRadicoinsPage() {
           error={wallets.error}
           retrying={wallets.isFetching}
           onRetry={() => void wallets.refetch()}
-          filtered={Boolean(search)}
+          filtered={Boolean(search || accountType)}
           footer={
             <AdminTablePagination
               page={page}
@@ -185,7 +203,10 @@ export default function AdminRadicoinsPage() {
               />
             </FormField>
             <FormField label="دلیل" required error={action.formState.errors.description?.message}>
-              <TextField aria-invalid={Boolean(action.formState.errors.description)} {...action.register("description")} />
+              <TextField
+                aria-invalid={Boolean(action.formState.errors.description)}
+                {...action.register("description")}
+              />
             </FormField>
             {mode === "gift" && (
               <FormField label="تاریخ انقضا (اختیاری)">

@@ -1,0 +1,82 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { beforeEach, expect, it, vi } from "vitest";
+
+vi.mock("next/navigation", () => ({ useParams: () => ({ id: "position-1" }) }));
+vi.mock("next/link", () => ({
+  default: ({ href, children }: { href: string; children: ReactNode }) => <a href={href}>{children}</a>,
+}));
+vi.mock("@/lib/employer", () => ({
+  useEmployerPosition: () => ({
+    data: {
+      position: { title: "مدیر محصول", interviewQuestions: ["چگونه موفقیت محصول را می‌سنجید؟"] },
+      candidates: [
+        {
+          id: "invited",
+          name: "نامزد منتظر",
+          fileName: "waiting.pdf",
+          invitationStatus: "invited",
+          invitationDeadline: "2030-12-31T20:00:00.000Z",
+          interviewReport: null,
+          interviewAnswers: null,
+        },
+        {
+          id: "started",
+          name: "نامزد در حال مصاحبه",
+          fileName: "started.pdf",
+          invitationStatus: "started",
+          invitationDeadline: "2030-12-31T20:00:00.000Z",
+          interviewReport: null,
+          interviewAnswers: ["پاسخ اول"],
+        },
+        {
+          id: "completed",
+          name: "نامزد تکمیل‌شده",
+          fileName: "completed.pdf",
+          invitationStatus: "completed",
+          invitationDeadline: "2030-12-31T20:00:00.000Z",
+          interviewReport: {
+            score: 86,
+            summary: "تحلیل مصاحبهٔ نامزد",
+            strengths: ["تحلیل داده"],
+            improvements: ["مثال بیشتر"],
+          },
+          interviewAnswers: ["نرخ فعال‌سازی را بررسی می‌کنم."],
+        },
+      ],
+    },
+    isLoading: false,
+    isFetching: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+}));
+
+import EmployerInterviewResultsPage from "./page";
+
+beforeEach(() => {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: vi.fn().mockImplementation(() => ({
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  });
+});
+
+it("tracks invitations, participation and scores and opens the completed report", async () => {
+  render(<EmployerInterviewResultsPage />);
+  expect(screen.getByRole("heading", { name: "پیگیری مصاحبه‌ها" })).toBeVisible();
+  expect(screen.getByText("لینک دعوت ساخته‌شده").nextElementSibling).toHaveTextContent("۳");
+  expect(screen.getByText("شرکت‌کرده در مصاحبه").nextElementSibling).toHaveTextContent("۲");
+  expect(screen.getByText("مصاحبهٔ تکمیل‌شده").nextElementSibling).toHaveTextContent("۱");
+  expect(await screen.findByText("۸۶ از ۱۰۰")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "مشاهدهٔ گزارش نامزد تکمیل‌شده" }));
+  expect(screen.getByRole("dialog", { name: "گزارش مصاحبهٔ نامزد تکمیل‌شده" })).toHaveTextContent(
+    "چگونه موفقیت محصول را می‌سنجید؟",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "در انتظار · ۱" }));
+  expect(screen.getByText("نامزد منتظر")).toBeVisible();
+  expect(screen.queryByText("نامزد در حال مصاحبه")).toBeNull();
+});

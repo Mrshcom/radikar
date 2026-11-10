@@ -14,7 +14,16 @@ import {
   normalizeStoredResumeData,
 } from "@radikar/validators";
 import { asObject, hasResumeContent, type JsonObject, validateJobDescription } from "./helpers";
-import { interviewReportRequestSchema, interviewReportSystemPrompt, parseInterviewReport } from "./interview-report";
+import { interviewReportRequestSchema, parseInterviewReport } from "./interview-report";
+import { interviewDepthMinutes } from "@radikar/shared-types";
+import type { InterviewAgentClient } from "./interview-agent";
+import { signInterviewChat, verifyInterviewChat } from "./interview-chat-token";
+import {
+  createLegacyInterviewReport,
+  createLegacyInterviewSession,
+  createLegacyInterviewTurn,
+  createLegacyInterviewClarification,
+} from "./interview-legacy";
 import type { BillingService, UsageCosts } from "../billing/service";
 import { requirePermission } from "../auth/routes";
 import type { ProviderName } from "@radikar/ai";
@@ -149,8 +158,11 @@ function normalizeAnalysis(result: ModelAnalysis): Analysis {
 }
 
 function modelError(reply: FastifyReply, error: unknown, fallback: string) {
+  const message = error instanceof Error ? error.message : fallback;
   return reply.code(502).send({
-    error: error instanceof Error ? error.message : fallback,
+    error: /pre-consume quota failed|remaining user quota/i.test(message)
+      ? "اعتبار سرویس هوش مصنوعی کافی نیست؛ لطفاً بعداً دوباره تلاش کنید."
+      : message,
   });
 }
 
@@ -269,6 +281,8 @@ export function registerAiRoutes(
   billing?: BillingService,
   database?: Database,
   productEvents?: ProductEventService,
+  interviewAgent?: InterviewAgentClient,
+  interviewChatSecret?: string,
 ) {
   app.get("/api/admin/ai-settings", async (request, reply) => {
     if (!requirePermission(request, reply, "ai-settings:manage:any")) return;
@@ -498,7 +512,7 @@ export function registerAiRoutes(
             content: `رزومه:\n${JSON.stringify(resume, null, 2)}\nپایگاه دانش:\n${JSON.stringify(asObject(body.knowledge), null, 2)}\nJSON: {"subtitle":string,"profileScore":number,"heroTitle":string,"heroText":string,"aiTitle":string,"aiText":string}`,
           },
         ],
-        modelUsage(billing, request, "dashboard"),
+        { ...modelUsage(billing, request, "dashboard"), maxOutputTokens: 1_024 },
       );
       const fields = [data.subtitle, data.heroTitle, data.heroText, data.aiTitle, data.aiText].map(textOf);
       if (fields.some((value) => !value)) throw new Error("خروجی مدل برای ساخت داشبورد کامل نیست.");
@@ -526,61 +540,34 @@ export function registerAiRoutes(
       .object({
         type: z.enum(["comprehensive", "focused"]).optional(),
         focusArea: z.string().trim().min(1).max(120).optional(),
+        depth: z.enum(["quick", "standard", "deep"]).optional(),
       })
       .safeParse(body);
     if (!intent.success || (intent.data.type === "focused" && !intent.data.focusArea))
       return reply.code(422).send({ error: "برای تمرین تخصصی، موضوع معتبر انتخاب کن." });
     const focusArea = intent.data.type === "focused" ? intent.data.focusArea : undefined;
-    const interviewScope = focusArea
-      ? `مصاحبه تخصصی فقط درباره «${focusArea}»: ۴ تا ۶ سؤال متنوع اما همگی مرتبط با همین موضوع بساز. رزومه فقط برای شخصی‌سازی سطح و مثال‌هاست؛ به حوزه‌های دیگر نرو.`
-      : "مصاحبه جامع: ۴ تا ۶ سؤال متنوع از مهارت‌های اصلی، تجربه‌های واقعی، حل مسئله و همکاری یا رهبری متناسب با رزومه بساز. سؤال‌ها نباید همگی روی یک موضوع متمرکز باشند.";
     const usage = { ai: 5, interview: 1 } satisfies UsageCosts;
     await consume(billing, request, usage, "interview_session");
     try {
-      const result = await chatJson<JsonObject>(
-        getAnalyzeConfig(),
-        [
-          {
-            role: "system",
-            content: "تو مربی مصاحبه شغلی هستی. دستور محدودهٔ مصاحبه را رعایت کن و فقط JSON معتبر فارسی برگردان.",
-          },
-          {
-            role: "user",
-            content: `محدودهٔ مصاحبه: ${interviewScope}\nبرای cards سه موضوع مشخص و قابل تمرین مرتبط با رزومه پیشنهاد بده؛ عنوان هر کارت نام یک حوزهٔ تخصصی باشد، نه ویژگی محصول یا نتیجهٔ مصاحبه.\nرزومه:\n${JSON.stringify(resume, null, 2)}\nپایگاه دانش:\n${JSON.stringify(asObject(body.knowledge), null, 2)}\nحالت: ${textOf(body.mode) || "ترکیبی"}\nشرح شغل: ${textOf(body.jobDescription) || "ندارد"}\nJSON: {"title":string,"subtitle":string,"duration":string,"questions":string[],"cards":[{"title":string,"text":string,"tone":"lavender|mint|peach"}]}`,
-          },
-        ],
-        {
-          ...modelUsage(billing, request, "interview_session"),
-          maxAttempts: 2,
-          maxOutputTokens: 2_048,
-        },
-      );
-      const questions = stringArray(result.questions);
-      if (
-        !textOf(result.title).trim() ||
-        !textOf(result.subtitle).trim() ||
-        !textOf(result.duration).trim() ||
-        !questions.length
-      )
-        throw new Error("مدل جلسه مصاحبه کامل تولید نکرد.");
-      return {
-        title: textOf(result.title).trim(),
-        subtitle: textOf(result.subtitle).trim(),
-        duration: textOf(result.duration).trim(),
-        questions: questions.slice(0, 6),
-        cards: (Array.isArray(result.cards) ? result.cards : result.cards ? [result.cards] : [])
-          .slice(0, 3)
-          .map((card) => {
-            const safeCard = asObject(card);
-            const tone = textOf(safeCard.tone);
-            return {
-              title: textOf(safeCard.title),
-              text: textOf(safeCard.text),
-              tone: ["lavender", "mint", "peach"].includes(tone) ? tone : "mint",
-            };
-          })
-          .filter((card) => card.title && card.text),
+      const input = {
+        resume,
+        knowledge: asObject(body.knowledge),
+        mode: textOf(body.mode) || "ترکیبی",
+        focusArea,
+        depth: intent.data.depth,
+        durationMinutes: intent.data.depth ? interviewDepthMinutes[intent.data.depth] : undefined,
+        jobDescription: textOf(body.jobDescription),
       };
+      const options = { ...modelUsage(billing, request, "interview_session"), signal: request.signal };
+      if (!interviewAgent) return await createLegacyInterviewSession(input, options);
+      let chatUuid = "";
+      const session = await interviewAgent.createSession(input, {
+        ...options,
+        onChatUuid: (uuid) => {
+          chatUuid = uuid;
+        },
+      });
+      return { ...session, chatToken: signInterviewChat(chatUuid, request.auth!.user.id, interviewChatSecret!) };
     } catch (error) {
       await refund(billing, request, usage, "interview_session");
       return modelError(reply, error, "مدل مصاحبه پاسخ نداد.");
@@ -588,29 +575,125 @@ export function registerAiRoutes(
   });
 
   app.post("/api/interview/report", async (request, reply) => {
-    const parsed = interviewReportRequestSchema.safeParse(request.body);
+    const parsed = interviewReportRequestSchema
+      .extend({ chatToken: z.string().max(200).optional() })
+      .safeParse(request.body);
     if (!parsed.success)
       return reply
         .code(422)
         .send({ error: "برای دریافت نتیجه، پاسخ همهٔ سؤال‌ها را کامل کن؛ هر پاسخ حداکثر ۸۰۰۰ کاراکتر باشد." });
     const abort = modelRequestAbort(request, reply);
     try {
-      const result = await chatJson<unknown>(
-        getAnalyzeConfig(),
-        [
-          { role: "system", content: interviewReportSystemPrompt },
-          { role: "user", content: JSON.stringify(parsed.data) },
-        ],
-        {
-          ...modelUsage(billing, request, "interview_report"),
-          signal: abort.signal,
-          maxAttempts: 2,
-          maxOutputTokens: 6_144,
-        },
-      );
-      return parseInterviewReport(result, parsed.data.responses.length);
+      const chatUuid = parsed.data.chatToken
+        ? verifyInterviewChat(parsed.data.chatToken, request.auth!.user.id, interviewChatSecret!)
+        : undefined;
+      if (parsed.data.chatToken && !chatUuid) return reply.code(403).send({ error: "شناسهٔ گفت‌وگو معتبر نیست." });
+      const options = {
+        ...modelUsage(billing, request, "interview_report"),
+        signal: abort.signal,
+        chatUuid: chatUuid ?? undefined,
+      };
+      return interviewAgent
+        ? parseInterviewReport(await interviewAgent.createReport(parsed.data, options), parsed.data.responses.length)
+        : await createLegacyInterviewReport(parsed.data, options);
     } catch (error) {
       return modelError(reply, error, "مدل گزارش مصاحبه را کامل تولید نکرد. دوباره تلاش کن.");
+    } finally {
+      abort.dispose();
+    }
+  });
+
+  app.post("/api/interview/next-question", async (request, reply) => {
+    const parsed = z
+      .object({
+        mode: z.string().trim().min(1).max(200),
+        chatToken: z.string().max(200).optional(),
+        depth: z.enum(["quick", "standard", "deep"]).optional(),
+        jobDescription: z.string().max(1_000).optional(),
+        targetTimeReached: z.boolean().optional(),
+        mustConclude: z.boolean().optional(),
+        nextTopic: z.string().trim().min(10).max(500),
+        topicShiftRequired: z.boolean().optional(),
+        history: z
+          .array(
+            z.object({
+              question: z.string().trim().min(1).max(500),
+              answer: z.string().trim().min(1).max(8_000),
+            }),
+          )
+          .min(1)
+          .max(30),
+      })
+      .safeParse(request.body);
+    if (!parsed.success) return reply.code(422).send({ error: "گفت‌وگوی مصاحبه معتبر نیست." });
+    const abort = modelRequestAbort(request, reply);
+    try {
+      const chatUuid = parsed.data.chatToken
+        ? verifyInterviewChat(parsed.data.chatToken, request.auth!.user.id, interviewChatSecret!)
+        : undefined;
+      if (parsed.data.chatToken && !chatUuid) return reply.code(403).send({ error: "شناسهٔ گفت‌وگو معتبر نیست." });
+      let newChatUuid = "";
+      const options = {
+        ...modelUsage(billing, request, "interview_session"),
+        signal: abort.signal,
+        chatUuid: chatUuid ?? undefined,
+        onChatUuid: (uuid: string) => {
+          newChatUuid = uuid;
+        },
+      };
+      const turn = interviewAgent
+        ? await interviewAgent.nextQuestion(parsed.data, options)
+        : await createLegacyInterviewTurn(parsed.data, options);
+      return {
+        ...turn,
+        ...(interviewAgent
+          ? { chatToken: signInterviewChat(newChatUuid, request.auth!.user.id, interviewChatSecret!) }
+          : {}),
+      };
+    } catch (error) {
+      return modelError(reply, error, "ساخت سؤال بعدی ناموفق بود. دوباره تلاش کن.");
+    } finally {
+      abort.dispose();
+    }
+  });
+
+  app.post("/api/interview/clarify", async (request, reply) => {
+    const parsed = z
+      .object({
+        mode: z.string().trim().min(1).max(200),
+        chatToken: z.string().max(200).optional(),
+        question: z.string().trim().min(1).max(500),
+        userMessage: z.string().trim().min(1).max(1_000),
+        history: z.array(z.object({ question: z.string().max(500), answer: z.string().max(8_000) })).max(30),
+      })
+      .safeParse(request.body);
+    if (!parsed.success) return reply.code(422).send({ error: "پیام گفت‌وگو معتبر نیست." });
+    const abort = modelRequestAbort(request, reply);
+    try {
+      const chatUuid = parsed.data.chatToken
+        ? verifyInterviewChat(parsed.data.chatToken, request.auth!.user.id, interviewChatSecret!)
+        : undefined;
+      if (parsed.data.chatToken && !chatUuid) return reply.code(403).send({ error: "شناسهٔ گفت‌وگو معتبر نیست." });
+      let newChatUuid = "";
+      const options = {
+        ...modelUsage(billing, request, "interview_session"),
+        signal: abort.signal,
+        chatUuid: chatUuid ?? undefined,
+        onChatUuid: (uuid: string) => {
+          newChatUuid = uuid;
+        },
+      };
+      const response = interviewAgent
+        ? await interviewAgent.clarify(parsed.data, options)
+        : await createLegacyInterviewClarification(parsed.data, options);
+      return {
+        ...response,
+        ...(interviewAgent
+          ? { chatToken: signInterviewChat(newChatUuid, request.auth!.user.id, interviewChatSecret!) }
+          : {}),
+      };
+    } catch (error) {
+      return modelError(reply, error, "پاسخ مصاحبه‌گر آماده نشد. دوباره تلاش کن.");
     } finally {
       abort.dispose();
     }

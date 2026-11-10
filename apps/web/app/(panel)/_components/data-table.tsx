@@ -5,6 +5,7 @@ import { isValidElement, useMemo, useState, useSyncExternalStore, type ReactNode
 import { cn } from "@/lib/cn";
 import { DataTableCardSkeleton, DataTableSkeleton } from "./skeletons/table-skeletons";
 import { SearchableSelect } from "@/app/_components/searchable-select";
+import { UpgradeLink } from "@/app/_components/upgrade-link";
 
 const mobileTableMediaQuery = "(max-width: 680px)";
 
@@ -110,6 +111,7 @@ export function DataTableErrorState({
         </span>
         <strong className="mt-3 block text-[12px] text-[#7f352f]">خطا در دریافت اطلاعات</strong>
         <p className="mb-0 mt-1 max-w-md text-[9px] leading-6 text-[#8a6662]">{message}</p>
+        <UpgradeLink className="mx-auto mt-2 text-[10px]" message={message} />
         {onRetry && (
           <button
             className="mx-auto mt-4 inline-flex min-h-9 items-center justify-center gap-2 rounded-[10px] border border-[#e4cbc7] bg-white px-4 text-[9px] font-bold text-[#9b4840] disabled:opacity-50"

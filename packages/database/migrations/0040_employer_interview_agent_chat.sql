@@ -1,0 +1,1 @@
+ALTER TABLE "employer_candidates" ADD COLUMN "agent_chat_uuid" uuid;

@@ -12,6 +12,7 @@ const user: AuthUser = {
   fullName: "کاربر",
   email: null,
   role: "user",
+  accountType: "candidate",
   status: "active",
   tablePageSize: 20,
   onboardingState: { version: 1, status: "not_started", completedSteps: [] },

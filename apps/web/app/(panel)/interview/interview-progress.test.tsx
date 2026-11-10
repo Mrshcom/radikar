@@ -10,6 +10,7 @@ describe("InterviewProgress", () => {
     const fills = progress.querySelectorAll<HTMLElement>("span > span");
     expect(progress).toHaveAttribute("aria-valuenow", "3");
     expect(fills).toHaveLength(4);
+    expect(fills[0].className).toContain("linear-gradient(to_left,#2db28b,#0f7b62)");
     expect(Array.from(fills, (fill) => fill.style.backgroundSize)).toEqual(Array(4).fill("400% 100%"));
     expect(Array.from(fills, (fill) => Math.round(parseFloat(fill.style.backgroundPosition)))).toEqual([
       100, 67, 33, 0,

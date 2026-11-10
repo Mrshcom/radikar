@@ -50,6 +50,26 @@ describe("apiRequest", () => {
     expect(getPendingPlanUpgradeMessage()).toBe("سقف استفاده تمام شده");
   });
 
+  it("keeps insufficient Radicoin separate from plan-upgrade prompts", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: "موجودی رادیکوین کافی نیست.", code: "INSUFFICIENT_RADICOIN" }), {
+          status: 402,
+        }),
+      ),
+    );
+    const event = vi.fn();
+    window.addEventListener(PLAN_UPGRADE_REQUIRED_EVENT, event);
+    await expect(apiRequest("/api/employer/positions/id/screen")).rejects.toMatchObject({
+      status: 402,
+      code: "INSUFFICIENT_RADICOIN",
+    });
+    expect(event).not.toHaveBeenCalled();
+    expect(getPendingPlanUpgradeMessage()).toBeNull();
+    window.removeEventListener(PLAN_UPGRADE_REQUIRED_EVENT, event);
+  });
+
   it("runs a response diagnostic hook before returning provider errors without changing the error", async () => {
     const response = new Response(JSON.stringify({ error: "ارسال پیامک ورود ناموفق بود: IP سرویس مبدا" }), {
       status: 502,

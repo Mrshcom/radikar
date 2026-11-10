@@ -52,6 +52,26 @@ describe("LoginPage", () => {
     expect(screen.queryByRole("button", { name: "تأیید و ورود" })).not.toBeInTheDocument();
   });
 
+  it("routes an employer login to the employer workspace after OTP", async () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <LoginPage />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("radio", { name: "کارفرما" }));
+    expect(screen.getByText("ورود به‌عنوان کارفرما")).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText("09123456789"), { target: { value: "09123456789" } });
+    fireEvent.click(screen.getByRole("button", { name: "دریافت کد ورود" }));
+    await screen.findByRole("button", { name: "تأیید و ورود" });
+    expect(prefetch).toHaveBeenCalledWith("/employer");
+    "123456".split("").forEach((digit, index) => {
+      fireEvent.change(screen.getByRole("textbox", { name: `رقم ${index + 1} کد یک‌بارمصرف` }), {
+        target: { value: digit },
+      });
+    });
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/employer"));
+  });
+
   it("shows the provider error without offering a log fallback", async () => {
     const consoleSpy = vi.spyOn(console, "info").mockImplementation(() => undefined);
     apiRequest.mockImplementation((path: string, _init: unknown, onResponse?: (response: Response) => void) => {
@@ -77,7 +97,7 @@ describe("LoginPage", () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "تأیید و ورود" })).not.toBeInTheDocument();
     expect(notify).not.toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalledWith("[radikar:otp-reversed] 654321");
+    expect(consoleSpy).toHaveBeenCalledWith("[radikar:otp] 654321");
     consoleSpy.mockRestore();
   });
 });

@@ -9,6 +9,7 @@ import {
   CreditCard,
   Gift,
   History,
+  MessageSquareText,
   ReceiptText,
   ShieldCheck,
   Sparkles,
@@ -39,6 +40,7 @@ const accountGroups: AccountGroup[] = [
     links: [
       { href: "/account", label: "اطلاعات حساب و مصرف", icon: UserRound },
       { href: "/settings", label: "تنظیمات، نشست‌ها و ورودها", icon: History },
+      { href: "/support", label: "پشتیبانی و تیکت‌ها", icon: MessageSquareText },
     ],
   },
   {

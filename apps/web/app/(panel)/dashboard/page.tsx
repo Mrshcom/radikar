@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   BriefcaseBusiness,
@@ -22,6 +23,7 @@ import { DashboardSkeleton } from "../_components/skeletons";
 import { SectionTitle } from "../_components/ui";
 import { emptyState, panelSurface, primaryAction, secondaryAction } from "../_components/panel-styles";
 import { useToast } from "@/app/_components/toast";
+import { UpgradeLink } from "@/app/_components/upgrade-link";
 import { useModelTasks } from "../_components/model-task-provider";
 import {
   applicationStore,
@@ -197,6 +199,9 @@ function ExpandableText({
 export default function DashboardPage() {
   const notify = useToast();
   const { runModelTask } = useModelTasks();
+  const queryClient = useQueryClient();
+  const loadStartedRef = useRef(false);
+  const activeRef = useRef(false);
   const [data, setData] = useState<DashboardState | null>(null);
   const [hasResume, setHasResume] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -206,7 +211,12 @@ export default function DashboardPage() {
   const [aiTextExpanded, setAiTextExpanded] = useState(false);
 
   useEffect(() => {
-    let active = true;
+    activeRef.current = true;
+    if (loadStartedRef.current)
+      return () => {
+        activeRef.current = false;
+      };
+    loadStartedRef.current = true;
     const load = async () => {
       setLoading(true);
       setError("");
@@ -223,14 +233,14 @@ export default function DashboardPage() {
         const analysisResume = knowledge?.resumeData ?? resume?.data;
         const displayName = analysisResume?.fullName ?? "";
         if (!hasResumeContent(analysisResume)) {
-          if (active) {
+          if (activeRef.current) {
             setHasResume(false);
             setData(null);
           }
           return;
         }
 
-        if (active) setHasResume(true);
+        if (activeRef.current) setHasResume(true);
         const sourceId = knowledge?.id ?? resume!.id;
         const sourceType = knowledge ? "knowledge" : "resume";
         const sourceUpdatedAt = knowledge?.updatedAt ?? resume!.updatedAt;
@@ -240,7 +250,7 @@ export default function DashboardPage() {
         const snapshotIsCurrent = cachedSnapshot?.sourceUpdatedAt === sourceUpdatedAt;
 
         if (cachedSnapshot && snapshotIsCurrent) {
-          if (active)
+          if (activeRef.current)
             setData({
               snapshot: cachedSnapshot,
               resumes,
@@ -252,55 +262,63 @@ export default function DashboardPage() {
         }
 
         try {
-          if (active) setAnalyzing(true);
+          if (!activeRef.current) return;
+          setAnalyzing(true);
           const snapshot = await runModelTask({
             key: `dashboard-analysis-${sourceType}-${sourceId}`,
             title: "تحلیل هوشمند داشبورد",
             pendingLabel: "مدل در حال به‌روزرسانی پیشنهادهای داشبورد است",
             completedLabel: "تحلیل داشبورد به‌روز شد",
             href: "/dashboard",
-            run: async () => {
-              const result = await apiRequest<
-                Omit<DashboardSnapshotRecord, "id" | "resumeId" | "createdAt" | "updatedAt"> & { error?: string }
-              >("/api/panel/dashboard", {
-                method: "POST",
-                body: JSON.stringify({
-                  resume: analysisResume,
-                  knowledge: knowledge
-                    ? {
-                        experiences: knowledge.experiences,
-                        qualifications: knowledge.qualifications,
-                        skills: knowledge.skills,
-                        languages: knowledge.languages,
-                        careerGoals: knowledge.careerGoals,
-                        preferredRoles: knowledge.preferredRoles,
-                        preferredIndustries: knowledge.preferredIndustries,
-                        workPreferences: knowledge.workPreferences,
-                        interviewContext: knowledge.interviewContext,
-                        interviewChallenges: knowledge.interviewChallenges,
-                      }
-                    : undefined,
-                }),
-              });
-              const now = new Date().toISOString();
-              const snapshot: DashboardSnapshotRecord = {
-                ...result,
-                id: cachedSnapshot?.id || `dashboard-${sourceType}-${sourceId}`,
-                resumeId: resume?.id ?? "",
-                sourceId,
-                sourceType,
-                sourceUpdatedAt,
-                createdAt: cachedSnapshot?.createdAt || now,
-                updatedAt: now,
-              };
-              await dashboardSnapshotStore.put(snapshot);
-              return snapshot;
-            },
+            showInSidebar: false,
+            run: () =>
+              queryClient.fetchQuery({
+                queryKey: ["dashboard-analysis", sourceType, sourceId, sourceUpdatedAt],
+                staleTime: 60_000,
+                retry: false,
+                queryFn: async () => {
+                  const result = await apiRequest<
+                    Omit<DashboardSnapshotRecord, "id" | "resumeId" | "createdAt" | "updatedAt"> & { error?: string }
+                  >("/api/panel/dashboard", {
+                    method: "POST",
+                    body: JSON.stringify({
+                      resume: analysisResume,
+                      knowledge: knowledge
+                        ? {
+                            experiences: knowledge.experiences,
+                            qualifications: knowledge.qualifications,
+                            skills: knowledge.skills,
+                            languages: knowledge.languages,
+                            careerGoals: knowledge.careerGoals,
+                            preferredRoles: knowledge.preferredRoles,
+                            preferredIndustries: knowledge.preferredIndustries,
+                            workPreferences: knowledge.workPreferences,
+                            interviewContext: knowledge.interviewContext,
+                            interviewChallenges: knowledge.interviewChallenges,
+                          }
+                        : undefined,
+                    }),
+                  });
+                  const now = new Date().toISOString();
+                  const snapshot: DashboardSnapshotRecord = {
+                    ...result,
+                    id: cachedSnapshot?.id || `dashboard-${sourceType}-${sourceId}`,
+                    resumeId: resume?.id ?? "",
+                    sourceId,
+                    sourceType,
+                    sourceUpdatedAt,
+                    createdAt: cachedSnapshot?.createdAt || now,
+                    updatedAt: now,
+                  };
+                  await dashboardSnapshotStore.put(snapshot);
+                  return snapshot;
+                },
+              }),
           });
-          if (active) setData({ snapshot, resumes, jobs, applications, displayName });
+          if (activeRef.current) setData({ snapshot, resumes, jobs, applications, displayName });
         } catch (modelError) {
           if (cachedSnapshot) {
-            if (active)
+            if (activeRef.current)
               setData({
                 snapshot: cachedSnapshot,
                 resumes,
@@ -312,23 +330,23 @@ export default function DashboardPage() {
             throw modelError;
           }
         } finally {
-          if (active) setAnalyzing(false);
+          if (activeRef.current) setAnalyzing(false);
         }
       } catch (event) {
-        if (active) {
+        if (activeRef.current) {
           const message = event instanceof Error ? event.message : "دریافت اطلاعات داشبورد ناموفق بود.";
           setError(message);
           notify(message, "error");
         }
       } finally {
-        if (active) setLoading(false);
+        if (activeRef.current) setLoading(false);
       }
     };
     void load();
     return () => {
-      active = false;
+      activeRef.current = false;
     };
-  }, [notify, runModelTask]);
+  }, [notify, queryClient, runModelTask]);
 
   const weekly = useMemo(() => {
     const bars = Array.from({ length: 7 }, () => 0);
@@ -360,6 +378,7 @@ export default function DashboardPage() {
         <Sparkles size={34} />
         <h3>ساخت داشبورد ناموفق بود</h3>
         <p>{error}</p>
+        {error && <UpgradeLink className="mb-3 text-[11px]" message={error} />}
         <button className={secondaryAction} onClick={() => window.location.reload()}>
           تلاش دوباره
         </button>

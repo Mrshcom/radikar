@@ -14,6 +14,7 @@ export type ModelTask = {
   completedLabel: string;
   status: ModelTaskStatus;
   href: string;
+  showInSidebar?: boolean;
   context?: unknown;
   error?: string;
   createdAt: number;
@@ -25,6 +26,7 @@ type RunModelTaskInput<TResult> = {
   pendingLabel: string;
   completedLabel: string;
   href: string;
+  showInSidebar?: boolean;
   context?: unknown;
   run: (signal: AbortSignal) => Promise<TResult>;
   getCompletedHref?: (result: TResult) => string;
@@ -87,6 +89,7 @@ function ModelTaskStateProvider({ children }: { children: ReactNode }) {
         completedLabel: input.completedLabel,
         status: "running",
         href: input.href,
+        showInSidebar: input.showInSidebar,
         context: input.context,
         createdAt: Date.now(),
       };
@@ -94,6 +97,7 @@ function ModelTaskStateProvider({ children }: { children: ReactNode }) {
 
       try {
         const result = (await mutateAsync(() => input.run(controller.signal))) as TResult;
+        if (controller.signal.aborted) throw new ModelTaskCanceledError();
         setTasks((current) =>
           current.map((item) =>
             item.id === id
@@ -108,23 +112,10 @@ function ModelTaskStateProvider({ children }: { children: ReactNode }) {
         return result;
       } catch (error) {
         if (controller.signal.aborted || isModelTaskCanceledError(error)) {
-          setTasks((current) =>
-            current.map((item) =>
-              item.id === id
-                ? {
-                    ...item,
-                    status: "canceled",
-                    error: "عملیات توسط شما لغو شد.",
-                  }
-                : item,
-            ),
-          );
+          setTasks((current) => current.filter((item) => item.id !== id));
           throw new ModelTaskCanceledError();
         }
-        const message = error instanceof Error ? error.message : "عملیات مدل ناموفق بود.";
-        setTasks((current) =>
-          current.map((item) => (item.id === id ? { ...item, status: "error", error: message } : item)),
-        );
+        setTasks((current) => current.filter((item) => item.id !== id));
         throw error;
       } finally {
         controllersRef.current.delete(id);
@@ -146,17 +137,7 @@ function ModelTaskStateProvider({ children }: { children: ReactNode }) {
     const controller = controllersRef.current.get(taskId);
     if (!controller) return;
     controller.abort();
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              status: "canceled",
-              error: "عملیات توسط شما لغو شد.",
-            }
-          : task,
-      ),
-    );
+    setTasks((current) => current.filter((task) => task.id !== taskId));
   }, []);
   const openTask = useCallback(
     (task: ModelTask) => {

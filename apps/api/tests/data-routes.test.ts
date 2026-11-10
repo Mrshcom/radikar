@@ -55,6 +55,7 @@ const testUser: AuthUser = {
   phone: "09120000000",
   fullName: "کاربر تست",
   role: "superadmin",
+  accountType: "candidate",
   status: "active",
   tablePageSize: 20,
   onboardingState: { version: 1, status: "not_started", completedSteps: [] },
