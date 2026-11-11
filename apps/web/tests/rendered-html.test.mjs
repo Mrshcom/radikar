@@ -443,8 +443,8 @@ test("employer position list uses the shared eyebrow-free page title", async () 
   assert.doesNotMatch(page, /profile\.data\.profile\.companyName/);
   assert.match(editPage, /<SectionTitle title="ویرایش پوزیشن کاری"/);
   assert.doesNotMatch(editPage, /position\.companyName/);
-  assert.match(detailsPage, /<SectionTitle[\s\S]*?title=\{position\.title\}/);
-  assert.doesNotMatch(detailsPage, /position\.companyName/);
+  assert.match(detailsPage, /<SectionTitle\s+title=\{position\.title\}/);
+  assert.match(detailsPage, /<dt className="text-xs text-\[#71847b\]">شرکت<\/dt>/);
 });
 
 test("employer resume previews reserve the viewport height for the original document", async () => {
@@ -468,13 +468,12 @@ test("employer resume bank preview uses one concise header line", async () => {
   assert.doesNotMatch(bankPage, /description="پیش‌نمایش رزومهٔ بانک"/);
 });
 
-test("employer resume bank exposes clear, actionable contact links", async () => {
+test("employer resume bank exposes an actionable phone link", async () => {
   const bankPage = await readFile(new URL("app/(employer)/employer/resume-bank/page.tsx", projectRoot), "utf8");
 
   assert.match(bankPage, /href=\{`tel:\$\{resume\.phone\}`\}/);
-  assert.match(bankPage, /href=\{`mailto:\$\{resume\.email\}`\}/);
-  assert.match(bankPage, /resume\.phone && resume\.email && <span aria-hidden className="h-4 w-px bg-\[#dbe7e1\]" \/>/);
-  assert.match(bankPage, /<Mail size=\{13\} \/>\s*\{resume\.email\}/);
+  assert.match(bankPage, /key: "phone",\s+title: "موبایل"/);
+  assert.match(bankPage, /href=\{`tel:\$\{resume\.phone\}`\}>\s*\{resume\.phone\}/);
 });
 
 test("employer resume bank supports searching and filtering important resume details", async () => {
@@ -485,14 +484,16 @@ test("employer resume bank supports searching and filtering important resume det
   for (const label of ["تخصص استخراج‌شده", "اطلاعات تماس", "فایل اصلی", "وضعیت استخراج"]) {
     assert.match(bankPage, new RegExp(`label="${label}"`));
   }
-  assert.match(bankPage, /رزومه‌ای مطابق جست‌وجو و فیلترهای انتخاب‌شده پیدا نشد/);
+  assert.match(bankPage, /filtered=\{Boolean\(search \|\| activeFilterCount\)\}/);
+  assert.match(bankPage, /rows=\{pageResumes\}/);
 });
 
 test("employer screening feedback keeps a clear gap before retrying", async () => {
   const positionPage = await readFile(new URL("app/(employer)/employer/positions/[id]/page.tsx", projectRoot), "utf8");
 
-  assert.match(positionPage, /const hasScreeningFeedback = Boolean\(position\.screeningError \|\| screen\.error\)/);
-  assert.match(positionPage, /hasScreeningFeedback \? "mt-3 " : ""/);
+  assert.match(positionPage, /const screeningFailure =[\s\S]*?screen\.error\?\.message \?\? position\.screeningError/);
+  assert.match(positionPage, /\{screeningFailure && \([\s\S]*?className="mt-4 flex items-start/);
+  assert.match(positionPage, /className="mt-5 flex flex-col gap-3 border-t/);
 });
 
 test("expired interview invitations never offer a secure interview entry", async () => {
