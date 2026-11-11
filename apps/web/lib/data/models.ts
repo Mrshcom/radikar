@@ -150,7 +150,8 @@ export type InterviewSessionRecord = BaseRecord & {
   answers?: string[];
   answerSentAt?: string[];
   replies?: string[];
-  clarifications?: Array<{ questionIndex: number; user: string; reply: string; sentAt?: string }>;
+  replySentAt?: string[];
+  clarifications?: Array<{ questionIndex: number; user: string; reply: string; sentAt?: string; replySentAt?: string }>;
   currentQuestionIndex?: number;
   report?: import("@radikar/shared-types").InterviewReport & { createdAt: string };
 };

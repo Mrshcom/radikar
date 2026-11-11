@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { InterviewAgentClient, interviewTurnPrompt } from "../src/modules/ai/interview-agent";
+import { InterviewAgentClient, interviewClarificationPrompt, interviewTurnPrompt } from "../src/modules/ai/interview-agent";
 import { signInterviewChat, verifyInterviewChat } from "../src/modules/ai/interview-chat-token";
 
 const uuid = "9b2f6c1e-4d7a-4b8e-a1f3-2c5d8e9f0a1b";
 
-test("interview turn shifts topics after one follow-up and sees all prior questions", () => {
+test("stateless fallback keeps only recent turns and shifts topic", () => {
   const history = Array.from({ length: 7 }, (_, index) => ({
     question: `پرسش محور ${index + 1}؟`,
     answer: `پاسخ ${index + 1}`,
@@ -16,11 +16,44 @@ test("interview turn shifts topics after one follow-up and sees all prior questi
     topicShiftRequired: true,
     history,
   });
-  assert.match(prompt, /یک سؤال اصلی و حداکثر یک سؤال پیگیر/);
-  assert.match(prompt, /تغییر محور در این نوبت الزامی است/);
-  assert.match(prompt, /پرسش محور 1/);
+  assert.match(prompt, /حالا محور را عوض کن/);
+  assert.doesNotMatch(prompt, /پرسش محور 1/);
   assert.match(prompt, /پرسش محور 7/);
   assert.match(prompt, /تجربهٔ مستقل در حل یک مسئلهٔ متفاوت/);
+});
+
+test("stateful turn sends the new answer without resending earlier questions or instructions", () => {
+  const prompt = interviewTurnPrompt(
+    {
+      mode: "مصاحبه جامع",
+      nextTopic: "تجربهٔ همکاری تیمی چیست؟",
+      topicShiftRequired: true,
+      history: [
+        { question: "سؤال قبلی دربارهٔ معماری؟", answer: "پاسخ قدیمی" },
+        { question: "سؤال تازه دربارهٔ اجرا؟", answer: "با تیم هماهنگ کردم" },
+      ],
+    },
+    true,
+  );
+  assert.match(prompt, /با تیم هماهنگ کردم/);
+  assert.doesNotMatch(prompt, /پاسخ قدیمی|سؤال قبلی|سؤال تازه دربارهٔ اجرا/);
+  assert.ok(prompt.length < 550);
+});
+
+test("stateful clarification sends only the new message", () => {
+  const prompt = interviewClarificationPrompt(
+    {
+      mode: "مصاحبه جامع",
+      question: "سؤال قبلی دربارهٔ معماری؟",
+      userMessage: "منظورت از مقیاس پروژه چیست؟",
+      history: [{ question: "سؤال قدیمی؟", answer: "پاسخ قدیمی" }],
+    },
+    true,
+  );
+  assert.match(prompt, /منظورت از مقیاس پروژه چیست/);
+  assert.match(prompt, /این سؤال مربوط به این جلسهٔ مصاحبه نیست/);
+  assert.doesNotMatch(prompt, /سؤال قبلی|سؤال قدیمی|پاسخ قدیمی/);
+  assert.ok(prompt.length < 220);
 });
 
 function envelope(data: object | null, status = 200, message = "") {
@@ -96,6 +129,62 @@ test("agent interview sends a server-side bearer key, polls the same chat and va
   assert.deepEqual(usage, ["abroai:140"]);
 });
 
+test("session prompt trims profile data and replaces job-intake questions", async () => {
+  let prompt = "";
+  const fetcher = (async (_url: URL | RequestInfo, init?: RequestInit) => {
+    prompt = JSON.parse(String(init?.body)).message;
+    return envelope({
+      uuid,
+      status: "completed",
+      reply: JSON.stringify({
+        questions: [
+          "عنوان دقیق جایگاه چیست؟",
+          "مسئولیت‌های اصلی آن کدام‌اند؟",
+          "چه مهارت‌ها یا تجربه‌هایی ضروری‌اند؟",
+          "چه نتایجی از فرد در این جایگاه انتظار می‌رود؟",
+        ],
+        cards: [],
+      }),
+    });
+  }) as typeof fetch;
+  const result = await client(fetcher).createSession({
+    mode: "مصاحبه جامع",
+    resume: {
+      jobTitle: "راهبر فرانت‌اند",
+      summary: "تجربهٔ توسعه ".repeat(500),
+      skills: "React, TypeScript",
+      email: "private@example.test",
+      experiences: Array.from({ length: 20 }, () => ({
+        jobTitle: "توسعه‌دهنده",
+        description: "شرح پروژه ".repeat(100),
+      })),
+    },
+    knowledge: { id: "profile-id", interviewContext: "تمرین رهبری", resumeData: { summary: "دادهٔ تکراری" } },
+  });
+  assert.ok(prompt.length < 5_000);
+  assert.doesNotMatch(prompt, /private@example|profile-id|دادهٔ تکراری/);
+  assert.equal(result.title, "مصاحبه جامع");
+  assert.match(result.questions[0], /تصمیم مهم/);
+  assert.equal(result.questions.length, 4);
+});
+
+test("session creation continues polling after a temporary status timeout", async () => {
+  let calls = 0;
+  const fetcher = (async () => {
+    calls += 1;
+    if (calls === 1) return envelope({ uuid, status: "pending", reply: null });
+    if (calls === 2) throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
+    return envelope({
+      uuid,
+      status: "completed",
+      reply: JSON.stringify({ questions: ["یک؟", "دو؟", "سه؟", "چهار؟"] }),
+    });
+  }) as typeof fetch;
+  const result = await client(fetcher).createSession({ resume: {}, knowledge: {}, mode: "مصاحبه جامع" });
+  assert.equal(calls, 3);
+  assert.equal(result.questions.length, 4);
+});
+
 test("all interview turns reuse one AbroAI chat and account for cumulative usage", async () => {
   const calls: Array<{ url: string; method: string; body: Record<string, string> | null }> = [];
   const responses = [
@@ -164,6 +253,8 @@ test("all interview turns reuse one AbroAI chat and account for cumulative usage
   assert.equal(calls[1].url.endsWith(`/interviewer/chat/${uuid}`), true);
   assert.equal(calls[2].url.endsWith("/interviewer/chat"), true);
   assert.equal(calls[2].body?.chat_uuid, uuid);
+  assert.match(calls[2].body?.message ?? "", /این تجربه را با تیم انجام دادم/);
+  assert.doesNotMatch(calls[2].body?.message ?? "", /همهٔ سؤال‌های قبلی|چهار نوبت اخیر/);
   assert.deepEqual(usage, [40]);
 });
 
@@ -229,7 +320,7 @@ test("agent interviewer responds to the last answer and asks a contextual follow
   });
   assert.match(turn.reply, /تحویل پروژه/);
   assert.match(turn.question, /ذی‌نفعان/);
-  assert.match(prompt, /اگر جواب مبهم بود/);
+  assert.match(prompt, /فقط اگر لازم است پیگیری کن/);
   assert.match(prompt, /مهارت فنی/);
   assert.match(prompt, /مهارت نرم/);
   assert.match(prompt, /تحویل پروژه دیر شد/);
@@ -249,11 +340,55 @@ test("interviewer can close after enough evidence without generating another que
   const turn = await client(fetcher).nextQuestion({
     mode: "مصاحبهٔ شغلی",
     nextTopic: "موضوع پیشنهادی دیگر",
-    history: [{ question: "از تجربه‌ات بگو.", answer: "در تیم دربارهٔ انتخاب راهکار فنی تصمیم گرفتیم و نتیجه را سنجیدیم." }],
+    history: [
+      { question: "از تجربه‌ات بگو.", answer: "در تیم دربارهٔ انتخاب راهکار فنی تصمیم گرفتیم و نتیجه را سنجیدیم." },
+    ],
   });
   assert.equal(turn.complete, true);
   assert.equal(turn.question, "");
   assert.match(turn.reply, /پایان رسید/);
+});
+
+test("interviewer closing reply may omit the next question", async () => {
+  const fetcher = (async () =>
+    envelope({
+      uuid,
+      status: "completed",
+      reply: JSON.stringify({ reply: "مصاحبه به پایان رسید. ممنون از وقتی که گذاشتی.", complete: true }),
+    })) as typeof fetch;
+  const turn = await client(fetcher).nextQuestion({
+    mode: "مصاحبه جامع",
+    nextTopic: "جمع‌بندی تجربهٔ فنی و همکاری",
+    targetTimeReached: true,
+    history: [{ question: "در پروژه چه کردی؟", answer: "اعتبارسنجی سمت سرور را پیاده کردم." }],
+  });
+  assert.equal(turn.complete, true);
+  assert.equal(turn.question, "");
+});
+
+test("practice interview continues on another topic while user time remains", async () => {
+  let prompt = "";
+  const fetcher = (async (_url: URL | RequestInfo, init?: RequestInit) => {
+    prompt = JSON.parse(String(init?.body)).message;
+    return envelope({
+      uuid,
+      status: "completed",
+      reply: JSON.stringify({ reply: "گفت‌وگو به پایان رسید. ممنون از وقتی که گذاشتی.", question: "", complete: true }),
+    });
+  }) as typeof fetch;
+  const input = {
+    mode: "تمرین تخصصی: HTML",
+    nextTopic: "تجربهٔ پیاده‌سازی فرم‌های دسترس‌پذیر در HTML",
+    targetTimeReached: false,
+    history: [{ question: "چگونه ساختار معنایی را رعایت کردی؟", answer: "از تگ‌های معنایی استفاده کردم." }],
+  };
+  const turn = await client(fetcher).nextQuestion(input);
+  assert.equal(turn.complete, false);
+  assert.match(turn.question, /فرم‌های دسترس‌پذیر/);
+  assert.doesNotMatch(turn.reply, /پایان رسید/);
+  assert.match(prompt, /زمان کاربر باقی است/);
+  const cappedTurn = await client(fetcher).nextQuestion({ ...input, mustConclude: true });
+  assert.equal(cappedTurn.complete, true);
 });
 
 test("candidate can ask for clarification without advancing the interview", async () => {
@@ -345,7 +480,7 @@ test("resume ranking uses its own agent and validates comparable evidence", asyn
   await assert.rejects(invalid.rankResume({ title: "جاوا", description: "جاوا", resumeText: "جاوا" }));
 });
 
-test("agent interview rejects failed, malformed and incomplete replies", async () => {
+test("agent interview rejects failed and malformed replies, and completes short topic lists", async () => {
   const failed = client((async () => envelope({ uuid, status: "failed", error: "مدل در دسترس نیست" })) as typeof fetch);
   await assert.rejects(failed.createSession({ resume: {}, knowledge: {}, mode: "جامع" }), /مدل در دسترس نیست/);
   const malformed = client((async () => envelope({ uuid, status: "completed", reply: "not JSON" })) as typeof fetch);
@@ -354,9 +489,25 @@ test("agent interview rejects failed, malformed and incomplete replies", async (
     envelope({
       uuid,
       status: "completed",
-      reply: JSON.stringify({ title: "جلسه", subtitle: "تمرین", duration: "۱۰ دقیقه", questions: ["یک؟"], cards: [] }),
+      reply: JSON.stringify({ questions: ["در یک پروژهٔ وب چه کاری انجام دادی؟"], cards: [{ title: "نامعتبر" }] }),
     })) as typeof fetch);
-  await assert.rejects(incomplete.createSession({ resume: {}, knowledge: {}, mode: "جامع" }));
+  const session = await incomplete.createSession({ resume: { jobTitle: "توسعه‌دهنده" }, knowledge: {}, mode: "جامع" });
+  assert.equal(session.questions.length, 4);
+  assert.equal(session.questions[0], "در یک پروژهٔ وب چه کاری انجام دادی؟");
+  assert.deepEqual(session.cards, []);
+  await assert.rejects(
+    incomplete.createSession({ resume: {}, knowledge: {}, mode: "جامع", questionCount: 5 }),
+    /تعداد سؤال‌های این نوع مصاحبه/,
+  );
+});
+
+test("agent interview accepts JSON wrapped in a code fence or a short explanation", async () => {
+  const payload = JSON.stringify({ questions: ["یک؟", "دو؟", "سه؟", "چهار؟"], cards: [] });
+  for (const reply of [`\uFEFF\n\`\`\`json\n${payload}\n\`\`\``, `موضوع‌ها آماده‌اند:\n${payload}\nمی‌توانیم شروع کنیم.`]) {
+    const fetcher = (async () => envelope({ uuid, status: "completed", reply })) as typeof fetch;
+    const session = await client(fetcher).createSession({ resume: {}, knowledge: {}, mode: "جامع" });
+    assert.deepEqual(session.questions, ["یک؟", "دو؟", "سه؟", "چهار؟"]);
+  }
 });
 
 test("agent interview reports provider HTTP errors and bounds long answers", async () => {

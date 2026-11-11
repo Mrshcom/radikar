@@ -33,6 +33,21 @@ test("interview report orders every question and derives the overall score from 
   );
 });
 
+test("topic-based report omits unused per-question feedback", () => {
+  const result = parseInterviewReport(
+    {
+      score: 72,
+      summary: "جمع‌بندی مصاحبه",
+      strengths: ["نمونهٔ عملی"],
+      improvements: ["نتیجه را دقیق‌تر توضیح بده"],
+      topics: [{ title: "حل مسئله", score: 72, evidence: "نمونه‌ای از رفع خطا بیان کرد" }],
+    },
+    12,
+  );
+  assert.equal(result.score, 72);
+  assert.deepEqual(result.questions, []);
+});
+
 test("interview report rejects unsupported topic scores and empty evidence", () => {
   for (const topics of [
     [{ title: "همکاری", score: 101, evidence: "نمونه" }],

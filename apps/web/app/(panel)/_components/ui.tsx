@@ -159,18 +159,23 @@ export function SectionTitle({
   title,
   description,
   action,
+  leading,
   className,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
+  leading?: ReactNode;
   className?: string;
 }) {
   return (
     <div className={`mb-8 flex items-start justify-between gap-5 max-[560px]:block ${className || ""}`}>
-      <div>
+      <div className="flex items-center gap-3">
+        {leading}
+        <div>
         <h1 className="m-0 text-[30px] font-black leading-[1.4] tracking-[-1px] text-[#19312f]">{title}</h1>
         {description && <p className="m-0 mt-1 text-[12px] leading-7 text-[#758582]">{description}</p>}
+        </div>
       </div>
       {action && <div className="max-[560px]:mt-4 max-[560px]:w-full">{action}</div>}
     </div>

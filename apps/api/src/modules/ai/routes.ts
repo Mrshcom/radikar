@@ -160,9 +160,14 @@ function normalizeAnalysis(result: ModelAnalysis): Analysis {
 function modelError(reply: FastifyReply, error: unknown, fallback: string) {
   const message = error instanceof Error ? error.message : fallback;
   return reply.code(502).send({
-    error: /pre-consume quota failed|remaining user quota/i.test(message)
-      ? "اعتبار سرویس هوش مصنوعی کافی نیست؛ لطفاً بعداً دوباره تلاش کنید."
-      : message,
+    error:
+      error instanceof z.ZodError
+        ? "پاسخ مدل با قالب مورد انتظار سازگار نبود. لطفاً دوباره تلاش کن."
+        : error instanceof Error && error.name === "TimeoutError"
+          ? "زمان پاسخ‌گویی سرویس ایجنت بیش از حد مجاز شد. لطفاً دوباره تلاش کن."
+        : /pre-consume quota failed|remaining user quota/i.test(message)
+          ? "اعتبار سرویس هوش مصنوعی کافی نیست؛ لطفاً بعداً دوباره تلاش کنید."
+          : message,
   });
 }
 
@@ -570,6 +575,10 @@ export function registerAiRoutes(
       return { ...session, chatToken: signInterviewChat(chatUuid, request.auth!.user.id, interviewChatSecret!) };
     } catch (error) {
       await refund(billing, request, usage, "interview_session");
+      if (error instanceof Error && error.message === "پاسخ ایجنت هوش مصنوعی JSON معتبر نیست.")
+        return reply.code(502).send({
+          error: "مصاحبه‌گر نتوانست پرسش‌های جلسه را آماده کند. لطفاً دوباره تلاش کن؛ اعتبار این تلاش به حسابت برگردانده شد.",
+        });
       return modelError(reply, error, "مدل مصاحبه پاسخ نداد.");
     }
   });
@@ -591,7 +600,6 @@ export function registerAiRoutes(
       const options = {
         ...modelUsage(billing, request, "interview_report"),
         signal: abort.signal,
-        chatUuid: chatUuid ?? undefined,
       };
       return interviewAgent
         ? parseInterviewReport(await interviewAgent.createReport(parsed.data, options), parsed.data.responses.length)

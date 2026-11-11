@@ -15,6 +15,7 @@ import { DataTable, type DataTableColumn, type SortState } from "../../_componen
 import { FormField } from "../../_components/form-field";
 import { TableActionButton } from "../../_components/table-action-button";
 import { useToast } from "@/app/_components/toast";
+import { LocalizedNumberInput } from "@/app/_components/text-field";
 import { MembershipSummary } from "../../_components/membership-summary";
 import { MembershipSummarySkeleton } from "../../_components/skeletons";
 import { ConfirmActionModal, Modal, SectionTitle } from "../../_components/ui";
@@ -588,7 +589,7 @@ export default function MembershipsAdminPage() {
                 )}
               >
                 <FormField label="تعداد روز" required error={extendForm.formState.errors.days?.message}>
-                  <input
+                  <LocalizedNumberInput
                     aria-invalid={Boolean(extendForm.formState.errors.days)}
                     className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px] aria-[invalid=true]:border-[#c44d4d] aria-[invalid=true]:ring-4 aria-[invalid=true]:ring-[#c44d4d]/10"
                     type="number"
@@ -651,7 +652,7 @@ export default function MembershipsAdminPage() {
                       />
                     )}
                   />
-                  <input
+                  <LocalizedNumberInput
                     aria-invalid={Boolean(creditForm.formState.errors.units)}
                     aria-label={creditResource === "radicoin" ? "تعداد رادیکوین" : "مقدار اعتبار"}
                     className="h-10 rounded-lg border border-[#dfe5df] px-3 text-[10px] aria-[invalid=true]:border-[#c44d4d] aria-[invalid=true]:ring-4 aria-[invalid=true]:ring-[#c44d4d]/10"

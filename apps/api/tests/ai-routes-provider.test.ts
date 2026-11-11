@@ -107,7 +107,7 @@ test("the interviewer agent handles sessions and reports while retaining respons
       bodies.push(JSON.parse(String(init?.body)));
       const prompt = JSON.parse(String(init?.body)).message as string;
       const requestedCount = Number(prompt.match(/دقیقاً (\d+) موضوع آغازین/)?.[1] ?? 4);
-      const output = prompt.includes('ساختار: {"reply":string,"question":string,"complete":boolean}')
+      const output = prompt.includes('"reply":string,"question":string,"complete":boolean')
         ? { reply: "دربارهٔ همکاری تیمی توضیح دادی.", question: "در همان تجربه چه تصمیمی گرفتی؟" }
         : !prompt.includes('"responses"')
           ? {
@@ -167,6 +167,18 @@ test("the interviewer agent handles sessions and reports while retaining respons
     assert.equal(turn.statusCode, 200);
     assert.equal(turn.json().chatToken, session.json().chatToken);
     assert.ok(bodies.some((body) => body.chat_uuid === uuid));
+    const reportAfterChat = await app.inject({
+      method: "POST",
+      url: "/api/interview/report",
+      cookies: cookie,
+      payload: {
+        mode: "جامع",
+        chatToken: session.json().chatToken,
+        responses: [{ question: "یک؟", answer: "پاسخ" }],
+      },
+    });
+    assert.equal(reportAfterChat.statusCode, 200);
+    assert.equal(bodies.at(-1)?.chat_uuid, undefined);
     for (const depth of ["quick", "standard", "deep"] as const) {
       const selected = await app.inject({
         method: "POST",
@@ -215,6 +227,42 @@ test("interview agent failure refunds session credits without falling back to th
     });
     assert.equal(result.statusCode, 502);
     assert.match(result.json().error, /ایجنت آماده نیست/);
+    assert.deepEqual(
+      events.filter((event) => event.includes("interview_session")),
+      ["consume:interview_session", "refund:interview_session"],
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test("malformed interview planning reply shows a useful error and refunds credits", async () => {
+  const events: string[] = [];
+  const agent = new InterviewAgentClient({
+    baseUrl: "https://agents.example.test",
+    apiKey: "12.private-secret",
+    interviewerAgent: "interviewer",
+    resumeRankerAgent: "ranker",
+    timeoutMs: 5_000,
+    fetcher: (async () =>
+      new Response(
+        JSON.stringify({
+          success: true,
+          data: { uuid: "9b2f6c1e-4d7a-4b8e-a1f3-2c5d8e9f0a1b", status: "completed", reply: "پاسخ ناقص" },
+        }),
+      )) as typeof fetch,
+  });
+  const app = appWithBilling(events, agent);
+  try {
+    const result = await app.inject({
+      method: "POST",
+      url: "/api/interview/session",
+      cookies: { radikar_session: "token" },
+      payload: { resume },
+    });
+    assert.equal(result.statusCode, 502);
+    assert.match(result.json().error, /مصاحبه‌گر نتوانست پرسش‌های جلسه را آماده کند/);
+    assert.doesNotMatch(result.json().error, /JSON/);
     assert.deepEqual(
       events.filter((event) => event.includes("interview_session")),
       ["consume:interview_session", "refund:interview_session"],

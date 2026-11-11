@@ -10,6 +10,7 @@ import type { z } from "zod";
 import { useAuth } from "@/app/_components/auth";
 import { SearchableSelect } from "@/app/_components/searchable-select";
 import { useToast } from "@/app/_components/toast";
+import { LocalizedNumberInput } from "@/app/_components/text-field";
 import {
   useAdminProductTimeline,
   useDeleteProductTimeline,
@@ -300,7 +301,7 @@ export default function AdminProductUpdatesPage() {
               </label>
               <label className={labelClass}>
                 ترتیب نمایش
-                <input
+                <LocalizedNumberInput
                   className={inputClass}
                   type="number"
                   min={0}

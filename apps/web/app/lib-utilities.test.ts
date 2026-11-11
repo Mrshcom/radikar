@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { formatPersianNumber, toPersianDigits } from "@/lib/fa-number";
+import { formatPersianNumber, normalizeNumericInput, toPersianDigits } from "@/lib/fa-number";
 import { validateJobDescription } from "@/lib/job-description-validation";
 import { getLinkedInJobId, isLinkedInHost, resolveJobUrls } from "@/lib/job-url";
 import { sanitizeLtrField } from "@/lib/ltr-field";
@@ -16,6 +16,7 @@ describe("pure web helpers", () => {
 
   it("formats Persian numbers, currency and usage limits", () => {
     expect(toPersianDigits("Order 123")).toBe("Order ۱۲۳");
+    expect(normalizeNumericInput("۱۲٣٬۴۵٦")).toBe("123456");
     expect(formatPersianNumber(1234567)).toMatch(/۱.*۲.*۳/);
     expect(formatTomans(125_000)).toContain("۱۲٬۵۰۰");
     expect(formatLimit(null)).toContain("نامحدود");
@@ -56,6 +57,7 @@ describe("pure web helpers", () => {
     expect(email.dir).toBe("ltr");
     expect(persian.style.textAlign).toBe("right");
     expect(sanitizeLtrField("Ali علی 123")).toBe("Ali  123");
+    expect(sanitizeLtrField("۰۹۱۲٣٤۵۶۷۸۹")).toBe("09123456789");
   });
 
   it("rejects unsafe profile images before reading and configures query caching", async () => {

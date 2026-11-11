@@ -38,14 +38,18 @@ import type { InterviewSessionRecord } from "@/lib/data/models";
 import { InterviewPracticeDialog } from "./interview-practice-dialog";
 import { InterviewDepthChooser, interviewDepthLabel } from "./interview-depth-chooser";
 import { submitInterviewAnswerOnEnter } from "./interview-answer-keyboard";
-import { isInterviewClarification } from "./interview-message-intent";
+import {
+  isInterviewClarification,
+  isUnrelatedInterviewQuestion,
+  unrelatedInterviewQuestionReply,
+} from "./interview-message-intent";
 import { InterviewConversation } from "./interview-conversation";
+import { createPracticeCards, type PracticeCard } from "./practice-cards";
 import { ModelThinkingOrb } from "../_components/model-thinking-orb";
 import { formatPersianNumber, toPersianDigits } from "@/lib/fa-number";
 import { apiRequest } from "@/lib/api-client";
-import { SectionTitle } from "../_components/ui";
+import { ConfirmActionModal, SectionTitle } from "../_components/ui";
 
-type PracticeCard = { title: string; text: string; tone: string };
 type SessionData = {
   title: string;
   subtitle: string;
@@ -61,8 +65,10 @@ const icons = [CircleUserRound, BriefcaseBusiness, FileCheck2];
 const comprehensiveMode = "مصاحبه جامع";
 const focusedModePrefix = "تمرین تخصصی: ";
 const isComprehensiveMode = (value: string) => value === comprehensiveMode || value === "مصاحبه شخصی‌سازی‌شده";
+const isInterviewMode = (value: string) => isComprehensiveMode(value) || value.startsWith(focusedModePrefix);
+const interviewModeFor = (title: string, fallback: string) => (isInterviewMode(title) ? title : fallback);
 const isAffirmativeReadiness = (value: string) =>
-  /^(?:الان\s+)?(?:(?:آره|اره|بله|بلی|آری|باشه)(?:[،, ]+(?:آماده(?:‌| )ام|شروع کن(?:یم)?|بزن بریم))?|آماده(?:‌| )ام|آمادم|حاضرم|اوکی(?:‌| )?ام|اوکیم|اکیم|بزن بریم|شروع کن(?:یم)?)[!.؟\s]*$/u.test(
+  /^(?:الان\s+)?(?:(?:آره|اره|بله|بلی|آری)(?:[،, ]+(?:آماده(?:‌| )ام|شروع کن(?:یم)?|بزن بریم))?|آماده(?:‌| )ام|آمادم|حاضرم|اوکی(?:‌| )?ام|اوکیم|اکیم|بزن بریم|بریم|پس|(?:یس|yes)(?:[،,\s]+(?:یس|yes))*|شروع کن(?:یم)?)[!.؟\s]*$/iu.test(
     value.trim(),
   );
 const isReadySession = (record: InterviewSessionRecord) =>
@@ -80,6 +86,7 @@ export default function InterviewPage() {
   const { isRunning, runModelTask } = useModelTasks();
   const [sessionRecord, setSessionRecord] = useState<InterviewSessionRecord | null>(null);
   const [completedSessions, setCompletedSessions] = useState<InterviewSessionRecord[]>([]);
+  const [practiceCards, setPracticeCards] = useState<PracticeCard[]>([]);
   const [hasResume, setHasResume] = useState(true);
   const [started, setStarted] = useState(false);
   const [restartConfirmOpen, setRestartConfirmOpen] = useState(false);
@@ -105,17 +112,55 @@ export default function InterviewPage() {
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [activeSince, setActiveSince] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [restartRequest, setRestartRequest] = useState<{ mode: string; depth: InterviewDepth } | null>(null);
   const sessionCreationControllerRef = useRef<AbortController | null>(null);
+  const handledRestartRequestRef = useRef<string | null>(null);
   const answerTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const fullscreenWantedRef = useRef(false);
+  const fullscreenOwnedRef = useRef(false);
+  const fullscreenPendingRef = useRef(false);
   const isCreatingSession = creatingSession || isRunning("interview-session");
   const feedbackBusy = feedbackLoading || isRunning("interview-feedback");
   const activeSessionId = sessionRecord?.id;
   const hasReport = Boolean(sessionRecord?.report);
+  const interviewActive = Boolean(started && sessionRecord && !choosingDepthFor && !isCreatingSession && !feedbackBusy && !hasReport);
   const resizeAnswerTextarea = useCallback((textarea: HTMLTextAreaElement | null) => {
     if (!textarea) return;
     textarea.style.height = "40px";
     textarea.style.height = `${Math.max(40, textarea.scrollHeight)}px`;
   }, []);
+
+  const enterInterviewFullscreen = useCallback(() => {
+    fullscreenWantedRef.current = true;
+    if (document.fullscreenElement || fullscreenPendingRef.current || !document.documentElement.requestFullscreen) return;
+    fullscreenPendingRef.current = true;
+    void document.documentElement.requestFullscreen()
+      .then(() => {
+        if (fullscreenWantedRef.current) fullscreenOwnedRef.current = true;
+        else if (document.fullscreenElement === document.documentElement) void document.exitFullscreen().catch(() => {});
+      })
+      .catch(() => {})
+      .finally(() => {
+        fullscreenPendingRef.current = false;
+      });
+  }, []);
+
+  const leaveInterviewFullscreen = useCallback(async () => {
+    fullscreenWantedRef.current = false;
+    if (!fullscreenOwnedRef.current) return;
+    fullscreenOwnedRef.current = false;
+    if (document.fullscreenElement === document.documentElement) await document.exitFullscreen().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (interviewActive) {
+      enterInterviewFullscreen();
+      return;
+    }
+    void leaveInterviewFullscreen();
+  }, [interviewActive, enterInterviewFullscreen, leaveInterviewFullscreen]);
+
+  useEffect(() => () => { void leaveInterviewFullscreen(); }, [leaveInterviewFullscreen]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => resizeAnswerTextarea(answerTextareaRef.current));
@@ -176,8 +221,10 @@ export default function InterviewPage() {
       setSessionRecord(record);
       setAnswers(record.answers ?? []);
       setQuestionIndex(index);
-      reset({ answer: record.answers?.[index] ?? "" });
-      setMode(record.mode);
+      reset({
+        answer: record.answerSentAt?.[index] && !record.replies?.[index] ? "" : (record.answers?.[index] ?? ""),
+      });
+      setMode(interviewModeFor(record.title, record.mode));
     },
     [reset],
   );
@@ -194,10 +241,20 @@ export default function InterviewPage() {
         ]);
         if (!active) return;
         setHasResume(Boolean(resume || knowledge));
+        setPracticeCards(
+          createPracticeCards(resume?.data ?? knowledge?.resumeData, knowledge?.skills, sessions[0]?.cards),
+        );
         setCompletedSessions(sessions.filter((session) => Boolean(session.report)));
-        const requestedId = new URLSearchParams(window.location.search).get("session");
+        const searchParams = new URLSearchParams(window.location.search);
+        const requestedId = searchParams.get("session");
         const requestedSession = sessions.find((session) => session.id === requestedId);
-        if (requestedSession && !requestedSession.report) {
+        const restartSession = sessions.find((session) => session.id === searchParams.get("restart"));
+        if (restartSession?.report) {
+          setRestartRequest({
+            mode: interviewModeFor(restartSession.title, restartSession.mode),
+            depth: restartSession.depth ?? "standard",
+          });
+        } else if (requestedSession && !requestedSession.report) {
           restoreSession(requestedSession);
           setActiveSince(isReadySession(requestedSession) ? Date.now() : null);
           setStarted(true);
@@ -218,7 +275,7 @@ export default function InterviewPage() {
     };
   }, [notify, restoreSession]);
 
-  const loadSession = async (
+  const loadSession = useCallback(async (
     selectedMode: string,
     depth: InterviewDepth,
     startAfterLoad = false,
@@ -254,19 +311,21 @@ export default function InterviewPage() {
             }),
             signal: controller.signal,
           });
+          setPracticeCards(createPracticeCards(resumeData, knowledge?.skills, result.cards));
           const now = new Date().toISOString();
           const record: InterviewSessionRecord = {
             id: replaceSessionId ?? createRecordId("interview"),
             ...result,
             plannedTopics: [...result.questions],
             agentChatToken: result.chatToken,
-            mode: selectedMode,
+            mode: interviewModeFor(result.title, selectedMode),
             depth,
             elapsedMs: 0,
             feedbacks: [],
             answers: [],
             answerSentAt: [],
             replies: [],
+            replySentAt: [],
             clarifications: [],
             currentQuestionIndex: 0,
             createdAt: now,
@@ -290,11 +349,20 @@ export default function InterviewPage() {
         setCreatingSession(false);
       }
     }
-  };
+  }, [notify, restoreSession, runModelTask]);
+
+  useEffect(() => {
+    if (!restartRequest) return;
+    const requestKey = `${restartRequest.mode}:${restartRequest.depth}`;
+    if (handledRestartRequestRef.current === requestKey) return;
+    handledRestartRequestRef.current = requestKey;
+    void loadSession(restartRequest.mode, restartRequest.depth, true);
+  }, [loadSession, restartRequest]);
 
   const startPractice = (selectedMode: string) => {
     setMode(selectedMode);
     if (sessionRecord?.mode === selectedMode && !sessionRecord.report) {
+      enterInterviewFullscreen();
       setActiveSince(isReadySession(sessionRecord) ? Date.now() : null);
       setStarted(true);
     } else {
@@ -335,6 +403,12 @@ export default function InterviewPage() {
     sessionRecord.replies?.[sessionRecord.questions.length - 1]?.trim(),
   );
   const ready = sessionRecord ? isReadySession(sessionRecord) : false;
+  const awaitingReply = Boolean(
+    ready &&
+      sessionRecord?.answerSentAt?.[questionIndex] &&
+      answers[questionIndex]?.trim() &&
+      !sessionRecord?.replies?.[questionIndex]?.trim(),
+  );
   const respondToReadiness = async (answer: string) => {
     if (!sessionRecord || saving) return;
     reset({ answer: "" });
@@ -383,19 +457,27 @@ export default function InterviewPage() {
     return updated;
   };
 
-  const moveQuestion = async (answer: string, nextIndex: number) => {
+  const moveQuestion = async (answer: string, nextIndex: number, retryPending = false) => {
     if (!sessionRecord || nextIndex < 0 || nextIndex > 30) return;
-    reset({ answer: "" });
+    if (!retryPending) reset({ answer: "" });
     setSaving(true);
     setAgentThinking(true);
     let complete = false;
     let finished = false;
     try {
-      const draft = await persistAnswers(answer, questionIndex, new Date().toISOString());
+      const draft = retryPending
+        ? { ...sessionRecord, answers: sessionRecord.answers ?? [] }
+        : await persistAnswers(answer, questionIndex, new Date().toISOString());
       if (!draft) return;
       let question = draft.questions[nextIndex] ?? "دربارهٔ یک تصمیم مهم در کار قبلی‌ات و نتیجهٔ آن توضیح می‌دهی؟";
       let reply = "ممنون که توضیح دادی. برای شناخت بهتر تجربه‌ات ادامه بدهیم.";
       let agentChatToken = draft.agentChatToken;
+      const historyStart = Math.max(0, nextIndex - (draft.agentChatToken ? 1 : 4));
+      const nextTopic =
+        (draft.plannedTopics ?? draft.questions)[Math.ceil(nextIndex / 2)] ??
+        (draft.mode.startsWith(focusedModePrefix)
+          ? `یکی از زیرمهارت‌های بررسی‌نشدهٔ ${draft.mode.slice(focusedModePrefix.length)}`
+          : "یکی از مهارت‌های فنی یا همکاری که در پرسش‌های قبلی پوشش داده نشده است");
       try {
         const generated = await nextQuestionMutation.mutateAsync({
           mode: draft.mode,
@@ -403,23 +485,23 @@ export default function InterviewPage() {
           chatToken: draft.agentChatToken,
           targetTimeReached: timeRemainingMs === 0,
           mustConclude: nextIndex >= 30,
-          nextTopic:
-            (draft.plannedTopics ?? draft.questions)[Math.ceil(nextIndex / 2)] ??
-            "یکی از مهارت‌های مرتبط با نقش که در پرسش‌های قبلی پوشش داده نشده است",
+          nextTopic,
           topicShiftRequired: nextIndex > 1 && nextIndex % 2 === 0,
-          history: draft.questions
-            .slice(0, nextIndex)
-            .map((item, index) => ({ question: item, answer: draft.answers[index] })),
+          history: draft.questions.slice(historyStart, nextIndex).map((item, offset) => ({
+            question: item,
+            answer: draft.answers[historyStart + offset],
+          })),
         });
         question = generated.question;
         reply = generated.reply;
         complete = generated.complete || nextIndex >= 30;
         if (complete && !generated.complete)
           reply = "ممنون از وقتی که برای این گفت‌وگو گذاشتی. مصاحبه به پایان رسید و پاسخ‌هایت بررسی می‌شوند.";
+        if (complete)
+          reply = `${reply.trim()}\nمصاحبه تمام شد. ممنون از اینکه در جلسهٔ مصاحبهٔ رادیکار شرکت کردی. این یک مصاحبهٔ آزمایشی بود.`;
         agentChatToken = generated.chatToken ?? agentChatToken;
       } catch {
-        reset({ answer });
-        notify("پاسخ مصاحبه‌گر آماده نشد. پاسخ تو ذخیره شده است؛ دوباره تلاش کن.", "error");
+        notify("پاسخت ثبت شد، اما پاسخ مصاحبه‌گر نرسید. از «تلاش دوباره» استفاده کن.", "error");
         return;
       }
       const updated = {
@@ -431,6 +513,7 @@ export default function InterviewPage() {
             : [...draft.questions, question],
         answers: complete ? draft.answers.slice(0, nextIndex) : draft.answers,
         replies: [...(draft.replies ?? []).slice(0, questionIndex), reply],
+        replySentAt: [...(draft.replySentAt ?? []).slice(0, questionIndex), new Date().toISOString()],
         agentChatToken,
         currentQuestionIndex: complete ? questionIndex : nextIndex,
         updatedAt: new Date().toISOString(),
@@ -441,7 +524,7 @@ export default function InterviewPage() {
       setQuestionIndex(complete ? questionIndex : nextIndex);
       finished = complete;
     } catch {
-      reset({ answer });
+      if (!retryPending) reset({ answer });
       notify("ذخیرهٔ پاسخ انجام نشد؛ دوباره تلاش کن.", "error");
     } finally {
       setSaving(false);
@@ -451,34 +534,46 @@ export default function InterviewPage() {
   };
 
   const clarifyQuestion = async (userMessage: string) => {
-    if (!sessionRecord || clarifyMutation.isPending) return;
+    if (!sessionRecord || saving || clarifyMutation.isPending) return;
+    const unrelated = isUnrelatedInterviewQuestion(userMessage);
+    const historyStart = Math.max(0, questionIndex - 4);
     reset({ answer: "" });
+    setSaving(true);
     const sentAt = new Date().toISOString();
     const paused = {
       ...sessionRecord,
       elapsedMs: (sessionRecord.elapsedMs ?? 0) + (activeSince ? new Date(sentAt).getTime() - activeSince : 0),
       updatedAt: sentAt,
     };
+    const pendingClarification = { questionIndex, user: userMessage.trim(), reply: "", sentAt };
+    const optimistic = {
+      ...paused,
+      clarifications: [...(paused.clarifications ?? []), pendingClarification],
+    };
     setActiveSince(null);
-    setSessionRecord(paused);
-    setAgentThinking(true);
+    setSessionRecord(optimistic);
+    setAgentThinking(!unrelated);
     try {
-      await interviewSessionStore.put(paused);
-      const result = await clarifyMutation.mutateAsync({
-        mode: paused.mode,
-        chatToken: paused.agentChatToken,
-        question: paused.questions[questionIndex],
-        userMessage: userMessage.trim(),
-        history: paused.questions.slice(0, questionIndex).map((question, index) => ({
-          question,
-          answer: answers[index] ?? "",
-        })),
-      });
+      await interviewSessionStore.put(optimistic);
+      const result = unrelated
+        ? { reply: unrelatedInterviewQuestionReply }
+        : await clarifyMutation.mutateAsync({
+            mode: paused.mode,
+            chatToken: paused.agentChatToken,
+            question: paused.questions[questionIndex],
+            userMessage: userMessage.trim(),
+            history: paused.agentChatToken
+              ? []
+              : paused.questions.slice(historyStart, questionIndex).map((question, offset) => ({
+                  question,
+                  answer: answers[historyStart + offset] ?? "",
+                })),
+          });
       const updated = {
-        ...paused,
+        ...optimistic,
         clarifications: [
           ...(paused.clarifications ?? []),
-          { questionIndex, user: userMessage.trim(), reply: result.reply, sentAt },
+          { ...pendingClarification, reply: result.reply, replySentAt: new Date().toISOString() },
         ],
         agentChatToken: result.chatToken ?? paused.agentChatToken,
         updatedAt: new Date().toISOString(),
@@ -486,11 +581,14 @@ export default function InterviewPage() {
       await interviewSessionStore.put(updated);
       setSessionRecord(updated);
     } catch (event) {
+      setSessionRecord(paused);
+      await interviewSessionStore.put(paused).catch(() => {});
       reset({ answer: userMessage });
       notify(event instanceof Error ? event.message : "پاسخ مصاحبه‌گر آماده نشد.", "error");
     } finally {
       setActiveSince(new Date().getTime());
       setAgentThinking(false);
+      setSaving(false);
     }
   };
 
@@ -502,6 +600,7 @@ export default function InterviewPage() {
       }
       setActiveSince(null);
       setStarted(false);
+      await leaveInterviewFullscreen();
       if (window.location.search) router.replace("/interview");
     } catch {
       notify("ذخیرهٔ پاسخ انجام نشد؛ دوباره تلاش کن.", "error");
@@ -560,6 +659,7 @@ export default function InterviewPage() {
         },
       });
       setSessionRecord(updated);
+      await leaveInterviewFullscreen();
       router.push(`/interview/results/${updated.id}`);
     } catch (event) {
       notify(
@@ -575,15 +675,21 @@ export default function InterviewPage() {
   if (loading) return <InterviewSkeleton />;
   const answerField = register("answer");
   const hasAnswer = Boolean(answerValue?.trim());
+  const answerPending = saving || clarifyMutation.isPending;
+  const pendingAnswerLabel = ready ? "در حال دریافت پاسخ مصاحبه‌گر" : "در حال ثبت پاسخ";
   const submitAnswer = handleSubmit(({ answer }) => {
     return !ready
       ? respondToReadiness(answer)
-      : isInterviewClarification(answer)
+      : isUnrelatedInterviewQuestion(answer) || isInterviewClarification(answer)
         ? clarifyQuestion(answer)
         : moveQuestion(answer, questionIndex + 1);
   });
   const handleAnswerFormSubmit = (event: FormEvent<HTMLFormElement>) => {
     answerTextareaRef.current?.focus();
+    if (answerPending || feedbackBusy || awaitingReply) {
+      event.preventDefault();
+      return;
+    }
     void submitAnswer(event);
   };
   const primaryButton =
@@ -613,6 +719,7 @@ export default function InterviewPage() {
     sky: "border-[#dce9f2] bg-[linear-gradient(145deg,#fff_35%,#f1f7fb_100%)]",
   };
   const comprehensiveSession = sessionRecord && isComprehensiveMode(sessionRecord.mode);
+  const hasActiveComprehensiveInterview = Boolean(comprehensiveSession && !sessionRecord.report);
   const interviewOverview = sessionRecord?.mode.startsWith(focusedModePrefix)
     ? `در این تمرین، دربارهٔ «${sessionRecord.mode.slice(focusedModePrefix.length)}» گفت‌وگو می‌کنی. پرسش‌ها با پاسخ‌هایت پیش می‌روند و در پایان، ارزیابی مباحث را می‌بینی.`
     : "در مصاحبهٔ جامع، دربارهٔ تجربه‌های فنی، حل مسئله و همکاری‌ات گفت‌وگو می‌کنی. پرسش‌ها با پاسخ‌هایت پیش می‌روند و در پایان، ارزیابی مباحث را می‌بینی.";
@@ -622,7 +729,7 @@ export default function InterviewPage() {
         <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#efcfb8] bg-[#fff5ed] p-3 text-[#9a572d]">
           <Sparkles size={20} />
           <div className="flex flex-1 flex-col">
-            <strong className="text-[12px]">ساخت جلسه انجام نشد</strong>
+            <strong className="text-[12px]">مصاحبه آماده نشد</strong>
             <span className="mt-1 text-[11px]">{error}</span>
             <UpgradeLink className="mt-2 text-[11px]" message={error} />
           </div>
@@ -632,7 +739,11 @@ export default function InterviewPage() {
         </div>
       )}
       <section aria-label="آمادگی برای مصاحبه">
-        <SectionTitle title="آمادگی برای مصاحبه" description="تمرین شخصی‌سازی‌شده براساس رزومه و مسیر شغلی تو." />
+        <SectionTitle
+          title="آمادگی برای مصاحبه"
+          description="تمرین شخصی‌سازی‌شده براساس رزومه و مسیر شغلی تو."
+          className="mb-3 [&_h1]:leading-[1.2] [&_p]:!mt-0"
+        />
         <div className="relative flex min-h-[380px] flex-col overflow-hidden rounded-[22px] bg-[#f8f8f3] text-[#19312f] lg:flex-row-reverse lg:items-center">
           <div className="relative w-full shrink-0 self-center lg:w-[56%]">
             <Image
@@ -645,7 +756,7 @@ export default function InterviewPage() {
               width={1536}
             />
           </div>
-          <div className="relative flex-1 px-[clamp(24px,3vw,44px)] py-8 max-[560px]:p-7">
+          <div className="relative flex-1 self-start px-[clamp(24px,3vw,44px)] py-8 lg:pt-10 max-[560px]:p-7">
             <p className="mb-4 mt-0 max-w-[500px] text-[15px] leading-[1.9] text-[#405b54]">
               {sessionRecord
                 ? interviewOverview
@@ -668,15 +779,12 @@ export default function InterviewPage() {
                 {sessionRecord?.report ? "گزارش مصاحبه آماده است" : "گزارش عملکرد پس از پایان"}
               </span>
             </div>
-            <p className="mb-0 mt-2 text-xs leading-6 text-[#61746f]">
-              زمان فکرکردن و پاسخ‌گویی مصاحبه‌گر از زمان تو کم نمی‌شود.
-            </p>
             <div className="mt-10 flex flex-wrap items-center gap-3">
               <button
-                className="group inline-flex min-h-12 w-fit items-center justify-center gap-4 rounded-2xl border-0 bg-[linear-gradient(115deg,#0f7b62,#149c7c)] py-2 pl-2.5 pr-5 text-[14px] font-bold text-white shadow-[0_12px_28px_rgba(15,123,98,.22)] transition-shadow duration-300 hover:shadow-[0_17px_34px_rgba(15,123,98,.3)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0f7b62] motion-reduce:transition-none"
+                className="group inline-flex h-12 w-fit items-center justify-center gap-4 rounded-2xl border-0 bg-[linear-gradient(115deg,#0f7b62,#149c7c)] py-0 pl-2.5 pr-5 text-xs font-normal text-white shadow-[0_12px_28px_rgba(15,123,98,.22)] transition-shadow duration-300 hover:shadow-[0_17px_34px_rgba(15,123,98,.3)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0f7b62] motion-reduce:transition-none"
                 onClick={() => startPractice(comprehensiveSession ? sessionRecord.mode : comprehensiveMode)}
               >
-                {comprehensiveSession && !sessionRecord.report && sessionRecord.answers?.some(Boolean)
+                {hasActiveComprehensiveInterview
                   ? "ادامه مصاحبه جامع"
                   : "شروع مصاحبه جامع"}
                 <span className="grid size-9 place-items-center rounded-xl bg-white/15 transition-transform duration-300 group-hover:-translate-x-1 motion-reduce:transform-none motion-reduce:transition-none">
@@ -688,42 +796,28 @@ export default function InterviewPage() {
                   type="button"
                   aria-expanded={restartConfirmOpen}
                   onClick={() => setRestartConfirmOpen((open) => !open)}
-                  className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-[#cfe3d8] bg-white px-4 text-sm font-bold text-[#0f7b62] transition-colors hover:bg-[#eff8f2]"
+                  className="inline-flex h-12 items-center gap-2 rounded-xl border border-[#cfe3d8] bg-white px-4 text-xs font-normal text-[#0f7b62] transition-colors hover:bg-[#eff8f2]"
                 >
                   <RotateCcw size={17} /> شروع دوباره
                 </button>
               ) : null}
             </div>
-            {restartConfirmOpen && sessionRecord ? (
-              <div
-                role="alert"
-                className="mt-4 max-w-[500px] rounded-2xl border border-[#eacb9d] bg-[#fff9ed] p-4 text-sm text-[#72502b]"
-              >
-                <p className="m-0 leading-7">
-                  {sessionRecord.report
-                    ? "یک مصاحبهٔ تازه با همین تنظیمات آغاز می‌شود و گزارش قبلی‌ات حفظ خواهد شد."
-                    : "با شروع دوباره، پاسخ‌های این تمرین پاک می‌شوند و مصاحبه از ابتدا آغاز می‌شود."}
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={restartPractice}
-                    className="min-h-10 rounded-xl bg-[#0f7b62] px-4 font-bold text-white"
-                  >
-                    تأیید و شروع دوباره
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRestartConfirmOpen(false)}
-                    className="min-h-10 rounded-xl border border-[#dec7a6] bg-white px-4 font-bold text-[#72502b]"
-                  >
-                    انصراف
-                  </button>
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
+        {restartConfirmOpen && sessionRecord && (
+          <ConfirmActionModal
+            title="مصاحبه را از نو شروع کنی؟"
+            description={
+              sessionRecord.report
+                ? "مصاحبهٔ تازه با همین تنظیمات آغاز می‌شود و گزارش قبلی‌ات حفظ خواهد شد."
+                : "پاسخ‌های این تمرین پاک می‌شوند و مصاحبه از ابتدا آغاز می‌شود."
+            }
+            confirmLabel="تأیید و شروع دوباره"
+            showCloseButton={false}
+            onCancel={() => setRestartConfirmOpen(false)}
+            onConfirm={restartPractice}
+          />
+        )}
         {(choosingDepthFor || isCreatingSession || started) && (
           <InterviewPracticeDialog
             chatLayout={Boolean(started && sessionRecord && !sessionRecord.report)}
@@ -733,9 +827,7 @@ export default function InterviewPage() {
             title={
               choosingDepthFor
                 ? "انتخاب نوع مصاحبه"
-                : isCreatingSession
-                  ? "در حال ساخت جلسهٔ تازه"
-                  : (sessionRecord?.title ?? mode)
+                : mode
             }
             closeDisabled={
               saving || feedbackBusy || clarifyMutation.isPending || (started && Boolean(sessionRecord?.report))
@@ -789,16 +881,16 @@ export default function InterviewPage() {
                 answers={answers}
                 answerSentAt={sessionRecord.answerSentAt ?? []}
                 replies={sessionRecord.replies ?? []}
+                replySentAt={sessionRecord.replySentAt ?? []}
                 clarifications={sessionRecord.clarifications ?? []}
                 currentIndex={questionIndex}
                 pending={ready && (saving || clarifyMutation.isPending)}
                 intro={`سلام! من مصاحبه‌گر رادیکار هستم. در این ${mode} دربارهٔ تجربه‌هایت گفت‌وگو می‌کنیم. آماده‌ای؟`}
+                introSentAt={sessionRecord.createdAt}
+                firstQuestionSentAt={sessionRecord.readyAt}
               >
                 {concluded ? (
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="m-0 text-sm text-[#61746f]">
-                      گفت‌وگو تمام شد. جمع‌بندی مصاحبه‌گر را در بالا می‌بینی.
-                    </p>
+                  <div className="flex justify-end">
                     <button
                       type="button"
                       className={primaryButton}
@@ -811,6 +903,18 @@ export default function InterviewPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleAnswerFormSubmit}>
+                    {awaitingReply && !agentThinking && (
+                      <div role="alert" className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#f2f8f4] px-3 py-2 text-xs text-[#365e52]">
+                        <span>پاسخت ثبت شد، اما پاسخ مصاحبه‌گر نرسید.</span>
+                        <button
+                          type="button"
+                          onClick={() => void moveQuestion(answers[questionIndex], questionIndex + 1, true)}
+                          className="rounded-lg border border-[#b9dccc] bg-white px-3 py-1.5 text-[#0f7b62] hover:bg-[#e6f4ee]"
+                        >
+                          تلاش دوباره
+                        </button>
+                      </div>
+                    )}
                     <div className="relative">
                       <textarea
                         id="interview-answer"
@@ -822,10 +926,10 @@ export default function InterviewPage() {
                           resizeAnswerTextarea(element);
                         }}
                         className="block h-10 min-h-10 w-full resize-none overflow-hidden rounded-[10px] border border-[#dfe6e0] bg-[#fcfdfb] py-2 pl-14 pr-3 text-[13px] leading-5 text-[#405753] outline-none placeholder:text-[#9aa7a3] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10"
-                        readOnly={feedbackBusy || saving || clarifyMutation.isPending}
+                        readOnly={feedbackBusy}
                         onInput={(event) => resizeAnswerTextarea(event.currentTarget)}
                         onKeyDown={(event) =>
-                          submitInterviewAnswerOnEnter(event, feedbackBusy || saving || clarifyMutation.isPending)
+                          submitInterviewAnswerOnEnter(event, feedbackBusy || answerPending || awaitingReply)
                         }
                         maxLength={8_000}
                         aria-label="پاسخ مصاحبه"
@@ -835,11 +939,15 @@ export default function InterviewPage() {
                       <button
                         className="absolute left-1.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-lg bg-[#0f7b62] text-white shadow-[0_4px_10px_rgba(15,123,98,.16)] transition-colors hover:bg-[#0d6b57] disabled:cursor-not-allowed disabled:bg-[#d7e4de] disabled:text-[#8ba39a] disabled:shadow-none"
                         type="submit"
-                        disabled={!hasAnswer || saving || feedbackBusy || clarifyMutation.isPending}
-                        aria-label="ارسال پاسخ"
-                        title="ارسال پاسخ"
+                        disabled={!hasAnswer || answerPending || feedbackBusy || awaitingReply}
+                        aria-label={answerPending ? pendingAnswerLabel : "ارسال پاسخ"}
+                        title={answerPending ? pendingAnswerLabel : "ارسال پاسخ"}
                       >
-                        <SendHorizontal className="-scale-x-100" size={15} aria-hidden="true" />
+                        {answerPending ? (
+                          <LoaderCircle className="animate-spin motion-reduce:animate-none" size={15} aria-hidden="true" />
+                        ) : (
+                          <SendHorizontal className="-scale-x-100" size={15} aria-hidden="true" />
+                        )}
                       </button>
                     </div>
                     <div className="mt-2 flex items-center justify-start">
@@ -851,8 +959,8 @@ export default function InterviewPage() {
             ) : null}
           </InterviewPracticeDialog>
         )}
-        <div className="mt-4 grid grid-cols-3 gap-3 max-[820px]:grid-cols-1">
-          {(sessionRecord?.cards || []).map((item, index) => {
+        <div className="mt-10 grid grid-cols-3 gap-3 max-[820px]:grid-cols-1">
+          {practiceCards.map((item, index) => {
             const Icon = icons[index] || CircleUserRound;
             return (
               <article
@@ -901,7 +1009,7 @@ export default function InterviewPage() {
                   href={`/interview/results/${session.id}`}
                   className="group flex flex-col gap-2 rounded-2xl border border-[#dce9df] bg-white p-5 no-underline shadow-[0_8px_24px_rgba(27,55,50,.04)] hover:border-[#9bcdb8]"
                 >
-                  <span className="text-xs font-bold text-[#0f7b62]">
+                  <span className="text-[11px] font-normal text-[#0f7b62]">
                     {session.mode}
                     {session.depth ? ` · ${interviewDepthLabel(session.depth)}` : ""}
                   </span>
@@ -909,7 +1017,7 @@ export default function InterviewPage() {
                   <span className="text-xs text-[#61746f]">
                     امتیاز {formatPersianNumber(session.report?.score ?? 0)} از ۱۰۰
                   </span>
-                  <span className="mt-1 inline-flex self-end items-center gap-1 text-xs font-bold text-[#0f7b62]">
+                  <span className="mt-1 inline-flex self-end items-center gap-1 text-[10px] font-normal text-[#0f7b62]">
                     مشاهده گزارش <ArrowLeft size={15} />
                   </span>
                 </Link>

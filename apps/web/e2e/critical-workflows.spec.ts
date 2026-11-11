@@ -459,7 +459,11 @@ test.describe("جریان‌های بحرانی داده‌های پنل", () =>
     await page.getByRole("button", { name: "شروع مصاحبه جامع" }).click();
     await expect.poll(() => requests[0]).toMatchObject({ type: "comprehensive" });
     await page.getByRole("button", { name: "بستن و ذخیره مصاحبه" }).click();
-    await page.getByRole("button", { name: "تمرین تخصصی این موضوع" }).click();
+    await page
+      .locator("article")
+      .filter({ hasText: "معماری و مقیاس‌پذیری" })
+      .getByRole("button", { name: "تمرین تخصصی این موضوع" })
+      .click();
     await expect
       .poll(() => requests[1])
       .toMatchObject({

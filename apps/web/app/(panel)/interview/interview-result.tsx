@@ -5,7 +5,7 @@ import { formatPersianNumber } from "@/lib/fa-number";
 import { CircularProgress } from "../_components/circular-progress";
 import { InterviewTopicRadar } from "./interview-topic-radar";
 
-export function InterviewResult({ session, onRestart }: { session: InterviewSessionRecord; onRestart: () => void }) {
+export function InterviewResult({ session }: { session: InterviewSessionRecord }) {
   const report = session.report;
   if (!report) return null;
   return (
@@ -84,15 +84,6 @@ export function InterviewResult({ session, onRestart }: { session: InterviewSess
         ))}
       </div>
       <InterviewTopicRadar report={report} questions={session.questions} />
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={onRestart}
-          className="rounded-xl border-0 bg-[#0f7b62] px-5 py-3 text-sm font-bold text-white"
-        >
-          تمرین دوبارهٔ این مصاحبه
-        </button>
-      </div>
     </section>
   );
 }

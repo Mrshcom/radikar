@@ -36,6 +36,7 @@ import {
   FilePlus2,
   Bot,
   Gift,
+  House,
 } from "lucide-react";
 import {
   appProfileStore,
@@ -138,6 +139,33 @@ const pageTitles: Record<string, string> = {
   "/admin/radicoins": "مدیریت رادیکوین",
   "/admin/settings": "تنظیمات",
 };
+
+type PanelBreadcrumb = { label: string; href?: string };
+
+function getPanelBreadcrumbs(pathname: string, title: string, isEmployer: boolean, isManagement: boolean): PanelBreadcrumb[] {
+  const root = isEmployer
+    ? { href: "/employer", label: "داشبورد کارفرما" }
+    : isManagement
+      ? { href: "/admin", label: "داشبورد مدیریتی" }
+      : { href: "/dashboard", label: "نمای کلی مسیر شغلی" };
+
+  if (pathname === root.href) return [{ label: root.label }];
+
+  const parents: PanelBreadcrumb[] = [root];
+  if (pathname.startsWith("/interview/results/")) {
+    parents.push({ href: "/interview", label: pageTitles["/interview"] });
+  } else if (pathname.startsWith("/interview-invites/")) {
+    parents.push({ href: "/interview-invites", label: pageTitles["/interview-invites"] });
+  } else if (pathname.startsWith("/employer/positions/")) {
+    parents.push({ href: "/employer/positions", label: pageTitles["/employer/positions"] });
+  } else if (pathname === "/account") {
+    parents.push({ href: "/account-center", label: pageTitles["/account-center"] });
+  } else if (pathname === "/employer/profile") {
+    parents.push({ href: "/employer/account-center", label: pageTitles["/employer/account-center"] });
+  }
+
+  return [...parents, { label: title }];
+}
 
 function tourTarget(href: string) {
   return (
@@ -305,15 +333,18 @@ function PanelShellContent({ children }: { children: ReactNode }) {
       .filter((item): item is MenuItem => Boolean(item))
       .slice(0, 5);
   }, [isEmployer, isManagement, visibleMenuItems]);
-  const title = useMemo(
-    () =>
-      pageTitles[pathname] ??
-      (pathname.startsWith("/employer/positions/")
-        ? pathname.endsWith("/edit")
-          ? "ویرایش پوزیشن کاری"
-          : "جزئیات پوزیشن کاری"
-        : (visibleMenuItems.find((item) => item.href === pathname)?.label ?? "نمای کلی")),
-    [pathname, visibleMenuItems],
+  const title = useMemo(() => {
+    if (pageTitles[pathname]) return pageTitles[pathname];
+    if (pathname.startsWith("/interview/results/")) return "گزارش مصاحبه";
+    if (pathname.startsWith("/interview-invites/")) return "جلسهٔ مصاحبه";
+    if (pathname.startsWith("/employer/positions/")) {
+      return pathname.endsWith("/edit") ? "ویرایش پوزیشن کاری" : "جزئیات پوزیشن کاری";
+    }
+    return visibleMenuItems.find((item) => item.href === pathname)?.label ?? "نمای کلی";
+  }, [pathname, visibleMenuItems]);
+  const breadcrumbs = useMemo(
+    () => getPanelBreadcrumbs(pathname, title, isEmployer, isManagement),
+    [pathname, title, isEmployer, isManagement],
   );
   const latestJob = jobs[0];
   const activeWorkspace = profiles.find((item) => item.id === activeProfileId);
@@ -626,10 +657,36 @@ function PanelShellContent({ children }: { children: ReactNode }) {
             >
               <Menu size={20} />
             </button>
-            <Image className="size-9 shrink-0 object-contain" src="/radikar-logo.png" width={36} height={36} alt="" />
-            <strong className="text-[16px] tracking-[-.4px]">رادیکار</strong>
+            <Image className="size-9 shrink-0 object-contain max-[560px]:hidden" src="/radikar-logo.png" width={36} height={36} alt="" />
+            <strong className="text-[16px] tracking-[-.4px] max-[560px]:hidden">رادیکار</strong>
           </div>
-          <span className="text-[11px] text-[#8c9996] max-[820px]:hidden">{title}</span>
+          <nav aria-label="مسیر صفحه" className="min-w-0 overflow-x-auto whitespace-nowrap text-[11px] text-[#738680] max-[820px]:ms-2 max-[560px]:text-[10px]">
+            <ol className="flex w-max items-center gap-1.5">
+              {breadcrumbs.map((crumb, index) => (
+                <li className={`flex items-center gap-1.5 ${index === 0 && breadcrumbs.length > 2 ? "max-[560px]:hidden" : ""}`} key={crumb.href ?? pathname}>
+                  {index > 0 && (
+                    <ChevronLeft
+                      aria-hidden="true"
+                      className={`shrink-0 text-[#aab8b1] ${index === 1 && breadcrumbs.length > 2 ? "max-[560px]:hidden" : ""}`}
+                      size={13}
+                    />
+                  )}
+                  {crumb.href ? (
+                    <Link
+                      aria-label={crumb.href === "/dashboard" ? `بازگشت به ${crumb.label}` : undefined}
+                      className="rounded-sm transition-colors hover:text-[#0e7f69] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0e7f69]"
+                      href={crumb.href}
+                      title={crumb.href === "/dashboard" ? crumb.label : undefined}
+                    >
+                      {crumb.href === "/dashboard" ? <House aria-hidden="true" size={16} strokeWidth={2.5} /> : crumb.label}
+                    </Link>
+                  ) : (
+                    <span aria-current="page" className="font-medium text-[#244239]">{crumb.label}</span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </nav>
           <div className="mr-auto flex items-center gap-[10px]">
             {!isManagement && !isEmployer && (
               <button

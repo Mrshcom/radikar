@@ -48,9 +48,42 @@ describe("interview topic scores", () => {
         questions={[]}
       />,
     );
-    expect(screen.getByRole("img", { name: /نمودار رادار/ })).toBeTruthy();
+    const chart = screen.getByRole("img", { name: /نمودار رادار/ });
+    const assessment = screen.getByRole("region", { name: "ارزیابی مباحث گفت‌وگو" });
+    expect(assessment.contains(chart)).toBe(false);
     expect(screen.getByText("ساختار پروژه را توضیح داد")).toBeTruthy();
     expect(screen.queryByText("بررسی سؤال‌به‌سؤال")).toBeNull();
+  });
+
+  it("keeps two topic scores in the report without showing a graph", () => {
+    render(
+      <InterviewTopicRadar
+        report={{
+          ...report,
+          topics: [
+            { title: "معماری و استانداردهای فرانت‌اند", score: 10, evidence: "شاهد اول" },
+            { title: "حل اختلاف و همکاری", score: 5, evidence: "شاهد دوم" },
+          ],
+        }}
+        questions={[]}
+      />,
+    );
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByText("معماری و استانداردهای فرانت‌اند")).toBeVisible();
+    expect(screen.getByText("۱۰ از ۱۰۰")).toBeVisible();
+    expect(screen.getByText("حل اختلاف و همکاری")).toBeVisible();
+    expect(screen.getByText("۵ از ۱۰۰")).toBeVisible();
+  });
+
+  it("does not show a graph for a single evaluated topic", () => {
+    render(
+      <InterviewTopicRadar
+        report={{ ...report, topics: [{ title: "HTML", score: 35, evidence: "یک نمونه" }] }}
+        questions={[]}
+      />,
+    );
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByText("HTML")).toBeVisible();
   });
 
   it("adds one axis per covered topic and highlights the hovered topic", () => {
@@ -66,5 +99,12 @@ describe("interview topic scores", () => {
     expect(screen.getByText("همکاری · ۷۰ از ۱۰۰")).toBeTruthy();
     fireEvent.mouseLeave(axis);
     expect(screen.queryByText("همکاری · ۷۰ از ۱۰۰")).toBeNull();
+    const axisLine = axis.querySelector("line");
+    expect(axisLine).not.toBeNull();
+    fireEvent.mouseEnter(axisLine!);
+    expect(screen.getByText("همکاری · ۷۰ از ۱۰۰")).toBeTruthy();
+    fireEvent.mouseLeave(axisLine!);
+    fireEvent.mouseEnter(screen.getByText("شاهد 3").closest("li")!);
+    expect(screen.getByText("همکاری · ۷۰ از ۱۰۰")).toBeTruthy();
   });
 });

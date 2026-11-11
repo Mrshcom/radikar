@@ -6,6 +6,8 @@ import { interviewReportSystemPrompt, parseInterviewReport } from "./interview-r
 import {
   interviewTurnPrompt,
   interviewClarificationPrompt,
+  compactInterviewProfile,
+  keepInterviewOpenWhileTimeRemains,
   type InterviewTurnInput,
   type InterviewClarificationInput,
 } from "./interview-agent";
@@ -39,7 +41,7 @@ export async function createLegacyInterviewSession(input: SessionInput, options:
       },
       {
         role: "user",
-        content: `محدودهٔ مصاحبه: ${interviewScope}\nعمق گفت‌وگو: ${input.depth ?? "standard"}. مدت هدف: ${input.durationMinutes ?? "نامشخص"} دقیقه؛ مدت به معنی تعداد ثابت سؤال نیست.\nبرای cards سه موضوع مشخص و قابل تمرین مرتبط با رزومه پیشنهاد بده؛ عنوان هر کارت نام یک حوزهٔ تخصصی باشد، نه ویژگی محصول یا نتیجهٔ مصاحبه.\nرزومه:\n${JSON.stringify(input.resume, null, 2)}\nپایگاه دانش:\n${JSON.stringify(input.knowledge, null, 2)}\nحالت: ${input.mode}\nشرح شغل: ${input.jobDescription || "ندارد"}\nJSON: {"title":string,"subtitle":string,"duration":string,"questions":string[],"cards":[{"title":string,"text":string,"tone":"lavender|mint|peach"}]}`,
+        content: `محدودهٔ مصاحبه: ${interviewScope}\nعمق: ${input.depth ?? "standard"}؛ زمان کاربر: ${input.durationMinutes ?? 15} دقیقه. محورهای پرسش باید دربارهٔ تجربهٔ شغلی باشند؛ برای تکمیل شرح شغل سؤال نپرس. اگر شرح شغل نیست از عنوان و سوابق پروفایل استفاده کن.\nبرای cards سه موضوع تخصصی مرتبط با پروفایل پیشنهاد بده.\nپروفایل: ${JSON.stringify(compactInterviewProfile(input.resume, input.knowledge))}\nحالت: ${input.mode}\nشرح شغل: ${input.jobDescription || "ثبت نشده"}\nJSON: {"title":string,"subtitle":string,"duration":string,"questions":string[],"cards":[{"title":string,"text":string,"tone":"lavender|mint|peach"}]}`,
       },
     ],
     { ...options, maxAttempts: 2, maxOutputTokens: input.questionCount && input.questionCount > 6 ? 4_096 : 2_048 },
@@ -94,10 +96,15 @@ export async function createLegacyInterviewTurn(input: InterviewTurnInput, optio
     maxAttempts: 2,
     maxOutputTokens: 300,
   });
-  return z
-    .object({ reply: z.string().trim().min(5).max(350), question: z.string().trim().max(500), complete: z.boolean().default(false) })
+  const turn = z
+    .object({
+      reply: z.string().trim().min(5).max(350),
+      question: z.string().trim().max(500),
+      complete: z.boolean().default(false),
+    })
     .refine((turn) => turn.complete || turn.question.length >= 10, "سؤال بعدی مصاحبه معتبر نیست.")
     .parse(result);
+  return keepInterviewOpenWhileTimeRemains(turn, input);
 }
 
 export async function createLegacyInterviewClarification(input: InterviewClarificationInput, options: ChatJsonOptions) {

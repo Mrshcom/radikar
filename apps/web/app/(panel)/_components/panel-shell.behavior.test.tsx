@@ -137,6 +137,19 @@ describe("PanelShell behavior", () => {
     );
   });
 
+  it("shows clickable parent pages and the current interview report in the header", () => {
+    state.pathname = "/interview/results/session-1";
+    renderShell();
+
+    const breadcrumbs = screen.getByRole("navigation", { name: "مسیر صفحه" });
+    const dashboardBreadcrumb = within(breadcrumbs).getByRole("link", { name: "بازگشت به نمای کلی مسیر شغلی" });
+    expect(dashboardBreadcrumb).toHaveAttribute("href", "/dashboard");
+    expect(dashboardBreadcrumb.querySelector("svg")).toHaveClass("lucide-house");
+    expect(dashboardBreadcrumb.querySelector("svg")).not.toHaveAttribute("fill", "currentColor");
+    expect(within(breadcrumbs).getByRole("link", { name: "آمادگی برای مصاحبه" })).toHaveAttribute("href", "/interview");
+    expect(within(breadcrumbs).getByText("گزارش مصاحبه")).toHaveAttribute("aria-current", "page");
+  });
+
   it("renders management navigation for an admin", async () => {
     state.role = "admin";
     renderShell();

@@ -1,3 +1,5 @@
+import { normalizeDigits } from "@radikar/validators";
+
 const persianDigits = "۰۱۲۳۴۵۶۷۸۹";
 
 export function toPersianDigits(value: string | number) {
@@ -9,9 +11,7 @@ export function formatPersianNumber(value: number) {
 }
 
 export function normalizeNumericInput(value: string | number) {
-  return String(value)
-    .replace(/[۰-۹]/g, (digit) => String(persianDigits.indexOf(digit)))
-    .replace(/[^0-9]/g, "");
+  return normalizeDigits(String(value)).replace(/[^0-9]/g, "");
 }
 
 export function formatGroupedNumber(value: string | number, locale = "en-US") {

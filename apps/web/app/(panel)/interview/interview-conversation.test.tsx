@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { InterviewConversation } from "./interview-conversation";
 
 const baseProps = {
@@ -12,6 +12,63 @@ const baseProps = {
 };
 
 describe("InterviewConversation", () => {
+  it("blocks copying the transcript while leaving the answer composer interactive", () => {
+    render(
+      <InterviewConversation {...baseProps}>
+        <textarea aria-label="پاسخ مصاحبه" />
+      </InterviewConversation>,
+    );
+    const messages = screen.getByRole("log");
+    expect(messages).toHaveClass("select-none");
+    expect(fireEvent.copy(screen.getByText("سلام"))).toBe(false);
+    expect(fireEvent.contextMenu(screen.getByText("سلام"))).toBe(false);
+    expect(fireEvent.copy(screen.getByRole("textbox", { name: "پاسخ مصاحبه" }))).toBe(true);
+  });
+
+  it("acknowledges readiness before asking the first question", () => {
+    render(
+      <InterviewConversation
+        {...baseProps}
+        readinessMessages={[{ text: "یس", sentAt: "2026-11-10T12:00:00.000Z" }]}
+        firstQuestionSentAt="2026-11-10T12:00:00.000Z"
+      >
+        <form />
+      </InterviewConversation>,
+    );
+    const messages = screen.getByRole("log");
+    const acknowledgement = screen.getByText("اوکی، حالا که آماده‌ای، بگذار مصاحبه را شروع کنیم.");
+    const question = screen.getByText("دربارهٔ تجربه‌ات بگو");
+    expect(messages).toContainElement(acknowledgement);
+    expect(acknowledgement.compareDocumentPosition(question) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("shows the first question shortly after acknowledging a new ready reply", () => {
+    vi.useFakeTimers();
+    try {
+      const { rerender } = render(
+        <InterviewConversation {...baseProps} ready={false} readinessMessages={[{ text: "نه", sentAt: "2026-11-10T12:00:00.000Z" }]}>
+          <form />
+        </InterviewConversation>,
+      );
+      rerender(
+        <InterviewConversation
+          {...baseProps}
+          ready
+          readinessMessages={[{ text: "یس", sentAt: "2026-11-10T12:01:00.000Z" }]}
+          firstQuestionSentAt="2026-11-10T12:01:00.000Z"
+        >
+          <form />
+        </InterviewConversation>,
+      );
+      expect(screen.getByText("اوکی، حالا که آماده‌ای، بگذار مصاحبه را شروع کنیم.")).toBeVisible();
+      expect(screen.queryByText("دربارهٔ تجربه‌ات بگو")).toBeNull();
+      act(() => vi.advanceTimersByTime(700));
+      expect(screen.getByText("دربارهٔ تجربه‌ات بگو")).toBeVisible();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("shows the interviewer's reply and next question in one bubble on separate lines", () => {
     render(
       <InterviewConversation
@@ -20,6 +77,7 @@ describe("InterviewConversation", () => {
         answers={["پاسخ اول", ""]}
         answerSentAt={["2026-11-10T12:00:00.000Z"]}
         replies={["متوجه شدم."]}
+        replySentAt={["2026-11-10T12:01:00.000Z"]}
         currentIndex={1}
       >
         <form />
@@ -35,7 +93,11 @@ describe("InterviewConversation", () => {
       "datetime",
       "2026-11-10T12:00:00.000Z",
     );
-    expect(screen.getByRole("log").querySelectorAll("svg")).toHaveLength(0);
+    expect(screen.getByText("سؤال دوم؟").closest(".group")?.querySelector('span[aria-label="مصاحبه‌گر"]')).not.toBeNull();
+    expect(screen.getByText("پاسخ اول").closest(".group")?.querySelector('span[aria-label="کاربر"]')).not.toBeNull();
+    expect(bubble.closest(".group")?.querySelector("time")).toHaveAttribute("datetime", "2026-11-10T12:01:00.000Z");
+    expect(screen.getByText("پاسخ اول").closest(".group")?.querySelector("time")?.className).toContain("right-[calc(100%+0.5rem)]");
+    expect(screen.getByText("پاسخ اول").closest(".group")?.querySelector(".transition-transform")?.className).toContain("group-hover:-translate-x-9");
   });
 
   it("keeps the composer below the scroll area and only follows new messages near the bottom", () => {
@@ -79,5 +141,21 @@ describe("InterviewConversation", () => {
     fireEvent.scroll(messages);
     fireEvent.submit(screen.getByRole("button", { name: "ارسال پاسخ" }).closest("form")!);
     expect(messages.scrollTop).toBe(1000);
+  });
+
+  it("keeps the thinking status above the composer while messages scroll", () => {
+    render(
+      <InterviewConversation {...baseProps} pending>
+        <form>
+          <textarea aria-label="پاسخ" />
+        </form>
+      </InterviewConversation>,
+    );
+
+    const status = screen.getByRole("status");
+    const composer = screen.getByRole("textbox", { name: "پاسخ" });
+    expect(screen.getByRole("log")).not.toContainElement(status);
+    expect(status.parentElement).toContainElement(composer);
+    expect(status.nextElementSibling).toContainElement(composer);
   });
 });

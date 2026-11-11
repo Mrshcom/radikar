@@ -168,7 +168,7 @@ export function InterviewPracticeDialog({
           inert={confirmOpen}
         >
           <div className="min-w-0">
-            <h2 id="interview-dialog-title" className="m-0 truncate text-base font-bold text-[#19312f] sm:text-lg">
+            <h2 id="interview-dialog-title" className="m-0 truncate text-base text-[#19312f] sm:text-lg">
               {title}
             </h2>
             {timeLabel && (
