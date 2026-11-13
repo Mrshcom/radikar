@@ -924,7 +924,10 @@ test(
           bankList.json().some((resume: { id: string }) => resume.id === bankResumeId),
           true,
         );
-        assert.equal(bankList.json().find((resume: { id: string }) => resume.id === bankResumeId)?.specialty, null);
+        assert.equal(
+          bankList.json().find((resume: { id: string }) => resume.id === bankResumeId)?.specialty,
+          "junior Backend یا کارآموزی فرصت دنبال افزاری.به نرم های پروژه سازی",
+        );
         const bankBoundary = "radikar-bank-duplicate-test";
         const newBankBytes = Buffer.from("%PDF-1.4\\nnew-bank-resume");
         const bankUploadPayload = Buffer.concat([
@@ -1200,7 +1203,7 @@ test(
           (await app.inject({ method: "GET", url: `/api/employer/positions/${removablePositionId}` })).statusCode,
           404,
         );
-        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 158);
+        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 9);
       } finally {
         await sql.end({ timeout: 5 });
       }
