@@ -506,8 +506,8 @@ test("expired interview invitations never offer a secure interview entry", async
   assert.match(invitedInterview, /interviewStarted && !expired && questions\.length > 0 && !fullscreenReady/);
   assert.match(invitedInterview, /<InterviewReportHero variant="expired" \/>/);
   assert.ok(
-    invitedInterview.indexOf('<InterviewReportHero variant="expired" />') < invitedInterview.indexOf("<header"),
-    "expired invitation hero must appear before the interview information card",
+    invitedInterview.indexOf("<SectionTitle") < invitedInterview.indexOf('<InterviewReportHero variant="expired" />'),
+    "expired invitation hero must follow the shared page title",
   );
 });
 
