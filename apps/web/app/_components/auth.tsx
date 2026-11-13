@@ -28,7 +28,10 @@ export type CurrentUser = {
 };
 
 export const authQueryKey = ["auth", "me"] as const;
-const sharedCustomerPaths = ["/account", "/orders", "/settings", "/referrals", "/radicoins", "/billing/result"];
+const isSharedCustomerPath = (pathname: string) =>
+  ["/account", "/orders", "/settings", "/referrals", "/billing/result"].includes(pathname) ||
+  pathname === "/radicoins" ||
+  pathname.startsWith("/radicoins/");
 
 export function useAuth() {
   const query = useQuery({
@@ -49,7 +52,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const wrongAccountPanel =
     user?.role === "user" &&
     (user.accountType === "employer") !== pathname.startsWith("/employer") &&
-    !sharedCustomerPaths.includes(pathname);
+    !isSharedCustomerPath(pathname);
   useEffect(() => {
     if (!isLoading && !user && error) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
     if (!isLoading && isManagement && !isManagementPath) router.replace("/admin");

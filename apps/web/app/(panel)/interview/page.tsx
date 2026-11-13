@@ -18,10 +18,10 @@ import {
   FileCheck2,
   MessageSquareText,
   RotateCcw,
-  SendHorizontal,
   Sparkles,
   X,
   LoaderCircle,
+  Maximize,
 } from "lucide-react";
 import { InterviewSkeleton } from "../_components/skeletons";
 import { useToast } from "@/app/_components/toast";
@@ -36,8 +36,8 @@ import {
 } from "@/lib/data/stores";
 import type { InterviewSessionRecord } from "@/lib/data/models";
 import { InterviewPracticeDialog } from "./interview-practice-dialog";
+import { InterviewAnswerComposer } from "./interview-answer-composer";
 import { InterviewDepthChooser, interviewDepthLabel } from "./interview-depth-chooser";
-import { submitInterviewAnswerOnEnter } from "./interview-answer-keyboard";
 import {
   isInterviewClarification,
   isUnrelatedInterviewQuestion,
@@ -89,6 +89,7 @@ export default function InterviewPage() {
   const [practiceCards, setPracticeCards] = useState<PracticeCard[]>([]);
   const [hasResume, setHasResume] = useState(true);
   const [started, setStarted] = useState(false);
+  const [fullscreenInterrupted, setFullscreenInterrupted] = useState(false);
   const [restartConfirmOpen, setRestartConfirmOpen] = useState(false);
   const [choosingDepthFor, setChoosingDepthFor] = useState<string | null>(null);
   const [mode, setMode] = useState(comprehensiveMode);
@@ -123,23 +124,28 @@ export default function InterviewPage() {
   const feedbackBusy = feedbackLoading || isRunning("interview-feedback");
   const activeSessionId = sessionRecord?.id;
   const hasReport = Boolean(sessionRecord?.report);
-  const interviewActive = Boolean(started && sessionRecord && !choosingDepthFor && !isCreatingSession && !feedbackBusy && !hasReport);
-  const resizeAnswerTextarea = useCallback((textarea: HTMLTextAreaElement | null) => {
-    if (!textarea) return;
-    textarea.style.height = "40px";
-    textarea.style.height = `${Math.max(40, textarea.scrollHeight)}px`;
-  }, []);
+  const interviewDialogOpen = Boolean(choosingDepthFor || isCreatingSession || started);
 
   const enterInterviewFullscreen = useCallback(() => {
     fullscreenWantedRef.current = true;
-    if (document.fullscreenElement || fullscreenPendingRef.current || !document.documentElement.requestFullscreen) return;
+    if (document.fullscreenElement) {
+      queueMicrotask(() => setFullscreenInterrupted(false));
+      return;
+    }
+    if (fullscreenPendingRef.current || !document.documentElement.requestFullscreen) return;
     fullscreenPendingRef.current = true;
-    void document.documentElement.requestFullscreen()
+    void document.documentElement
+      .requestFullscreen()
       .then(() => {
-        if (fullscreenWantedRef.current) fullscreenOwnedRef.current = true;
-        else if (document.fullscreenElement === document.documentElement) void document.exitFullscreen().catch(() => {});
+        if (fullscreenWantedRef.current) {
+          fullscreenOwnedRef.current = true;
+          setFullscreenInterrupted(false);
+        } else if (document.fullscreenElement === document.documentElement)
+          void document.exitFullscreen().catch(() => {});
       })
-      .catch(() => {})
+      .catch(() => {
+        if (fullscreenWantedRef.current) setFullscreenInterrupted(true);
+      })
       .finally(() => {
         fullscreenPendingRef.current = false;
       });
@@ -153,19 +159,28 @@ export default function InterviewPage() {
   }, []);
 
   useEffect(() => {
-    if (interviewActive) {
+    if (interviewDialogOpen) {
       enterInterviewFullscreen();
       return;
     }
     void leaveInterviewFullscreen();
-  }, [interviewActive, enterInterviewFullscreen, leaveInterviewFullscreen]);
+  }, [interviewDialogOpen, enterInterviewFullscreen, leaveInterviewFullscreen]);
 
-  useEffect(() => () => { void leaveInterviewFullscreen(); }, [leaveInterviewFullscreen]);
+  useEffect(
+    () => () => {
+      void leaveInterviewFullscreen();
+    },
+    [leaveInterviewFullscreen],
+  );
 
   useEffect(() => {
-    const frame = window.requestAnimationFrame(() => resizeAnswerTextarea(answerTextareaRef.current));
-    return () => window.cancelAnimationFrame(frame);
-  }, [questionIndex, resizeAnswerTextarea, sessionRecord?.id, started]);
+    const handleFullscreenChange = () => {
+      if (fullscreenWantedRef.current) setFullscreenInterrupted(!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
   useEffect(() => {
     if (!started) return;
     const timer = window.setInterval(() => setClockNow(Date.now()), 1_000);
@@ -275,81 +290,79 @@ export default function InterviewPage() {
     };
   }, [notify, restoreSession]);
 
-  const loadSession = useCallback(async (
-    selectedMode: string,
-    depth: InterviewDepth,
-    startAfterLoad = false,
-    replaceSessionId?: string,
-  ) => {
-    const controller = new AbortController();
-    sessionCreationControllerRef.current = controller;
-    setCreatingSession(true);
-    setError("");
-    try {
-      const record = await runModelTask({
-        key: "interview-session",
-        title: "ساخت جلسه مصاحبه",
-        pendingLabel: "مصاحبه‌گر در حال پیوستن به جلسهٔ مصاحبه است...",
-        completedLabel: "جلسه مصاحبه آماده شد",
-        href: "/interview",
-        run: async () => {
-          const profileId = await getActiveProfileId();
-          const [resume, knowledge] = await Promise.all([getLatestResume(), knowledgeProfileStore.get(profileId)]);
-          const resumeData = resume?.data ?? knowledge?.resumeData;
-          if (!resumeData) throw new Error("برای ساخت جلسه مصاحبه ابتدا پروفایل مسیر شغلی یا رزومه‌ات را تکمیل کن.");
-          const result = await apiRequest<SessionData & { error?: string }>("/api/interview/session", {
-            method: "POST",
-            body: JSON.stringify({
-              resume: resumeData,
-              knowledge,
-              mode: selectedMode,
+  const loadSession = useCallback(
+    async (selectedMode: string, depth: InterviewDepth, startAfterLoad = false, replaceSessionId?: string) => {
+      const controller = new AbortController();
+      sessionCreationControllerRef.current = controller;
+      setCreatingSession(true);
+      setError("");
+      try {
+        const record = await runModelTask({
+          key: "interview-session",
+          title: "ساخت جلسه مصاحبه",
+          pendingLabel: "مصاحبه‌گر در حال پیوستن به جلسهٔ مصاحبه است...",
+          completedLabel: "جلسه مصاحبه آماده شد",
+          href: "/interview",
+          run: async () => {
+            const profileId = await getActiveProfileId();
+            const [resume, knowledge] = await Promise.all([getLatestResume(), knowledgeProfileStore.get(profileId)]);
+            const resumeData = resume?.data ?? knowledge?.resumeData;
+            if (!resumeData) throw new Error("برای ساخت جلسه مصاحبه ابتدا پروفایل مسیر شغلی یا رزومه‌ات را تکمیل کن.");
+            const result = await apiRequest<SessionData & { error?: string }>("/api/interview/session", {
+              method: "POST",
+              body: JSON.stringify({
+                resume: resumeData,
+                knowledge,
+                mode: selectedMode,
+                depth,
+                type: selectedMode.startsWith(focusedModePrefix) ? "focused" : "comprehensive",
+                ...(selectedMode.startsWith(focusedModePrefix)
+                  ? { focusArea: selectedMode.slice(focusedModePrefix.length) }
+                  : {}),
+              }),
+              signal: controller.signal,
+            });
+            setPracticeCards(createPracticeCards(resumeData, knowledge?.skills, result.cards));
+            const now = new Date().toISOString();
+            const record: InterviewSessionRecord = {
+              id: replaceSessionId ?? createRecordId("interview"),
+              ...result,
+              plannedTopics: [...result.questions],
+              agentChatToken: result.chatToken,
+              mode: interviewModeFor(result.title, selectedMode),
               depth,
-              type: selectedMode.startsWith(focusedModePrefix) ? "focused" : "comprehensive",
-              ...(selectedMode.startsWith(focusedModePrefix)
-                ? { focusArea: selectedMode.slice(focusedModePrefix.length) }
-                : {}),
-            }),
-            signal: controller.signal,
-          });
-          setPracticeCards(createPracticeCards(resumeData, knowledge?.skills, result.cards));
-          const now = new Date().toISOString();
-          const record: InterviewSessionRecord = {
-            id: replaceSessionId ?? createRecordId("interview"),
-            ...result,
-            plannedTopics: [...result.questions],
-            agentChatToken: result.chatToken,
-            mode: interviewModeFor(result.title, selectedMode),
-            depth,
-            elapsedMs: 0,
-            feedbacks: [],
-            answers: [],
-            answerSentAt: [],
-            replies: [],
-            replySentAt: [],
-            clarifications: [],
-            currentQuestionIndex: 0,
-            createdAt: now,
-            updatedAt: now,
-          };
-          await interviewSessionStore.put(record);
-          return record;
-        },
-      });
-      restoreSession(record);
-      setActiveSince(startAfterLoad && isReadySession(record) ? Date.now() : null);
-      setStarted(startAfterLoad);
-    } catch (event) {
-      if (isModelTaskCanceledError(event) || (event instanceof DOMException && event.name === "AbortError")) return;
-      const message = event instanceof Error ? event.message : "مدل مصاحبه پاسخ نداد.";
-      setError(message);
-      notify(message, "error");
-    } finally {
-      if (sessionCreationControllerRef.current === controller) {
-        sessionCreationControllerRef.current = null;
-        setCreatingSession(false);
+              elapsedMs: 0,
+              feedbacks: [],
+              answers: [],
+              answerSentAt: [],
+              replies: [],
+              replySentAt: [],
+              clarifications: [],
+              currentQuestionIndex: 0,
+              createdAt: now,
+              updatedAt: now,
+            };
+            await interviewSessionStore.put(record);
+            return record;
+          },
+        });
+        restoreSession(record);
+        setActiveSince(startAfterLoad && isReadySession(record) ? Date.now() : null);
+        setStarted(startAfterLoad);
+      } catch (event) {
+        if (isModelTaskCanceledError(event) || (event instanceof DOMException && event.name === "AbortError")) return;
+        const message = event instanceof Error ? event.message : "مدل مصاحبه پاسخ نداد.";
+        setError(message);
+        notify(message, "error");
+      } finally {
+        if (sessionCreationControllerRef.current === controller) {
+          sessionCreationControllerRef.current = null;
+          setCreatingSession(false);
+        }
       }
-    }
-  }, [notify, restoreSession, runModelTask]);
+    },
+    [notify, restoreSession, runModelTask],
+  );
 
   useEffect(() => {
     if (!restartRequest) return;
@@ -360,9 +373,10 @@ export default function InterviewPage() {
   }, [loadSession, restartRequest]);
 
   const startPractice = (selectedMode: string) => {
+    setFullscreenInterrupted(false);
+    enterInterviewFullscreen();
     setMode(selectedMode);
     if (sessionRecord?.mode === selectedMode && !sessionRecord.report) {
-      enterInterviewFullscreen();
       setActiveSince(isReadySession(sessionRecord) ? Date.now() : null);
       setStarted(true);
     } else {
@@ -372,6 +386,7 @@ export default function InterviewPage() {
 
   const chooseDepth = (depth: InterviewDepth) => {
     if (!choosingDepthFor) return;
+    enterInterviewFullscreen();
     const selectedMode = choosingDepthFor;
     setChoosingDepthFor(null);
     void loadSession(selectedMode, depth, true);
@@ -379,6 +394,7 @@ export default function InterviewPage() {
 
   const restartPractice = () => {
     if (!sessionRecord) return;
+    enterInterviewFullscreen();
     setRestartConfirmOpen(false);
     void loadSession(
       sessionRecord.mode,
@@ -405,9 +421,9 @@ export default function InterviewPage() {
   const ready = sessionRecord ? isReadySession(sessionRecord) : false;
   const awaitingReply = Boolean(
     ready &&
-      sessionRecord?.answerSentAt?.[questionIndex] &&
-      answers[questionIndex]?.trim() &&
-      !sessionRecord?.replies?.[questionIndex]?.trim(),
+    sessionRecord?.answerSentAt?.[questionIndex] &&
+    answers[questionIndex]?.trim() &&
+    !sessionRecord?.replies?.[questionIndex]?.trim(),
   );
   const respondToReadiness = async (answer: string) => {
     if (!sessionRecord || saving) return;
@@ -472,6 +488,7 @@ export default function InterviewPage() {
       let question = draft.questions[nextIndex] ?? "دربارهٔ یک تصمیم مهم در کار قبلی‌ات و نتیجهٔ آن توضیح می‌دهی؟";
       let reply = "ممنون که توضیح دادی. برای شناخت بهتر تجربه‌ات ادامه بدهیم.";
       let agentChatToken = draft.agentChatToken;
+      const targetTimeReached = (draft.elapsedMs ?? 0) >= durationMs;
       const historyStart = Math.max(0, nextIndex - (draft.agentChatToken ? 1 : 4));
       const nextTopic =
         (draft.plannedTopics ?? draft.questions)[Math.ceil(nextIndex / 2)] ??
@@ -483,7 +500,7 @@ export default function InterviewPage() {
           mode: draft.mode,
           depth: draft.depth,
           chatToken: draft.agentChatToken,
-          targetTimeReached: timeRemainingMs === 0,
+          targetTimeReached,
           mustConclude: nextIndex >= 30,
           nextTopic,
           topicShiftRequired: nextIndex > 1 && nextIndex % 2 === 0,
@@ -497,13 +514,19 @@ export default function InterviewPage() {
         complete = generated.complete || nextIndex >= 30;
         if (complete && !generated.complete)
           reply = "ممنون از وقتی که برای این گفت‌وگو گذاشتی. مصاحبه به پایان رسید و پاسخ‌هایت بررسی می‌شوند.";
-        if (complete)
-          reply = `${reply.trim()}\nمصاحبه تمام شد. ممنون از اینکه در جلسهٔ مصاحبهٔ رادیکار شرکت کردی. این یک مصاحبهٔ آزمایشی بود.`;
         agentChatToken = generated.chatToken ?? agentChatToken;
       } catch {
-        notify("پاسخت ثبت شد، اما پاسخ مصاحبه‌گر نرسید. از «تلاش دوباره» استفاده کن.", "error");
-        return;
+        if (!targetTimeReached) {
+          notify("پاسخت ثبت شد، اما پاسخ مصاحبه‌گر نرسید. از «تلاش دوباره» استفاده کن.", "error");
+          return;
+        }
+        complete = true;
+        question = "";
+        reply = "پاسخت ثبت شد. زمان این جلسه به پایان رسید و گفت‌وگو جمع‌بندی شد.";
+        notify("پاسخ مصاحبه‌گر نرسید؛ جلسه با پاسخ‌های ذخیره‌شده جمع‌بندی شد.", "info");
       }
+      if (complete)
+        reply = `${reply.trim()}\nمصاحبه تمام شد. ممنون از اینکه در جلسهٔ مصاحبهٔ رادیکار شرکت کردی. این یک مصاحبهٔ آزمایشی بود.`;
       const updated = {
         ...draft,
         questions: complete
@@ -674,7 +697,6 @@ export default function InterviewPage() {
 
   if (loading) return <InterviewSkeleton />;
   const answerField = register("answer");
-  const hasAnswer = Boolean(answerValue?.trim());
   const answerPending = saving || clarifyMutation.isPending;
   const pendingAnswerLabel = ready ? "در حال دریافت پاسخ مصاحبه‌گر" : "در حال ثبت پاسخ";
   const submitAnswer = handleSubmit(({ answer }) => {
@@ -784,9 +806,7 @@ export default function InterviewPage() {
                 className="group inline-flex h-12 w-fit items-center justify-center gap-4 rounded-2xl border-0 bg-[linear-gradient(115deg,#0f7b62,#149c7c)] py-0 pl-2.5 pr-5 text-xs font-normal text-white shadow-[0_12px_28px_rgba(15,123,98,.22)] transition-shadow duration-300 hover:shadow-[0_17px_34px_rgba(15,123,98,.3)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0f7b62] motion-reduce:transition-none"
                 onClick={() => startPractice(comprehensiveSession ? sessionRecord.mode : comprehensiveMode)}
               >
-                {hasActiveComprehensiveInterview
-                  ? "ادامه مصاحبه جامع"
-                  : "شروع مصاحبه جامع"}
+                {hasActiveComprehensiveInterview ? "ادامه مصاحبه جامع" : "شروع مصاحبه جامع"}
                 <span className="grid size-9 place-items-center rounded-xl bg-white/15 transition-transform duration-300 group-hover:-translate-x-1 motion-reduce:transform-none motion-reduce:transition-none">
                   <ArrowLeft size={20} />
                 </span>
@@ -824,11 +844,7 @@ export default function InterviewPage() {
             timeLabel={started && ready && sessionRecord && !sessionRecord.report ? "زمان کاربر:" : undefined}
             timeValue={timeValue}
             timePaused={agentThinking && timeRemainingMs > 0}
-            title={
-              choosingDepthFor
-                ? "انتخاب نوع مصاحبه"
-                : mode
-            }
+            title={choosingDepthFor ? "انتخاب نوع مصاحبه" : mode}
             closeDisabled={
               saving || feedbackBusy || clarifyMutation.isPending || (started && Boolean(sessionRecord?.report))
             }
@@ -849,7 +865,14 @@ export default function InterviewPage() {
                   : void closePractice()
             }
           >
-            {choosingDepthFor ? (
+            {fullscreenInterrupted ? (
+              <div className="flex min-h-full flex-col items-center justify-center gap-4 text-center">
+                <p className="m-0 text-sm text-[#405b54]">برای ادامهٔ مصاحبه، دوباره وارد حالت تمام‌صفحه شو.</p>
+                <button type="button" className={primaryButton} onClick={enterInterviewFullscreen}>
+                  <Maximize size={17} /> ورود به تمام‌صفحه
+                </button>
+              </div>
+            ) : choosingDepthFor ? (
               <InterviewDepthChooser onSelect={chooseDepth} />
             ) : isCreatingSession ? (
               <div
@@ -902,9 +925,21 @@ export default function InterviewPage() {
                     </button>
                   </div>
                 ) : (
-                  <form onSubmit={handleAnswerFormSubmit}>
-                    {awaitingReply && !agentThinking && (
-                      <div role="alert" className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#f2f8f4] px-3 py-2 text-xs text-[#365e52]">
+                  <InterviewAnswerComposer
+                    registration={answerField}
+                    answer={answerValue ?? ""}
+                    onSubmit={handleAnswerFormSubmit}
+                    busy={answerPending || feedbackBusy || awaitingReply}
+                    readOnly={feedbackBusy}
+                    sending={answerPending}
+                    sendLabel={answerPending ? pendingAnswerLabel : "ارسال پاسخ"}
+                    error={errors.answer?.message}
+                    textareaRef={answerTextareaRef}
+                    notice={awaitingReply && !agentThinking ? (
+                      <div
+                        role="alert"
+                        className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#f2f8f4] px-3 py-2 text-xs text-[#365e52]"
+                      >
                         <span>پاسخت ثبت شد، اما پاسخ مصاحبه‌گر نرسید.</span>
                         <button
                           type="button"
@@ -914,46 +949,8 @@ export default function InterviewPage() {
                           تلاش دوباره
                         </button>
                       </div>
-                    )}
-                    <div className="relative">
-                      <textarea
-                        id="interview-answer"
-                        {...answerField}
-                        rows={1}
-                        ref={(element) => {
-                          answerField.ref(element);
-                          answerTextareaRef.current = element;
-                          resizeAnswerTextarea(element);
-                        }}
-                        className="block h-10 min-h-10 w-full resize-none overflow-hidden rounded-[10px] border border-[#dfe6e0] bg-[#fcfdfb] py-2 pl-14 pr-3 text-[13px] leading-5 text-[#405753] outline-none placeholder:text-[#9aa7a3] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10"
-                        readOnly={feedbackBusy}
-                        onInput={(event) => resizeAnswerTextarea(event.currentTarget)}
-                        onKeyDown={(event) =>
-                          submitInterviewAnswerOnEnter(event, feedbackBusy || answerPending || awaitingReply)
-                        }
-                        maxLength={8_000}
-                        aria-label="پاسخ مصاحبه"
-                        aria-invalid={Boolean(errors.answer)}
-                        placeholder="پاسخت را بنویس..."
-                      />
-                      <button
-                        className="absolute left-1.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-lg bg-[#0f7b62] text-white shadow-[0_4px_10px_rgba(15,123,98,.16)] transition-colors hover:bg-[#0d6b57] disabled:cursor-not-allowed disabled:bg-[#d7e4de] disabled:text-[#8ba39a] disabled:shadow-none"
-                        type="submit"
-                        disabled={!hasAnswer || answerPending || feedbackBusy || awaitingReply}
-                        aria-label={answerPending ? pendingAnswerLabel : "ارسال پاسخ"}
-                        title={answerPending ? pendingAnswerLabel : "ارسال پاسخ"}
-                      >
-                        {answerPending ? (
-                          <LoaderCircle className="animate-spin motion-reduce:animate-none" size={15} aria-hidden="true" />
-                        ) : (
-                          <SendHorizontal className="-scale-x-100" size={15} aria-hidden="true" />
-                        )}
-                      </button>
-                    </div>
-                    <div className="mt-2 flex items-center justify-start">
-                      <p className="m-0 text-[8px] text-[#61746f]">Enter برای ارسال · Shift+Enter برای خط بعد</p>
-                    </div>
-                  </form>
+                    ) : undefined}
+                  />
                 )}
               </InterviewConversation>
             ) : null}

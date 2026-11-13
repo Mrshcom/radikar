@@ -91,11 +91,15 @@ export const supportTickets = pgTable(
   "support_tickets",
   {
     id: uuid("id").primaryKey(),
-    ownerUserId: uuid("owner_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    ownerUserId: uuid("owner_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     accountType: text("account_type", { enum: ["candidate", "employer"] }).notNull(),
     subject: text("subject").notNull(),
     category: text("category", { enum: ["technical", "account", "payment", "other"] }).notNull(),
-    status: text("status", { enum: ["open", "answered", "closed"] }).notNull().default("open"),
+    status: text("status", { enum: ["open", "answered", "closed"] })
+      .notNull()
+      .default("open"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
@@ -109,8 +113,12 @@ export const supportMessages = pgTable(
   "support_messages",
   {
     id: uuid("id").primaryKey(),
-    ticketId: uuid("ticket_id").notNull().references(() => supportTickets.id, { onDelete: "cascade" }),
-    authorUserId: uuid("author_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    ticketId: uuid("ticket_id")
+      .notNull()
+      .references(() => supportTickets.id, { onDelete: "cascade" }),
+    authorUserId: uuid("author_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     authorRole: text("author_role", { enum: ["user", "support"] }).notNull(),
     body: text("body").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
@@ -132,6 +140,28 @@ export const productEvents = pgTable(
     uniqueIndex("product_events_idempotency_unique").on(table.idempotencyKey),
     index("product_events_name_occurred_idx").on(table.name, table.occurredAt),
     index("product_events_user_occurred_idx").on(table.userId, table.occurredAt),
+  ],
+);
+
+export const userNotifications = pgTable(
+  "user_notifications",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type", { enum: ["interview_invitation"] }).notNull(),
+    sourceKey: text("source_key").notNull(),
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    href: text("href").notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("user_notifications_user_source_unique").on(table.userId, table.sourceKey),
+    index("user_notifications_user_created_idx").on(table.userId, table.createdAt),
+    index("user_notifications_user_read_idx").on(table.userId, table.readAt),
   ],
 );
 
@@ -820,6 +850,7 @@ export type EmployerInterviewReport = {
   summary: string;
   strengths: string[];
   improvements: string[];
+  topics?: { title: string; score: number; evidence: string }[];
 };
 
 export const employerProfiles = pgTable("employer_profiles", {
@@ -902,6 +933,7 @@ export const employerCandidates = pgTable(
       .default("pending"),
     matchEvidence: jsonb("match_evidence").$type<EmployerMatchEvidence>(),
     invitationTokenHash: text("invitation_token_hash"),
+    invitationReservationKey: text("invitation_reservation_key"),
     invitationDeadline: timestamp("invitation_deadline", { withTimezone: true }),
     invitationStatus: text("invitation_status", {
       enum: ["not_invited", "invited", "accepted", "started", "completed", "expired"],
@@ -916,6 +948,7 @@ export const employerCandidates = pgTable(
     conversationClarifications:
       jsonb("conversation_clarifications").$type<Array<{ questionIndex: number; user: string; reply: string }>>(),
     interviewReport: jsonb("interview_report").$type<EmployerInterviewReport>(),
+    interviewFeedbackSharedAt: timestamp("interview_feedback_shared_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
@@ -923,5 +956,29 @@ export const employerCandidates = pgTable(
     index("employer_candidates_position_idx").on(table.positionId),
     uniqueIndex("employer_candidates_invitation_token_unique").on(table.invitationTokenHash),
     index("employer_candidates_invited_user_idx").on(table.invitedUserId),
+  ],
+);
+
+export const employerInvitationHistory = pgTable(
+  "employer_invitation_history",
+  {
+    id: uuid("id").primaryKey(),
+    candidateId: uuid("candidate_id")
+      .notNull()
+      .references(() => employerCandidates.id, { onDelete: "cascade" }),
+    positionId: uuid("position_id")
+      .notNull()
+      .references(() => employerPositions.id, { onDelete: "cascade" }),
+    invitedUserId: uuid("invited_user_id").references(() => users.id, { onDelete: "set null" }),
+    tokenHash: text("token_hash").notNull(),
+    deadline: timestamp("deadline", { withTimezone: true }),
+    status: text("status", { enum: ["cancelled"] }).notNull().default("cancelled"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("employer_invitation_history_token_unique").on(table.tokenHash),
+    index("employer_invitation_history_user_created_idx").on(table.invitedUserId, table.createdAt),
+    index("employer_invitation_history_candidate_idx").on(table.candidateId),
   ],
 );

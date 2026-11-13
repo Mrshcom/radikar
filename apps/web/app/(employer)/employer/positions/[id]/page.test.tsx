@@ -16,12 +16,20 @@ const state = vi.hoisted(() => ({
     resumeBankId: null,
     fileName: "resume-sample.pdf",
     hasOriginalFile: true,
-    name: null,
-    phone: null,
+    name: null as string | null,
+    phone: null as string | null,
     email: null,
     screeningStatus: "pending",
     invitationStatus: "not_invited",
     matchEvidence: null,
+    interviewReport: null as {
+      score: number;
+      summary: string;
+      strengths: string[];
+      improvements: string[];
+      topics?: Array<{ title: string; score: number; evidence: string }>;
+    } | null,
+    conversationQuestions: null as string[] | null,
   },
 }));
 
@@ -51,7 +59,7 @@ vi.mock("@/lib/employer", () => ({
         screeningError: state.screeningError,
       },
       candidates: state.empty ? [] : [state.candidate],
-      costs: { screening: 5, interview: 5 },
+      costs: { screening: 14, interview: 84 },
     },
     isLoading: false,
     error: null,
@@ -99,6 +107,10 @@ describe("employer position detail", () => {
     state.screeningError = null;
     state.requestedStep = "";
     state.candidate.invitationStatus = "not_invited";
+    state.candidate.name = null;
+    state.candidate.phone = null;
+    state.candidate.interviewReport = null;
+    state.candidate.conversationQuestions = null;
   });
 
   it("shows only the resume step until the employer continues", () => {
@@ -116,13 +128,204 @@ describe("employer position detail", () => {
     const row = fileName.closest('[dir="rtl"]');
     expect(row).toHaveClass("grid-cols-[minmax(0,1fr)_auto]");
     expect(row?.firstElementChild).toContainElement(fileName);
-    expect(screen.getByRole("navigation", { name: "مراحل جذب برای این پوزیشن" })).toBeVisible();
+    const workflow = screen.getByRole("navigation", { name: "مراحل جذب برای این پوزیشن" });
+    expect(workflow).toBeVisible();
+    expect(workflow.querySelector("ol > li > span[aria-hidden='true']")).toHaveClass(
+      "right-[calc(50%+20px)]",
+      "left-[calc(-50%+20px)]",
+    );
     expect(screen.queryByText("مرحلهٔ ۲ از ۴")).toBeNull();
     expect(screen.getByRole("heading", { name: "افزودن رزومه‌ها" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "روش بررسی رزومه‌ها" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "دعوت به مصاحبه" })).toBeNull();
     expect(screen.getByRole("button", { name: /مرحلهٔ بعد/ })).toBeEnabled();
     expect(screen.getByRole("button", { name: /انتخاب و دعوت/ })).toBeDisabled();
+  });
+
+  it("labels an unsent invite accurately and saves a missing mobile through the modal", async () => {
+    state.stage = 4;
+    state.reviewMethod = "manual";
+    state.candidate.invitationStatus = "invited";
+    state.apiRequest.mockImplementation(async (_path: string, request?: RequestInit) => {
+      if (request?.method === "PATCH") {
+        state.candidate.phone = JSON.parse(String(request.body)).phone;
+        return { candidateId: state.candidate.id, phone: state.candidate.phone };
+      }
+      return {};
+    });
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByText(/دعوت ارسال شد/)).toBeVisible();
+    expect(screen.queryByText("دعوت شد")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "افزودن شماره همراه" }));
+    const modal = screen.getByRole("dialog", { name: "افزودن شماره همراه" });
+    const phoneInput = screen.getByRole("textbox", { name: "شماره همراه نامزد" });
+    fireEvent.change(phoneInput, { target: { value: "123" } });
+    fireEvent.click(screen.getByRole("button", { name: "ذخیره شماره همراه" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("شماره همراه معتبر وارد کن.");
+    expect(state.apiRequest).not.toHaveBeenCalled();
+    fireEvent.change(phoneInput, { target: { value: "۰۹۱۲ ۳۴۵ ۶۷۸۹" } });
+    fireEvent.click(screen.getByRole("button", { name: "ذخیره شماره همراه" }));
+    await waitFor(() =>
+      expect(state.apiRequest).toHaveBeenCalledWith(
+        "/api/employer/positions/position-1/resumes/candidate-1/contact",
+        expect.objectContaining({ method: "PATCH", body: JSON.stringify({ phone: "09123456789" }) }),
+      ),
+    );
+    await waitFor(() => expect(modal).not.toBeInTheDocument());
+    expect(screen.getByText("09123456789")).toBeVisible();
+    expect(screen.getByText(/دعوت ارسال شد/)).toBeVisible();
+  });
+
+  it("prefills and edits an existing candidate mobile number", async () => {
+    state.stage = 4;
+    state.reviewMethod = "manual";
+    state.candidate.invitationStatus = "expired";
+    state.candidate.phone = "09158135580";
+    state.apiRequest.mockImplementation(async (_path: string, request?: RequestInit) => {
+      const phone = JSON.parse(String(request?.body)).phone;
+      state.candidate.phone = phone;
+      return { candidateId: state.candidate.id, phone };
+    });
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "ویرایش شماره همراه resume-sample.pdf" }));
+    expect(screen.getByRole("dialog", { name: "ویرایش شماره همراه" })).toBeVisible();
+    const phoneInput = screen.getByRole("textbox", { name: "شماره همراه نامزد" });
+    expect(phoneInput).toHaveValue("09158135580");
+    fireEvent.change(phoneInput, { target: { value: "۰۹۱۲ ۳۴۵ ۶۷۸۹" } });
+    fireEvent.click(screen.getByRole("button", { name: "ذخیره تغییرات" }));
+
+    await waitFor(() =>
+      expect(state.apiRequest).toHaveBeenCalledWith(
+        "/api/employer/positions/position-1/resumes/candidate-1/contact",
+        expect.objectContaining({ method: "PATCH", body: JSON.stringify({ phone: "09123456789" }) }),
+      ),
+    );
+    await waitFor(() => expect(screen.getByText("09123456789")).toBeVisible());
+  });
+
+  it("keeps the mobile edit action available after an invitation has started", () => {
+    state.stage = 4;
+    state.reviewMethod = "manual";
+    state.candidate.invitationStatus = "started";
+    state.candidate.phone = "09158135580";
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: "ویرایش شماره همراه resume-sample.pdf" })).toBeVisible();
+  });
+
+  it("keeps an employer interview result collapsed until it is requested", () => {
+    state.stage = 4;
+    state.reviewMethod = "manual";
+    state.candidate.invitationStatus = "completed";
+    state.candidate.phone = "09158135580";
+    state.candidate.interviewReport = {
+      score: 86,
+      summary: "خلاصهٔ گزارش نباید به‌صورت بنر نمایش داده شود.",
+      strengths: ["تحلیل داده"],
+      improvements: ["مثال بیشتر"],
+      topics: [{ title: "سنجش موفقیت محصول", score: 86, evidence: "نرخ فعال‌سازی" }],
+    };
+    state.candidate.conversationQuestions = ["موفقیت محصول را چگونه می‌سنجید؟"];
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+
+    const resultButton = screen.getByRole("button", { name: "نمایش نتیجه" });
+    expect(resultButton).toHaveAttribute("aria-expanded", "false");
+    expect(document.getElementById("interview-report-candidate-1")).toHaveAttribute("aria-hidden", "true");
+
+    fireEvent.click(resultButton);
+    expect(resultButton).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("region", { name: "نتیجهٔ مصاحبه resume-sample.pdf" })).toHaveAttribute("aria-hidden", "false");
+    expect(screen.getByText("نقاط قوت کارجو")).toBeVisible();
+    expect(screen.getByText("سنجش موفقیت محصول")).toBeVisible();
+    expect(screen.queryByText("گزارش مصاحبهٔ شغلی")).toBeNull();
+  });
+
+  it("shows only the candidate name in the manual invitation card", () => {
+    state.stage = 4;
+    state.reviewMethod = "manual";
+    state.candidate.name = "محمدرضا عباس‌زاده";
+    state.candidate.phone = "09158135580";
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText("محمدرضا عباس‌زاده")).toBeVisible();
+    expect(screen.queryByText("resume-sample.pdf")).toBeNull();
+  });
+
+  it("does not allow selecting a candidate without a mobile number for an interview invitation", () => {
+    state.stage = 4;
+    state.reviewMethod = "manual";
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByRole("checkbox", { name: "انتخاب resume-sample.pdf" })).toBeDisabled();
+    expect(screen.getByText(/پیش از انتخاب و ساخت دعوت، شماره را اضافه کن/)).toBeVisible();
+  });
+
+  it("resends an expired manual invitation with a fresh deadline", async () => {
+    state.stage = 4;
+    state.reviewMethod = "manual";
+    state.candidate.invitationStatus = "expired";
+    state.candidate.phone = "09123456789";
+    state.apiRequest.mockResolvedValue({
+      candidateId: "candidate-1",
+      name: null,
+      url: "http://web.test/interview-invites/new-token",
+      delivery: "sms_sent",
+    });
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByText(/مهلت گذشته/)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /ارسال مجدد لینک دعوت/ }));
+    expect(screen.getByRole("dialog", { name: "ارسال مجدد دعوت مصاحبه" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "تاریخ مهلت تازه" }));
+    fireEvent.click(screen.getByRole("button", { name: "ساعت مهلت تازه (به وقت تهران)" }));
+    fireEvent.click(screen.getByRole("button", { name: "تأیید و ارسال مجدد" }));
+
+    await waitFor(() =>
+      expect(state.apiRequest).toHaveBeenCalledWith(
+        "/api/employer/positions/position-1/invitations/candidate-1/link",
+        {
+          method: "POST",
+          body: JSON.stringify({ deadline: "2030-12-31T20:29:00.000Z" }),
+        },
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "ارسال مجدد دعوت مصاحبه" })).not.toBeInTheDocument(),
+    );
   });
 
   it("uploads only after explicit confirmation", async () => {

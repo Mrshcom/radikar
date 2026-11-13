@@ -117,6 +117,9 @@ export default function RadicoinsPage() {
                 ? "موجودی و گردش رادیکوین را ببین و برای پایش رزومه‌ها، دعوت نامزدها یا ارتقای پلن کارفرما از آن استفاده کن."
                 : "با حضور و فعالیت واقعی در رادیکار سکه جمع کن و آن‌ها را برای ارتقای پلن خرج کن. رادیکوین‌های عادی منقضی نمی‌شوند."}
             </p>
+            <Link className="mt-4 inline-flex w-fit items-center gap-2 rounded-[11px] bg-[#0f7b62] px-4 py-2.5 text-[11px] font-bold text-white no-underline transition hover:bg-[#0b6954]" href={isEmployer ? "/employer/radicoins" : "/radicoins/buy"}>
+              خرید و شارژ رادیکوین <ShoppingBag size={16} />
+            </Link>
             <div className="mt-6 flex w-fit min-w-56 items-center gap-4 rounded-[18px] bg-white/95 px-5 py-4 shadow-[0_16px_45px_rgba(31,76,64,.12)] backdrop-blur-md">
               <Image
                 alt=""

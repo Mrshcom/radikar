@@ -1,24 +1,26 @@
 "use client";
 
+import { InterviewReportView } from "@/app/(panel)/interview/interview-result";
+
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { ArrowRight, Eye, RefreshCw } from "lucide-react";
+import { ArrowRight, CheckCircle2, Eye, RefreshCw, Send } from "lucide-react";
 import { DataTable, type DataTableColumn } from "@/app/(panel)/_components/data-table";
 import { TableActionButton } from "@/app/(panel)/_components/table-action-button";
 import { Modal, SectionTitle } from "@/app/(panel)/_components/ui";
 import { PersianDateTime } from "@/lib/date-time-display";
-import { useEmployerPosition, type EmployerCandidate } from "@/lib/employer";
+import { useEmployerPosition, useSetEmployerInterviewFeedbackSharing, type EmployerCandidate } from "@/lib/employer";
 
-type InvitationFilter = "all" | "waiting" | "started" | "completed" | "expired";
+type InvitationFilter = "all" | "waiting" | "started" | "expired";
 
 const invitationStates: Record<EmployerCandidate["invitationStatus"], { label: string; className: string }> = {
   not_invited: { label: "دعوت نشده", className: "bg-[#f1f4f1] text-[#687a70]" },
-  invited: { label: "لینک دعوت ساخته شد", className: "bg-[#fff2dc] text-[#946b26]" },
-  accepted: { label: "دعوت پذیرفته شد", className: "bg-[#eaf2ff] text-[#486f9c]" },
-  started: { label: "در حال مصاحبه", className: "bg-[#e9f3fc] text-[#356f9a]" },
-  completed: { label: "مصاحبه تکمیل شد", className: "bg-[#e5f4ec] text-[#0f7b62]" },
-  expired: { label: "مهلت دعوت گذشت", className: "bg-[#fff0ed] text-[#b2513e]" },
+  invited: { label: "دعوت ارسال شد", className: "bg-[#edf7f2] text-[#0f7b62]" },
+  accepted: { label: "دعوت ارسال شد", className: "bg-[#edf7f2] text-[#0f7b62]" },
+  started: { label: "شرکت کرده", className: "bg-[#e9f3fc] text-[#356f9a]" },
+  completed: { label: "شرکت کرده", className: "bg-[#e5f4ec] text-[#0f7b62]" },
+  expired: { label: "مهلت گذشته", className: "bg-[#fff0ed] text-[#b2513e]" },
 };
 
 function candidateLabel(candidate: EmployerCandidate) {
@@ -36,12 +38,12 @@ function tookPart(candidate: EmployerCandidate) {
 export default function EmployerInterviewResultsPage() {
   const { id } = useParams<{ id: string }>();
   const detail = useEmployerPosition(id, 15_000);
+  const feedbackSharing = useSetEmployerInterviewFeedbackSharing(id);
   const [filter, setFilter] = useState<InvitationFilter>("all");
   const [reportId, setReportId] = useState<string | null>(null);
   const position = detail.data?.position;
   const invited = (detail.data?.candidates ?? []).filter((candidate) => candidate.invitationStatus !== "not_invited");
   const startedCount = invited.filter(tookPart).length;
-  const completedCount = invited.filter((candidate) => candidate.invitationStatus === "completed").length;
   const waitingCount = invited.filter((candidate) =>
     ["invited", "accepted"].includes(candidate.invitationStatus),
   ).length;
@@ -50,7 +52,6 @@ export default function EmployerInterviewResultsPage() {
     .filter((candidate) => {
       if (filter === "waiting") return ["invited", "accepted"].includes(candidate.invitationStatus);
       if (filter === "started") return tookPart(candidate);
-      if (filter === "completed") return candidate.invitationStatus === "completed";
       if (filter === "expired") return candidate.invitationStatus === "expired";
       return true;
     })
@@ -66,9 +67,8 @@ export default function EmployerInterviewResultsPage() {
   const reportCandidate = invited.find((candidate) => candidate.id === reportId);
   const filters: Array<{ key: InvitationFilter; label: string; count: number }> = [
     { key: "all", label: "همه", count: invited.length },
-    { key: "waiting", label: "در انتظار", count: waitingCount },
+    { key: "waiting", label: "ارسال‌شده", count: waitingCount },
     { key: "started", label: "شرکت‌کرده", count: startedCount },
-    { key: "completed", label: "تکمیل‌شده", count: completedCount },
     { key: "expired", label: "مهلت‌گذشته", count: expiredCount },
   ];
   const columns: DataTableColumn<EmployerCandidate>[] = [
@@ -154,14 +154,13 @@ export default function EmployerInterviewResultsPage() {
         }
       />
       <p className="m-0 text-xs leading-6 text-[#71877a]">
-        «لینک دعوت ساخته شد» به معنی ارسال خودکار آن نیست؛ لینک را باید برای نامزد بفرستی. وضعیت‌ها هر ۱۵ ثانیه به‌روز
-        می‌شوند.
+        دعوت‌های ارسال‌شده، شرکت نامزد در مصاحبه و پایان مهلت هر ۱۵ ثانیه به‌روز می‌شوند.
       </p>
       <div className="grid gap-3 sm:grid-cols-3">
         {[
-          { label: "لینک دعوت ساخته‌شده", value: invited.length },
+          { label: "دعوت ارسال‌شده", value: waitingCount },
           { label: "شرکت‌کرده در مصاحبه", value: startedCount },
-          { label: "مصاحبهٔ تکمیل‌شده", value: completedCount },
+          { label: "مهلت‌گذشته", value: expiredCount },
         ].map((item) => (
           <div key={item.label} className="rounded-2xl border border-[#dfe9e3] bg-white p-5">
             <span className="block text-xs text-[#6b8174]">{item.label}</span>
@@ -206,51 +205,48 @@ export default function EmployerInterviewResultsPage() {
           showCloseButton
         >
           <div className="mt-5 space-y-5 text-right text-sm leading-7 text-[#415b50]">
-            <div className="rounded-xl bg-[#edf8f1] p-4">
-              <strong className="text-[#0f7b62]">
-                نمرهٔ مصاحبه: {reportCandidate.interviewReport.score.toLocaleString("fa-IR")} از ۱۰۰
-              </strong>
-              <p className="mb-0 mt-2 whitespace-pre-wrap">{reportCandidate.interviewReport.summary}</p>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-xl border border-[#dfe9e3] p-4">
-                <h3 className="m-0 text-sm font-bold text-[#19312f]">نقاط قوت</h3>
-                <ul className="mb-0 mt-2 list-disc space-y-1 pr-5">
-                  {reportCandidate.interviewReport.strengths.length ? (
-                    reportCandidate.interviewReport.strengths.map((item, index) => (
-                      <li key={`${item}-${index}`}>{item}</li>
-                    ))
+            <InterviewReportView report={reportCandidate.interviewReport} questions={reportCandidate.conversationQuestions ?? []} variant="employer" />
+            <section className="flex flex-col gap-4 rounded-xl border border-[#dfe9e3] bg-[#f7faf8] p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="m-0 flex items-center gap-2 text-sm font-bold text-[#19312f]">
+                  {reportCandidate.interviewFeedbackSharedAt ? (
+                    <CheckCircle2 size={18} className="text-[#0f7b62]" aria-hidden="true" />
                   ) : (
-                    <li>موردی ثبت نشده است.</li>
+                    <Send size={18} className="text-[#6b8174]" aria-hidden="true" />
                   )}
-                </ul>
+                  امتیاز و بازخورد برای کارجو نمایش داده شود؟
+                </h3>
+                <p className="mb-0 mt-1 text-xs leading-6 text-[#6b8174]">
+                  با تأیید شما امتیاز، خلاصهٔ گزارش، نقاط قوت و فرصت‌های بهبود در پنل کارجو نمایش داده می‌شود.
+                </p>
               </div>
-              <div className="rounded-xl border border-[#dfe9e3] p-4">
-                <h3 className="m-0 text-sm font-bold text-[#19312f]">فرصت‌های بهبود</h3>
-                <ul className="mb-0 mt-2 list-disc space-y-1 pr-5">
-                  {reportCandidate.interviewReport.improvements.length ? (
-                    reportCandidate.interviewReport.improvements.map((item, index) => (
-                      <li key={`${item}-${index}`}>{item}</li>
-                    ))
-                  ) : (
-                    <li>موردی ثبت نشده است.</li>
-                  )}
-                </ul>
-              </div>
-            </div>
-            <div>
-              <h3 className="m-0 text-sm font-bold text-[#19312f]">پرسش‌ها و پاسخ‌های ثبت‌شده</h3>
-              <ol className="mb-0 mt-3 space-y-3">
-                {(reportCandidate.interviewAnswers ?? []).map((answer, index) => (
-                  <li key={index} className="rounded-xl border border-[#e2ebe4] p-4">
-                    <strong className="block text-[#19312f]">
-                      {reportCandidate.conversationQuestions?.[index] || position?.interviewQuestions?.[index] || `سؤال ${index + 1}`}
-                    </strong>
-                    <p className="mb-0 mt-2 whitespace-pre-wrap">{answer || "پاسخی ثبت نشده است."}</p>
-                  </li>
-                ))}
-              </ol>
-            </div>
+              <button
+                type="button"
+                className={`inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl px-4 text-xs font-bold transition-colors disabled:opacity-50 ${
+                  reportCandidate.interviewFeedbackSharedAt
+                    ? "border border-[#cfe3d8] bg-white text-[#0f7b62]"
+                    : "bg-[#0f7b62] text-white hover:bg-[#0c6954]"
+                }`}
+                disabled={feedbackSharing.isPending}
+                onClick={() =>
+                  feedbackSharing.mutate({
+                    candidateId: reportCandidate.id,
+                    shared: !reportCandidate.interviewFeedbackSharedAt,
+                  })
+                }
+              >
+                {feedbackSharing.isPending
+                  ? "در حال ذخیره…"
+                  : reportCandidate.interviewFeedbackSharedAt
+                    ? "لغو نمایش برای کارجو"
+                    : "تأیید و نمایش نتیجه"}
+              </button>
+              {feedbackSharing.error instanceof Error && (
+                <p className="m-0 text-xs text-[#b2513e]" role="alert">
+                  {feedbackSharing.error.message}
+                </p>
+              )}
+            </section>
           </div>
         </Modal>
       )}

@@ -5,12 +5,20 @@ import test from "node:test";
 import { promisify } from "node:util";
 import Fastify from "fastify";
 import multipart from "@fastify/multipart";
-import { eq } from "drizzle-orm";
-import { createDatabase, employerCandidates, employerPositions, employerResumeBank } from "@radikar/database";
+import { and, eq } from "drizzle-orm";
+import {
+  createDatabase,
+  employerCandidates,
+  employerInvitationHistory,
+  employerPositions,
+  employerResumeBank,
+  userNotifications,
+} from "@radikar/database";
 import postgres from "postgres";
 import { cleanResumeText, contactOf, registerEmployerRoutes, specialtyOf } from "../src/modules/employer/routes";
 import { InterviewAgentClient } from "../src/modules/ai/interview-agent";
 import { RadicoinService } from "../src/modules/radicoin/service";
+import { registerNotificationRoutes } from "../src/modules/notifications/routes";
 
 const execFileAsync = promisify(execFile);
 const root = new URL("../../../", import.meta.url).pathname;
@@ -61,13 +69,14 @@ test(
       try {
         await sql`insert into users (id, phone, role, account_type, status, created_at, updated_at, table_page_size) values (${owner}, '09120000401', 'user', 'employer', 'active', now(), now(), 20), (${actor}, '09120000402', 'user', 'candidate', 'active', now(), now(), 20)`;
         const radicoin = new RadicoinService(db);
-        await radicoin.adjust(owner, 20, "اعتبار تست کارفرما", actor, "employer-test-fund");
+        await radicoin.adjust(owner, 200, "اعتبار تست کارفرما", actor, "employer-test-fund");
         await app.register(multipart);
         app.addHook("onRequest", async (request) => {
           const candidateRequest = request.headers["x-test-account-type"] === "candidate";
           request.auth = {
             user: {
               id: candidateRequest ? actor : owner,
+              phone: candidateRequest ? "09120000402" : "09120000401",
               role: "user",
               accountType: candidateRequest ? "candidate" : "employer",
             },
@@ -180,7 +189,11 @@ test(
             );
           },
         });
-        registerEmployerRoutes(app, db, radicoin, "http://web.test", interviewAgent);
+        const invitationDeliveries: Array<{ phone: string; token: string }> = [];
+        registerEmployerRoutes(app, db, radicoin, "http://web.test", interviewAgent, async (payload) => {
+          invitationDeliveries.push(payload);
+        });
+        registerNotificationRoutes(app, db);
         await app.ready();
         const candidateCannotCreateProfile = await app.inject({
           method: "POST",
@@ -359,10 +372,15 @@ test(
           classified.candidates.map((candidate: { screeningStatus: string }) => candidate.screeningStatus),
           ["unreadable", "duplicate"],
         );
-        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 15);
+        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 186);
         await db
           .update(employerCandidates)
-          .set({ screeningStatus: "ready", email: "candidate@example.com", name: "نامزد نمونه" })
+          .set({
+            screeningStatus: "ready",
+            email: "candidate@example.com",
+            name: "نامزد نمونه",
+            phone: "09120000402",
+          })
           .where(eq(employerCandidates.id, firstId));
         await db
           .update(employerPositions)
@@ -383,21 +401,69 @@ test(
         });
         assert.equal(invite.statusCode, 201);
         assert.equal(invite.json().invitations.length, 1);
-        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 10);
+        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 102);
         const renewed = await app.inject({
           method: "POST",
           url: `/api/employer/positions/${positionId}/invitations/${firstId}/link`,
         });
         assert.equal(renewed.statusCode, 200);
         assert.notEqual(renewed.json().url, invite.json().invitations[0].url);
-        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 10);
+        const cancelledInvitations = await db
+          .select()
+          .from(employerInvitationHistory)
+          .where(eq(employerInvitationHistory.candidateId, firstId));
+        assert.equal(cancelledInvitations.length, 1);
+        assert.equal(cancelledInvitations[0]?.status, "cancelled");
+        assert.equal(cancelledInvitations[0]?.invitedUserId, actor);
+        assert.notEqual(cancelledInvitations[0]?.tokenHash, "");
+        const oldToken = String(invite.json().invitations[0].url).split("/").at(-1);
+        const cancelledLink = await app.inject({
+          method: "GET",
+          url: `/api/employer/invitations/${oldToken}`,
+          headers: { "x-test-account-type": "candidate" },
+        });
+        assert.equal(cancelledLink.statusCode, 410);
+        assert.match(cancelledLink.json().error, /لغو شده/);
+        const candidateInterviews = await app.inject({
+          method: "GET",
+          url: "/api/employer/interviews",
+          headers: { "x-test-account-type": "candidate" },
+        });
+        assert.equal(candidateInterviews.statusCode, 200);
+        assert.deepEqual(
+          candidateInterviews.json().map((interview: { status: string }) => interview.status).sort(),
+          ["cancelled", "invited"],
+        );
+        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 102);
         await db
           .update(employerCandidates)
           .set({ invitationDeadline: new Date(Date.now() - 1000) })
           .where(eq(employerCandidates.id, firstId));
         const expired = (await app.inject({ method: "GET", url: `/api/employer/positions/${positionId}` })).json();
         assert.equal(expired.candidates[0].invitationStatus, "expired");
-        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 15);
+        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 186);
+        const expiredWithoutDeadline = await app.inject({
+          method: "POST",
+          url: `/api/employer/positions/${positionId}/invitations/${firstId}/link`,
+        });
+        assert.equal(expiredWithoutDeadline.statusCode, 422);
+        assert.match(expiredWithoutDeadline.json().error, /مهلت تازه/);
+        const resentExpired = await app.inject({
+          method: "POST",
+          url: `/api/employer/positions/${positionId}/invitations/${firstId}/link`,
+          payload: { deadline: new Date(Date.now() + 2 * 60 * 60_000).toISOString() },
+        });
+        assert.equal(resentExpired.statusCode, 200);
+        assert.equal(resentExpired.json().delivery, "in_app");
+        assert.notEqual(resentExpired.json().url, renewed.json().url);
+        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 102);
+        await db
+          .update(employerCandidates)
+          .set({ invitationDeadline: new Date(Date.now() - 1000) })
+          .where(eq(employerCandidates.id, firstId));
+        const expiredAgain = (await app.inject({ method: "GET", url: `/api/employer/positions/${positionId}` })).json();
+        assert.equal(expiredAgain.candidates[0].invitationStatus, "expired");
+        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 186);
         const directPosition = await app.inject({
           method: "POST",
           url: "/api/employer/positions",
@@ -505,6 +571,20 @@ test(
             ),
           })
           .where(eq(employerPositions.id, directPositionId));
+        const inviteWithoutPhone = await app.inject({
+          method: "POST",
+          url: `/api/employer/positions/${directPositionId}/invitations`,
+          payload: {
+            candidateIds: [directCandidateId],
+            deadline: new Date(Date.now() + 2 * 60 * 60_000).toISOString(),
+          },
+        });
+        assert.equal(inviteWithoutPhone.statusCode, 422);
+        assert.match(inviteWithoutPhone.json().error, /شماره همراه معتبر/);
+        await db
+          .update(employerCandidates)
+          .set({ phone: "09120000999" })
+          .where(eq(employerCandidates.positionId, directPositionId));
         const directInvite = await app.inject({
           method: "POST",
           url: `/api/employer/positions/${directPositionId}/invitations`,
@@ -515,6 +595,8 @@ test(
         });
         assert.equal(directInvite.statusCode, 201);
         assert.equal(directInvite.json().invitations.length, 1);
+        assert.equal(directInvite.json().invitations[0].delivery, "sms_sent");
+        assert.equal(invitationDeliveries[0]?.phone, "09120000999");
         const manualAfterInvite = await app.inject({
           method: "POST",
           url: `/api/employer/positions/${directPositionId}/review-method`,
@@ -558,12 +640,37 @@ test(
         const invitationUrl = directInvite.json().invitations[0].url as string;
         const invitationToken = invitationUrl.split("/").at(-1)!;
         const candidateHeaders = { "x-test-account-type": "candidate" };
+        const rejectedForDifferentPhone = await app.inject({
+          method: "POST",
+          url: `/api/employer/invitations/${invitationToken}/accept`,
+          headers: candidateHeaders,
+        });
+        assert.equal(rejectedForDifferentPhone.statusCode, 403);
+        assert.match(rejectedForDifferentPhone.json().error, /فقط با شماره همراه ثبت‌شده/);
+        await db
+          .update(employerCandidates)
+          .set({ phone: "09120000402" })
+          .where(eq(employerCandidates.id, directCandidateId));
         const accepted = await app.inject({
           method: "POST",
           url: `/api/employer/invitations/${invitationToken}/accept`,
           headers: candidateHeaders,
         });
         assert.equal(accepted.statusCode, 200);
+        const savedCandidateInvitation = await app.inject({
+          method: "GET",
+          url: "/api/employer/interviews",
+          headers: candidateHeaders,
+        });
+        assert.equal(savedCandidateInvitation.statusCode, 200);
+        assert.ok(
+          savedCandidateInvitation
+            .json()
+            .some(
+              (interview: { id: string; status: string }) =>
+                interview.id === directCandidateId && interview.status === "invited",
+            ),
+        );
         const clarification = await app.inject({
           method: "POST",
           url: `/api/employer/interviews/${invitationToken}/clarify`,
@@ -610,6 +717,55 @@ test(
         assert.deepEqual(afterExit[0].interviewAnswers, ["پاسخ ثبت‌شده پیش از خروج"]);
         assert.match(afterExit[0].interviewReport?.summary ?? "", /خروج|تکمیل/);
         assert.equal(afterExit[0].interviewReport?.score, 16);
+        const completedCandidateView = await app.inject({
+          method: "GET",
+          url: `/api/employer/interviews/${invitationToken}`,
+          headers: candidateHeaders,
+        });
+        assert.equal(completedCandidateView.statusCode, 200);
+        assert.equal(completedCandidateView.json().reportReady, true);
+        assert.equal(completedCandidateView.json().report, null);
+        assert.equal(completedCandidateView.json().feedbackShared, false);
+        const candidateCannotShareFeedback = await app.inject({
+          method: "PATCH",
+          url: `/api/employer/positions/${directPositionId}/interviews/${directCandidateId}/feedback-sharing`,
+          headers: candidateHeaders,
+          payload: { shared: true },
+        });
+        assert.equal(candidateCannotShareFeedback.statusCode, 403);
+        const sharedFeedback = await app.inject({
+          method: "PATCH",
+          url: `/api/employer/positions/${directPositionId}/interviews/${directCandidateId}/feedback-sharing`,
+          payload: { shared: true },
+        });
+        assert.equal(sharedFeedback.statusCode, 200);
+        assert.equal(sharedFeedback.json().shared, true);
+        assert.ok(sharedFeedback.json().sharedAt);
+        const sharedCandidateView = await app.inject({
+          method: "GET",
+          url: `/api/employer/interviews/${invitationToken}`,
+          headers: candidateHeaders,
+        });
+        assert.equal(sharedCandidateView.json().feedbackShared, true);
+        assert.equal(sharedCandidateView.json().report.score, 16);
+        assert.match(sharedCandidateView.json().report.summary, /خروج|تکمیل/);
+        assert.deepEqual(sharedCandidateView.json().report.strengths, afterExit[0].interviewReport?.strengths);
+        assert.deepEqual(sharedCandidateView.json().report.improvements, afterExit[0].interviewReport?.improvements);
+        const unsharedFeedback = await app.inject({
+          method: "PATCH",
+          url: `/api/employer/positions/${directPositionId}/interviews/${directCandidateId}/feedback-sharing`,
+          payload: { shared: false },
+        });
+        assert.equal(unsharedFeedback.statusCode, 200);
+        assert.equal(unsharedFeedback.json().shared, false);
+        assert.equal(unsharedFeedback.json().sharedAt, null);
+        const privateCandidateView = await app.inject({
+          method: "GET",
+          url: `/api/employer/interviews/${invitationToken}`,
+          headers: candidateHeaders,
+        });
+        assert.equal(privateCandidateView.json().feedbackShared, false);
+        assert.equal(privateCandidateView.json().report, null);
         const cannotRestart = await app.inject({
           method: "POST",
           url: `/api/employer/interviews/${invitationToken}/exit`,
@@ -622,6 +778,10 @@ test(
         )
           .json()
           .candidates.find((item: { id: string }) => item.id !== directCandidateId).id as string;
+        await db
+          .update(employerCandidates)
+          .set({ phone: "09120000402" })
+          .where(eq(employerCandidates.id, secondCandidateId));
         const secondInvite = await app.inject({
           method: "POST",
           url: `/api/employer/positions/${directPositionId}/invitations`,
@@ -631,6 +791,57 @@ test(
           },
         });
         assert.equal(secondInvite.statusCode, 201);
+        assert.equal(secondInvite.json().invitations[0].delivery, "in_app");
+        assert.equal(invitationDeliveries.length, 1);
+        const [linkedExistingMember] = await db
+          .select()
+          .from(employerCandidates)
+          .where(eq(employerCandidates.id, secondCandidateId))
+          .limit(1);
+        assert.equal(linkedExistingMember.invitedUserId, actor);
+        assert.equal(linkedExistingMember.invitationStatus, "invited");
+        const [invitationNotification] = await db
+          .select()
+          .from(userNotifications)
+          .where(
+            and(
+              eq(userNotifications.userId, actor),
+              eq(userNotifications.sourceKey, `employer-interview:${secondCandidateId}`),
+            ),
+          )
+          .limit(1);
+        assert.equal(invitationNotification.href, `/interview-invites/${secondCandidateId}`);
+        assert.match(invitationNotification.message, /مدیر محصول|موقعیت/);
+        const candidateNotifications = await app.inject({
+          method: "GET",
+          url: "/api/notifications",
+          headers: candidateHeaders,
+        });
+        assert.equal(candidateNotifications.statusCode, 200);
+        assert.equal(candidateNotifications.json().unreadCount, 2);
+        assert.ok(
+          candidateNotifications
+            .json()
+            .items.some(
+              (item: { href: string }) => item.href === `/interview-invites/${secondCandidateId}`,
+            ),
+        );
+        assert.equal(
+          (
+            await app.inject({
+              method: "POST",
+              url: "/api/notifications/read-all",
+              headers: candidateHeaders,
+            })
+          ).statusCode,
+          204,
+        );
+        assert.equal(
+          (
+            await app.inject({ method: "GET", url: "/api/notifications", headers: candidateHeaders })
+          ).json().unreadCount,
+          0,
+        );
         const secondToken = (secondInvite.json().invitations[0].url as string).split("/").at(-1)!;
         assert.equal(
           (
@@ -846,6 +1057,41 @@ test(
           ).statusCode,
           201,
         );
+        const contactPath = `/api/employer/positions/${bankPositionId}/resumes/${bankCandidate.id}/contact`;
+        assert.equal(
+          (
+            await app.inject({
+              method: "PATCH",
+              url: contactPath,
+              payload: { phone: "۰۹۱۲ ۳۴۵ ۶۷۸۹" },
+              headers: { "x-test-account-type": "candidate" },
+            })
+          ).statusCode,
+          403,
+        );
+        assert.equal(
+          (await app.inject({ method: "PATCH", url: contactPath, payload: { phone: "123" } })).statusCode,
+          422,
+        );
+        const savedContact = await app.inject({
+          method: "PATCH",
+          url: contactPath,
+          payload: { phone: "۰۹۱۲ ۳۴۵ ۶۷۸۹" },
+        });
+        assert.equal(savedContact.statusCode, 200);
+        assert.equal(savedContact.json().phone, "09123456789");
+        assert.equal(
+          (await app.inject({ method: "GET", url: "/api/employer/resume-bank" }))
+            .json()
+            .find((resume: { id: string }) => resume.id === bankResumeId)?.phone,
+          "09123456789",
+        );
+        for (const linkedPositionId of [bankPositionId, secondPositionId]) {
+          const linked = (
+            await app.inject({ method: "GET", url: `/api/employer/positions/${linkedPositionId}` })
+          ).json().candidates[0];
+          assert.equal(linked.phone, "09123456789");
+        }
         await db
           .update(employerCandidates)
           .set({
@@ -954,7 +1200,7 @@ test(
           (await app.inject({ method: "GET", url: `/api/employer/positions/${removablePositionId}` })).statusCode,
           404,
         );
-        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 5);
+        assert.equal((await radicoin.getWallet(owner, 0)).wallet?.availableCoins, 158);
       } finally {
         await sql.end({ timeout: 5 });
       }

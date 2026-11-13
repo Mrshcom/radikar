@@ -63,6 +63,7 @@ import { RadicoinIcon } from "./radicoin-icon";
 import { PanelNavigationProgress } from "./panel-navigation-progress";
 import { ModelTaskStack } from "./model-task-stack";
 import { ProductUpdatesNavLink } from "./product-updates-nav-link";
+import { useMarkAllNotificationsRead, useUserNotifications } from "@/lib/notifications";
 
 type MenuItem = {
   href: string;
@@ -313,6 +314,8 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const isManagement = userRole === "admin" || userRole === "superadmin";
   const isSuperadmin = userRole === "superadmin";
   const adminEvents = useAdminEvents(isSuperadmin);
+  const userNotifications = useUserNotifications(userRole === "user" && !isEmployer);
+  const markAllNotificationsRead = useMarkAllNotificationsRead();
   const userId = user?.id;
   const [seenAdminEventIds, setSeenAdminEventIds] = useState<Set<string>>(() =>
     typeof window !== "undefined" && isSuperadmin && userId ? readSeenAdminEventIds(userId) : new Set(),
@@ -349,6 +352,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const latestJob = jobs[0];
   const activeWorkspace = profiles.find((item) => item.id === activeProfileId);
   const unreadAdminEvents = (adminEvents.data?.items ?? []).filter((event) => !seenAdminEventIds.has(event.id));
+  const unreadUserNotifications = userNotifications.data?.unreadCount ?? 0;
 
   const markAdminEventsAsSeen = useCallback(() => {
     if (!userId) return;
@@ -708,15 +712,22 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                     if (!noticeOpen && isSuperadmin) {
                       markAdminEventsAsSeen();
                     }
+                    if (!noticeOpen && userRole === "user" && !isEmployer && unreadUserNotifications > 0) {
+                      markAllNotificationsRead.mutate();
+                    }
                     setNoticeOpen((value) => !value);
                   }}
                   aria-label={isSuperadmin ? "اعلان‌های آماری مدیریت" : "اعلان‌ها"}
                   aria-expanded={noticeOpen}
                 >
                   <Bell size={19} />
-                  {(latestJob || unreadAdminEvents.length > 0) && (
+                  {(latestJob || unreadAdminEvents.length > 0 || unreadUserNotifications > 0) && (
                     <span className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full border border-white bg-[#e7835c] px-1 text-[9px] font-bold leading-none text-white">
-                      {isSuperadmin ? Math.min(unreadAdminEvents.length, 99).toLocaleString("fa-IR") : ""}
+                      {isSuperadmin
+                        ? Math.min(unreadAdminEvents.length, 99).toLocaleString("fa-IR")
+                        : unreadUserNotifications > 0
+                          ? Math.min(unreadUserNotifications, 99).toLocaleString("fa-IR")
+                          : ""}
                     </span>
                   )}
                 </button>
@@ -787,11 +798,42 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                           فرصت‌ها و رویدادهای تازه مسیر شغلی
                         </small>
                       </div>
-                      {latestJob && (
+                      {(latestJob || unreadUserNotifications > 0) && (
                         <span className="mr-auto size-2.5 rounded-full bg-[#25a56f] shadow-[0_0_0_3px_#d8f0e4]" />
                       )}
                     </div>
-                    {latestJob ? (
+                    <div className="grid max-h-[360px] gap-2 overflow-y-auto">
+                      {(userNotifications.data?.items ?? []).map((notification) => (
+                        <Link
+                          className="group mt-2 flex min-h-[88px] items-center gap-2.5 rounded-[13px] border border-[#dcece4] bg-[#f7fbf8] px-3 py-2.5 text-[#19312f] no-underline transition-colors hover:border-[#aadbc6] hover:bg-[#eef8f2]"
+                          href={notification.href}
+                          key={notification.id}
+                          onClick={() => setNoticeOpen(false)}
+                        >
+                          <span className="grid size-9 shrink-0 place-items-center rounded-[10px] bg-[#e1f3eb] text-[#0f7b62]">
+                            <BriefcaseBusiness aria-hidden="true" size={17} />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-center gap-1.5 text-[9px] font-semibold text-[#0f7b62]">
+                              {!notification.readAt && (
+                                <span aria-hidden="true" className="size-1.5 rounded-full bg-[#e7835c]" />
+                              )}
+                              دعوت به مصاحبه
+                              <small className="mr-auto text-[8px] font-normal text-[#7b8b86]">
+                                <PersianDateTime value={notification.createdAt} />
+                              </small>
+                            </span>
+                            <strong className="mt-0.5 block text-[11px] leading-5 text-[#19312f]">
+                              {notification.title}
+                            </strong>
+                            <small className="mt-0.5 block text-[9px] leading-5 text-[#758582]">
+                              {notification.message}
+                            </small>
+                          </span>
+                          <ChevronLeft aria-hidden="true" className="shrink-0 text-[#77a493]" size={15} />
+                        </Link>
+                      ))}
+                    {latestJob && (
                       <Link
                         className="group mt-2 flex min-h-[88px] items-center gap-2.5 rounded-[13px] border border-[#dcece4] bg-[#f7fbf8] px-3 py-2.5 text-[#19312f] no-underline transition-colors hover:border-[#aadbc6] hover:bg-[#eef8f2] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0f7b62]"
                         href="/jobs"
@@ -827,7 +869,8 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                           size={15}
                         />
                       </Link>
-                    ) : (
+                    )}
+                    {!latestJob && (userNotifications.data?.items.length ?? 0) === 0 && (
                       <div className="mt-2 rounded-[14px] border border-dashed border-[#dfe9e3] px-3 py-8 text-center">
                         <Bell className="mx-auto mb-2 text-[#9bb0a9]" size={21} />
                         <strong className="block text-[10px] text-[#536762]">اعلان تازه‌ای نیست</strong>
@@ -836,6 +879,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                         </p>
                       </div>
                     )}
+                    </div>
                   </div>
                 )}
                 {noticeOpen && isEmployer && (
@@ -932,7 +976,8 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                         ]
                       : isEmployer
                         ? [
-                            { href: "/employer/account-center", label: "مرکز کارفرما", icon: UserRound },
+                            { href: "/employer/account-center", label: "مرکز حساب", icon: UserRound },
+                            { href: "/account", label: "اطلاعات حساب و مصرف", icon: BarChart3 },
                             { href: "/employer/support", label: "پشتیبانی", icon: MessageSquareText },
                           ]
                         : [

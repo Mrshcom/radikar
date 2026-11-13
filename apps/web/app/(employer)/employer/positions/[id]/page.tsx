@@ -1,5 +1,7 @@
 "use client";
 
+import { InterviewReportView } from "@/app/(panel)/interview/interview-result";
+
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useState, type ChangeEvent } from "react";
@@ -13,16 +15,20 @@ import {
   Database,
   Pencil,
   ClipboardCopy,
+  ChevronDown,
   FileUp,
   Eye,
   LoaderCircle,
+  Phone,
   SearchCheck,
   Search,
   Send,
   Sparkles,
   Trash2,
+  UserRound,
 } from "lucide-react";
 import { z } from "zod";
+import { normalizeIranianMobile } from "@radikar/validators";
 import { ApiError, apiRequest } from "@/lib/api-client";
 import { useRadicoinWallet } from "@/lib/radicoins";
 import {
@@ -56,6 +62,12 @@ const inviteSchema = z
       new Date(`${deadlineDate}T${deadlineTime}:00+03:30`).getTime() >= Date.now() + 60 * 60_000,
     { path: ["deadlineDate"], message: "مهلت مصاحبه باید دست‌کم یک ساعت از اکنون بیشتر باشد." },
   );
+const mobileFormSchema = z.object({
+  phone: z
+    .string()
+    .trim()
+    .refine((value) => normalizeIranianMobile(value) !== null, "شماره همراه معتبر وارد کن."),
+});
 
 function candidateLabel(candidate: EmployerCandidate) {
   return candidate.name || candidate.fileName;
@@ -69,10 +81,19 @@ function statusLabel(candidate: EmployerCandidate) {
   return "در انتظار پایش";
 }
 
+function invitationPresentation(status: EmployerCandidate["invitationStatus"]) {
+  if (status === "completed") return { label: "شرکت کرده", tone: "bg-[#e7f5ee] text-[#0f7b62]" };
+  if (status === "started") return { label: "شرکت کرده", tone: "bg-[#fff3df] text-[#936122]" };
+  if (status === "accepted") return { label: "دعوت ارسال شد", tone: "bg-[#edf7f2] text-[#0f7b62]" };
+  if (status === "expired") return { label: "مهلت گذشته", tone: "bg-[#fff0ed] text-[#ad523f]" };
+  if (status === "invited") return { label: "دعوت ارسال شد", tone: "bg-[#edf7f2] text-[#0f7b62]" };
+  return { label: "آمادهٔ انتخاب", tone: "bg-[#f2f5f3] text-[#63766f]" };
+}
+
 function EmployerActionError({ error, balance, cost }: { error: Error; balance?: number; cost: number }) {
   const insufficientCoins = error instanceof ApiError && error.code === "INSUFFICIENT_RADICOIN";
   return (
-    <div role="alert" className="rounded-xl border border-[#ecd6b6] bg-[#fffbf3] p-4 text-right text-sm text-[#72502b]">
+    <div role="alert" className="rounded-xl border border-[#ecd6b6] bg-[#fffbf3] p-4 text-right text-sm text-[#72502b] mt-2">
       <div className="flex items-start gap-2">
         <CircleAlert className="mt-0.5 shrink-0" size={18} aria-hidden="true" />
         <div className="min-w-0 flex-1">
@@ -114,10 +135,20 @@ export default function EmployerPositionPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [progress, setProgress] = useState<{ processed: number; total: number } | null>(null);
   const [screeningErrorDismissed, setScreeningErrorDismissed] = useState(true);
-  const [links, setLinks] = useState<Array<{ candidateId: string; name: string | null; url: string }>>([]);
+  const [links, setLinks] = useState<
+    Array<{
+      candidateId: string;
+      name: string | null;
+      url: string;
+      delivery: "in_app" | "sms_sent" | "sms_unavailable" | "sms_failed";
+    }>
+  >([]);
   const [copied, setCopied] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [phoneCandidateId, setPhoneCandidateId] = useState<string | null>(null);
+  const [resendCandidateId, setResendCandidateId] = useState<string | null>(null);
+  const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
   const [bankSelected, setBankSelected] = useState<string[]>([]);
   const [bankPickerOpen, setBankPickerOpen] = useState(false);
   const [bankSearch, setBankSearch] = useState("");
@@ -131,6 +162,14 @@ export default function EmployerPositionPage() {
   const inviteForm = useForm<z.infer<typeof inviteSchema>>({
     resolver: zodResolver(inviteSchema),
     defaultValues: { deadlineDate: "", deadlineTime: "23:59" },
+  });
+  const resendForm = useForm<z.infer<typeof inviteSchema>>({
+    resolver: zodResolver(inviteSchema),
+    defaultValues: { deadlineDate: "", deadlineTime: "23:59" },
+  });
+  const mobileForm = useForm<z.infer<typeof mobileFormSchema>>({
+    resolver: zodResolver(mobileFormSchema),
+    defaultValues: { phone: "" },
   });
   const selectedFiles = useWatch({ control: filesForm.control, name: "files" });
   const candidates = detail.data?.candidates ?? [];
@@ -197,6 +236,22 @@ export default function EmployerPositionPage() {
       setDeleteId(null);
       setSelected((current) => current.filter((value) => value !== candidateId));
       await client.invalidateQueries({ queryKey: employerKeys.position(id) });
+    },
+  });
+  const saveCandidatePhone = useMutation({
+    mutationFn: ({ candidateId, phone }: { candidateId: string; phone: string }) =>
+      apiRequest(`/api/employer/positions/${id}/resumes/${candidateId}/contact`, {
+        method: "PATCH",
+        body: JSON.stringify({ phone: normalizeIranianMobile(phone) }),
+      }),
+    onSuccess: async () => {
+      setPhoneCandidateId(null);
+      mobileForm.reset();
+      notify("شماره همراه نامزد و رزومه ذخیره شد.");
+      await Promise.all([
+        client.invalidateQueries({ queryKey: employerKeys.position(id) }),
+        client.invalidateQueries({ queryKey: employerKeys.resumeBank }),
+      ]);
     },
   });
   const importFromBank = useMutation({
@@ -271,13 +326,24 @@ export default function EmployerPositionPage() {
     },
   });
   const renewLink = useMutation({
-    mutationFn: (candidateId: string) =>
-      apiRequest<{ candidateId: string; name: string | null; url: string }>(
+    mutationFn: ({ candidateId, deadline }: { candidateId: string; deadline?: string }) =>
+      apiRequest<(typeof links)[number]>(
         `/api/employer/positions/${id}/invitations/${candidateId}/link`,
-        { method: "POST" },
+        { method: "POST", body: deadline ? JSON.stringify({ deadline }) : undefined },
       ),
-    onSuccess: (link) =>
-      setLinks((current) => [...current.filter((item) => item.candidateId !== link.candidateId), link]),
+    onSuccess: async (link) => {
+      setLinks((current) => [...current.filter((item) => item.candidateId !== link.candidateId), link]);
+      setResendCandidateId(null);
+      resendForm.reset();
+      notify("دعوت با مهلت تازه دوباره ارسال شد.");
+      await Promise.all([
+        client.invalidateQueries({ queryKey: employerKeys.position(id) }),
+        wallet.refetch(),
+      ]);
+    },
+    onError: async () => {
+      await wallet.refetch();
+    },
   });
 
   const dismissWorkflowErrors = () => {
@@ -334,6 +400,7 @@ export default function EmployerPositionPage() {
       .toLocaleLowerCase("fa-IR")
       .includes(bankSearch.trim().toLocaleLowerCase("fa-IR")),
   );
+  const phoneCandidate = candidates.find((candidate) => candidate.id === phoneCandidateId);
   return (
     <div className="space-y-6">
       <Link className="inline-flex items-center gap-1 text-xs font-bold text-[#0f7b62]" href="/employer/positions">
@@ -444,9 +511,11 @@ export default function EmployerPositionPage() {
                       className={`rounded-2xl border p-4 text-right ${resumeSource === "device" ? "border-[#8bc9ad] bg-[#edf8f1]" : "border-[#dfe9e3] bg-white"}`}
                       onClick={() => setResumeSource("device")}
                     >
-                      <FileUp className="mb-2 text-[#0f7b62]" size={22} />
-                      <strong className="block text-sm text-[#19312f]">آپلود از دستگاه</strong>
-                      <span className="mt-1 block text-xs text-[#6b8174]">فایل PDF یا DOCX جدید را انتخاب کن.</span>
+                      <span className="flex items-center gap-2">
+                        <FileUp className="shrink-0 text-[#0f7b62]" size={22} />
+                        <strong className="text-sm text-[#19312f]">آپلود از دستگاه</strong>
+                      </span>
+                      <span className="mt-2 block text-xs text-[#6b8174]">فایل PDF یا DOCX جدید را انتخاب کن.</span>
                     </button>
                     <button
                       type="button"
@@ -454,9 +523,11 @@ export default function EmployerPositionPage() {
                       className={`rounded-2xl border p-4 text-right ${resumeSource === "bank" ? "border-[#8bc9ad] bg-[#edf8f1]" : "border-[#dfe9e3] bg-white"}`}
                       onClick={() => setResumeSource("bank")}
                     >
-                      <Database className="mb-2 text-[#0f7b62]" size={22} />
-                      <strong className="block text-sm text-[#19312f]">انتخاب از بانک رزومه</strong>
-                      <span className="mt-1 block text-xs text-[#6b8174]">
+                      <span className="flex items-center gap-2">
+                        <Database className="shrink-0 text-[#0f7b62]" size={22} />
+                        <strong className="text-sm text-[#19312f]">انتخاب از بانک رزومه</strong>
+                      </span>
+                      <span className="mt-2 block text-xs text-[#6b8174]">
                         رزومهٔ موجود را بدون آپلود دوباره اضافه کن.
                       </span>
                     </button>
@@ -745,13 +816,20 @@ export default function EmployerPositionPage() {
               {!selectableCandidates.length && (
                 <p className="text-sm text-[#7e8f84]">رزومهٔ قابل ارزیابی در این نوبت پیدا نشد.</p>
               )}
-              {selectableCandidates.map((candidate) => (
-                <article key={candidate.id} className="my-3 rounded-xl border border-[#e1ebe4] bg-[#fcfefd] p-4">
-                  <div className="flex flex-wrap items-start gap-3">
-                    <label className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="grid gap-4">
+              {selectableCandidates.map((candidate) => {
+                const invitation = invitationPresentation(candidate.invitationStatus);
+                return (
+                <article
+                  key={candidate.id}
+                  className="group relative overflow-hidden rounded-[18px] border border-[#dce9e1] bg-gradient-to-bl from-white via-white to-[#f4faf6] p-4 shadow-[0_8px_26px_rgba(28,63,52,.055)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#b8d8c8] hover:shadow-[0_14px_34px_rgba(28,63,52,.09)] sm:p-5"
+                >
+                  <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-gradient-to-l from-[#0f7b62] via-[#67b694] to-[#d9eee4]" />
+                  <div className="flex flex-wrap items-start gap-3 border-b border-[#e7eee9] pb-4">
+                    <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
                       <Checkbox
                         aria-label={`انتخاب ${candidateLabel(candidate)}`}
-                        disabled={candidate.invitationStatus !== "not_invited"}
+                        disabled={candidate.invitationStatus !== "not_invited" || !candidate.phone}
                         checked={selected.includes(candidate.id)}
                         onChange={(event) =>
                           setSelected((current) =>
@@ -761,86 +839,151 @@ export default function EmployerPositionPage() {
                           )
                         }
                       />
-                      <strong className="break-all text-sm">{candidateLabel(candidate)}</strong>
+                      <span className="grid size-11 shrink-0 place-items-center rounded-[13px] bg-[#e8f4ed] text-[#0f7b62] ring-1 ring-[#d7e9df]">
+                        <UserRound size={20} aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0">
+                        <strong className="block truncate text-sm font-bold text-[#19312f]">{candidateLabel(candidate)}</strong>
+                      </span>
                     </label>
-                    <button
-                      type="button"
-                      aria-label={`پیش‌نمایش رزومه ${candidate.fileName}`}
-                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#dce9df] bg-white px-3 text-xs font-bold text-[#0f7b62] transition-colors hover:bg-[#edf7f0]"
-                      onClick={() => setPreviewId(candidate.id)}
-                    >
-                      <Eye size={15} aria-hidden="true" /> پیش‌نمایش رزومه
-                    </button>
+                    <span className={`inline-flex min-h-8 items-center rounded-full px-3 text-[10px] font-bold ${invitation.tone}`}>
+                      {invitation.label}
+                    </span>
                     {candidate.matchEvidence && (
-                      <span className="rounded-lg bg-[#e8f5ed] px-2 py-1 text-xs font-bold text-[#0f7b62]">
+                      <span className="inline-flex min-h-8 items-center rounded-full border border-[#cfe6da] bg-white px-3 text-[10px] font-bold text-[#0f7b62]">
                         {candidate.matchEvidence.score.toLocaleString("fa-IR")} از ۱۰۰
                       </span>
                     )}
                   </div>
-                  <p className="mb-2 mt-3 text-sm leading-7 text-[#486459]">{candidate.matchEvidence?.summary}</p>
-                  {candidate.matchEvidence?.matched.length ? (
-                    <p className="m-0 text-xs leading-6 text-[#0f7b62]">
-                      شواهد انطباق: {candidate.matchEvidence.matched.join("، ")}
-                    </p>
-                  ) : null}
-                  {candidate.matchEvidence?.missing.length ? (
-                    <p className="m-0 text-xs leading-6 text-[#a35c3b]">
-                      مغایرت: {candidate.matchEvidence.missing.join("، ")}
-                    </p>
-                  ) : null}
-                  {candidate.matchEvidence?.unknown.length ? (
-                    <p className="m-0 text-xs leading-6 text-[#74877e]">
-                      نامشخص: {candidate.matchEvidence.unknown.join("، ")}
-                    </p>
-                  ) : null}
-                  {!candidate.phone && !candidate.email && (
-                    <p className="m-0 text-xs text-amber-700">
-                      اطلاعات تماس در فایل پیدا نشد؛ لینک دعوت را باید خودت به فرد برسانی.
-                    </p>
+                  <div className="grid gap-3 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+                    <div className="min-w-0">
+                      {candidate.matchEvidence?.summary && (
+                        <p className="m-0 text-xs leading-7 text-[#486459]">{candidate.matchEvidence.summary}</p>
+                      )}
+                      <div className="mt-2 grid gap-1.5 text-[11px] leading-6">
+                        {candidate.matchEvidence?.matched.length ? (
+                          <p className="m-0 text-[#0f7b62]">شواهد انطباق: {candidate.matchEvidence.matched.join("، ")}</p>
+                        ) : null}
+                        {candidate.matchEvidence?.missing.length ? (
+                          <p className="m-0 text-[#a35c3b]">مغایرت: {candidate.matchEvidence.missing.join("، ")}</p>
+                        ) : null}
+                        {candidate.matchEvidence?.unknown.length ? (
+                          <p className="m-0 text-[#74877e]">نامشخص: {candidate.matchEvidence.unknown.join("، ")}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  {candidate.phone ? (
+                    <div className="inline-flex min-h-9 items-center gap-2 self-start rounded-xl bg-[#f1f6f3] py-1 pl-1 pr-3 text-[11px] text-[#486459]">
+                      <Phone size={14} className="text-[#0f7b62]" aria-hidden="true" />
+                      <span dir="ltr">{candidate.phone}</span>
+                      <button
+                        type="button"
+                        aria-label={`ویرایش شماره همراه ${candidateLabel(candidate)}`}
+                        title="ویرایش شماره همراه"
+                        className="grid size-7 place-items-center rounded-lg border border-[#d5e5dc] bg-white text-[#0f7b62] transition-colors hover:border-[#a9cfbc] hover:bg-[#e8f4ed]"
+                        onClick={() => {
+                          mobileForm.reset({ phone: candidate.phone ?? "" });
+                          saveCandidatePhone.reset();
+                          setPhoneCandidateId(candidate.id);
+                        }}
+                      >
+                        <Pencil size={13} aria-hidden="true" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex max-w-sm flex-wrap items-center gap-2 rounded-xl border border-[#f0d9ae] bg-[#fffaf0] p-3">
+                      <p className="m-0 text-[11px] leading-6 text-amber-700">
+                        شماره همراه این نامزد ثبت نشده است؛ پیش از انتخاب و ساخت دعوت، شماره را اضافه کن.
+                      </p>
+                      <button
+                        type="button"
+                        className="rounded-lg border border-[#cfe4d5] bg-white px-3 py-2 text-xs font-bold text-[#0f7b62] hover:bg-[#edf7f0]"
+                        onClick={() => {
+                          mobileForm.reset();
+                          saveCandidatePhone.reset();
+                          setPhoneCandidateId(candidate.id);
+                        }}
+                      >
+                        افزودن شماره همراه
+                      </button>
+                    </div>
                   )}
-                  {candidate.invitationStatus !== "not_invited" && (
-                    <p className="m-0 text-xs font-bold text-[#0f7b62]">
-                      وضعیت دعوت:{" "}
-                      {candidate.invitationStatus === "completed"
-                        ? "مصاحبه تکمیل شد"
-                        : candidate.invitationStatus === "started"
-                          ? "مصاحبه شروع شد"
-                          : "دعوت شد"}
-                    </p>
-                  )}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[#e7eee9] pt-3">
+                    <button
+                      type="button"
+                      aria-label={`پیش‌نمایش رزومه ${candidate.fileName}`}
+                      className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[#d6e6dc] bg-white px-3.5 text-xs font-bold text-[#0f7b62] transition-colors hover:bg-[#edf7f0]"
+                      onClick={() => setPreviewId(candidate.id)}
+                    >
+                      <Eye size={15} aria-hidden="true" /> پیش‌نمایش رزومه
+                    </button>
                   {["invited", "accepted", "started"].includes(candidate.invitationStatus) && (
                     <button
                       type="button"
                       disabled={renewLink.isPending}
-                      onClick={() => renewLink.mutate(candidate.id)}
-                      className="mt-2 rounded-lg border border-[#cfe4d5] px-3 py-2 text-xs font-bold text-[#0f7b62] disabled:opacity-50"
+                      onClick={() => renewLink.mutate({ candidateId: candidate.id })}
+                      className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#cfe4d5] bg-white px-3.5 text-xs font-bold text-[#0f7b62] hover:bg-[#edf7f0] disabled:opacity-50"
                     >
-                      ساخت لینک تازهٔ دعوت (لینک قبلی باطل می‌شود)
+                      <Send size={15} aria-hidden="true" /> ارسال مجدد لینک دعوت
                     </button>
                   )}
-                  {renewLink.error && renewLink.variables === candidate.id && (
+                  {["expired", "completed"].includes(candidate.invitationStatus) && candidate.phone && (
+                    <button
+                      type="button"
+                      disabled={renewLink.isPending}
+                      onClick={() => {
+                        renewLink.reset();
+                        resendForm.reset({ deadlineDate: "", deadlineTime: "23:59" });
+                        setResendCandidateId(candidate.id);
+                      }}
+                      className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#0f7b62] px-4 text-xs font-bold text-white shadow-[0_7px_18px_rgba(15,123,98,.18)] transition-colors hover:bg-[#0b6d58] disabled:opacity-50"
+                    >
+                      <Send size={15} aria-hidden="true" /> {candidate.invitationStatus === "completed" ? "دعوت برای ارزیابی دوباره" : "ارسال مجدد لینک دعوت"}
+                    </button>
+                  )}
+                  </div>
+                  {renewLink.error && renewLink.variables?.candidateId === candidate.id && !resendCandidateId && (
                     <EmployerActionError error={renewLink.error} cost={0} />
                   )}
                   {candidate.interviewReport && (
-                    <div className="mt-3 rounded-xl bg-[#f0f7f2] p-3 text-xs leading-6">
-                      <strong>گزارش مصاحبه · {candidate.interviewReport.score.toLocaleString("fa-IR")} از ۱۰۰</strong>
-                      <p className="my-1">{candidate.interviewReport.summary}</p>
-                      <p className="m-0">نقاط قوت: {candidate.interviewReport.strengths.join("، ")}</p>
-                      <p className="m-0">فرصت بهبود: {candidate.interviewReport.improvements.join("، ")}</p>
-                      <details className="mt-2">
-                        <summary>پاسخ‌های ثبت‌شده</summary>
-                        <ol className="list-decimal pr-5">
-                          {candidate.interviewAnswers?.map((answer, index) => (
-                            <li key={index} className="my-2 whitespace-pre-wrap">
-                              {answer}
-                            </li>
-                          ))}
-                        </ol>
-                      </details>
-                    </div>
+                    <section className="border-t border-[#e7eee9] pt-3">
+                      <button
+                        type="button"
+                        aria-controls={`interview-report-${candidate.id}`}
+                        aria-expanded={expandedReportId === candidate.id}
+                        className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#cfe4d5] bg-white px-3.5 text-xs font-bold text-[#0f7b62] transition-colors hover:bg-[#edf7f0]"
+                        onClick={() => setExpandedReportId((current) => (current === candidate.id ? null : candidate.id))}
+                      >
+                        نمایش نتیجه
+                        <ChevronDown
+                          size={16}
+                          aria-hidden="true"
+                          className={`transition-transform duration-300 ${expandedReportId === candidate.id ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                      <div
+                        id={`interview-report-${candidate.id}`}
+                        role="region"
+                        aria-label={`نتیجهٔ مصاحبه ${candidateLabel(candidate)}`}
+                        aria-hidden={expandedReportId !== candidate.id}
+                        className={`grid transition-[grid-template-rows] duration-300 ease-out ${expandedReportId === candidate.id ? "mt-3 grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+                      >
+                        <div className="min-h-0 overflow-hidden">
+                          <InterviewReportView
+                            report={candidate.interviewReport}
+                            questions={candidate.conversationQuestions ?? []}
+                            variant="employer"
+                            showHero={false}
+                          />
+                        </div>
+                      </div>
+                    </section>
                   )}
                 </article>
-              ))}
+                );
+              })}
+              </div>
             </section>
           )}
         </div>
@@ -855,8 +998,8 @@ export default function EmployerPositionPage() {
               </div>
               <p className="text-xs leading-7 text-[#6b8174]">
                 {position.screeningStatus === "completed"
-                  ? "مدل می‌تواند ۴ نفر اول را پیشنهاد کند؛ انتخاب نهایی با توست."
-                  : "پایش اختیاری است. نامزدها را از فهرست انتخاب کن و برایشان لینک مصاحبه بساز."}
+                  ? "مدل می‌تواند ۴ نفر اول را پیشنهاد کند؛ فقط نامزدهای دارای شماره همراه معتبر قابل دعوت‌اند."
+                  : "نامزدهای دارای شماره همراه معتبر را انتخاب کن و برایشان لینک اختصاصی مصاحبه بساز."}
               </p>
               {position.screeningStatus === "completed" && (
                 <button
@@ -865,7 +1008,7 @@ export default function EmployerPositionPage() {
                   onClick={() =>
                     setSelected(
                       screenedCandidates
-                        .filter((candidate) => candidate.invitationStatus === "not_invited")
+                        .filter((candidate) => candidate.invitationStatus === "not_invited" && candidate.phone)
                         .slice(0, 4)
                         .map((candidate) => candidate.id),
                     )
@@ -948,24 +1091,36 @@ export default function EmployerPositionPage() {
                 <div className="mt-5 space-y-3 border-t border-[#e1ebe4] pt-4">
                   <strong className="text-sm">لینک‌های دعوت آماده‌اند</strong>
                   <p className="text-xs leading-6 text-[#71877a]">
-                    فعلاً لینک‌ها را برای نامزدها ارسال کن. ارسال خودکار هنوز متصل نیست.
+                    اعضای رادیکار اعلان داخل پنل دریافت می‌کنند؛ برای سایر نامزدها پیامک لینک دعوت ارسال می‌شود.
                   </p>
                   {links.map((link) => (
-                    <button
-                      key={link.candidateId}
-                      className="flex w-full items-center justify-between gap-2 rounded-lg border border-[#dbe8df] p-2 text-right text-xs text-[#0f7b62]"
-                      type="button"
-                      onClick={async () => {
-                        await navigator.clipboard.writeText(link.url);
-                        setCopied(link.candidateId);
-                      }}
-                    >
-                      <span className="truncate">{link.name || "نامزد"}</span>
-                      <span className="inline-flex shrink-0 items-center gap-1">
-                        <ClipboardCopy size={14} />
-                        {copied === link.candidateId ? "کپی شد" : "کپی لینک"}
-                      </span>
-                    </button>
+                    <div key={link.candidateId} className="rounded-lg border border-[#dbe8df] p-2 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate font-bold text-[#19312f]">{link.name || "نامزد"}</span>
+                        <button
+                          className="inline-flex shrink-0 items-center gap-1 text-[#0f7b62]"
+                          type="button"
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(link.url);
+                            setCopied(link.candidateId);
+                          }}
+                        >
+                          <ClipboardCopy size={14} />
+                          {copied === link.candidateId ? "کپی شد" : "کپی لینک"}
+                        </button>
+                      </div>
+                      <p
+                        className={`mb-0 mt-1 text-[11px] ${link.delivery === "sms_failed" || link.delivery === "sms_unavailable" ? "text-amber-700" : "text-[#0f7b62]"}`}
+                      >
+                        {link.delivery === "in_app"
+                          ? "دعوت در پنل کارجو ثبت شد و اعلان دریافت می‌کند."
+                          : link.delivery === "sms_sent"
+                            ? "پیامک دعوت برای نامزد ارسال شد."
+                            : link.delivery === "sms_failed"
+                              ? "ارسال پیامک ناموفق بود؛ لینک را دستی برای نامزد بفرست."
+                              : "ارسال پیامک پیکربندی نشده است؛ لینک را دستی برای نامزد بفرست."}
+                      </p>
+                    </div>
                   ))}
                 </div>
               )}
@@ -1089,6 +1244,157 @@ export default function EmployerPositionPage() {
           candidate={candidates.find((candidate) => candidate.id === previewId)!}
           onClose={() => setPreviewId(null)}
         />
+      )}
+      {phoneCandidateId && (
+        <Modal
+          title={phoneCandidate?.phone ? "ویرایش شماره همراه" : "افزودن شماره همراه"}
+          onClose={() => setPhoneCandidateId(null)}
+          showCloseButton
+        >
+          <form
+            className="mt-5 space-y-4"
+            onSubmit={mobileForm.handleSubmit(({ phone }) =>
+              saveCandidatePhone.mutate({ candidateId: phoneCandidateId, phone }),
+            )}
+          >
+            <label htmlFor="candidate-mobile" className="block text-xs font-bold text-[#456354]">
+              شماره همراه نامزد
+            </label>
+            <input
+              id="candidate-mobile"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              dir="ltr"
+              placeholder="09123456789"
+              aria-invalid={Boolean(mobileForm.formState.errors.phone)}
+              className="block min-h-11 w-full rounded-xl border border-[#dfe9e3] px-3 text-sm text-[#19312f] outline-none focus:border-[#0f7b62]"
+              {...mobileForm.register("phone")}
+            />
+            {mobileForm.formState.errors.phone && (
+              <p role="alert" className="m-0 text-xs text-red-600">
+                {mobileForm.formState.errors.phone.message}
+              </p>
+            )}
+            {saveCandidatePhone.error && <EmployerActionError error={saveCandidatePhone.error} cost={0} />}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="min-h-10 rounded-xl border border-[#dfe9e3] px-4 text-xs text-[#526461]"
+                onClick={() => setPhoneCandidateId(null)}
+              >
+                انصراف
+              </button>
+              <button
+                type="submit"
+                disabled={saveCandidatePhone.isPending}
+                className="min-h-10 rounded-xl bg-[#0f7b62] px-5 text-xs font-bold text-white disabled:opacity-50"
+              >
+                {saveCandidatePhone.isPending
+                  ? "در حال ذخیره..."
+                  : phoneCandidate?.phone
+                    ? "ذخیره تغییرات"
+                    : "ذخیره شماره همراه"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+      {resendCandidateId && (
+        <Modal
+          title="ارسال مجدد دعوت مصاحبه"
+          description={candidates.some((candidate) => candidate.id === resendCandidateId && candidate.invitationStatus === "completed")
+            ? "با ارسال این دعوت، پاسخ‌ها و گزارش قبلی پاک می‌شوند و کارجو مصاحبه را از ابتدا شروع می‌کند."
+            : undefined}
+          onClose={() => {
+            setResendCandidateId(null);
+            renewLink.reset();
+          }}
+          showCloseButton
+        >
+          <form
+            className="mt-5 space-y-4"
+            onSubmit={resendForm.handleSubmit(({ deadlineDate, deadlineTime }) =>
+              renewLink.mutate({
+                candidateId: resendCandidateId,
+                deadline: new Date(`${deadlineDate}T${deadlineTime}:00+03:30`).toISOString(),
+              }),
+            )}
+          >
+            <p className="m-0 text-xs leading-6 text-[#61766c]">
+              لینک قبلی باطل می‌شود و دعوت با مهلت تازه دوباره برای نامزد ارسال خواهد شد.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <span className="mb-2 block text-xs font-bold text-[#456354]">تاریخ مهلت تازه</span>
+                <Controller
+                  control={resendForm.control}
+                  name="deadlineDate"
+                  render={({ field }) => (
+                    <JalaliDatePicker
+                      ariaLabel="تاریخ مهلت تازه"
+                      value={field.value}
+                      onChange={field.onChange}
+                      invalid={Boolean(resendForm.formState.errors.deadlineDate)}
+                    />
+                  )}
+                />
+                {resendForm.formState.errors.deadlineDate && (
+                  <p role="alert" className="mb-0 mt-1 text-xs text-red-600">
+                    {resendForm.formState.errors.deadlineDate.message}
+                  </p>
+                )}
+              </div>
+              <div>
+                <span className="mb-2 block text-xs font-bold text-[#456354]">ساعت مهلت (به وقت تهران)</span>
+                <Controller
+                  control={resendForm.control}
+                  name="deadlineTime"
+                  render={({ field }) => (
+                    <TimePicker
+                      ariaLabel="ساعت مهلت تازه (به وقت تهران)"
+                      value={field.value}
+                      onChange={field.onChange}
+                      invalid={Boolean(resendForm.formState.errors.deadlineTime)}
+                    />
+                  )}
+                />
+                {resendForm.formState.errors.deadlineTime && (
+                  <p role="alert" className="mb-0 mt-1 text-xs text-red-600">
+                    {resendForm.formState.errors.deadlineTime.message}
+                  </p>
+                )}
+              </div>
+            </div>
+            <p className="m-0 text-xs leading-6 text-[#6b8174]">
+              {costs.interview.toLocaleString("fa-IR")} رادیکوین دوباره رزرو می‌شود و فقط در صورت تکمیل مصاحبه مصرف
+              خواهد شد.
+            </p>
+            {renewLink.error && (
+              <EmployerActionError
+                error={renewLink.error}
+                balance={wallet.data?.wallet?.availableCoins}
+                cost={costs.interview}
+              />
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                className="min-h-10 rounded-xl border border-[#dfe9e3] px-4 text-xs text-[#526461]"
+                onClick={() => setResendCandidateId(null)}
+              >
+                انصراف
+              </button>
+              <button
+                type="submit"
+                disabled={renewLink.isPending}
+                className="min-h-10 rounded-xl bg-[#0f7b62] px-5 text-xs font-bold text-white disabled:opacity-50"
+              >
+                {renewLink.isPending ? "در حال ارسال مجدد..." : "تأیید و ارسال مجدد"}
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
       {deleteId && (
         <DeleteConfirmModal

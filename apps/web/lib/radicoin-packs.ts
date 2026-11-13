@@ -1,7 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api-client";
 
-export type RadicoinPack = { id: string; name: string; coins: number; amountRials: number };
+export type RadicoinPack = {
+  id: string;
+  name: string;
+  coins: number;
+  amountRials: number;
+  originalAmountRials?: number;
+};
 export type RadicoinPackOrder = RadicoinPack & {
   id: string;
   packId: string;

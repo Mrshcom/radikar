@@ -17,9 +17,23 @@ type InterviewPracticeDialogProps = {
   analysisPending?: boolean;
   exitDescription?: string;
   exitConfirmLabel?: string;
+  topNotice?: ReactNode;
   onClose: () => void;
   children: ReactNode;
 };
+
+function InterviewRoomBackdrop() {
+  return (
+    <Image
+      alt=""
+      aria-hidden="true"
+      fill
+      sizes="100vw"
+      src="/illustrations/radikar-interview-room-v2.png"
+      className="pointer-events-none object-contain object-center opacity-[0.12]"
+    />
+  );
+}
 
 export function InterviewPracticeDialog({
   title,
@@ -31,6 +45,7 @@ export function InterviewPracticeDialog({
   analysisPending = false,
   exitDescription = "پاسخ‌های فعلی‌ات ذخیره می‌شوند و بعداً می‌توانی مصاحبه را ادامه بدهی.",
   exitConfirmLabel = "ذخیره و خروج",
+  topNotice,
   onClose,
   children,
 }: InterviewPracticeDialogProps) {
@@ -142,14 +157,7 @@ export function InterviewPracticeDialog({
 
   return createPortal(
     <div className="fixed inset-0 z-[90] bg-[#f8f9f5]" dir="rtl">
-      <Image
-        alt=""
-        aria-hidden="true"
-        fill
-        sizes="100vw"
-        src="/illustrations/radikar-interview-room-v2.png"
-        className="pointer-events-none object-contain object-center opacity-[0.12]"
-      />
+      <InterviewRoomBackdrop />
       <section
         ref={dialogRef}
         role="dialog"
@@ -198,6 +206,11 @@ export function InterviewPracticeDialog({
             </button>
           </HoverTooltip>
         </header>
+        {topNotice && (
+          <div className="relative z-10 shrink-0 px-3 pt-3 sm:px-8 sm:pt-5" inert={confirmOpen}>
+            <div className="mx-auto max-w-3xl">{topNotice}</div>
+          </div>
+        )}
         <div
           className={
             chatLayout
@@ -212,15 +225,20 @@ export function InterviewPracticeDialog({
         {analysisPending && (
           <div
             ref={analysisRef}
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 bg-[#f7f9f6]/90 px-6 text-center backdrop-blur-md"
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-5 overflow-hidden bg-[#f8f9f5] px-6 text-center"
             role="status"
             aria-live="polite"
             tabIndex={-1}
           >
+            <InterviewRoomBackdrop />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_22%,rgba(202,232,215,.45),transparent_36%),radial-gradient(circle_at_90%_84%,rgba(244,229,198,.3),transparent_34%)]"
+            />
             <span className="relative grid size-24 place-items-center">
               <ModelThinkingOrb label="در حال تحلیل پاسخ‌های مصاحبه" />
             </span>
-            <div className="max-w-lg">
+            <div className="relative max-w-lg">
               <h3 className="m-0 text-xl font-bold text-[#19312f] sm:text-2xl">در حال تحلیل مصاحبهٔ تو هستیم</h3>
               <p className="mb-0 mt-3 text-sm leading-8 text-[#61746f]">
                 پاسخ‌هایت را بررسی می‌کنیم تا امتیاز، نقاط قوت و پیشنهادهای بهبود را در گزارش نهایی نشان دهیم.

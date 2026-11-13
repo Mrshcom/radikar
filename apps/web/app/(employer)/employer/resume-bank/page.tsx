@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Download, Eye, FileUp, LoaderCircle, Trash2 } from "lucide-react";
+import { Download, Eye, FileUp, LoaderCircle, Pencil, Trash2 } from "lucide-react";
 import { DataTable, type DataTableColumn, type SortState } from "@/app/(panel)/_components/data-table";
 import { TableActionButton } from "@/app/(panel)/_components/table-action-button";
 import { DeleteConfirmModal, Modal, SectionTitle } from "@/app/(panel)/_components/ui";
@@ -32,6 +32,12 @@ const fileSchema = z.object({
     (value) => value instanceof FileList && value.length > 0 && value.length <= 100,
     "۱ تا ۱۰۰ فایل انتخاب کن.",
   ),
+});
+const resumeDetailsSchema = z.object({
+  name: z.string().trim().max(160).nullable(),
+  specialty: z.string().trim().max(160).nullable(),
+  email: z.string().trim().email("ایمیل معتبر نیست.").max(254).nullable(),
+  phone: z.string().trim().max(32).nullable(),
 });
 
 type ResumeBankFilters = {
@@ -80,12 +86,94 @@ const resumeCollator = new Intl.Collator("fa", { numeric: true, sensitivity: "ba
 type ResumePosition = EmployerBankResume["positions"][number];
 const invitationStates: Record<EmployerCandidate["invitationStatus"], { label: string; className: string }> = {
   not_invited: { label: "دعوت نشده", className: "bg-[#f1f4f1] text-[#687a70]" },
-  invited: { label: "لینک ساخته شد", className: "bg-[#fff2dc] text-[#946b26]" },
-  accepted: { label: "دعوت پذیرفته شد", className: "bg-[#eaf2ff] text-[#486f9c]" },
-  started: { label: "در حال مصاحبه", className: "bg-[#e9f3fc] text-[#356f9a]" },
-  completed: { label: "تکمیل‌شده", className: "bg-[#e5f4ec] text-[#0f7b62]" },
-  expired: { label: "مهلت‌گذشته", className: "bg-[#fff0ed] text-[#b2513e]" },
+  invited: { label: "دعوت ارسال شد", className: "bg-[#edf7f2] text-[#0f7b62]" },
+  accepted: { label: "دعوت ارسال شد", className: "bg-[#edf7f2] text-[#0f7b62]" },
+  started: { label: "شرکت کرده", className: "bg-[#e9f3fc] text-[#356f9a]" },
+  completed: { label: "شرکت کرده", className: "bg-[#e5f4ec] text-[#0f7b62]" },
+  expired: { label: "مهلت گذشته", className: "bg-[#fff0ed] text-[#b2513e]" },
 };
+
+const newestPositionFirst = (positions: ResumePosition[]) =>
+  [...positions].sort((first, second) => Date.parse(second.updatedAt) - Date.parse(first.updatedAt));
+
+function PositionInterviewList({
+  positions,
+  name,
+  onClose,
+  onShowReport,
+}: {
+  positions: ResumePosition[];
+  name: string;
+  onClose: () => void;
+  onShowReport: (association: ResumePosition) => void;
+}) {
+  return (
+    <Modal
+      title={`پوزیشن‌ها و مصاحبه‌های ${name}`}
+      description={`${positions.length.toLocaleString("fa-IR")} مورد مرتبط با این رزومه`}
+      onClose={onClose}
+      modalClassName="!w-[min(750px,calc(100vw-32px))] !max-w-[750px]"
+      showCloseButton
+    >
+      <div className="mt-5 grid gap-3">
+        {newestPositionFirst(positions).map((item) => (
+          <article
+            className="rounded-[16px] border border-[#dfeae4] bg-[linear-gradient(125deg,#f7fcf9,#ffffff_58%)] p-4"
+            key={item.id}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+                <span className="shrink-0 text-[9px] font-bold text-[#83938b]">پوزیشن شغلی:</span>
+                <Link
+                  href={`/employer/positions/${item.positionId}`}
+                  className="min-w-0 truncate text-sm font-black text-[#19312f] no-underline hover:text-[#0f7b62]"
+                >
+                  {item.positionTitle}
+                </Link>
+              </div>
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${invitationStates[item.invitationStatus].className}`}
+              >
+                {invitationStates[item.invitationStatus].label}
+              </span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-end justify-between gap-3 border-t border-[#e8f0eb] pt-3">
+              <dl className="grid grid-cols-2 gap-6 text-[10px]">
+              <div>
+                <dt className="text-[#85948d]">مهلت پاسخ</dt>
+                <dd className="m-0 mt-1 font-bold text-[#456157]">
+                  {item.invitationDeadline ? <PersianDateTime value={item.invitationDeadline} /> : "ندارد"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[#85948d]">آخرین تغییر</dt>
+                <dd className="m-0 mt-1 font-bold text-[#456157]"><PersianDateTime value={item.updatedAt} /></dd>
+              </div>
+              </dl>
+              <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href={`/employer/positions/${item.positionId}`}
+                className="text-[10px] font-bold text-[#0f7b62] no-underline hover:underline"
+              >
+                مشاهده پوزیشن
+              </Link>
+              {item.interviewScore !== null && (
+                <button
+                  type="button"
+                  className="rounded-lg bg-[#e5f4ec] px-2.5 py-1.5 text-[10px] font-bold text-[#0f7b62] hover:bg-[#d9efe2]"
+                  onClick={() => onShowReport(item)}
+                >
+                  نمره {item.interviewScore.toLocaleString("fa-IR")} از ۱۰۰ · گزارش
+                </button>
+              )}
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </Modal>
+  );
+}
 
 function InterviewDetail({
   association,
@@ -226,7 +314,9 @@ export default function EmployerResumeBankPage() {
   const notify = useToast();
   const bank = useEmployerResumeBank();
   const [preview, setPreview] = useState<EmployerBankResume | null>(null);
+  const [editingResume, setEditingResume] = useState<EmployerBankResume | null>(null);
   const [report, setReport] = useState<{ association: ResumePosition; name: string } | null>(null);
+  const [positionSummary, setPositionSummary] = useState<{ positions: ResumePosition[]; name: string } | null>(null);
   const [pendingDelete, setPendingDelete] = useState<EmployerBankResume | null>(null);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<ResumeBankFilters>(() => ({
@@ -237,6 +327,7 @@ export default function EmployerResumeBankPage() {
   const [sort, setSort] = useState<SortState>(null);
   const { page, pageSize, setPage, setPageSize, isSaving: pageSizeSaving } = useUrlTablePagination();
   const form = useForm<z.infer<typeof fileSchema>>({ resolver: zodResolver(fileSchema) });
+  const detailsForm = useForm<z.infer<typeof resumeDetailsSchema>>({ resolver: zodResolver(resumeDetailsSchema) });
   const field = form.register("files");
   const upload = useMutation({
     mutationFn: (files: FileList) => {
@@ -260,6 +351,15 @@ export default function EmployerResumeBankPage() {
       apiRequest(`/api/employer/resume-bank/${resume.id}`, { method: "DELETE" }),
     onSuccess: async () => {
       setPendingDelete(null);
+      await client.invalidateQueries({ queryKey: employerKeys.resumeBank });
+    },
+  });
+  const updateDetails = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: z.infer<typeof resumeDetailsSchema> }) =>
+      apiRequest(`/api/employer/resume-bank/${id}`, { method: "PATCH", body: JSON.stringify(values) }),
+    onSuccess: async () => {
+      setEditingResume(null);
+      notify("اطلاعات رزومه ذخیره شد.");
       await client.invalidateQueries({ queryKey: employerKeys.resumeBank });
     },
   });
@@ -364,19 +464,19 @@ export default function EmployerResumeBankPage() {
     {
       key: "name",
       title: "نام",
-      className: "min-w-40 font-bold",
-      render: (resume) => resume.name || resume.fileName,
+      className: "lg:w-[16%] lg:max-w-0 truncate text-[10px] font-bold",
+      render: (resume) => <span className="block truncate">{resume.name || resume.fileName}</span>,
     },
     {
       key: "specialty",
       title: "تخصص",
-      className: "min-w-36",
-      render: (resume) => resume.specialty || <span className="text-[#899592]">ثبت نشده</span>,
+      className: "lg:w-[18%] lg:max-w-0 text-[10px]",
+      render: (resume) => resume.specialty ? <span className="block line-clamp-2">{resume.specialty}</span> : <span className="text-[#899592]">ثبت نشده</span>,
     },
     {
       key: "phone",
       title: "موبایل",
-      className: "whitespace-nowrap",
+      className: "lg:w-[13%] whitespace-nowrap text-[10px]",
       render: (resume) =>
         resume.phone ? (
           <a className="text-[#526461] no-underline hover:text-[#0f7b62]" dir="ltr" href={`tel:${resume.phone}`}>
@@ -390,39 +490,28 @@ export default function EmployerResumeBankPage() {
       key: "positions",
       title: "پوزیشن و مصاحبه",
       sortable: false,
-      className: "min-w-72",
+      className: "lg:w-[24%] lg:max-w-0 text-[10px]",
       render: (resume) => {
         const linked =
           filters.position === "all"
             ? resume.positions
             : resume.positions.filter((item) => item.positionId === filters.position);
-        return linked.length ? (
-          <div className="space-y-2">
-            {linked.map((item) => (
-              <div key={item.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <Link
-                  href={`/employer/positions/${item.positionId}`}
-                  className="text-xs font-bold text-[#0f7b62] no-underline hover:underline"
-                >
-                  {item.positionTitle}
-                </Link>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${invitationStates[item.invitationStatus].className}`}
-                >
-                  {invitationStates[item.invitationStatus].label}
-                </span>
-                {item.interviewScore !== null && (
-                  <button
-                    type="button"
-                    className="text-xs font-bold text-[#0f7b62] underline underline-offset-2"
-                    onClick={() => setReport({ association: item, name: resume.name || resume.fileName })}
-                  >
-                    نمره {item.interviewScore.toLocaleString("fa-IR")} از ۱۰۰ · گزارش
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+        const invitations = linked.filter((item) => item.invitationStatus !== "not_invited");
+        return invitations.length ? (
+          <button
+            type="button"
+            aria-label={`مشاهده جزئیات ${invitations.length.toLocaleString("fa-IR")} دعوت مصاحبهٔ ${resume.name || resume.fileName}`}
+            className="inline-flex max-w-full items-center gap-1.5 text-[11px] font-bold text-[#0f7b62] transition hover:text-[#0b6d58] focus-visible:outline-2 focus-visible:outline-[#0f7b62]"
+            onClick={() => setPositionSummary({ positions: invitations, name: resume.name || resume.fileName })}
+          >
+            <span>
+              {invitations.length.toLocaleString("fa-IR")}
+              {invitations.length === 1 ? " دعوت‌نامه" : " تا دعوت‌نامه"}
+            </span>
+            <Eye aria-hidden="true" size={14} />
+          </button>
+        ) : linked.length ? (
+          <span className="text-[10px] font-bold text-[#899592]">دعوت نشده</span>
         ) : (
           <span className="text-[#899592]">بدون پوزیشن</span>
         );
@@ -431,21 +520,32 @@ export default function EmployerResumeBankPage() {
     {
       key: "createdAt",
       title: "تاریخ ورود",
-      className: "whitespace-nowrap",
+      className: "lg:w-[17%] whitespace-nowrap text-[10px]",
       render: (resume) => <PersianDateTime value={resume.createdAt} />,
     },
     {
       key: "actions",
       title: "عملیات",
       sortable: false,
+      className: "lg:w-[12%] whitespace-nowrap",
       render: (resume) => (
         <div className="flex items-center gap-1">
           <TableActionButton label={`پیش‌نمایش ${resume.fileName}`} onClick={() => setPreview(resume)}>
             <Eye size={14} />
           </TableActionButton>
           <TableActionButton
+            label={`ویرایش اطلاعات ${resume.name || resume.fileName}`}
+            onClick={() => {
+              detailsForm.reset({ name: resume.name, specialty: resume.specialty, email: resume.email, phone: resume.phone });
+              updateDetails.reset();
+              setEditingResume(resume);
+            }}
+          >
+            <Pencil size={14} />
+          </TableActionButton>
+          <TableActionButton
             label={`حذف ${resume.fileName}`}
-            disabled={remove.isPending}
+            disabled={remove.isPending || !resume.canDelete}
             onClick={() => setPendingDelete(resume)}
           >
             <Trash2 size={14} />
@@ -625,7 +725,7 @@ export default function EmployerResumeBankPage() {
             setSort(next);
             setPage(1);
           }}
-          minWidthClassName="min-w-[1200px]"
+          minWidthClassName="min-w-0 table-fixed"
           footer={
             <TablePagination
               page={safePage}
@@ -639,13 +739,40 @@ export default function EmployerResumeBankPage() {
         />
       </section>
       {preview && <ResumePreview resume={preview} onClose={() => setPreview(null)} />}
+      {editingResume && (
+        <Modal title="ویرایش اطلاعات رزومه" description="اصلاح دستی اطلاعات استخراج‌شده از رزومه" onClose={() => setEditingResume(null)} showCloseButton>
+          <form className="mt-5 grid gap-4" onSubmit={detailsForm.handleSubmit((values) => updateDetails.mutate({ id: editingResume.id, values }))}>
+            {([['name', 'نام کارجو'], ['specialty', 'تخصص'], ['email', 'ایمیل'], ['phone', 'شماره همراه']] as const).map(([field, label]) => (
+              <label className="grid gap-1.5 text-xs font-bold text-[#456157]" key={field}>
+                {label}
+                <input className="min-h-11 rounded-xl border border-[#d8e6de] bg-white px-3 text-sm font-normal outline-none focus:border-[#0f7b62]" dir={field === 'email' || field === 'phone' ? 'ltr' : 'rtl'} {...detailsForm.register(field, { setValueAs: (value) => value.trim() || null })} />
+                {detailsForm.formState.errors[field] && <span className="text-[10px] text-[#b2513e]">{detailsForm.formState.errors[field]?.message}</span>}
+              </label>
+            ))}
+            <button className="min-h-11 rounded-xl bg-[#0f7b62] px-5 text-xs font-bold text-white disabled:opacity-50" disabled={updateDetails.isPending} type="submit">
+              {updateDetails.isPending ? "در حال ذخیره..." : "ذخیره تغییرات"}
+            </button>
+          </form>
+        </Modal>
+      )}
       {report && (
         <InterviewDetail association={report.association} name={report.name} onClose={() => setReport(null)} />
+      )}
+      {positionSummary && (
+        <PositionInterviewList
+          name={positionSummary.name}
+          onClose={() => setPositionSummary(null)}
+          onShowReport={(association) => {
+            setPositionSummary(null);
+            setReport({ association, name: positionSummary.name });
+          }}
+          positions={positionSummary.positions}
+        />
       )}
       {pendingDelete && (
         <DeleteConfirmModal
           itemName={pendingDelete.name || pendingDelete.fileName}
-          description="اگر این رزومه هنوز وارد پوزیشن نشده باشد، از بانک حذف می‌شود. رزومه‌های استفاده‌شده در پایش یا دعوت قابل حذف نیستند."
+          description="این رزومه هنوز به مصاحبه دعوت نشده است و با حذف آن، از بانک رزومه و پوزیشن‌های مرتبط پاک می‌شود."
           onCancel={() => setPendingDelete(null)}
           onConfirm={() => remove.mutate(pendingDelete)}
         />

@@ -55,7 +55,7 @@ describe("auth hooks", () => {
 
   it("keeps the protected page behind its loader until auth is known", () => {
     apiRequest.mockReturnValue(new Promise(() => undefined));
-    const { getByText } = render(
+    const { getByRole, getByText } = render(
       <QueryClientProvider client={new QueryClient()}>
         <AuthGate>
           <span>خصوصی</span>
@@ -63,6 +63,10 @@ describe("auth hooks", () => {
       </QueryClientProvider>,
     );
     expect(getByText("در حال بارگذاری")).toBeTruthy();
+    expect(getByRole("progressbar", { name: "در حال بارگذاری" }).firstElementChild).toHaveClass(
+      "absolute",
+      "will-change-[left,right]",
+    );
     expect(authQueryKey).toEqual(["auth", "me"]);
   });
 

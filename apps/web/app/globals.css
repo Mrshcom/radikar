@@ -14,6 +14,13 @@ button,
   cursor: pointer !important;
 }
 
+button[aria-label^="حذف"]:not(:disabled):hover,
+button[title^="حذف"]:not(:disabled):hover {
+  border-color: #dc8d83 !important;
+  background-color: #fff1ef !important;
+  color: #b2513e !important;
+}
+
 input::placeholder,
 textarea::placeholder {
   direction: rtl !important;
@@ -57,13 +64,25 @@ input[inputmode="numeric"]::placeholder {
 }
 
 @keyframes page-loader-fill {
-  0%,
-  100% {
-    width: 0;
+  0% {
+    left: 0;
+    right: 94%;
   }
-  45%,
-  55% {
-    width: 100%;
+  25% {
+    left: 0;
+    right: 0;
+  }
+  50% {
+    left: 94%;
+    right: 0;
+  }
+  75% {
+    left: 0;
+    right: 0;
+  }
+  100% {
+    left: 0;
+    right: 94%;
   }
 }
 
@@ -114,6 +133,27 @@ input[inputmode="numeric"]::placeholder {
   }
   50% {
     transform: translateY(-10px) rotate(var(--tilt, 0deg));
+  }
+}
+
+@keyframes invitation-countdown-roll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes invitation-countdown-box-pulse {
+  0%,
+  100% {
+    border-color: #d8e9df;
+    box-shadow: 0 10px 26px rgb(30 67 55 / 0.06);
+  }
+  50% {
+    border-color: #95d7b6;
+    box-shadow: 0 12px 34px rgb(15 123 98 / 0.16), 0 0 0 3px rgb(101 201 151 / 0.08);
   }
 }
 

@@ -5,17 +5,22 @@ import * as mammoth from "mammoth";
 import { extractText as extractPdfText, getDocumentProxy } from "unpdf";
 import { z } from "zod";
 import { chatJson, getAnalyzeConfig } from "@radikar/ai";
+import { normalizeIranianMobile } from "@radikar/validators";
 import {
   employerCandidates,
+  employerInvitationHistory,
   employerPositions,
   employerProfiles,
   employerResumeBank,
+  userNotifications,
+  users,
   type Database,
 } from "@radikar/database";
 import type { RadicoinService } from "../radicoin/service";
 import type { InterviewAgentClient } from "../ai/interview-agent";
-import { parseInterviewReport } from "../ai/interview-report";
+import { interviewTopicsSchema, parseInterviewReport } from "../ai/interview-report";
 import { createLegacyInterviewTurn, createLegacyInterviewClarification } from "../ai/interview-legacy";
+import type { InterviewInvitationDelivery } from "../notifications/otp-delivery";
 
 const positionSchema = z.object({
   title: z.string().trim().min(2).max(160),
@@ -28,26 +33,37 @@ const bankResumeIdSchema = z.object({ resumeId: z.uuid() });
 const bankImportSchema = z.object({ resumeIds: z.array(z.uuid()).min(1).max(100) });
 const reviewMethodSchema = z.object({ method: z.enum(["manual", "smart"]) });
 const inviteSchema = z.object({ candidateIds: z.array(z.uuid()).min(1).max(20), deadline: z.iso.datetime() });
+const renewInvitationSchema = z.object({ deadline: z.iso.datetime().optional() });
 const maxInterviewTurns = 12;
 const answerSchema = z.object({ answers: z.array(z.string().trim().max(8_000)).max(maxInterviewTurns) });
 const turnSchema = z.object({
-  questionIndex: z.number().int().min(0).max(maxInterviewTurns - 1),
+  questionIndex: z
+    .number()
+    .int()
+    .min(0)
+    .max(maxInterviewTurns - 1),
   answer: z.string().trim().min(10).max(8_000),
 });
 const clarificationInputSchema = z.object({
-  questionIndex: z.number().int().min(0).max(maxInterviewTurns - 1),
+  questionIndex: z
+    .number()
+    .int()
+    .min(0)
+    .max(maxInterviewTurns - 1),
   userMessage: z.string().trim().min(1).max(1_000),
 });
+const feedbackSharingSchema = z.object({ shared: z.boolean() });
 const interviewQuestionsSchema = z.object({ questions: z.array(z.string().trim().min(10).max(500)).length(5) });
 const interviewReportSchema = z.object({
   score: z.number().min(0).max(100),
   summary: z.string().trim().min(1).max(2000),
   strengths: z.array(z.string()).max(8),
   improvements: z.array(z.string()).max(8),
+  topics: interviewTopicsSchema.optional(),
 });
 const tokenSchema = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/) });
-const screeningCost = 5;
-const interviewCost = 5;
+const screeningCost = 14;
+const interviewCost = 84;
 const maxFiles = 100;
 const maxFileBytes = 5 * 1024 * 1024;
 const maxBatchBytes = 40 * 1024 * 1024;
@@ -99,7 +115,7 @@ function publicBankResume(resume: typeof employerResumeBank.$inferSelect) {
   void resumeText;
   return {
     ...safe,
-    specialty: specialtyOf(resume.resumeText),
+    specialty: resume.specialty ?? specialtyOf(resume.resumeText),
     hasOriginalFile: resume.fileData !== null,
   };
 }
@@ -223,13 +239,66 @@ function invitationKey(candidateId: string) {
   return `employer-interview:${candidateId}`;
 }
 
+function newInvitationReservationKey(candidateId: string) {
+  return `${invitationKey(candidateId)}:${randomUUID()}`;
+}
+
+function candidateReservationKey(
+  candidate: Pick<typeof employerCandidates.$inferSelect, "id" | "invitationReservationKey">,
+) {
+  return candidate.invitationReservationKey ?? invitationKey(candidate.id);
+}
+
 export function registerEmployerRoutes(
   app: FastifyInstance,
   db: Database,
   radicoin: RadicoinService,
   webAppUrl: string,
   interviewAgent?: InterviewAgentClient,
+  deliverInterviewInvitation?: InterviewInvitationDelivery,
 ) {
+  async function saveInterviewInvitationNotification(
+    userId: string,
+    candidateId: string,
+    position: typeof employerPositions.$inferSelect,
+  ) {
+    const now = new Date();
+    await db
+      .insert(userNotifications)
+      .values({
+        id: randomUUID(),
+        userId,
+        type: "interview_invitation",
+        sourceKey: invitationKey(candidateId),
+        title: `دعوت به مصاحبهٔ ${position.title}`,
+        message: `برای موقعیت «${position.title}» در «${position.companyName}» به مصاحبه دعوت شده‌ای.`,
+        href: `/interview-invites/${candidateId}`,
+        readAt: null,
+        createdAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [userNotifications.userId, userNotifications.sourceKey],
+        set: {
+          title: `دعوت به مصاحبهٔ ${position.title}`,
+          message: `برای موقعیت «${position.title}» در «${position.companyName}» به مصاحبه دعوت شده‌ای.`,
+          href: `/interview-invites/${candidateId}`,
+          readAt: null,
+          createdAt: now,
+        },
+      });
+  }
+
+  async function deliverInvitationSms(phone: string, token: string, request: FastifyRequest) {
+    if (!deliverInterviewInvitation) return "sms_unavailable" as const;
+    try {
+      await deliverInterviewInvitation({ phone, token });
+      return "sms_sent" as const;
+    } catch (error) {
+      request.log.warn({ err: error, phoneSuffix: phone.slice(-4) }, "Interview invitation SMS delivery failed");
+      return "sms_failed" as const;
+    }
+  }
+
   async function profileOf(userId: string) {
     const [profile] = await db.select().from(employerProfiles).where(eq(employerProfiles.userId, userId)).limit(1);
     return profile ?? null;
@@ -268,6 +337,20 @@ export function registerEmployerRoutes(
     return position ? { candidate, position } : null;
   }
 
+  async function cancelledInvitation(token: string, userId: string) {
+    const [invitation] = await db
+      .select({ id: employerInvitationHistory.id })
+      .from(employerInvitationHistory)
+      .where(
+        and(
+          eq(employerInvitationHistory.tokenHash, hash(token)),
+          eq(employerInvitationHistory.invitedUserId, userId),
+        ),
+      )
+      .limit(1);
+    return invitation ?? null;
+  }
+
   async function candidateSession(value: string, userId: string) {
     const found = tokenSchema.safeParse({ token: value }).success
       ? await invitedCandidate(value)
@@ -297,18 +380,18 @@ export function registerEmployerRoutes(
     questions = position.interviewQuestions ?? [],
     chatUuid?: string,
   ) {
+    const responses = questions.flatMap((question, index) =>
+      answers[index]?.trim() ? [{ question, answer: answers[index] }] : [],
+    );
+    if (!responses.length && incomplete) {
+      return {
+        score: 0,
+        summary: "نامزد پیش از ثبت پاسخ از مصاحبه خارج شد.",
+        strengths: [],
+        improvements: [],
+      };
+    }
     if (interviewAgent) {
-      const responses = questions.flatMap((question, index) =>
-        answers[index]?.trim() ? [{ question, answer: answers[index] }] : [],
-      );
-      if (!responses.length && incomplete) {
-        return {
-          score: 0,
-          summary: "نامزد پیش از پاسخ‌دادن به سؤال‌ها از مصاحبه خارج شد.",
-          strengths: [],
-          improvements: ["تکمیل پاسخ همهٔ سؤال‌های مصاحبه"],
-        };
-      }
       const report = parseInterviewReport(
         await interviewAgent.createReport(
           {
@@ -323,6 +406,7 @@ export function registerEmployerRoutes(
         score: incomplete ? Math.round((report.score * responses.length) / questions.length) : report.score,
         summary: incomplete ? `نامزد پیش از تکمیل مصاحبه خارج شد. ${report.summary}`.slice(0, 2_000) : report.summary,
         strengths: report.strengths,
+        topics: report.topics,
         improvements: incomplete
           ? [...report.improvements, "تکمیل پاسخ همهٔ سؤال‌های مصاحبه"].slice(0, 8)
           : report.improvements,
@@ -339,7 +423,7 @@ export function registerEmployerRoutes(
         },
         {
           role: "user",
-          content: `پوزیشن: ${position.title}\nشرح: ${position.description}\nسؤال‌ها و پاسخ‌ها: ${JSON.stringify(questions.map((question, index) => ({ question, answer: answers[index] ?? "" })))}\nJSON: {"score":number,"summary":string,"strengths":string[],"improvements":string[]}`,
+          content: `پوزیشن: ${position.title}\nشرح: ${position.description}\nسؤال‌ها و پاسخ‌ها: ${JSON.stringify(questions.map((question, index) => ({ question, answer: answers[index] ?? "" })))}\nحداکثر ۸ مبحث واقعاً پوشش‌داده‌شده را همراه با امتیاز ۰ تا ۱۰۰ و شاهد کوتاه از پاسخ نامزد ارزیابی کن.\nJSON: {"score":number,"summary":string,"strengths":string[],"improvements":string[],"topics":[{"title":string,"score":number,"evidence":string}]}`,
         },
       ],
       { maxOutputTokens: 1200, timeoutMs: 60_000 },
@@ -349,7 +433,10 @@ export function registerEmployerRoutes(
   }
 
   async function expireInvitation<
-    T extends Pick<typeof employerCandidates.$inferSelect, "id" | "invitationDeadline" | "invitationStatus">,
+    T extends Pick<
+      typeof employerCandidates.$inferSelect,
+      "id" | "invitationDeadline" | "invitationReservationKey" | "invitationStatus"
+    >,
   >(candidate: T, ownerUserId: string): Promise<T> {
     if (
       !candidate.invitationDeadline ||
@@ -359,7 +446,7 @@ export function registerEmployerRoutes(
       candidate.invitationStatus === "completed"
     )
       return candidate;
-    await radicoin.settleOperation(ownerUserId, invitationKey(candidate.id), "release");
+    await radicoin.settleOperation(ownerUserId, candidateReservationKey(candidate), "release");
     const [expired] = await db
       .update(employerCandidates)
       .set({ invitationStatus: "expired", updatedAt: new Date() })
@@ -419,6 +506,7 @@ export function registerEmployerRoutes(
         positionTitle: employerPositions.title,
         invitationStatus: employerCandidates.invitationStatus,
         invitationDeadline: employerCandidates.invitationDeadline,
+        invitationReservationKey: employerCandidates.invitationReservationKey,
         interviewScore: sql<number | null>`(${employerCandidates.interviewReport}->>'score')::int`,
         updatedAt: employerCandidates.updatedAt,
       })
@@ -444,7 +532,14 @@ export function registerEmployerRoutes(
       linked.push(association);
       byResume.set(association.resumeBankId, linked);
     }
-    return resumes.map((resume) => ({ ...publicBankResume(resume), positions: byResume.get(resume.id) ?? [] }));
+    return resumes.map((resume) => {
+      const positions = byResume.get(resume.id) ?? [];
+      return {
+        ...publicBankResume(resume),
+        positions,
+        canDelete: positions.every((position) => position.invitationStatus === "not_invited"),
+      };
+    });
   });
 
   app.post("/api/employer/resume-bank", async (request, reply) => {
@@ -500,6 +595,37 @@ export function registerEmployerRoutes(
     return resume;
   });
 
+  app.patch("/api/employer/resume-bank/:resumeId", async (request, reply) => {
+    if (!customer(request, reply)) return;
+    const { resumeId } = bankResumeIdSchema.parse(request.params);
+    const parsed = z
+      .object({
+        name: z.string().trim().max(160).nullable(),
+        specialty: z.string().trim().max(160).nullable(),
+        email: z.string().trim().email("ایمیل معتبر نیست.").max(254).nullable(),
+        phone: z.string().trim().max(32).nullable(),
+      })
+      .safeParse(request.body);
+    if (!parsed.success) return fail(reply, 422, parsed.error.issues[0]?.message ?? "اطلاعات رزومه معتبر نیست.");
+    const phone = parsed.data.phone ? normalizeIranianMobile(parsed.data.phone) : null;
+    if (parsed.data.phone && !phone) return fail(reply, 422, "شماره همراه معتبر نیست.");
+    const values = {
+      name: parsed.data.name || null,
+      specialty: parsed.data.specialty || null,
+      email: parsed.data.email || null,
+      phone,
+      updatedAt: new Date(),
+    };
+    const [resume] = await db
+      .update(employerResumeBank)
+      .set(values)
+      .where(and(eq(employerResumeBank.id, resumeId), eq(employerResumeBank.ownerUserId, request.auth!.user.id)))
+      .returning();
+    if (!resume) return fail(reply, 404, "رزومه پیدا نشد.");
+    await db.update(employerCandidates).set({ name: values.name, email: values.email, phone: values.phone, updatedAt: values.updatedAt }).where(eq(employerCandidates.resumeBankId, resume.id));
+    return { resume: publicBankResume(resume) };
+  });
+
   app.get("/api/employer/resume-bank/:resumeId/file", async (request, reply) => {
     if (!customer(request, reply)) return;
     const { resumeId } = bankResumeIdSchema.parse(request.params);
@@ -531,22 +657,7 @@ export function registerEmployerRoutes(
       .where(eq(employerCandidates.resumeBankId, resumeId));
     if (linked.some((candidate) => candidate.invitationStatus !== "not_invited"))
       return fail(reply, 409, "این رزومه در دعوت مصاحبه استفاده شده و برای حفظ سوابق قابل حذف نیست.");
-    const linkedPositionIds = [...new Set(linked.map((candidate) => candidate.positionId))];
-    if (linkedPositionIds.length) {
-      const positions = await db
-        .select({
-          id: employerPositions.id,
-          screeningStatus: employerPositions.screeningStatus,
-          ownerUserId: employerPositions.ownerUserId,
-        })
-        .from(employerPositions)
-        .where(inArray(employerPositions.id, linkedPositionIds));
-      if (
-        positions.some(
-          (position) => position.ownerUserId !== request.auth!.user.id || position.screeningStatus !== "not_started",
-        )
-      )
-        return fail(reply, 409, "این رزومه در پایش یک پوزیشن استفاده شده و برای حفظ نتیجه قابل حذف نیست.");
+    if (linked.length) {
       await db.delete(employerCandidates).where(
         inArray(
           employerCandidates.id,
@@ -797,6 +908,50 @@ export function registerEmployerRoutes(
     return candidate;
   });
 
+  app.patch("/api/employer/positions/:id/resumes/:candidateId/contact", async (request, reply) => {
+    if (!customer(request, reply)) return;
+    const { id, candidateId } = resumeIdSchema.parse(request.params);
+    const parsed = z.object({ phone: z.string().max(32) }).safeParse(request.body);
+    const phone = parsed.success ? normalizeIranianMobile(parsed.data.phone) : null;
+    if (!phone) return fail(reply, 422, "شماره همراه معتبر نیست.");
+    const position = await ownedPosition(id, request.auth!.user.id);
+    if (!position) return fail(reply, 404, "پوزیشن پیدا نشد.");
+    const updated = await db.transaction(async (tx) => {
+      const [candidate] = await tx
+        .select({ id: employerCandidates.id, resumeBankId: employerCandidates.resumeBankId })
+        .from(employerCandidates)
+        .where(and(eq(employerCandidates.id, candidateId), eq(employerCandidates.positionId, id)))
+        .limit(1);
+      if (!candidate) return null;
+      const now = new Date();
+      if (candidate.resumeBankId) {
+        const [resume] = await tx
+          .update(employerResumeBank)
+          .set({ phone, updatedAt: now })
+          .where(
+            and(
+              eq(employerResumeBank.id, candidate.resumeBankId),
+              eq(employerResumeBank.ownerUserId, request.auth!.user.id),
+            ),
+          )
+          .returning({ id: employerResumeBank.id });
+        if (!resume) return null;
+        await tx
+          .update(employerCandidates)
+          .set({ phone, updatedAt: now })
+          .where(eq(employerCandidates.resumeBankId, resume.id));
+      } else {
+        await tx
+          .update(employerCandidates)
+          .set({ phone, updatedAt: now })
+          .where(and(eq(employerCandidates.id, candidateId), eq(employerCandidates.positionId, id)));
+      }
+      return { candidateId, phone };
+    });
+    if (!updated) return fail(reply, 404, "رزومه یا نامزد پیدا نشد.");
+    return updated;
+  });
+
   app.get("/api/employer/positions/:id/resumes/:candidateId/file", async (request, reply) => {
     if (!customer(request, reply)) return;
     const { id, candidateId } = resumeIdSchema.parse(request.params);
@@ -1015,6 +1170,20 @@ export function registerEmployerRoutes(
     if (!eligible.length) return fail(reply, 422, "نامزد دعوت‌پذیری انتخاب نشده است.");
     if (eligible.length !== new Set(candidateIds).size)
       return fail(reply, 422, "بعضی رزومه‌های انتخاب‌شده پیدا نشدند یا قبلاً دعوت شده‌اند؛ فهرست را دوباره بررسی کن.");
+    if (eligible.some((candidate) => !normalizeIranianMobile(candidate.phone ?? "")))
+      return fail(reply, 422, "برای ساخت دعوت، شماره همراه معتبر همهٔ نامزدهای انتخاب‌شده را ثبت کن.");
+    const candidatePhones = eligible.map((candidate) => normalizeIranianMobile(candidate.phone!)!);
+    const matchingAccounts = await db
+      .select({ id: users.id, phone: users.phone, accountType: users.accountType })
+      .from(users)
+      .where(inArray(users.phone, candidatePhones));
+    if (matchingAccounts.some((account) => account.accountType !== "candidate"))
+      return fail(reply, 422, "شماره همراه یکی از نامزدها متعلق به حساب کارفرمایی است و قابل دعوت نیست.");
+    const candidateAccountByPhone = new Map(
+      matchingAccounts
+        .filter((account) => account.accountType === "candidate" && account.phone)
+        .map((account) => [account.phone!, account]),
+    );
     const wallet = await radicoin.getWallet(position.ownerUserId, 0);
     if ((wallet.wallet?.availableCoins ?? 0) < eligible.length * interviewCost)
       return reply
@@ -1062,46 +1231,54 @@ export function registerEmployerRoutes(
         .set({ interviewQuestions: questions, updatedAt: new Date() })
         .where(eq(employerPositions.id, id));
     }
-    const reserved: string[] = [];
+    const reserved = new Map<string, string>();
     try {
       for (const candidate of eligible) {
+        const reservationKey = newInvitationReservationKey(candidate.id);
         if (
           !(await radicoin.reserveOperation(
             position.ownerUserId,
             interviewCost,
-            invitationKey(candidate.id),
+            reservationKey,
             "رزرو مصاحبهٔ شغلی",
           ))
         )
           throw new Error("رزرو اعتبار این نامزد قبلاً نهایی شده است.");
-        reserved.push(candidate.id);
+        reserved.set(candidate.id, reservationKey);
       }
     } catch (error) {
       await Promise.all(
-        reserved.map((candidateId) =>
-          radicoin.settleOperation(position.ownerUserId, invitationKey(candidateId), "release"),
+        [...reserved.values()].map((reservationKey) =>
+          radicoin.settleOperation(position.ownerUserId, reservationKey, "release"),
         ),
       );
       throw error;
     }
-    const invitations = [];
-    for (const candidate of eligible) {
+    const invitations = await Promise.all(eligible.map(async (candidate) => {
       const token = randomBytes(32).toString("hex");
+      const phone = normalizeIranianMobile(candidate.phone!)!;
+      const account = candidateAccountByPhone.get(phone);
       await db
         .update(employerCandidates)
         .set({
           invitationTokenHash: hash(token),
+          invitationReservationKey: reserved.get(candidate.id),
           invitationDeadline: deadlineDate,
           invitationStatus: "invited",
+          invitedUserId: account?.id ?? null,
           updatedAt: new Date(),
         })
         .where(eq(employerCandidates.id, candidate.id));
-      invitations.push({
+      const delivery = account
+        ? await saveInterviewInvitationNotification(account.id, candidate.id, position).then(() => "in_app" as const)
+        : await deliverInvitationSms(phone, token, request);
+      return {
         candidateId: candidate.id,
         name: candidate.name,
         url: `${webAppUrl}/interview-invites/${token}`,
-      });
-    }
+        delivery,
+      };
+    }));
     await db
       .update(employerPositions)
       .set({
@@ -1116,6 +1293,7 @@ export function registerEmployerRoutes(
   app.post("/api/employer/positions/:id/invitations/:candidateId/link", async (request, reply) => {
     if (!customer(request, reply)) return;
     const { id, candidateId } = z.object({ id: z.uuid(), candidateId: z.uuid() }).parse(request.params);
+    const { deadline } = renewInvitationSchema.parse(request.body ?? {});
     const position = await ownedPosition(id, request.auth!.user.id);
     if (!position) return fail(reply, 404, "پوزیشن پیدا نشد.");
     const [candidate] = await db
@@ -1125,28 +1303,153 @@ export function registerEmployerRoutes(
       .limit(1);
     if (!candidate) return fail(reply, 404, "نامزد پیدا نشد.");
     const current = await expireInvitation(candidate, position.ownerUserId);
-    if (!["invited", "accepted", "started"].includes(current.invitationStatus))
+    if (!["invited", "accepted", "started", "expired", "completed"].includes(current.invitationStatus))
       return fail(reply, 409, "دعوت فعال برای این نامزد وجود ندارد.");
+    const restartingInterview = current.invitationStatus === "completed";
+    const replacingUnusedInvitation = ["invited", "accepted"].includes(current.invitationStatus);
+    const renewingInvitation = current.invitationStatus === "expired" || restartingInterview;
+    const deadlineDate = deadline ? new Date(deadline) : null;
+    if (renewingInvitation && !deadlineDate)
+      return fail(reply, 422, "برای ارسال مجدد دعوت، مهلت تازهٔ مصاحبه را مشخص کن.");
+    if (deadlineDate && deadlineDate.getTime() < Date.now() + 60 * 60_000)
+      return fail(reply, 422, "مهلت مصاحبه باید دست‌کم یک ساعت از اکنون بیشتر باشد.");
+    if (!normalizeIranianMobile(current.phone ?? ""))
+      return fail(reply, 409, "برای ساخت لینک دعوت، ابتدا شماره همراه معتبر نامزد را ثبت کن.");
+    const phone = normalizeIranianMobile(current.phone!)!;
+    const [account] = await db
+      .select({ id: users.id, accountType: users.accountType })
+      .from(users)
+      .where(eq(users.phone, phone))
+      .limit(1);
+    if (account?.accountType === "employer")
+      return fail(reply, 409, "شماره همراه این نامزد متعلق به حساب کارفرمایی است و قابل دعوت نیست.");
     const token = randomBytes(32).toString("hex");
+    const reservationKey = renewingInvitation ? newInvitationReservationKey(candidate.id) : null;
+    if (
+      reservationKey &&
+      !(await radicoin.reserveOperation(
+        position.ownerUserId,
+        interviewCost,
+        reservationKey,
+        "رزرو مجدد مصاحبهٔ شغلی",
+      ))
+    )
+      return fail(reply, 409, "رزرو اعتبار این دعوت قبلاً انجام شده است.");
+    const updated = await db.transaction(async (tx) => {
+      const now = new Date();
+      if (replacingUnusedInvitation && current.invitationTokenHash) {
+        await tx.insert(employerInvitationHistory).values({
+          id: randomUUID(),
+          candidateId: current.id,
+          positionId: current.positionId,
+          invitedUserId: current.invitedUserId,
+          tokenHash: current.invitationTokenHash,
+          deadline: current.invitationDeadline,
+          status: "cancelled",
+          createdAt: current.updatedAt,
+          cancelledAt: now,
+        });
+      }
+      const [next] = await tx
+        .update(employerCandidates)
+        .set({
+          invitationTokenHash: hash(token),
+          ...(deadlineDate ? { invitationDeadline: deadlineDate } : {}),
+          ...(reservationKey ? { invitationReservationKey: reservationKey } : {}),
+          ...(restartingInterview
+            ? {
+                interviewAnswers: null,
+                conversationQuestions: null,
+                conversationReplies: null,
+                conversationClarifications: null,
+                agentChatUuid: null,
+                interviewReport: null,
+                interviewFeedbackSharedAt: null,
+              }
+            : {}),
+          ...(renewingInvitation
+            ? { invitedUserId: account?.id ?? null, invitationStatus: "invited" as const }
+            : account
+              ? {
+                  invitedUserId: account.id,
+                  invitationStatus: current.invitationStatus,
+                }
+              : {}),
+          updatedAt: now,
+        })
+        .where(and(
+          eq(employerCandidates.id, candidateId),
+          eq(employerCandidates.invitationStatus, current.invitationStatus),
+        ))
+        .returning({ id: employerCandidates.id });
+      if (!next) throw new Error("INVITATION_STATUS_CHANGED");
+      return next;
+    }).catch(async (error: unknown) => {
+      if (reservationKey) await radicoin.settleOperation(position.ownerUserId, reservationKey, "release");
+      if (error instanceof Error && error.message === "INVITATION_STATUS_CHANGED") return null;
+      throw error;
+    });
+    if (!updated) {
+      if (reservationKey) await radicoin.settleOperation(position.ownerUserId, reservationKey, "release");
+      return fail(reply, 409, "وضعیت دعوت تغییر کرده است. صفحه را به‌روز کن و دوباره تلاش کن.");
+    }
+    const delivery = account
+      ? await saveInterviewInvitationNotification(account.id, candidate.id, position).then(() => "in_app" as const)
+      : await deliverInvitationSms(phone, token, request);
+    return { candidateId, name: candidate.name, url: `${webAppUrl}/interview-invites/${token}`, delivery };
+  });
+
+  app.patch("/api/employer/positions/:id/interviews/:candidateId/feedback-sharing", async (request, reply) => {
+    if (!customer(request, reply)) return;
+    const { id, candidateId } = resumeIdSchema.parse(request.params);
+    const { shared } = feedbackSharingSchema.parse(request.body);
+    const position = await ownedPosition(id, request.auth!.user.id);
+    if (!position) return fail(reply, 404, "پوزیشن پیدا نشد.");
+    const [candidate] = await db
+      .select({
+        id: employerCandidates.id,
+        invitationStatus: employerCandidates.invitationStatus,
+        interviewReport: employerCandidates.interviewReport,
+      })
+      .from(employerCandidates)
+      .where(and(eq(employerCandidates.id, candidateId), eq(employerCandidates.positionId, id)))
+      .limit(1);
+    if (!candidate) return fail(reply, 404, "نامزد پیدا نشد.");
+    if (candidate.invitationStatus !== "completed" || !candidate.interviewReport)
+      return fail(reply, 409, "گزارش مصاحبه هنوز آماده نشده است.");
+    const sharedAt = shared ? new Date() : null;
     await db
       .update(employerCandidates)
-      .set({ invitationTokenHash: hash(token), updatedAt: new Date() })
-      .where(eq(employerCandidates.id, candidateId));
-    return { candidateId, name: candidate.name, url: `${webAppUrl}/interview-invites/${token}` };
+      .set({ interviewFeedbackSharedAt: sharedAt, updatedAt: new Date() })
+      .where(eq(employerCandidates.id, candidate.id));
+    return { candidateId, shared, sharedAt };
   });
 
   const getInvitation = async (request: FastifyRequest, reply: FastifyReply) => {
     if (!customer(request, reply, "candidate")) return;
     const { value } = z.object({ value: z.string() }).parse(request.params);
     const found = await candidateSession(value, request.auth!.user.id);
-    if (!found) return fail(reply, 404, "دعوت‌نامه پیدا نشد.");
+    if (!found) {
+      const cancelled = tokenSchema.safeParse({ token: value }).success
+        ? await cancelledInvitation(value, request.auth!.user.id)
+        : null;
+      return cancelled
+        ? fail(reply, 410, "این دعوت‌نامه لغو شده است؛ از لینک تازه‌ای که کارفرما فرستاده استفاده کن.")
+        : fail(reply, 404, "دعوت‌نامه پیدا نشد.");
+    }
     const { position } = found;
     const candidate = await expireInvitation(found.candidate, position.ownerUserId);
+    const ownsInvitation = candidate.invitedUserId === request.auth?.user.id;
+    const canViewReport = ownsInvitation && candidate.invitationStatus === "completed";
+    const feedbackShared = canViewReport && candidate.interviewFeedbackSharedAt !== null;
+    const reportReady = canViewReport && Boolean(candidate.interviewReport);
+    const report = feedbackShared ? candidate.interviewReport : null;
     return {
       companyName: position.companyName,
       title: position.title,
       deadline: candidate.invitationDeadline,
       status: candidate.invitationStatus,
+      owned: ownsInvitation,
       questions:
         candidate.invitedUserId === request.auth?.user.id
           ? (candidate.conversationQuestions ?? position.interviewQuestions)
@@ -1154,6 +1457,9 @@ export function registerEmployerRoutes(
       answers: candidate.invitedUserId === request.auth?.user.id ? candidate.interviewAnswers : null,
       replies: candidate.invitedUserId === request.auth?.user.id ? candidate.conversationReplies : null,
       clarifications: candidate.invitedUserId === request.auth?.user.id ? candidate.conversationClarifications : null,
+      report,
+      reportReady,
+      feedbackShared,
     };
   };
   app.get("/api/employer/invitations/:value", getInvitation);
@@ -1163,7 +1469,12 @@ export function registerEmployerRoutes(
     if (!customer(request, reply, "candidate")) return;
     const { token } = tokenSchema.parse(request.params);
     const found = await invitedCandidate(token);
-    if (!found) return fail(reply, 404, "دعوت‌نامه پیدا نشد.");
+    if (!found) {
+      const cancelled = await cancelledInvitation(token, request.auth!.user.id);
+      return cancelled
+        ? fail(reply, 410, "این دعوت‌نامه لغو شده است؛ از لینک تازه‌ای که کارفرما فرستاده استفاده کن.")
+        : fail(reply, 404, "دعوت‌نامه پیدا نشد.");
+    }
     const { candidate } = found;
     if (!candidate.invitationDeadline || candidate.invitationDeadline < new Date()) {
       await expireInvitation(candidate, found.position.ownerUserId);
@@ -1171,10 +1482,15 @@ export function registerEmployerRoutes(
     }
     if (candidate.invitedUserId && candidate.invitedUserId !== request.auth!.user.id)
       return fail(reply, 403, "این دعوت‌نامه برای حساب دیگری پذیرفته شده است.");
+    const invitedPhone = normalizeIranianMobile(candidate.phone ?? "");
+    const accountPhone = normalizeIranianMobile(request.auth!.user.phone ?? "");
+    if (!invitedPhone) return fail(reply, 409, "شماره همراه نامزد برای این دعوت ثبت نشده است.");
+    if (!accountPhone || accountPhone !== invitedPhone)
+      return fail(reply, 403, "این دعوت‌نامه فقط با شماره همراه ثبت‌شده برای نامزد قابل استفاده است.");
     if (!candidate.invitedUserId)
       await db
         .update(employerCandidates)
-        .set({ invitedUserId: request.auth!.user.id, invitationStatus: "accepted", updatedAt: new Date() })
+        .set({ invitedUserId: request.auth!.user.id, invitationStatus: "invited", updatedAt: new Date() })
         .where(eq(employerCandidates.id, candidate.id));
     return { accepted: true };
   });
@@ -1200,7 +1516,12 @@ export function registerEmployerRoutes(
     const firstEmpty = saved.findIndex((item) => !item.trim());
     const answered = firstEmpty < 0 ? saved : saved.slice(0, firstEmpty);
     if (questionIndex < answered.length && answered[questionIndex] === answer) {
-      return { questions, answers: answered, replies, complete: answered.length === questions.length && Boolean(replies[questionIndex]) };
+      return {
+        questions,
+        answers: answered,
+        replies,
+        complete: answered.length === questions.length && Boolean(replies[questionIndex]),
+      };
     }
     if (questionIndex !== answered.length || questionIndex >= questions.length)
       return fail(reply, 409, "ترتیب گفت‌وگو تغییر کرده است؛ صفحه را تازه کن.");
@@ -1231,17 +1552,20 @@ export function registerEmployerRoutes(
           : await createLegacyInterviewTurn(turn, { maxOutputTokens: 300, timeoutMs: 45_000 });
         if (response.complete || nextAnswers.length >= maxInterviewTurns) nextQuestions.length = nextAnswers.length;
         else nextQuestions[questionIndex + 1] = response.question;
-        nextReplies[questionIndex] = nextAnswers.length >= maxInterviewTurns && !response.complete
-          ? "ممنون از وقتی که برای این گفت‌وگو گذاشتی. مصاحبه به پایان رسید و پاسخ‌هایت بررسی می‌شوند."
-          : response.reply;
+        nextReplies[questionIndex] =
+          nextAnswers.length >= maxInterviewTurns && !response.complete
+            ? "ممنون از وقتی که برای این گفت‌وگو گذاشتی. مصاحبه به پایان رسید و پاسخ‌هایت بررسی می‌شوند."
+            : response.reply;
       } catch (error) {
         request.log.warn({ err: error, candidateId: candidate.id }, "Adaptive interview turn failed");
         if (interviewAgent) return fail(reply, 502, "پاسخ مصاحبه‌گر آماده نشد؛ دوباره تلاش کن.");
         if (nextAnswers.length >= maxInterviewTurns) {
           nextQuestions.length = nextAnswers.length;
-          nextReplies[questionIndex] = "ممنون از وقتی که برای این گفت‌وگو گذاشتی. مصاحبه به پایان رسید و پاسخ‌هایت بررسی می‌شوند.";
+          nextReplies[questionIndex] =
+            "ممنون از وقتی که برای این گفت‌وگو گذاشتی. مصاحبه به پایان رسید و پاسخ‌هایت بررسی می‌شوند.";
         } else {
-          nextQuestions[questionIndex + 1] = questions[questionIndex + 1] ?? "از یک تصمیم فنی و نتیجهٔ آن در کار تیمی می‌گویی؟";
+          nextQuestions[questionIndex + 1] =
+            questions[questionIndex + 1] ?? "از یک تصمیم فنی و نتیجهٔ آن در کار تیمی می‌گویی؟";
           nextReplies[questionIndex] = "ممنون که توضیح دادی. برای شناخت بهتر تجربه‌ات ادامه بدهیم.";
         }
       }
@@ -1336,8 +1660,7 @@ export function registerEmployerRoutes(
       return fail(reply, 410, "مهلت مصاحبه به پایان رسیده است.");
     }
     if (candidate.invitationStatus === "completed") return fail(reply, 409, "مصاحبه قبلاً تکمیل شده است.");
-    if (answers.length > maxInterviewTurns)
-      return fail(reply, 422, "تعداد پاسخ‌ها معتبر نیست.");
+    if (answers.length > maxInterviewTurns) return fail(reply, 422, "تعداد پاسخ‌ها معتبر نیست.");
     await db
       .update(employerCandidates)
       .set({ interviewAnswers: answers, invitationStatus: "started", updatedAt: new Date() })
@@ -1356,7 +1679,7 @@ export function registerEmployerRoutes(
     if (candidate.invitedUserId !== request.auth!.user.id)
       return fail(reply, 403, "این مصاحبه متعلق به حساب شما نیست.");
     if (candidate.invitationStatus === "completed") {
-      await radicoin.settleOperation(position.ownerUserId, invitationKey(candidate.id), "commit");
+      await radicoin.settleOperation(position.ownerUserId, candidateReservationKey(candidate), "commit");
       return { completed: true };
     }
     if (!candidate.invitationDeadline || candidate.invitationDeadline < new Date()) {
@@ -1382,7 +1705,7 @@ export function registerEmployerRoutes(
         updatedAt: new Date(),
       })
       .where(eq(employerCandidates.id, candidate.id));
-    await radicoin.settleOperation(position.ownerUserId, invitationKey(candidate.id), "commit");
+    await radicoin.settleOperation(position.ownerUserId, candidateReservationKey(candidate), "commit");
     return { completed: true };
   };
   app.post("/api/employer/invitations/:value/complete", completeInterview);
@@ -1403,8 +1726,7 @@ export function registerEmployerRoutes(
       await expireInvitation(candidate, position.ownerUserId);
       return fail(reply, 410, "مهلت مصاحبه به پایان رسیده است.");
     }
-    if (answers.length > maxInterviewTurns)
-      return fail(reply, 422, "تعداد پاسخ‌ها معتبر نیست.");
+    if (answers.length > maxInterviewTurns) return fail(reply, 422, "تعداد پاسخ‌ها معتبر نیست.");
 
     let report: z.infer<typeof interviewReportSchema>;
     try {
@@ -1432,7 +1754,7 @@ export function registerEmployerRoutes(
         updatedAt: new Date(),
       })
       .where(eq(employerCandidates.id, candidate.id));
-    await radicoin.settleOperation(position.ownerUserId, invitationKey(candidate.id), "commit");
+    await radicoin.settleOperation(position.ownerUserId, candidateReservationKey(candidate), "commit");
     return { completed: true, exitedEarly: true };
   };
   app.post("/api/employer/invitations/:value/exit", exitInterview);
@@ -1454,7 +1776,23 @@ export function registerEmployerRoutes(
         return position ? expireInvitation(candidate, position.ownerUserId) : candidate;
       }),
     );
-    return current
+    const cancelled = await db
+      .select({
+        id: employerInvitationHistory.id,
+        positionId: employerInvitationHistory.positionId,
+        deadline: employerInvitationHistory.deadline,
+        status: employerInvitationHistory.status,
+        cancelledAt: employerInvitationHistory.cancelledAt,
+      })
+      .from(employerInvitationHistory)
+      .where(eq(employerInvitationHistory.invitedUserId, request.auth!.user.id));
+    const cancelledPositionIds = [...new Set(cancelled.map((invitation) => invitation.positionId))];
+    const cancelledPositions = cancelledPositionIds.length
+      ? await db.select().from(employerPositions).where(inArray(employerPositions.id, cancelledPositionIds))
+      : [];
+    const cancelledByPositionId = new Map(cancelledPositions.map((position) => [position.id, position]));
+    return [
+      ...current
       .filter((candidate) => candidate.invitationStatus !== "not_invited")
       .map((candidate) => ({
         id: candidate.id,
@@ -1462,6 +1800,19 @@ export function registerEmployerRoutes(
         companyName: byId.get(candidate.positionId)?.companyName ?? "",
         status: candidate.invitationStatus,
         deadline: candidate.invitationDeadline,
-      }));
+      })),
+      ...cancelled.flatMap((invitation) => {
+        const position = cancelledByPositionId.get(invitation.positionId);
+        if (!position) return [];
+        return [{
+          id: `cancelled-${invitation.id}`,
+          title: position.title,
+          companyName: position.companyName,
+          status: invitation.status,
+          deadline: invitation.deadline,
+          cancelledAt: invitation.cancelledAt,
+        }];
+      }),
+    ];
   });
 }

@@ -24,6 +24,8 @@ import { ProductTimelineService } from "./modules/product-timeline/service";
 import type { InterviewAgentClient } from "./modules/ai/interview-agent";
 import { registerEmployerRoutes } from "./modules/employer/routes";
 import { registerSupportRoutes } from "./modules/support/routes";
+import { registerNotificationRoutes } from "./modules/notifications/routes";
+import type { InterviewInvitationDelivery } from "./modules/notifications/otp-delivery";
 
 type BuildAppOptions = {
   fastifyFactory?: typeof Fastify;
@@ -47,6 +49,7 @@ type BuildAppOptions = {
   exposeReversedOtp?: boolean;
   interviewAgent?: InterviewAgentClient;
   interviewChatSecret?: string;
+  deliverInterviewInvitation?: InterviewInvitationDelivery;
 };
 
 const fallbackInterviewChatSecret = randomBytes(32).toString("hex");
@@ -76,6 +79,7 @@ export function buildApp({
   exposeReversedOtp = false,
   interviewAgent,
   interviewChatSecret = fallbackInterviewChatSecret,
+  deliverInterviewInvitation,
 }: BuildAppOptions) {
   const app = fastifyFactory({
     logger,
@@ -177,7 +181,16 @@ export function buildApp({
   if (jobPoolService) registerJobPoolRoutes(app, jobPoolService);
   if (database) registerProductTimelineRoutes(app, new ProductTimelineService(database));
   if (database) registerSupportRoutes(app, database);
-  if (database && radicoinService) registerEmployerRoutes(app, database, radicoinService, webAppUrl, interviewAgent);
+  if (database) registerNotificationRoutes(app, database);
+  if (database && radicoinService)
+    registerEmployerRoutes(
+      app,
+      database,
+      radicoinService,
+      webAppUrl,
+      interviewAgent,
+      deliverInterviewInvitation,
+    );
 
   app.setNotFoundHandler((request, reply) =>
     reply.code(404).send({

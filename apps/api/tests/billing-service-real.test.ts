@@ -290,6 +290,7 @@ test("BillingService atomically consumes, refunds and protects every usage resou
     const id = await user(sql, "09120000102");
     const billing = new BillingService(database, options);
     await billing.ensureSignupMembership(id);
+    await sql`update user_memberships set interview_credits_remaining = 1 where user_id = ${id}`;
     const costs = { resume: 1, pdf: 1, ai: 1, match: 1, interview: 1 } as const;
     await billing.consumeUsage(id, costs, "all-resources", "consume-1");
     const afterConsume = (
@@ -508,7 +509,7 @@ test("Radicoin daily rewards and plan redemption stay idempotent in PostgreSQL",
     const wallet = (
       await sql`select available_coins, lifetime_spent_coins from radicoin_wallets where user_id = ${id}`
     )[0];
-    assert.deepEqual([Number(wallet.available_coins), Number(wallet.lifetime_spent_coins)], [2_002, 1_000]);
+    assert.deepEqual([Number(wallet.available_coins), Number(wallet.lifetime_spent_coins)], [2_453, 549]);
     assert.equal(
       (
         await sql`select count(*)::int as count from radicoin_transactions where user_id = ${id} and source = 'redemption'`
@@ -599,7 +600,7 @@ test("Hybrid checkout reserves, commits and releases Radicoins atomically", { ti
     );
     assert.equal(successful.checkout, "gateway");
     if (successful.checkout !== "gateway") throw new Error("expected hybrid gateway checkout");
-    assert.deepEqual([successful.appliedCoins, successful.amountRials], [400, 2_994_000]);
+    assert.deepEqual([successful.appliedCoins, successful.amountRials], [400, 1_490_000]);
     const replay = await billing.createOrder(
       successfulUser,
       "09120000107",

@@ -46,7 +46,11 @@ describe("InterviewConversation", () => {
     vi.useFakeTimers();
     try {
       const { rerender } = render(
-        <InterviewConversation {...baseProps} ready={false} readinessMessages={[{ text: "نه", sentAt: "2026-11-10T12:00:00.000Z" }]}>
+        <InterviewConversation
+          {...baseProps}
+          ready={false}
+          readinessMessages={[{ text: "نه", sentAt: "2026-11-10T12:00:00.000Z" }]}
+        >
           <form />
         </InterviewConversation>,
       );
@@ -83,21 +87,45 @@ describe("InterviewConversation", () => {
         <form />
       </InterviewConversation>,
     );
-    const bubble = screen.getByText("سؤال دوم؟").closest("p")!;
-    expect(bubble.querySelector("br")).not.toBeNull();
-    expect(bubble).toContainElement(screen.getByText("متوجه شدم."));
-    expect(screen.getAllByText("متوجه شدم.")).toHaveLength(1);
+    const question = screen.getByText("متوجه شدم. سؤال دوم؟");
+    const bubble = question.closest("p")!;
+    expect(question.textContent).toBe("متوجه شدم.\nسؤال دوم؟");
+    expect(bubble).toHaveClass("whitespace-pre-wrap");
     expect(bubble.className).not.toContain("bg-");
     expect(screen.getByText("پاسخ اول").closest("p")?.className).toContain("bg-[#e9f4ee]");
     expect(screen.getByText("پاسخ اول").closest(".group")?.querySelector("time")).toHaveAttribute(
       "datetime",
       "2026-11-10T12:00:00.000Z",
     );
-    expect(screen.getByText("سؤال دوم؟").closest(".group")?.querySelector('span[aria-label="مصاحبه‌گر"]')).not.toBeNull();
+    expect(question.closest(".group")?.querySelector('span[aria-label="مصاحبه‌گر"]')).not.toBeNull();
     expect(screen.getByText("پاسخ اول").closest(".group")?.querySelector('span[aria-label="کاربر"]')).not.toBeNull();
     expect(bubble.closest(".group")?.querySelector("time")).toHaveAttribute("datetime", "2026-11-10T12:01:00.000Z");
-    expect(screen.getByText("پاسخ اول").closest(".group")?.querySelector("time")?.className).toContain("right-[calc(100%+0.5rem)]");
-    expect(screen.getByText("پاسخ اول").closest(".group")?.querySelector(".transition-transform")?.className).toContain("group-hover:-translate-x-9");
+    expect(screen.getByText("پاسخ اول").closest(".group")?.querySelector("time")?.className).toContain(
+      "right-[calc(100%+0.5rem)]",
+    );
+    expect(screen.getByText("پاسخ اول").closest(".group")?.querySelector(".transition-transform")?.className).toContain(
+      "group-hover:-translate-x-9",
+    );
+  });
+
+  it("reveals a new interviewer message progressively", () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <InterviewConversation {...baseProps}>
+          <form />
+        </InterviewConversation>,
+      );
+      const typing = screen.getByTestId("interviewer-typing");
+      expect(typing.textContent).toBe("");
+      act(() => vi.advanceTimersByTime(96));
+      expect(typing.textContent?.length).toBeGreaterThan(0);
+      expect(typing.textContent?.length).toBeLessThan(baseProps.questions[0].length);
+      act(() => vi.advanceTimersByTime(5000));
+      expect(typing.textContent).toBe(baseProps.questions[0]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("keeps the composer below the scroll area and only follows new messages near the bottom", () => {

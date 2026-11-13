@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createProviderOtpDelivery, OtpProviderClient, OtpProviderError } from "../src/modules/notifications/otp-delivery";
+import {
+  createProviderInterviewInvitationDelivery,
+  createProviderOtpDelivery,
+  OtpProviderClient,
+  OtpProviderError,
+} from "../src/modules/notifications/otp-delivery";
 
 test("OTP provider client sends the active adapter's Verify request", async () => {
   let requestUrl = "";
@@ -75,5 +80,29 @@ test("OTP provider delivery sends the code as the template token", async () => {
     receptor: "09121234567",
     token: "123456",
     template: "radikarlogin",
+  });
+});
+
+test("interview invitation delivery sends the invite token with its approved template", async () => {
+  let requestBody: unknown;
+  const client = new OtpProviderClient({
+    provider: "kavenegar",
+    apiKey: "private-api-key",
+    template: "radikarlogin",
+    fetcher: async (_input, init) => {
+      requestBody = Object.fromEntries(new URLSearchParams(String(init?.body)));
+      return Response.json({ return: { status: 200 }, entries: [{ messageid: 2, cost: 120 }] });
+    },
+  });
+
+  await createProviderInterviewInvitationDelivery(client, "radikarinterview")({
+    phone: "09121234567",
+    token: "a".repeat(64),
+  });
+
+  assert.deepEqual(requestBody, {
+    receptor: "09121234567",
+    token: "a".repeat(64),
+    template: "radikarinterview",
   });
 });

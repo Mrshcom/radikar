@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { InterviewAgentClient, interviewClarificationPrompt, interviewTurnPrompt } from "../src/modules/ai/interview-agent";
+import {
+  InterviewAgentClient,
+  interviewClarificationPrompt,
+  interviewTurnPrompt,
+} from "../src/modules/ai/interview-agent";
 import { signInterviewChat, verifyInterviewChat } from "../src/modules/ai/interview-chat-token";
 
 const uuid = "9b2f6c1e-4d7a-4b8e-a1f3-2c5d8e9f0a1b";
@@ -20,6 +24,20 @@ test("stateless fallback keeps only recent turns and shifts topic", () => {
   assert.doesNotMatch(prompt, /پرسش محور 1/);
   assert.match(prompt, /پرسش محور 7/);
   assert.match(prompt, /تجربهٔ مستقل در حل یک مسئلهٔ متفاوت/);
+});
+
+test("expired user time asks the interviewer to close without another question", () => {
+  const input = {
+    mode: "مصاحبه جامع",
+    nextTopic: "تجربهٔ همکاری تیمی چیست؟",
+    targetTimeReached: true,
+    history: [{ question: "از تجربه‌ات بگو.", answer: "با تیم یک راهکار را پیاده کردم." }],
+  };
+  for (const stateful of [false, true]) {
+    const prompt = interviewTurnPrompt(input, stateful);
+    assert.match(prompt, /complete=true/);
+    assert.match(prompt, /question=""/);
+  }
 });
 
 test("stateful turn sends the new answer without resending earlier questions or instructions", () => {
@@ -503,7 +521,10 @@ test("agent interview rejects failed and malformed replies, and completes short 
 
 test("agent interview accepts JSON wrapped in a code fence or a short explanation", async () => {
   const payload = JSON.stringify({ questions: ["یک؟", "دو؟", "سه؟", "چهار؟"], cards: [] });
-  for (const reply of [`\uFEFF\n\`\`\`json\n${payload}\n\`\`\``, `موضوع‌ها آماده‌اند:\n${payload}\nمی‌توانیم شروع کنیم.`]) {
+  for (const reply of [
+    `\uFEFF\n\`\`\`json\n${payload}\n\`\`\``,
+    `موضوع‌ها آماده‌اند:\n${payload}\nمی‌توانیم شروع کنیم.`,
+  ]) {
     const fetcher = (async () => envelope({ uuid, status: "completed", reply })) as typeof fetch;
     const session = await client(fetcher).createSession({ resume: {}, knowledge: {}, mode: "جامع" });
     assert.deepEqual(session.questions, ["یک؟", "دو؟", "سه؟", "چهار؟"]);

@@ -12,9 +12,21 @@ import {
 import type { PaymentGateway } from "./payment-gateway-types";
 
 export const radicoinPacks = [
-  { id: "radicoin-100", name: "بسته شروع", coins: 100, amountRials: 599_000 },
-  { id: "radicoin-500", name: "بسته رشد", coins: 500, amountRials: 2_690_000 },
-  { id: "radicoin-1000", name: "بسته حرفه‌ای", coins: 1_000, amountRials: 4_990_000 },
+  { id: "radicoin-25", name: "کیسهٔ رادیکوین", coins: 25, amountRials: 250_000 },
+  {
+    id: "radicoin-150",
+    name: "صندوق رادیکوین",
+    coins: 150,
+    amountRials: 1_390_000,
+    originalAmountRials: 1_500_000,
+  },
+  {
+    id: "radicoin-500",
+    name: "خزانهٔ رادیکوین",
+    coins: 500,
+    amountRials: 3_990_000,
+    originalAmountRials: 5_000_000,
+  },
 ] as const;
 
 export class RadicoinPackError extends Error {

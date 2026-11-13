@@ -19,6 +19,20 @@ export function normalizeDigits(value: string) {
   });
 }
 
+export function normalizeIranianMobile(value: string): string | null {
+  const compact = normalizeDigits(value)
+    .trim()
+    .replace(/[\s\u200c-]/g, "");
+  const phone = compact.startsWith("+98")
+    ? `0${compact.slice(3)}`
+    : compact.startsWith("0098")
+      ? `0${compact.slice(4)}`
+      : compact.startsWith("9")
+        ? `0${compact}`
+        : compact;
+  return /^09\d{9}$/.test(phone) ? phone : null;
+}
+
 export function normalizeDigitsDeep<T>(value: T): T {
   if (typeof value === "string") return normalizeDigits(value) as T;
   if (Array.isArray(value)) return value.map(normalizeDigitsDeep) as T;

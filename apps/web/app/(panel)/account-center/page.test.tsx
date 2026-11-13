@@ -44,9 +44,10 @@ describe("AccountCenterPage", () => {
       "href",
       "/settings",
     );
+    expect(within(billing!).getByRole("link", { name: /خرید رادیکوین/ })).toHaveAttribute("href", "/radicoins/buy");
     expect(within(billing!).getByRole("link", { name: /سفارش‌ها و پرداخت‌ها/ })).toHaveAttribute("href", "/orders");
     expect(within(billing!).queryByRole("link", { name: /کیف پول رادیکوین/ })).not.toBeInTheDocument();
-    expect(within(billing!).getByText("۲ بخش")).toBeVisible();
+    expect(within(billing!).getByText("۳ بخش")).toBeVisible();
     expect(screen.getByRole("link", { name: /مشاهدهٔ کیف پول/ })).toHaveAttribute("href", "/radicoins");
     expect(within(billing!).getByRole("link", { name: /مشاهده و ارتقای پلن/ })).toHaveAttribute("href", "/upgrade");
     expect(within(rewards!).getByRole("link", { name: /دعوت از دوستان/ })).toHaveAttribute("href", "/referrals");

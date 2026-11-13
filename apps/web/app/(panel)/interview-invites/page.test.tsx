@@ -26,4 +26,48 @@ describe("InterviewInvitesPage", () => {
     expect(screen.queryByText("خطای داخلی سرویس رخ داد.")).toBeNull();
     expect(screen.getByRole("button", { name: "تلاش دوباره برای دریافت مصاحبه‌ها" })).toBeVisible();
   });
+
+  it("shows invitations with later deadlines first", async () => {
+    mocks.apiRequest.mockResolvedValue([
+      { id: "old", title: "قدیمی", companyName: "نمونه", status: "expired", deadline: "2026-11-09T00:00:00.000Z" },
+      { id: "new", title: "جدید", companyName: "نمونه", status: "invited", deadline: "2026-11-21T00:00:00.000Z" },
+      { id: "middle", title: "میانی", companyName: "نمونه", status: "completed", deadline: "2026-11-18T00:00:00.000Z" },
+    ]);
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <InterviewInvitesPage />
+      </QueryClientProvider>,
+    );
+
+    await screen.findByRole("link", { name: /جدید/ });
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/interview-invites/new",
+      "/interview-invites/middle",
+      "/interview-invites/old",
+    ]);
+  });
+
+  it("shows a cancelled invitation in gray without offering entry to the old interview", async () => {
+    mocks.apiRequest.mockResolvedValue([
+      {
+        id: "cancelled-1",
+        title: "مدیر محصول",
+        companyName: "شرکت نمونه",
+        status: "cancelled",
+        deadline: "2026-11-21T00:00:00.000Z",
+        cancelledAt: "2026-11-13T10:00:00.000Z",
+      },
+    ]);
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <InterviewInvitesPage />
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByLabelText("مصاحبهٔ لغوشدهٔ مدیر محصول")).toBeVisible();
+    expect(screen.getByText("لغوشده")).toBeVisible();
+    expect(screen.queryByRole("link", { name: /مدیر محصول/ })).toBeNull();
+  });
 });

@@ -504,6 +504,8 @@ export function registerAiRoutes(
     const body = bodyOf(request.body);
     const resume = asObject(normalizeStoredResumeData(body.resume));
     if (!hasResumeContent(resume)) return reply.code(422).send({ error: "برای ساخت داشبورد ابتدا رزومه را تکمیل کن." });
+    const usage = { ai: 1 } satisfies UsageCosts;
+    await consume(billing, request, usage, "dashboard");
     try {
       const data = await chatJson<Partial<DashboardData>>(
         getAnalyzeConfig(),
@@ -532,6 +534,7 @@ export function registerAiRoutes(
         aiText: fields[4],
       };
     } catch (error) {
+      await refund(billing, request, usage, "dashboard");
       return modelError(reply, error, "مدل داشبورد پاسخ نداد.");
     }
   });

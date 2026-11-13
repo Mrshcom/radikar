@@ -23,7 +23,10 @@ type HiringWorkflowProps = {
 
 export function HiringWorkflow({ currentStep, availableStep = currentStep, onStepChange }: HiringWorkflowProps) {
   return (
-    <nav aria-label="مراحل جذب برای این پوزیشن" className="rounded-[20px] border border-[#dfe9e3] bg-white p-4 sm:p-5">
+    <nav
+      aria-label="مراحل جذب برای این پوزیشن"
+      className="overflow-hidden rounded-[22px] border border-[#dce9e3] bg-[radial-gradient(circle_at_50%_0%,#f1faf5_0%,#ffffff_52%)] px-4 py-5 sm:px-7 sm:py-6"
+    >
       <ol className="grid grid-cols-4">
         {steps.map((step) => {
           const complete = step.number < availableStep;
@@ -31,39 +34,39 @@ export function HiringWorkflow({ currentStep, availableStep = currentStep, onSte
           const content = (
             <>
               <span
-                className={`relative z-10 grid size-9 shrink-0 place-items-center rounded-full border-2 text-xs font-black sm:size-10 ${
+                className={`relative z-10 grid size-10 shrink-0 place-items-center rounded-full border-2 text-xs font-black transition sm:size-11 ${
                   active
-                    ? "border-[#0f7b62] bg-[#0f7b62] text-white ring-4 ring-[#e7f5ed]"
+                    ? "border-[#0f7b62] bg-[#0f7b62] text-white shadow-[0_0_0_5px_#e6f5ec,0_8px_18px_rgba(15,123,98,.18)]"
                     : complete
-                      ? "border-[#0f7b62] bg-white text-[#0f7b62]"
-                      : "border-[#dce6df] bg-white text-[#819188]"
+                      ? "border-[#74bd9b] bg-[#f7fcf8] text-[#0f7b62]"
+                      : "border-[#dbe7df] bg-white text-[#8a9991]"
                 }`}
               >
                 {step.number.toLocaleString("fa-IR")}
               </span>
               <span className="min-w-0 text-center">
                 <strong
-                  className={`block text-[10px] leading-5 sm:text-xs ${active ? "text-[#0b6c56]" : complete ? "text-[#29463d]" : "text-[#819188]"}`}
+                  className={`block text-[10px] leading-5 sm:text-xs ${active ? "text-[#0b7058]" : complete ? "text-[#29463d]" : "text-[#71837a]"}`}
                 >
                   {step.title}
                 </strong>
-                <span className="mt-0.5 hidden text-[10px] text-[#71847b] sm:block">{step.description}</span>
+                <span className="mt-0.5 hidden text-[10px] text-[#87968f] sm:block">{step.description}</span>
               </span>
             </>
           );
-          const stepClass = "relative z-10 flex w-full flex-col items-center gap-3 px-1 py-1 text-center sm:gap-2";
+          const stepClass = "relative z-10 flex w-full flex-col items-center gap-2 px-1 text-center outline-offset-4 focus-visible:outline-2 focus-visible:outline-[#0f7b62]";
           return (
             <li key={step.number} className="relative isolate min-w-0">
               {step.number < 4 && (
                 <span
                   aria-hidden="true"
-                  className={`absolute top-[21px] right-1/2 -left-1/2 z-0 h-0.5 sm:top-[23px] ${complete ? "bg-[#80c5a4]" : "bg-[#e2eae4]"}`}
+                  className={`absolute top-5 right-[calc(50%+20px)] left-[calc(-50%+20px)] z-0 h-px sm:top-[22px] sm:right-[calc(50%+22px)] sm:left-[calc(-50%+22px)] ${complete ? "bg-[#77c5a0]" : "bg-[#dfe9e3]"}`}
                 />
               )}
               {onStepChange ? (
                 <button
                   type="button"
-                  className={`${stepClass} rounded-lg outline-offset-4 enabled:cursor-pointer enabled:hover:[&_strong]:text-[#0f7b62] focus-visible:outline-2 focus-visible:outline-[#0f7b62] disabled:cursor-not-allowed`}
+                  className={`${stepClass} enabled:cursor-pointer enabled:hover:[&_strong]:text-[#0f7b62] disabled:cursor-not-allowed disabled:opacity-60`}
                   aria-current={active ? "step" : undefined}
                   disabled={step.number > availableStep}
                   onClick={() => onStepChange(step.number)}

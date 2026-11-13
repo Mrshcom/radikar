@@ -16,22 +16,17 @@ export const interviewReportRequestSchema = z.object({
 
 const text = z.string().trim().min(1).max(8_000);
 const notes = z.array(text).max(6);
+export const interviewTopicsSchema = z.array(z.object({
+  title: z.string().trim().min(2).max(80),
+  score: z.number().min(0).max(100),
+  evidence: z.string().trim().min(1).max(500),
+})).min(1).max(8);
 const reportSchema = z.object({
   score: z.number().min(0).max(100).optional(),
   summary: text,
   strengths: notes,
   improvements: notes,
-  topics: z
-    .array(
-      z.object({
-        title: z.string().trim().min(2).max(80),
-        score: z.number().min(0).max(100),
-        evidence: z.string().trim().min(1).max(500),
-      }),
-    )
-    .min(1)
-    .max(8)
-    .optional(),
+  topics: interviewTopicsSchema.optional(),
   questions: z
     .array(
       z.object({

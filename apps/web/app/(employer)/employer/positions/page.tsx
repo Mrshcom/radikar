@@ -49,7 +49,9 @@ export default function EmployerPositionsPage() {
         </section>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
-          {positions.data.map((position) => (
+          {positions.data.map((position) => {
+            const canEdit = position.screeningStatus === "not_started" && (position.workflowStage ?? 1) === 1;
+            return (
             <article className="rounded-[20px] border border-[#dfe9e3] bg-white p-5 sm:p-6" key={position.id}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -66,12 +68,16 @@ export default function EmployerPositionsPage() {
               </div>
               <p className="mt-4 line-clamp-2 min-h-12 text-xs leading-6 text-[#647a70]">{position.description}</p>
               <div className="mt-5 flex w-full flex-wrap items-center justify-between gap-4 border-t border-[#edf1ec] pt-4">
-                <Link
-                  className="inline-flex items-center gap-1 text-xs font-bold text-[#647a70] no-underline"
-                  href={`/employer/positions/${position.id}/edit`}
-                >
-                  <Pencil size={14} /> ویرایش
-                </Link>
+                {canEdit ? (
+                  <Link
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#647a70] no-underline"
+                    href={`/employer/positions/${position.id}/edit`}
+                  >
+                    <Pencil size={14} /> ویرایش
+                  </Link>
+                ) : (
+                  <span aria-hidden="true" />
+                )}
                 <Link
                   className="inline-flex items-center gap-1 text-xs font-bold text-[#0f7b62] no-underline"
                   href={`/employer/positions/${position.id}`}
@@ -80,7 +86,8 @@ export default function EmployerPositionsPage() {
                 </Link>
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

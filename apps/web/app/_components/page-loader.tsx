@@ -25,14 +25,14 @@ export function PageLoader() {
         <h1 className="mt-5 text-xs font-normal text-[#193936]">در حال بارگذاری</h1>
 
         <div
-          className="mx-auto mt-3 h-[3px] w-full max-w-[220px] overflow-hidden rounded-full bg-[#e8f1ed]"
+          className="relative mx-auto mt-3 h-[3px] w-full max-w-[220px] overflow-hidden rounded-full bg-[#e8f1ed]"
           dir="ltr"
           role="progressbar"
           aria-label="در حال بارگذاری"
           aria-valuemin={0}
           aria-valuemax={100}
         >
-          <span className="block h-full w-0 rounded-full bg-[#0f7b62] animate-[page-loader-fill_1.1s_ease-in-out_infinite]" />
+          <span className="absolute inset-y-0 rounded-full bg-[#0f7b62] will-change-[left,right] animate-[page-loader-fill_2.4s_cubic-bezier(0.65,0,0.35,1)_infinite]" />
         </div>
       </section>
     </main>

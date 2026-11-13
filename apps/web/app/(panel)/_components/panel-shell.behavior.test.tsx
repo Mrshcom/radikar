@@ -9,9 +9,19 @@ const state = vi.hoisted(() => ({
   pathname: "/dashboard",
   logout: vi.fn(),
   notify: vi.fn(),
+  markNotificationsRead: vi.fn(),
   put: vi.fn(),
   remove: vi.fn(),
   jobs: [] as Array<{ role: string; company: string; match: number }>,
+  notifications: [] as Array<{
+    id: string;
+    type: "interview_invitation";
+    title: string;
+    message: string;
+    href: string;
+    readAt: string | null;
+    createdAt: string;
+  }>,
   adminEvents: [] as Array<{
     id: string;
     type: string;
@@ -42,6 +52,17 @@ vi.mock("@/app/_components/auth", () => ({
 vi.mock("@/app/_components/toast", () => ({ useToast: () => state.notify }));
 vi.mock("@/lib/field-direction", () => ({ useFieldDirectionManager: () => undefined }));
 vi.mock("@/lib/admin-stats", () => ({ useAdminEvents: () => ({ data: { items: state.adminEvents } }) }));
+vi.mock("@/lib/notifications", () => ({
+  useUserNotifications: (enabled: boolean) => ({
+    data: enabled
+      ? {
+          items: state.notifications,
+          unreadCount: state.notifications.filter((notification) => !notification.readAt).length,
+        }
+      : undefined,
+  }),
+  useMarkAllNotificationsRead: () => ({ mutate: state.markNotificationsRead }),
+}));
 vi.mock("./model-task-provider", () => ({
   ModelTaskProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
   useModelTasks: () => ({ tasks: [], openTask: vi.fn(), cancelTask: vi.fn() }),
@@ -76,6 +97,7 @@ describe("PanelShell behavior", () => {
     state.accountType = "candidate";
     state.pathname = "/dashboard";
     state.jobs = [];
+    state.notifications = [];
     state.adminEvents = [];
     window.localStorage.clear();
     state.put.mockResolvedValue(undefined);
@@ -172,9 +194,10 @@ describe("PanelShell behavior", () => {
     fireEvent.click(screen.getByRole("button", { name: "اعلان‌ها" }));
     expect(screen.getByText("هنوز اعلانی نیست")).toBeVisible();
     fireEvent.click(screen.getByLabelText("منوی حساب کاربری"));
-    for (const link of screen.getAllByRole("link", { name: "مرکز کارفرما" })) {
+    for (const link of screen.getAllByRole("link", { name: "مرکز حساب" })) {
       expect(link).toHaveAttribute("href", "/employer/account-center");
     }
+    expect(screen.getByRole("link", { name: "اطلاعات حساب و مصرف" })).toHaveAttribute("href", "/account");
     expect(screen.getByRole("button", { name: "خروج از حساب" })).toBeVisible();
   });
 
@@ -188,6 +211,32 @@ describe("PanelShell behavior", () => {
     expect(jobLink).toHaveTextContent("تطابق ۸۲٪");
     expect(jobLink).toHaveTextContent("WebstaurantStore");
     expect(jobLink).not.toHaveTextContent("مشاهده فرصت‌ها");
+  });
+
+  it("shows an interview invitation notification and marks it as read when opened", () => {
+    state.notifications = [
+      {
+        id: "notice-1",
+        type: "interview_invitation",
+        title: "دعوت به مصاحبهٔ مدیر محصول",
+        message: "برای موقعیت «مدیر محصول» در «شرکت ابر و ارتباط هوشمند» به مصاحبه دعوت شده‌ای.",
+        href: "/interview-invites/candidate-1",
+        readAt: null,
+        createdAt: "2026-11-13T09:30:00.000Z",
+      },
+    ];
+
+    renderShell();
+    const noticeButton = screen.getByRole("button", { name: "اعلان‌ها" });
+    expect(noticeButton).toHaveTextContent("۱");
+    fireEvent.click(noticeButton);
+
+    expect(state.markNotificationsRead).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("link", { name: /دعوت به مصاحبهٔ مدیر محصول/ })).toHaveAttribute(
+      "href",
+      "/interview-invites/candidate-1",
+    );
+    expect(screen.getByText(/شرکت ابر و ارتباط هوشمند/)).toBeVisible();
   });
 
   it("persists seen superadmin events after a page refresh", async () => {

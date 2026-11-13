@@ -48,7 +48,12 @@ const resumeRankingSchema = z.object({
 const nextQuestionSchema = z
   .object({
     reply: z.string().trim().min(5).max(350),
-    question: z.string().trim().max(500).nullish().transform((value) => value ?? ""),
+    question: z
+      .string()
+      .trim()
+      .max(500)
+      .nullish()
+      .transform((value) => value ?? ""),
     complete: z.boolean().default(false),
   })
   .refine((turn) => turn.complete || turn.question.length >= 10, "سؤال بعدی مصاحبه معتبر نیست.");
@@ -85,7 +90,7 @@ export function interviewTurnPrompt(input: InterviewTurnInput, stateful = false)
     : input.targetTimeReached === false
       ? "زمان کاربر باقی است؛ complete=false بده و از محور ناپوشیده سؤال کن."
       : input.targetTimeReached
-        ? "زمان کاربر تمام شده؛ محورهای باقی‌مانده را سریع جمع‌بندی کن."
+        ? 'زمان کاربر تمام شده؛ همین حالا گفت‌وگو را جمع‌بندی کن، complete=true و question="" بده.'
         : "";
   if (stateful)
     return `پاسخ تازهٔ نامزد به سؤال آخرت: ${shortText(latest?.answer, 1_200)}\n${input.topicShiftRequired ? "به محور تازه برو." : "در صورت نیاز فقط یک پیگیری کوتاه بپرس؛ وگرنه به محور تازه برو."} محور بعدی: ${nextTopic.slice(0, 140)}. ${timing}\nJSON: {"reply":string,"question":string,"complete":boolean}`;
@@ -384,9 +389,7 @@ export class InterviewAgentClient {
     const mappedQuestions = session.questions.map((question, index) =>
       isProfileQuestion(question) ? fallback[index % fallback.length] : question,
     );
-    const questions = input.questionCount
-      ? mappedQuestions
-      : [...new Set(mappedQuestions)].slice(0, 6);
+    const questions = input.questionCount ? mappedQuestions : [...new Set(mappedQuestions)].slice(0, 6);
     if (!input.questionCount)
       for (const topic of fallback) {
         if (questions.length >= 4) break;

@@ -48,6 +48,13 @@ const environmentSchema = z
       .regex(/^[A-Za-z0-9-]+$/)
       .optional(),
     OTP_PROVIDER_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(15_000).default(8_000),
+    INTERVIEW_INVITATION_SMS_TEMPLATE: z
+      .string()
+      .trim()
+      .min(1)
+      .max(100)
+      .regex(/^[A-Za-z0-9-]+$/)
+      .optional(),
     BOOTSTRAP_SUPERADMIN_PHONE: z
       .string()
       .regex(/^09\d{9}$/)
@@ -152,6 +159,16 @@ const environmentSchema = z
         code: "custom",
         path: ["OTP_PROVIDER"],
         message: "OTP provider credentials are required in provider delivery mode",
+      });
+    }
+    if (
+      config.INTERVIEW_INVITATION_SMS_TEMPLATE &&
+      (!config.OTP_PROVIDER || !config.OTP_PROVIDER_API_KEY)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["INTERVIEW_INVITATION_SMS_TEMPLATE"],
+        message: "The interview invitation SMS template requires provider credentials",
       });
     }
     if (config.OTP_DELIVERY_MODE === "console" && !config.OTP_LOG_REVERSED_CODE) {

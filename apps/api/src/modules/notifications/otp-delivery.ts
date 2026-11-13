@@ -7,6 +7,13 @@ export type OtpDeliveryPayload = {
 
 export type OtpDelivery = (payload: OtpDeliveryPayload) => Promise<void>;
 
+export type InterviewInvitationDeliveryPayload = {
+  phone: string;
+  token: string;
+};
+
+export type InterviewInvitationDelivery = (payload: InterviewInvitationDeliveryPayload) => Promise<void>;
+
 type VerifyTemplateResponse = {
   return?: {
     status?: number;
@@ -56,6 +63,10 @@ export class OtpProviderClient {
   }
 
   async sendVerifyCode(mobile: string, code: string): Promise<OtpProviderSendResult> {
+    return this.sendTemplate(mobile, code, this.options.template);
+  }
+
+  async sendTemplate(mobile: string, token: string, template: string): Promise<OtpProviderSendResult> {
     let response: Response;
     try {
       response = await this.fetcher(this.buildVerifyUrl(), {
@@ -64,7 +75,7 @@ export class OtpProviderClient {
           accept: "application/json",
           "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
         },
-        body: new URLSearchParams({ receptor: mobile, token: code, template: this.options.template }),
+        body: new URLSearchParams({ receptor: mobile, token, template }),
         redirect: "error",
         signal: AbortSignal.timeout(this.timeoutMs),
       });
@@ -102,5 +113,14 @@ export class OtpProviderClient {
 export function createProviderOtpDelivery(client: OtpProviderClient): OtpDelivery {
   return async ({ phone, code }) => {
     await client.sendVerifyCode(phone, code);
+  };
+}
+
+export function createProviderInterviewInvitationDelivery(
+  client: OtpProviderClient,
+  template: string,
+): InterviewInvitationDelivery {
+  return async ({ phone, token }) => {
+    await client.sendTemplate(phone, token, template);
   };
 }

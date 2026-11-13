@@ -85,7 +85,7 @@ describe("InterviewPage answer focus", () => {
     mocks.putSession.mockClear();
   });
 
-  it("enters browser fullscreen when the interview opens and leaves it after closing", async () => {
+  it("enters browser fullscreen on each interview entry and leaves it after closing", async () => {
     let fullscreenElement: Element | null = null;
     const requestFullscreen = vi.fn(async () => {
       fullscreenElement = document.documentElement;
@@ -94,7 +94,10 @@ describe("InterviewPage answer focus", () => {
       fullscreenElement = null;
     });
     Object.defineProperty(document, "fullscreenElement", { configurable: true, get: () => fullscreenElement });
-    Object.defineProperty(document.documentElement, "requestFullscreen", { configurable: true, value: requestFullscreen });
+    Object.defineProperty(document.documentElement, "requestFullscreen", {
+      configurable: true,
+      value: requestFullscreen,
+    });
     Object.defineProperty(document, "exitFullscreen", { configurable: true, value: exitFullscreen });
     try {
       render(
@@ -107,6 +110,8 @@ describe("InterviewPage answer focus", () => {
       fireEvent.click(screen.getByRole("button", { name: "خروج از مصاحبه" }));
       fireEvent.click(screen.getByRole("button", { name: "ذخیره و خروج" }));
       await waitFor(() => expect(exitFullscreen).toHaveBeenCalledTimes(1));
+      fireEvent.click(screen.getByRole("button", { name: /شروع مصاحبه جامع|ادامه مصاحبه جامع/ }));
+      await waitFor(() => expect(requestFullscreen).toHaveBeenCalledTimes(2));
     } finally {
       Reflect.deleteProperty(document, "fullscreenElement");
       Reflect.deleteProperty(document.documentElement, "requestFullscreen");
@@ -114,10 +119,21 @@ describe("InterviewPage answer focus", () => {
     }
   });
 
-  it("keeps the depth chooser outside browser fullscreen", async () => {
+  it("keeps the depth chooser in browser fullscreen until exiting", async () => {
     mocks.noSessions = true;
-    const requestFullscreen = vi.fn(async () => {});
-    Object.defineProperty(document.documentElement, "requestFullscreen", { configurable: true, value: requestFullscreen });
+    let fullscreenElement: Element | null = null;
+    const requestFullscreen = vi.fn(async () => {
+      fullscreenElement = document.documentElement;
+    });
+    const exitFullscreen = vi.fn(async () => {
+      fullscreenElement = null;
+    });
+    Object.defineProperty(document, "fullscreenElement", { configurable: true, get: () => fullscreenElement });
+    Object.defineProperty(document.documentElement, "requestFullscreen", {
+      configurable: true,
+      value: requestFullscreen,
+    });
+    Object.defineProperty(document, "exitFullscreen", { configurable: true, value: exitFullscreen });
     try {
       render(
         <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
@@ -126,10 +142,65 @@ describe("InterviewPage answer focus", () => {
       );
       fireEvent.click(await screen.findByRole("button", { name: /شروع مصاحبه جامع|ادامه مصاحبه جامع/ }));
       expect(screen.getByRole("heading", { name: "چه نوع مصاحبه‌ای می‌خواهی؟" })).toBeVisible();
-      expect(requestFullscreen).not.toHaveBeenCalled();
+      expect(requestFullscreen).toHaveBeenCalledTimes(1);
+      fireEvent.click(screen.getByRole("button", { name: "خروج از مصاحبه" }));
+      fireEvent.click(screen.getByRole("button", { name: "بازگشت" }));
+      await waitFor(() => expect(exitFullscreen).toHaveBeenCalledTimes(1));
+      fireEvent.click(screen.getByRole("button", { name: /شروع مصاحبه جامع|ادامه مصاحبه جامع/ }));
+      expect(requestFullscreen).toHaveBeenCalledTimes(2);
     } finally {
+      Reflect.deleteProperty(document, "fullscreenElement");
+      Reflect.deleteProperty(document.documentElement, "requestFullscreen");
+      Reflect.deleteProperty(document, "exitFullscreen");
+    }
+  });
+
+  it("requires reentering fullscreen after the browser exits it", async () => {
+    mocks.noSessions = true;
+    let fullscreenElement: Element | null = null;
+    const requestFullscreen = vi.fn(async () => {
+      fullscreenElement = document.documentElement;
+      document.dispatchEvent(new Event("fullscreenchange"));
+    });
+    Object.defineProperty(document, "fullscreenElement", { configurable: true, get: () => fullscreenElement });
+    Object.defineProperty(document.documentElement, "requestFullscreen", {
+      configurable: true,
+      value: requestFullscreen,
+    });
+    try {
+      render(
+        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+          <InterviewPage />
+        </QueryClientProvider>,
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /شروع مصاحبه جامع|ادامه مصاحبه جامع/ }));
+      await waitFor(() => expect(requestFullscreen).toHaveBeenCalledTimes(1));
+      fullscreenElement = null;
+      fireEvent(document, new Event("fullscreenchange"));
+      expect(screen.getByRole("button", { name: "ورود به تمام‌صفحه" })).toBeVisible();
+      expect(screen.queryByRole("heading", { name: "چه نوع مصاحبه‌ای می‌خواهی؟" })).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "ورود به تمام‌صفحه" }));
+      await waitFor(() => expect(requestFullscreen).toHaveBeenCalledTimes(2));
+      expect(await screen.findByRole("heading", { name: "چه نوع مصاحبه‌ای می‌خواهی؟" })).toBeVisible();
+    } finally {
+      Reflect.deleteProperty(document, "fullscreenElement");
       Reflect.deleteProperty(document.documentElement, "requestFullscreen");
     }
+  });
+
+  it("blocks pasting and dropping text into the answer while allowing typing", async () => {
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <InterviewPage />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /شروع مصاحبه جامع|ادامه مصاحبه جامع/ }));
+    const answer = await screen.findByRole("textbox", { name: "پاسخ مصاحبه" });
+    expect(fireEvent.paste(answer, { clipboardData: { getData: () => "پاسخ آماده" } })).toBe(false);
+    expect(fireEvent.drop(answer, { dataTransfer: { getData: () => "پاسخ آماده" } })).toBe(false);
+    expect(answer).toHaveValue("");
+    fireEvent.change(answer, { target: { value: "پاسخ تایپ‌شده" } });
+    expect(answer).toHaveValue("پاسخ تایپ‌شده");
   });
 
   it("keeps the answer field focused after Enter advances to the next question", async () => {
@@ -156,17 +227,17 @@ describe("InterviewPage answer focus", () => {
       fireEvent.click(await screen.findByRole("button", { name: /شروع مصاحبه جامع|ادامه مصاحبه جامع/ }));
       const answer = await screen.findByRole("textbox", { name: "پاسخ مصاحبه" });
       expect(answer).toHaveAttribute("rows", "1");
-      expect(answer).toHaveStyle({ height: "40px" });
+      expect(answer).toHaveStyle({ height: "48px" });
       expect(screen.getByRole("button", { name: "ارسال پاسخ" })).toBeDisabled();
       await waitFor(() => expect(answer).toHaveFocus());
       fireEvent.change(answer, { target: { value: "توضیح پاسخ اول" } });
       expect(screen.getByRole("button", { name: "ارسال پاسخ" })).toBeEnabled();
       fireEvent.keyDown(answer, { key: "Enter", code: "Enter", keyCode: 13 });
       await waitFor(() =>
-        expect(screen.getByText("گفتی در تیم کار کردی؛ یک چالش مشخص را چگونه حل کردی؟")).toBeVisible(),
+        expect(screen.getByText(/گفتی در تیم کار کردی؛ یک چالش مشخص را چگونه حل کردی؟/)).toBeVisible(),
       );
       expect(
-        screen.getByText("اشاره کردی که با تیم همکاری داشتی؛ خوب است دربارهٔ نقش خودت بیشتر بگویی."),
+        screen.getByText(/اشاره کردی که با تیم همکاری داشتی؛ خوب است دربارهٔ نقش خودت بیشتر بگویی./),
       ).toBeVisible();
       expect(mocks.apiRequest).toHaveBeenCalledWith(
         "/api/interview/next-question",
@@ -396,27 +467,30 @@ describe("InterviewPage answer focus", () => {
     expect(mocks.apiRequest).not.toHaveBeenCalledWith("/api/interview/next-question", expect.anything());
   });
 
-  it.each(["پس", "yes", "YES", "یس", "یس یس", "یس، یس", "بریم"])("starts after the affirmative readiness reply %s", async (reply) => {
-    mocks.noSessions = true;
-    mocks.apiRequest.mockResolvedValue({
-      title: "مصاحبه تازه",
-      subtitle: "آغاز",
-      duration: "۱۵ دقیقه",
-      questions: ["سؤال اول؟"],
-      cards: [],
-    });
-    mocks.runModelTask.mockImplementation(async ({ run }: { run: () => Promise<unknown> }) => run());
-    render(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <InterviewPage />
-      </QueryClientProvider>,
-    );
-    fireEvent.click(await screen.findByRole("button", { name: /شروع مصاحبه جامع|ادامه مصاحبه جامع/ }));
-    fireEvent.click(screen.getByRole("button", { name: /انتخاب استاندارد/ }));
-    fireEvent.change(await screen.findByRole("textbox", { name: "پاسخ مصاحبه" }), { target: { value: reply } });
-    fireEvent.click(screen.getByRole("button", { name: "ارسال پاسخ" }));
-    expect(await screen.findByText("سؤال اول؟")).toBeVisible();
-  });
+  it.each(["پس", "yes", "YES", "یس", "یس یس", "یس، یس", "بریم"])(
+    "starts after the affirmative readiness reply %s",
+    async (reply) => {
+      mocks.noSessions = true;
+      mocks.apiRequest.mockResolvedValue({
+        title: "مصاحبه تازه",
+        subtitle: "آغاز",
+        duration: "۱۵ دقیقه",
+        questions: ["سؤال اول؟"],
+        cards: [],
+      });
+      mocks.runModelTask.mockImplementation(async ({ run }: { run: () => Promise<unknown> }) => run());
+      render(
+        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+          <InterviewPage />
+        </QueryClientProvider>,
+      );
+      fireEvent.click(await screen.findByRole("button", { name: /شروع مصاحبه جامع|ادامه مصاحبه جامع/ }));
+      fireEvent.click(screen.getByRole("button", { name: /انتخاب استاندارد/ }));
+      fireEvent.change(await screen.findByRole("textbox", { name: "پاسخ مصاحبه" }), { target: { value: reply } });
+      fireEvent.click(screen.getByRole("button", { name: "ارسال پاسخ" }));
+      expect(await screen.findByText("سؤال اول؟")).toBeVisible();
+    },
+  );
 
   it("pauses the user's time while the interviewer prepares the next turn", async () => {
     let resolveTurn!: (value: { reply: string; question: string }) => void;
@@ -452,7 +526,7 @@ describe("InterviewPage answer focus", () => {
     expect(screen.getByRole("textbox", { name: "پاسخ مصاحبه" })).toHaveValue("پاسخ بعدی را می‌نویسم");
     expect(screen.getByText(/باقی‌مانده/).className).toContain("animate-pulse");
     resolveTurn({ reply: "متوجه شدم.", question: "سؤال بعد؟" });
-    expect(await screen.findByText("سؤال بعد؟")).toBeVisible();
+    expect(await screen.findByText(/سؤال بعد؟/)).toBeVisible();
     await waitFor(() => expect(screen.queryByText(/مکث؛ زمان پاسخ مصاحبه‌گر حساب نمی‌شود/)).toBeNull());
     expect(screen.getByRole("textbox", { name: "پاسخ مصاحبه" })).not.toHaveAttribute("readonly");
     expect(screen.getByRole("textbox", { name: "پاسخ مصاحبه" })).toHaveFocus();
@@ -461,7 +535,6 @@ describe("InterviewPage answer focus", () => {
   });
 
   it("keeps a sent answer out of the composer and retries only the missing interviewer turn", async () => {
-    mocks.elapsedMs = 15 * 60_000;
     let turnRequests = 0;
     mocks.apiRequest.mockImplementation(async (url: string) => {
       if (url !== "/api/interview/next-question") return [];
@@ -489,6 +562,33 @@ describe("InterviewPage answer focus", () => {
     expect(turnRequests).toBe(2);
   });
 
+  it("finishes the interview with the saved answer when the interviewer fails after time expires", async () => {
+    mocks.elapsedMs = 15 * 60_000;
+    mocks.apiRequest.mockRejectedValue(new Error("پاسخ مدل کامل نشد"));
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <InterviewPage />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /شروع مصاحبه جامع|ادامه مصاحبه جامع/ }));
+    const answer = "اعتبارسنجی سمت سرور را پیاده کردم.";
+    const input = await screen.findByRole("textbox", { name: "پاسخ مصاحبه" });
+    fireEvent.change(input, { target: { value: answer } });
+    fireEvent.click(screen.getByRole("button", { name: "ارسال پاسخ" }));
+
+    expect(await screen.findByText(/مصاحبه تمام شد/)).toBeVisible();
+    expect(screen.getAllByText(answer)).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "تلاش دوباره" })).toBeNull();
+    expect(screen.getByRole("button", { name: "دریافت نتیجهٔ مصاحبه" })).toBeEnabled();
+    expect(mocks.apiRequest).toHaveBeenCalledWith(
+      "/api/interview/next-question",
+      expect.objectContaining({ body: expect.stringContaining('"targetTimeReached":true') }),
+    );
+    expect(mocks.putSession).toHaveBeenLastCalledWith(
+      expect.objectContaining({ answers: [answer], currentQuestionIndex: 0 }),
+    );
+  });
+
   it("keeps the elapsed-time message steady while the interviewer responds", async () => {
     mocks.elapsedMs = 15 * 60_000;
     let resolveTurn!: (value: { reply: string; question: string }) => void;
@@ -513,7 +613,7 @@ describe("InterviewPage answer focus", () => {
     expect(screen.queryByText(/مکث؛ زمان پاسخ مصاحبه‌گر حساب نمی‌شود/)).toBeNull();
     expect(screen.getByText(/زمان انتخابی تمام شد/).className).not.toContain("animate-pulse");
     resolveTurn({ reply: "ممنون.", question: "سؤال بعدی؟" });
-    expect(await screen.findByText("سؤال بعدی؟")).toBeVisible();
+    expect(await screen.findByText(/سؤال بعدی؟/)).toBeVisible();
   });
 
   it("routes a question through the send action without moving to the next question", async () => {
@@ -552,10 +652,10 @@ describe("InterviewPage answer focus", () => {
     const input = await screen.findByRole("textbox", { name: "پاسخ مصاحبه" });
     fireEvent.change(input, { target: { value: "تجربهٔ اول را در تیم محصول توضیح می‌دهم." } });
     fireEvent.click(screen.getByRole("button", { name: "ارسال پاسخ" }));
-    await screen.findByText("پرسش پیگیر 1 دربارهٔ تجربه‌ات چیست؟");
+    await screen.findByText(/پرسش پیگیر 1 دربارهٔ تجربه‌ات چیست؟/);
     fireEvent.change(input, { target: { value: "در همان پروژه مشکل پیچیده‌ای را حل کردم." } });
     fireEvent.click(screen.getByRole("button", { name: "ارسال پاسخ" }));
-    expect(await screen.findByText("پرسش پیگیر 2 دربارهٔ تجربه‌ات چیست؟")).toBeVisible();
+    expect(await screen.findByText(/پرسش پیگیر 2 دربارهٔ تجربه‌ات چیست؟/)).toBeVisible();
     expect(turns).toBe(2);
     const turnRequests = mocks.apiRequest.mock.calls.filter(([url]) => url === "/api/interview/next-question");
     expect(JSON.parse(turnRequests[0]?.[1]?.body ?? "{}")).toMatchObject({
@@ -591,7 +691,11 @@ describe("InterviewPage answer focus", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "ارسال پاسخ" }));
     expect(await screen.findByText(/از توضیح تجربهٔ فنی و همکاری‌ات ممنونم\. گفت‌وگو به پایان رسید/)).toBeVisible();
-    expect(screen.getByText(/مصاحبه تمام شد\. ممنون از اینکه در جلسهٔ مصاحبهٔ رادیکار شرکت کردی\. این یک مصاحبهٔ آزمایشی بود/)).toBeVisible();
+    expect(
+      screen.getByText(
+        /مصاحبه تمام شد\. ممنون از اینکه در جلسهٔ مصاحبهٔ رادیکار شرکت کردی\. این یک مصاحبهٔ آزمایشی بود/,
+      ),
+    ).toBeVisible();
     expect(screen.queryByText(/جمع‌بندی مصاحبه‌گر را در بالا می‌بینی/)).toBeNull();
     expect(screen.getByRole("button", { name: "دریافت نتیجهٔ مصاحبه" })).toBeVisible();
     expect(mocks.apiRequest).not.toHaveBeenCalledWith("/api/interview/report", expect.anything());

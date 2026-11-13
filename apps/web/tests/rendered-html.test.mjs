@@ -504,10 +504,10 @@ test("expired interview invitations never offer a secure interview entry", async
 
   assert.match(invitedInterview, /const interviewIsActive =\s*!invitationExpired/);
   assert.match(invitedInterview, /interviewStarted && !expired && questions\.length > 0 && !fullscreenReady/);
-  assert.match(invitedInterview, /مهلت این دعوت به پایان رسیده است/);
+  assert.match(invitedInterview, /<InterviewReportHero variant="expired" \/>/);
   assert.ok(
-    invitedInterview.indexOf('{expired && data.status !== "completed" && (') < invitedInterview.indexOf("<header"),
-    "expired invitation alert must appear before the interview information card",
+    invitedInterview.indexOf('<InterviewReportHero variant="expired" />') < invitedInterview.indexOf("<header"),
+    "expired invitation hero must appear before the interview information card",
   );
 });
 

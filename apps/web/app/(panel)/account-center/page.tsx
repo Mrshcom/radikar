@@ -48,6 +48,7 @@ const accountGroups: AccountGroup[] = [
     icon: CreditCard,
     tone: "amber",
     links: [
+      { href: "/radicoins/buy", label: "خرید رادیکوین", icon: RadicoinIcon },
       { href: "/orders", label: "سفارش‌ها و پرداخت‌ها", icon: ReceiptText },
       { href: "/upgrade", label: "مشاهده و ارتقای پلن", icon: Sparkles },
     ],

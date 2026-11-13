@@ -2,14 +2,61 @@
 
 import Image from "next/image";
 import { Bot } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+
+function InterviewerText({ text, animate, onProgress }: { text: string; animate: boolean; onProgress: () => void }) {
+  const characters = Array.from(text);
+  const [visibleCount, setVisibleCount] = useState(0);
+  const typing = animate && visibleCount < characters.length;
+
+  useEffect(() => {
+    if (!animate) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      const timeout = window.setTimeout(() => setVisibleCount(characters.length), 0);
+      return () => window.clearTimeout(timeout);
+    }
+
+    const reset = window.setTimeout(() => setVisibleCount(0), 0);
+    let count = 0;
+    const step = Math.max(1, Math.ceil(characters.length / 160));
+    const interval = window.setInterval(() => {
+      count = Math.min(characters.length, count + step);
+      setVisibleCount(count);
+      if (count === characters.length) window.clearInterval(interval);
+    }, 30);
+    return () => {
+      window.clearTimeout(reset);
+      window.clearInterval(interval);
+    };
+  }, [animate, text, characters.length]);
+
+  useLayoutEffect(() => {
+    if (animate) onProgress();
+  }, [visibleCount, animate, onProgress]);
+
+  if (!animate) return text;
+  return (
+    <>
+      <span className="sr-only">{text}</span>
+      <span aria-hidden="true" data-testid="interviewer-typing">
+        {characters.slice(0, visibleCount).join("")}
+        {typing && (
+          <span className="mr-0.5 inline-block h-4 w-0.5 animate-pulse bg-[#0f7b62] align-middle motion-reduce:hidden" />
+        )}
+      </span>
+    </>
+  );
+}
 
 function SentTime({ value }: { value?: string }) {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return (
-    <time dateTime={value} className="absolute right-[calc(100%+0.5rem)] bottom-1 whitespace-nowrap text-[9px] leading-3 text-[#899793] opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+    <time
+      dateTime={value}
+      className="absolute right-[calc(100%+0.5rem)] bottom-1 whitespace-nowrap text-[9px] leading-3 text-[#899793] opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+    >
       {new Intl.DateTimeFormat("fa-IR", { hour: "2-digit", minute: "2-digit" }).format(date)}
     </time>
   );
@@ -81,16 +128,41 @@ export function InterviewConversation({
   const isNearBottomRef = useRef(true);
   const [visibleReadyAt, setVisibleReadyAt] = useState(firstQuestionSentAt);
   const showFirstQuestion = !firstQuestionSentAt || visibleReadyAt === firstQuestionSentAt;
-  const scrollToLatest = () => {
+  const scrollToLatest = useCallback(() => {
     const messages = messagesRef.current;
     if (!messages) return;
     messages.scrollTop = messages.scrollHeight;
     isNearBottomRef.current = true;
-  };
+  }, []);
+  const followTyping = useCallback(() => {
+    if (isNearBottomRef.current) scrollToLatest();
+  }, [scrollToLatest]);
+  const lastQuestionIndex = ready && showFirstQuestion ? Math.min(currentIndex, questions.length - 1) : -1;
+  let latestAgentMessage = "intro";
+  if (readinessMessages.length) latestAgentMessage = ready ? "ready-confirmation" : "ready-prompt";
+  if (lastQuestionIndex >= 0) {
+    latestAgentMessage = `question-${lastQuestionIndex}`;
+    const currentClarifications = clarifications.filter((item) => item.questionIndex === lastQuestionIndex);
+    const lastClarification = currentClarifications[currentClarifications.length - 1];
+    if (lastClarification?.reply.trim() && !answers[lastQuestionIndex]?.trim())
+      latestAgentMessage = `clarification-${lastQuestionIndex}-${currentClarifications.length - 1}`;
+    if (replies[lastQuestionIndex]?.trim() && (lastQuestionIndex === currentIndex || !questions[lastQuestionIndex + 1]))
+      latestAgentMessage = `reply-${lastQuestionIndex}`;
+  }
 
   useLayoutEffect(() => {
     if (isNearBottomRef.current) scrollToLatest();
-  }, [questions, answers, replies, clarifications, readinessMessages, currentIndex, pending, showFirstQuestion]);
+  }, [
+    questions,
+    answers,
+    replies,
+    clarifications,
+    readinessMessages,
+    currentIndex,
+    pending,
+    showFirstQuestion,
+    scrollToLatest,
+  ]);
 
   useEffect(() => {
     if (!ready || showFirstQuestion) return;
@@ -115,7 +187,9 @@ export function InterviewConversation({
         aria-label="گفت‌وگوی مصاحبه"
       >
         <ChatMessage kind="agent" sentAt={introSentAt} className="mb-4">
-          <p className="m-0 whitespace-pre-wrap text-sm leading-7 text-[#304c40]">{intro}</p>
+          <p className="m-0 whitespace-pre-wrap text-sm leading-7 text-[#304c40]">
+            <InterviewerText text={intro} animate={latestAgentMessage === "intro"} onProgress={followTyping} />
+          </p>
         </ChatMessage>
         {readinessMessages.map((message, index) => (
           <ChatMessage key={`ready-${index}`} kind="user" sentAt={message.sentAt}>
@@ -126,59 +200,85 @@ export function InterviewConversation({
         ))}
         {!ready && readinessMessages.length > 0 && (
           <ChatMessage kind="agent" sentAt={readinessMessages[readinessMessages.length - 1]?.sentAt}>
-            <p className="m-0 text-sm leading-7 text-[#304c40]">هر وقت آماده بودی، بگو «آره» تا شروع کنیم.</p>
+            <p className="m-0 text-sm leading-7 text-[#304c40]">
+              <InterviewerText
+                text="هر وقت آماده بودی، بگو «آره» تا شروع کنیم."
+                animate={latestAgentMessage === "ready-prompt"}
+                onProgress={followTyping}
+              />
+            </p>
           </ChatMessage>
         )}
         {ready && readinessMessages.length > 0 && (
           <ChatMessage kind="agent" sentAt={firstQuestionSentAt}>
             <p className="m-0 text-sm leading-7 text-[#304c40]">
-              اوکی، حالا که آماده‌ای، بگذار مصاحبه را شروع کنیم.
+              <InterviewerText
+                text="اوکی، حالا که آماده‌ای، بگذار مصاحبه را شروع کنیم."
+                animate={latestAgentMessage === "ready-confirmation"}
+                onProgress={followTyping}
+              />
             </p>
           </ChatMessage>
         )}
-        {ready && showFirstQuestion && questions.slice(0, currentIndex + 1).map((question, index) => (
-          <div key={index} className="space-y-3">
-            <ChatMessage kind="agent" sentAt={index === 0 ? firstQuestionSentAt : replySentAt?.[index - 1]} className="mb-4">
-              <p className="m-0 whitespace-pre-wrap text-sm leading-7 text-[#243c32]">
-                {index > 0 && replies[index - 1]?.trim() && (
-                  <>
-                    <span>{replies[index - 1]}</span>
-                    <br />
-                  </>
-                )}
-                <span>{question}</span>
-              </p>
-            </ChatMessage>
-            {clarifications
-              .filter((item) => item.questionIndex === index)
-              .map((item, clarificationIndex) => (
-                <div key={`${index}-${clarificationIndex}`} className="space-y-3">
-                  <ChatMessage kind="user" sentAt={item.sentAt}>
-                    <p className="m-0 whitespace-pre-wrap rounded-2xl bg-[#e9f4ee] px-4 py-3 text-sm leading-7 text-[#243c32]">
-                      {item.user}
-                    </p>
-                  </ChatMessage>
-                  {item.reply.trim() && (
-                    <ChatMessage kind="agent" sentAt={item.replySentAt}>
-                      <p className="m-0 whitespace-pre-wrap text-sm leading-7 text-[#304c40]">{item.reply}</p>
-                    </ChatMessage>
-                  )}
-                </div>
-              ))}
-            {answers[index]?.trim() && (
-              <ChatMessage kind="user" sentAt={answerSentAt?.[index]}>
-                <p className="m-0 whitespace-pre-wrap rounded-2xl bg-[#e9f4ee] px-4 py-1 text-sm leading-7 text-[#243c32]">
-                  {answers[index]}
+        {ready &&
+          showFirstQuestion &&
+          questions.slice(0, currentIndex + 1).map((question, index) => (
+            <div key={index} className="space-y-3">
+              <ChatMessage
+                kind="agent"
+                sentAt={index === 0 ? firstQuestionSentAt : replySentAt?.[index - 1]}
+                className="mb-4"
+              >
+                <p className="m-0 whitespace-pre-wrap text-sm leading-7 text-[#243c32]">
+                  <InterviewerText
+                    text={index > 0 && replies[index - 1]?.trim() ? `${replies[index - 1]}\n${question}` : question}
+                    animate={latestAgentMessage === `question-${index}`}
+                    onProgress={followTyping}
+                  />
                 </p>
               </ChatMessage>
-            )}
-            {replies[index]?.trim() && (index === currentIndex || !questions[index + 1]) && (
-              <ChatMessage kind="agent" sentAt={replySentAt?.[index]}>
-                <p className="m-0 whitespace-pre-wrap text-sm leading-7 text-[#304c40]">{replies[index]}</p>
-              </ChatMessage>
-            )}
-          </div>
-        ))}
+              {clarifications
+                .filter((item) => item.questionIndex === index)
+                .map((item, clarificationIndex) => (
+                  <div key={`${index}-${clarificationIndex}`} className="space-y-3">
+                    <ChatMessage kind="user" sentAt={item.sentAt}>
+                      <p className="m-0 whitespace-pre-wrap rounded-2xl bg-[#e9f4ee] px-4 py-3 text-sm leading-7 text-[#243c32]">
+                        {item.user}
+                      </p>
+                    </ChatMessage>
+                    {item.reply.trim() && (
+                      <ChatMessage kind="agent" sentAt={item.replySentAt}>
+                        <p className="m-0 whitespace-pre-wrap text-sm leading-7 text-[#304c40]">
+                          <InterviewerText
+                            text={item.reply}
+                            animate={latestAgentMessage === `clarification-${index}-${clarificationIndex}`}
+                            onProgress={followTyping}
+                          />
+                        </p>
+                      </ChatMessage>
+                    )}
+                  </div>
+                ))}
+              {answers[index]?.trim() && (
+                <ChatMessage kind="user" sentAt={answerSentAt?.[index]}>
+                  <p className="m-0 whitespace-pre-wrap rounded-2xl bg-[#e9f4ee] px-4 py-1 text-sm leading-7 text-[#243c32]">
+                    {answers[index]}
+                  </p>
+                </ChatMessage>
+              )}
+              {replies[index]?.trim() && (index === currentIndex || !questions[index + 1]) && (
+                <ChatMessage kind="agent" sentAt={replySentAt?.[index]}>
+                  <p className="m-0 whitespace-pre-wrap text-sm leading-7 text-[#304c40]">
+                    <InterviewerText
+                      text={replies[index]}
+                      animate={latestAgentMessage === `reply-${index}`}
+                      onProgress={followTyping}
+                    />
+                  </p>
+                </ChatMessage>
+              )}
+            </div>
+          ))}
       </div>
       <div
         className="shrink-0 bg-white p-4 sm:p-5"

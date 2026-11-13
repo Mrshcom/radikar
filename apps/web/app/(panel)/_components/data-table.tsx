@@ -7,7 +7,7 @@ import { DataTableCardSkeleton, DataTableSkeleton } from "./skeletons/table-skel
 import { SearchableSelect } from "@/app/_components/searchable-select";
 import { UpgradeLink } from "@/app/_components/upgrade-link";
 
-const mobileTableMediaQuery = "(max-width: 680px)";
+const mobileTableMediaQuery = "(max-width: 1023px)";
 
 function subscribeToMobileTableViewport(onChange: () => void) {
   const mediaQuery = window.matchMedia(mobileTableMediaQuery);

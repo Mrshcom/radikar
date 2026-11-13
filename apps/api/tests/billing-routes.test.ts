@@ -5,6 +5,7 @@ import { buildApp } from "../src/build-app";
 import type { AuthServicePort } from "../src/modules/auth/routes";
 import type { AuthUser, SessionIdentity } from "../src/modules/auth/types";
 import type { BillingService } from "../src/modules/billing/service";
+import { radicoinPacks } from "../src/modules/billing/radicoin-pack";
 import type { RecordRepository } from "../src/modules/data/record-repository";
 
 const user: AuthUser = {
@@ -68,6 +69,16 @@ const repository: RecordRepository = {
   clear: async () => undefined,
 };
 
+test("radicoin catalog has three packs with transparent volume discounts", () => {
+  assert.deepEqual(radicoinPacks.map(({ id, coins, amountRials }) => ({ id, coins, amountRials })), [
+    { id: "radicoin-25", coins: 25, amountRials: 250_000 },
+    { id: "radicoin-150", coins: 150, amountRials: 1_390_000 },
+    { id: "radicoin-500", coins: 500, amountRials: 3_990_000 },
+  ]);
+  assert.equal(radicoinPacks[1].originalAmountRials, 1_500_000);
+  assert.equal(radicoinPacks[2].originalAmountRials, 5_000_000);
+});
+
 function createApp(overrides: Partial<Record<keyof BillingService, unknown>> = {}) {
   const calls: Array<{ name: string; args: unknown[] }> = [];
   const method =
@@ -87,7 +98,7 @@ function createApp(overrides: Partial<Record<keyof BillingService, unknown>> = {
       ),
     },
     radicoinPacks: {
-      catalog: () => [{ id: "radicoin-100", coins: 100, amountRials: 599_000 }],
+      catalog: () => [{ id: "radicoin-25", coins: 25, amountRials: 250_000 }],
       createOrder: method("createRadicoinPackOrder", {
         checkout: "gateway",
         orderId: "radicoin-order-1",
@@ -194,13 +205,13 @@ test("radicoin pack routes create a gateway order and expose customer purchase h
     method: "POST",
     url: "/api/billing/radicoin-packs/orders",
     cookies: { radikar_session: "user-token" },
-    payload: { packId: "radicoin-100", idempotencyKey: key },
+    payload: { packId: "radicoin-25", idempotencyKey: key },
   });
   assert.equal(created.statusCode, 201);
   assert.deepEqual(calls.find((call) => call.name === "createRadicoinPackOrder")?.args, [
     user.id,
     user.phone,
-    "radicoin-100",
+    "radicoin-25",
     key,
   ]);
   const history = await app.inject({
@@ -210,6 +221,18 @@ test("radicoin pack routes create a gateway order and expose customer purchase h
   });
   assert.equal(history.statusCode, 200);
   assert.deepEqual(calls.find((call) => call.name === "listRadicoinPackOrders")?.args, [user.id]);
+  await app.close();
+});
+
+test("radicoin pack routes allow employer customer accounts", async () => {
+  const { app } = createApp();
+  const response = await app.inject({
+    method: "POST",
+    url: "/api/billing/radicoin-packs/orders",
+    cookies: { radikar_session: "employer-token" },
+    payload: { packId: "radicoin-25", idempotencyKey: "87878787-8787-4787-8787-878787878787" },
+  });
+  assert.equal(response.statusCode, 201);
   await app.close();
 });
 

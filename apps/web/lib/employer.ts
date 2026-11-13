@@ -80,7 +80,9 @@ export type EmployerCandidate = {
     summary: string;
     strengths: string[];
     improvements: string[];
+    topics?: { title: string; score: number; evidence: string }[];
   } | null;
+  interviewFeedbackSharedAt: string | null;
 };
 
 export type EmployerBankResume = {
@@ -93,6 +95,7 @@ export type EmployerBankResume = {
   email: string | null;
   phone: string | null;
   createdAt: string;
+  canDelete: boolean;
   positions: Array<{
     id: string;
     positionId: string;
@@ -195,6 +198,20 @@ export function useEmployerPosition(id: string, refreshInterval = 0) {
     staleTime: 5_000,
     enabled: Boolean(id),
     refetchInterval: refreshInterval || false,
+  });
+}
+
+export function useSetEmployerInterviewFeedbackSharing(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ candidateId, shared }: { candidateId: string; shared: boolean }) =>
+      apiRequest<{ candidateId: string; shared: boolean; sharedAt: string | null }>(
+        `/api/employer/positions/${id}/interviews/${candidateId}/feedback-sharing`,
+        { method: "PATCH", body: JSON.stringify({ shared }) },
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: employerKeys.position(id) });
+    },
   });
 }
 

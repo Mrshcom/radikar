@@ -45,6 +45,7 @@ vi.mock("@/lib/employer", () => ({
         hasOriginalFile: false,
         extractionError: null,
         createdAt: "2026-11-01T12:00:00Z",
+        canDelete: false,
         positions: [
           {
             id: "candidate-1",
@@ -76,6 +77,7 @@ vi.mock("@/lib/employer", () => ({
         hasOriginalFile: false,
         extractionError: null,
         createdAt: "2026-11-01T12:00:00Z",
+        canDelete: false,
         positions: [
           {
             id: "candidate-3",
@@ -121,10 +123,11 @@ describe("employer resume bank interviews", () => {
     );
     expect(screen.getByText("۱ از ۲ رزومه")).toBeVisible();
     expect(screen.queryByRole("columnheader", { name: "ایمیل" })).not.toBeInTheDocument();
+    expect(screen.queryByText("مریم")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /مشاهده جزئیات ۱ دعوت مصاحبهٔ سارا/ }));
     expect(screen.getByRole("link", { name: "مدیر محصول" })).toHaveAttribute("href", "/employer/positions/position-1");
     expect(screen.queryByRole("link", { name: "مدیر فروش" })).not.toBeInTheDocument();
-    expect(screen.queryByText("مریم")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /نمره ۸۲ از ۱۰۰/ }));
+    fireEvent.click(screen.getByRole("button", { name: /نمره ۸۲/ }));
     expect(screen.getByRole("dialog", { name: "گزارش مصاحبهٔ سارا" })).toBeVisible();
     expect(screen.getByText("گزارش مصاحبه")).toBeVisible();
     expect(screen.getByText("سه سال")).toBeVisible();

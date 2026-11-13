@@ -12,7 +12,11 @@ import { eq } from "drizzle-orm";
 import { JobPoolService } from "./modules/job-pool/service";
 import { RadicoinService } from "./modules/radicoin/service";
 import { ProductEventService } from "./modules/analytics/service";
-import { createProviderOtpDelivery, OtpProviderClient } from "./modules/notifications/otp-delivery";
+import {
+  createProviderInterviewInvitationDelivery,
+  createProviderOtpDelivery,
+  OtpProviderClient,
+} from "./modules/notifications/otp-delivery";
 import { InterviewAgentClient } from "./modules/ai/interview-agent";
 
 loadLocalEnvironment();
@@ -27,18 +31,22 @@ if (savedAiSettings)
   setAnalyzeProvider(savedAiSettings.provider as Parameters<typeof setAnalyzeProvider>[0], savedAiSettings.model);
 const radicoinService = new RadicoinService(database.db);
 const productEvents = new ProductEventService(database.db);
-const deliverOtp =
-  config.OTP_PROVIDER && config.OTP_PROVIDER_API_KEY && config.OTP_PROVIDER_TEMPLATE
-    ? createProviderOtpDelivery(
-        new OtpProviderClient({
-          provider: config.OTP_PROVIDER,
-          apiKey: config.OTP_PROVIDER_API_KEY,
-          template: config.OTP_PROVIDER_TEMPLATE,
-          baseUrl: config.OTP_PROVIDER_BASE_URL,
-          timeoutMs: config.OTP_PROVIDER_TIMEOUT_MS,
-        }),
-      )
+const notificationProvider =
+  config.OTP_PROVIDER && config.OTP_PROVIDER_API_KEY
+    ? new OtpProviderClient({
+        provider: config.OTP_PROVIDER,
+        apiKey: config.OTP_PROVIDER_API_KEY,
+        template: config.OTP_PROVIDER_TEMPLATE ?? "radikarlogin",
+        baseUrl: config.OTP_PROVIDER_BASE_URL,
+        timeoutMs: config.OTP_PROVIDER_TIMEOUT_MS,
+      })
     : undefined;
+const deliverOtp = notificationProvider && config.OTP_PROVIDER_TEMPLATE
+  ? createProviderOtpDelivery(notificationProvider)
+  : undefined;
+const deliverInterviewInvitation = notificationProvider && config.INTERVIEW_INVITATION_SMS_TEMPLATE
+  ? createProviderInterviewInvitationDelivery(notificationProvider, config.INTERVIEW_INVITATION_SMS_TEMPLATE)
+  : undefined;
 const billingService = new BillingService(database.db, {
   apiPublicUrl: config.API_PUBLIC_URL,
   webAppUrl: config.WEB_APP_URL,
@@ -105,6 +113,7 @@ const app = buildApp({
         })
       : undefined,
   interviewChatSecret: config.AUTH_SECRET,
+  deliverInterviewInvitation,
   exposeReversedOtp: config.OTP_LOG_REVERSED_CODE,
   database: database.db,
   sessionCookieName: config.NODE_ENV === "production" ? "__Host-radikar_session" : "radikar_session",

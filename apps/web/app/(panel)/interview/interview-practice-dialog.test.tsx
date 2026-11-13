@@ -23,7 +23,13 @@ describe("InterviewPracticeDialog", () => {
     expect(background).toHaveClass("object-contain", "opacity-[0.12]");
     expect(background?.className).not.toContain("mask-image");
     expect(background?.closest('[role="dialog"]')).toBeNull();
-    expect(screen.getByRole("status")).toHaveTextContent("در حال تحلیل مصاحبهٔ تو هستیم");
+    const analysis = screen.getByRole("status");
+    expect(analysis).toHaveTextContent("در حال تحلیل مصاحبهٔ تو هستیم");
+    expect(analysis).toHaveClass("bg-[#f8f9f5]");
+    expect(analysis.querySelector('img[src*="radikar-interview-room-v2"]')).toHaveClass(
+      "object-contain",
+      "opacity-[0.12]",
+    );
     expect(screen.getByText("سؤال مصاحبه").parentElement).toHaveAttribute("inert");
     expect(screen.getByRole("button", { name: "خروج از مصاحبه" })).toBeDisabled();
   });

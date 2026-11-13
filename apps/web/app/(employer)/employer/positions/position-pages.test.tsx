@@ -118,6 +118,14 @@ describe("employer position pages", () => {
     expect(screen.queryByLabelText("شرح موقعیت و شرایط موردنیاز")).toBeNull();
   });
 
+  it("hides the edit action after the position is locked", () => {
+    state.status = "completed";
+    renderPage(<EmployerPositionsPage />);
+
+    expect(screen.queryByRole("link", { name: /ویرایش/ })).toBeNull();
+    expect(screen.getByRole("link", { name: /ادامهٔ فرایند جذب/ })).toBeVisible();
+  });
+
   it("creates a position from its dedicated page", async () => {
     state.apiRequest.mockResolvedValue({ id: "created-position" });
     renderPage(<NewEmployerPositionPage />);
