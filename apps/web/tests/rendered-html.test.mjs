@@ -441,19 +441,19 @@ test("employer position list uses the shared eyebrow-free page title", async () 
   assert.match(page, /<SectionTitle/);
   assert.match(page, /title="پوزیشن‌های من"/);
   assert.doesNotMatch(page, /profile\.data\.profile\.companyName/);
-  assert.match(editPage, /<SectionTitle title="ویرایش پوزیشن کاری"/);
+  assert.match(editPage, /<SectionTitle\s+title="ویرایش پوزیشن کاری"/);
   assert.doesNotMatch(editPage, /position\.companyName/);
   assert.match(detailsPage, /<SectionTitle\s+title=\{position\.title\}/);
   assert.match(detailsPage, /<dt className="text-xs text-\[#71847b\]">شرکت<\/dt>/);
 });
 
 test("employer resume previews reserve the viewport height for the original document", async () => {
-  const [positionPreview, bankPage] = await Promise.all([
+  const [positionPreview, bankPreview] = await Promise.all([
     readFile(new URL("app/(employer)/employer/positions/[id]/resume-preview.tsx", projectRoot), "utf8"),
-    readFile(new URL("app/(employer)/employer/resume-bank/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(employer)/employer/positions/[id]/resume-bank-preview.tsx", projectRoot), "utf8"),
   ]);
 
-  for (const source of [positionPreview, bankPage]) {
+  for (const source of [positionPreview, bankPreview]) {
     assert.match(source, /modalClassName="max-h-\[calc\(100dvh-16px\)\] p-3 pb-3/);
     assert.match(source, /mt-2/);
     assert.match(source, /h-\[calc\(100dvh-106px\)\]/);
@@ -462,10 +462,13 @@ test("employer resume previews reserve the viewport height for the original docu
 });
 
 test("employer resume bank preview uses one concise header line", async () => {
-  const bankPage = await readFile(new URL("app/(employer)/employer/resume-bank/page.tsx", projectRoot), "utf8");
+  const bankPreview = await readFile(
+    new URL("app/(employer)/employer/positions/[id]/resume-bank-preview.tsx", projectRoot),
+    "utf8",
+  );
 
-  assert.match(bankPage, /title=\{`پیش نمایش رزومه \$\{resume\.name \|\| resume\.fileName\}`\}/);
-  assert.doesNotMatch(bankPage, /description="پیش‌نمایش رزومهٔ بانک"/);
+  assert.match(bankPreview, /title=\{`پیش‌نمایش رزومه \$\{resume\.name \|\| resume\.fileName\}`\}/);
+  assert.doesNotMatch(bankPreview, /description="پیش‌نمایش رزومهٔ بانک"/);
 });
 
 test("employer resume bank exposes an actionable phone link", async () => {
