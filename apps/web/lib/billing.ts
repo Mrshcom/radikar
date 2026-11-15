@@ -71,6 +71,8 @@ export type AdminMembershipDetails = {
   membership: Membership;
   employerStats: {
     positions: number;
+    activePositions: number;
+    hiredPositions: number;
     candidates: number;
     screenedCandidates: number;
     interviewInvitations: number;
@@ -137,10 +139,11 @@ export function usePlans() {
   });
 }
 
-export function useMembership() {
+export function useMembership(enabled = true) {
   return useQuery({
     queryKey: billingKeys.membership,
     queryFn: () => apiRequest<Membership>("/api/billing/membership"),
+    enabled,
     staleTime: 30_000,
   });
 }

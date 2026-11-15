@@ -72,8 +72,8 @@ describe("auth hooks", () => {
 
   it("blocks cross-account panel routes in both directions", async () => {
     for (const [accountType, pathname, destination] of [
-      ["employer", "/dashboard", "/employer"],
-      ["candidate", "/employer", "/dashboard"],
+      ["employer", "/dashboard", null],
+      ["candidate", "/employer/positions", "/dashboard"],
     ] as const) {
       replace.mockClear();
       route.pathname = pathname;
@@ -86,10 +86,32 @@ describe("auth hooks", () => {
           </AuthGate>
         </QueryClientProvider>,
       );
-      await waitFor(() => expect(replace).toHaveBeenCalledWith(destination));
-      expect(page.queryByText("صفحهٔ خصوصی")).toBeNull();
+      if (destination) {
+        await waitFor(() => expect(replace).toHaveBeenCalledWith(destination));
+        expect(page.queryByText("صفحهٔ خصوصی")).toBeNull();
+      } else {
+        await waitFor(() => expect(page.getByText("صفحهٔ خصوصی")).toBeVisible());
+        expect(replace).not.toHaveBeenCalled();
+      }
       page.unmount();
     }
+    route.pathname = "/dashboard";
+  });
+
+  it("allows employers to open the shared upgrade page", async () => {
+    replace.mockClear();
+    route.pathname = "/upgrade";
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    client.setQueryData(authQueryKey, { user: { id: "u", role: "user", accountType: "employer" } });
+    const page = render(
+      <QueryClientProvider client={client}>
+        <AuthGate>
+          <span>ارتقای پلن مشترک</span>
+        </AuthGate>
+      </QueryClientProvider>,
+    );
+    await waitFor(() => expect(page.getByText("ارتقای پلن مشترک")).toBeVisible());
+    expect(replace).not.toHaveBeenCalled();
     route.pathname = "/dashboard";
   });
 });

@@ -475,6 +475,8 @@ test("BillingService filters real reports and persists every admin mutation", { 
     assert.equal(employerDetails.user.accountType, "employer");
     assert.deepEqual(employerDetails.employerStats, {
       positions: 1,
+      activePositions: 1,
+      hiredPositions: 0,
       candidates: 2,
       screenedCandidates: 1,
       interviewInvitations: 1,

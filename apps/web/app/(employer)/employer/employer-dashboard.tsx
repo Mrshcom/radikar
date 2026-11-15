@@ -104,7 +104,7 @@ function suggestedAction(profileExists: boolean, positions: EmployerPosition[]):
   };
 }
 
-export default function EmployerDashboardPage() {
+export default function EmployerDashboard() {
   const profile = useEmployerProfile();
   const positions = useEmployerPositions();
   const items = positions.data ?? [];
@@ -161,7 +161,7 @@ export default function EmployerDashboardPage() {
               </Link>
               <Link
                 className="inline-flex min-h-10 items-center justify-center rounded-[10px] border border-white/15 bg-white/5 px-4 text-[10px] font-bold text-[#d8ebe5] no-underline transition hover:bg-white/10 hover:text-white"
-                href="/employer/account-center"
+                href="/account-center"
               >
                 مرکز کارفرما
               </Link>
@@ -332,7 +332,7 @@ export default function EmployerDashboardPage() {
           <section className="grid grid-cols-2 gap-2 rounded-[17px] border border-[#e7ebe6] bg-white p-3 shadow-[0_12px_36px_rgba(27,55,50,.055)]">
             <Link
               className="group flex min-h-[64px] items-center gap-2.5 rounded-xl bg-[#f2f8f4] px-3 text-[9px] font-bold text-[#416158] no-underline transition hover:bg-[#e9f4ee] hover:text-[#0f7b62]"
-              href="/employer/account-center"
+              href="/account-center"
             >
               <span className="grid size-8 place-items-center rounded-[10px] bg-white text-[#0f7b62]">
                 <UsersRound aria-hidden="true" size={16} />
@@ -341,7 +341,7 @@ export default function EmployerDashboardPage() {
             </Link>
             <Link
               className="group flex min-h-[64px] items-center gap-2.5 rounded-xl bg-[#fff8e8] px-3 text-[9px] font-bold text-[#765c25] no-underline transition hover:bg-[#fff3d6]"
-              href="/employer/radicoins"
+              href="/radicoins/buy"
             >
               <span className="grid size-8 place-items-center rounded-[10px] bg-white text-[#a57925]">
                 <WalletCards aria-hidden="true" size={16} />

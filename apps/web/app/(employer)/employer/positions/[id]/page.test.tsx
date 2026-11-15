@@ -5,6 +5,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   apiRequest: vi.fn(),
+  loading: false,
+  extraCandidate: false,
+  bankResumes: [] as Array<{
+    id: string;
+    fileName: string;
+    hasOriginalFile: boolean;
+    extractionError: string | null;
+    name: string | null;
+    specialty: string | null;
+    email: string | null;
+    phone: string | null;
+    createdAt: string;
+    canDelete: boolean;
+    positions: [];
+  }>,
   stage: 2,
   empty: false,
   reviewMethod: null as "manual" | "smart" | null,
@@ -46,22 +61,28 @@ vi.mock("@/lib/employer", () => ({
     failed: { label: "پایش ناموفق", className: "bg-[#fff0ed] text-[#b2513e]" },
   },
   employerKeys: { position: (id: string) => ["employer", "positions", id], resumeBank: ["employer", "resume-bank"] },
-  useEmployerResumeBank: () => ({ data: [], isLoading: false }),
+  useEmployerResumeBank: () => ({ data: state.bankResumes, isLoading: false }),
   useEmployerPosition: () => ({
-    data: {
-      position: {
-        title: "مهندس نرم‌افزار",
-        companyName: "شرکت نمونه",
-        description: "شرح پوزیشن",
-        workflowStage: state.stage,
-        reviewMethod: state.reviewMethod,
-        screeningStatus: state.screeningStatus,
-        screeningError: state.screeningError,
-      },
-      candidates: state.empty ? [] : [state.candidate],
-      costs: { screening: 14, interview: 84 },
-    },
-    isLoading: false,
+    data: state.loading
+      ? undefined
+      : {
+          position: {
+            title: "مهندس نرم‌افزار",
+            companyName: "شرکت نمونه",
+            description: "شرح پوزیشن",
+            workflowStage: state.stage,
+            reviewMethod: state.reviewMethod,
+            screeningStatus: state.screeningStatus,
+            screeningError: state.screeningError,
+          },
+          candidates: state.empty
+            ? []
+            : state.extraCandidate
+              ? [state.candidate, { ...state.candidate, id: "candidate-2", fileName: "second-resume.pdf" }]
+              : [state.candidate],
+          costs: { screening: 14, interview: 84 },
+        },
+    isLoading: state.loading,
     error: null,
   }),
 }));
@@ -69,6 +90,9 @@ vi.mock("@/lib/radicoins", () => ({
   useRadicoinWallet: () => ({ data: { wallet: { availableCoins: 0 } }, refetch: vi.fn() }),
 }));
 vi.mock("./resume-preview", () => ({ EmployerResumePreview: () => <div>پیش‌نمایش</div> }));
+vi.mock("./resume-bank-preview", () => ({
+  EmployerBankResumePreview: ({ resume }: { resume: { fileName: string } }) => <div>پیش‌نمایش {resume.fileName}</div>,
+}));
 vi.mock("@/app/(panel)/_components/jalali-date-picker", () => ({
   JalaliDatePicker: ({ onChange, ariaLabel }: { onChange: (value: string) => void; ariaLabel: string }) => (
     <button type="button" aria-label={ariaLabel} onClick={() => onChange("2030-12-31")}>
@@ -100,6 +124,9 @@ import EmployerPositionPage from "./page";
 describe("employer position detail", () => {
   beforeEach(() => {
     state.apiRequest.mockReset();
+    state.loading = false;
+    state.extraCandidate = false;
+    state.bankResumes = [];
     state.stage = 2;
     state.empty = false;
     state.reviewMethod = null;
@@ -113,18 +140,54 @@ describe("employer position detail", () => {
     state.candidate.conversationQuestions = null;
   });
 
+  it("shows the dedicated workspace loading state before rendering any hiring step", () => {
+    state.loading = true;
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent("در حال آماده‌سازی فضای جذب");
+    expect(screen.queryByRole("heading", { name: "افزودن رزومه‌ها" })).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "مراحل جذب برای این پوزیشن" })).toBeNull();
+  });
+
+  it("submits a position closure through the close endpoint", async () => {
+    state.apiRequest.mockResolvedValue({ reward: 0 });
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "بستن جذب" }));
+    fireEvent.click(screen.getByRole("button", { name: "علت بستن جذب" }));
+    fireEvent.click(screen.getByRole("option", { name: "نیاز سازمان تغییر کرد" }));
+    fireEvent.click(screen.getByRole("button", { name: "بستن پوزیشن" }));
+
+    await waitFor(() =>
+      expect(state.apiRequest).toHaveBeenCalledWith("/api/employer/positions/position-1/close", {
+        method: "POST",
+        body: JSON.stringify({ reason: "changed_need", note: undefined, hiredCandidateId: undefined }),
+      }),
+    );
+  });
+
   it("shows only the resume step until the employer continues", () => {
     render(
       <QueryClientProvider client={new QueryClient()}>
         <EmployerPositionPage />
       </QueryClientProvider>,
     );
-    const fileName = screen.getAllByText("resume-sample.pdf")[0];
+    const fileName = screen.getByText("نام کارجو استخراج نشده است");
     const pageTitle = screen.getByRole("heading", { name: "مهندس نرم‌افزار", level: 1 });
     expect(pageTitle.parentElement?.querySelector("p")).toBeNull();
     const headerActions = screen.getByRole("link", { name: "ویرایش پوزیشن" }).parentElement;
     expect(headerActions?.firstElementChild).toHaveTextContent("در انتظار پایش");
-    expect(headerActions?.lastElementChild).toHaveTextContent("ویرایش پوزیشن");
+    expect(screen.getByRole("button", { name: "بستن جذب" })).toBeVisible();
     const row = fileName.closest('[dir="rtl"]');
     expect(row).toHaveClass("grid-cols-[minmax(0,1fr)_auto]");
     expect(row?.firstElementChild).toContainElement(fileName);
@@ -140,6 +203,123 @@ describe("employer position detail", () => {
     expect(screen.queryByRole("heading", { name: "دعوت به مصاحبه" })).toBeNull();
     expect(screen.getByRole("button", { name: /مرحلهٔ بعد/ })).toBeEnabled();
     expect(screen.getByRole("button", { name: /انتخاب و دعوت/ })).toBeDisabled();
+  });
+
+  it("uses a focused bank-resume call to action in the resume step", () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /انتخاب از بانک رزومه/ }));
+
+    expect(screen.getByRole("heading", { name: "رزومه‌های آماده در بانک" })).toBeVisible();
+    expect(screen.getByText(/ظرفیت باقی‌مانده: ۹۹ رزومه/)).toBeVisible();
+    expect(screen.getByRole("button", { name: /جست‌وجو و انتخاب رزومه‌ها/ })).toBeVisible();
+  });
+
+  it("keeps the bank picker compact and supports selecting all visible resumes and previewing one", () => {
+    state.bankResumes = [
+      {
+        id: "bank-1",
+        fileName: "bank-first.pdf",
+        hasOriginalFile: true,
+        extractionError: null,
+        name: "علی اکبری",
+        specialty: "Backend Developer",
+        email: null,
+        phone: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        canDelete: true,
+        positions: [],
+      },
+      {
+        id: "bank-2",
+        fileName: "bank-second.pdf",
+        hasOriginalFile: true,
+        extractionError: null,
+        name: "مریم رضایی",
+        specialty: "Product Manager",
+        email: null,
+        phone: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        canDelete: true,
+        positions: [],
+      },
+    ];
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /انتخاب از بانک رزومه/ }));
+    fireEvent.click(screen.getByRole("button", { name: /جست‌وجو و انتخاب رزومه‌ها/ }));
+    const picker = screen.getByRole("dialog", { name: "انتخاب از بانک رزومه" });
+    expect(picker).toHaveClass("!max-w-[750px]");
+    fireEvent.click(screen.getByRole("checkbox", { name: "انتخاب همه رزومه‌های نمایش‌داده‌شده" }));
+    expect(picker).toHaveTextContent(/[۲2] انتخاب‌شده/);
+    fireEvent.click(screen.getByRole("button", { name: "نمایش رزومه علی اکبری" }));
+    expect(screen.getByText("پیش‌نمایش bank-first.pdf")).toBeVisible();
+  });
+
+  it("selects a bank resume by clicking its card, while the preview action does not change selection", () => {
+    state.bankResumes = [
+      {
+        id: "bank-1",
+        fileName: "bank-first.pdf",
+        hasOriginalFile: true,
+        extractionError: null,
+        name: "علی اکبری",
+        specialty: "Backend Developer",
+        email: null,
+        phone: null,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        canDelete: true,
+        positions: [],
+      },
+    ];
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /انتخاب از بانک رزومه/ }));
+    fireEvent.click(screen.getByRole("button", { name: /جست‌وجو و انتخاب رزومه‌ها/ }));
+    fireEvent.click(screen.getByText("علی اکبری"));
+    expect(screen.getByRole("checkbox", { name: "انتخاب علی اکبری" })).toBeChecked();
+
+    fireEvent.click(screen.getByRole("button", { name: "نمایش رزومه علی اکبری" }));
+    expect(screen.getByText("پیش‌نمایش bank-first.pdf")).toBeVisible();
+  });
+
+  it("removes selected resumes together after confirmation", async () => {
+    state.extraCandidate = true;
+    state.apiRequest.mockResolvedValue({ count: 2 });
+
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerPositionPage />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "حذف گروهی" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "انتخاب همه رزومه‌های قابل حذف" }));
+    expect(screen.getByText("۲ رزومه انتخاب شده")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "حذف انتخاب‌شده‌ها" }));
+    expect(screen.getByRole("dialog", { name: "تأیید حذف رزومه‌ها" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "حذف ۲ رزومه" }));
+
+    await waitFor(() =>
+      expect(state.apiRequest).toHaveBeenCalledWith("/api/employer/positions/position-1/resumes", {
+        method: "DELETE",
+        body: JSON.stringify({ candidateIds: ["candidate-1", "candidate-2"] }),
+      }),
+    );
   });
 
   it("labels an unsent invite accurately and saves a missing mobile through the modal", async () => {
@@ -328,8 +508,14 @@ describe("employer position detail", () => {
     );
   });
 
-  it("uploads only after explicit confirmation", async () => {
-    state.apiRequest.mockResolvedValue({ count: 2 });
+  it("uploads selected resumes immediately without a second confirmation", async () => {
+    let finishUpload: ((value: { count: number }) => void) | undefined;
+    state.apiRequest.mockImplementation(
+      () =>
+        new Promise<{ count: number }>((resolve) => {
+          finishUpload = resolve;
+        }),
+    );
     const view = render(
       <QueryClientProvider client={new QueryClient()}>
         <EmployerPositionPage />
@@ -346,14 +532,16 @@ describe("employer position detail", () => {
       },
     });
     fireEvent.change(input, { target: { files } });
-    expect(state.apiRequest).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "افزودن ۱ رزومه" }));
     await waitFor(() =>
       expect(state.apiRequest).toHaveBeenCalledWith(
         "/api/employer/positions/position-1/resumes",
         expect.objectContaining({ method: "POST", body: expect.any(FormData) }),
       ),
     );
+    expect(screen.getByRole("status")).toHaveTextContent("در حال افزودن رزومه‌ها...");
+    expect(screen.queryByText("another.pdf")).toBeNull();
+    finishUpload?.({ count: 1 });
+    expect(screen.queryByRole("button", { name: "افزودن ۱ رزومه" })).not.toBeInTheDocument();
   });
 
   it("keeps later steps locked until at least one resume exists", () => {

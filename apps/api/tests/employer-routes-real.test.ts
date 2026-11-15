@@ -240,6 +240,17 @@ test(
         assert.equal(positionResponse.statusCode, 201);
         assert.equal(positionResponse.json().companyName, "شرکت نمونه");
         const positionId = positionResponse.json().id as string;
+        const initialActivityStats = await app.inject({ method: "GET", url: "/api/employer/activity-stats" });
+        assert.equal(initialActivityStats.statusCode, 200);
+        assert.deepEqual(initialActivityStats.json(), {
+          positions: 1,
+          activePositions: 1,
+          hiredPositions: 0,
+          candidates: 0,
+          screenedCandidates: 0,
+          interviewInvitations: 0,
+          radicoinBalance: 200,
+        });
         const editedInput = { ...positionInput, title: "مهندس ارشد نرم‌افزار" };
         const candidateCannotEdit = await app.inject({
           method: "PATCH",
@@ -280,6 +291,7 @@ test(
           },
         ]);
         const disposableId = randomUUID();
+        const bulkDisposableId = randomUUID();
         await db.insert(employerCandidates).values({
           id: disposableId,
           positionId,
@@ -287,6 +299,14 @@ test(
           fileHash: "disposable",
           fileData: Buffer.from("%PDF-1.4\npreview"),
           resumeText: "متن آزمایشی رزومه",
+          createdAt: now,
+          updatedAt: now,
+        });
+        await db.insert(employerCandidates).values({
+          id: bulkDisposableId,
+          positionId,
+          fileName: "bulk-mistake.pdf",
+          fileHash: "bulk-disposable",
           createdAt: now,
           updatedAt: now,
         });
@@ -333,11 +353,13 @@ test(
           ).statusCode,
           403,
         );
-        assert.equal(
-          (await app.inject({ method: "DELETE", url: `/api/employer/positions/${positionId}/resumes/${disposableId}` }))
-            .statusCode,
-          200,
-        );
+        const bulkDelete = await app.inject({
+          method: "DELETE",
+          url: `/api/employer/positions/${positionId}/resumes`,
+          payload: { candidateIds: [disposableId, bulkDisposableId] },
+        });
+        assert.equal(bulkDelete.statusCode, 200);
+        assert.equal(bulkDelete.json().count, 2);
         assert.equal(
           (await app.inject({ method: "GET", url: `/api/employer/positions/${positionId}/resumes/${disposableId}` }))
             .statusCode,
@@ -501,7 +523,15 @@ test(
           payload: multipartPayload,
         });
         assert.equal(upload.statusCode, 201);
-        assert.equal(upload.json().count, 2);
+        assert.deepEqual(upload.json(), { count: 2, duplicateCount: 0 });
+        const repeatedUpload = await app.inject({
+          method: "POST",
+          url: `/api/employer/positions/${directPositionId}/resumes`,
+          headers: { "content-type": `multipart/form-data; boundary=${boundary}` },
+          payload: multipartPayload,
+        });
+        assert.equal(repeatedUpload.statusCode, 201);
+        assert.deepEqual(repeatedUpload.json(), { count: 0, duplicateCount: 2 });
         const reproductionPosition = await app.inject({
           method: "POST",
           url: "/api/employer/positions",
@@ -918,6 +948,21 @@ test(
           createdAt: new Date(),
           updatedAt: new Date(),
         });
+        const duplicateContactBankResumeId = randomUUID();
+        await db.insert(employerResumeBank).values({
+          id: duplicateContactBankResumeId,
+          ownerUserId: owner,
+          fileName: "bank-resume-updated.pdf",
+          fileHash: createHash("sha256").update("bank-resume-updated").digest("hex"),
+          fileData: Buffer.from("%PDF-1.4\\nbank-resume-updated"),
+          resumeText: "رزومهٔ جدید همان کارجو",
+          name: "نامزد بانک",
+          specialty: "Backend Developer",
+          email: "BANK@example.com",
+          phone: "09158135580",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
         const bankList = await app.inject({ method: "GET", url: "/api/employer/resume-bank" });
         assert.equal(bankList.statusCode, 200);
         assert.equal(
@@ -975,9 +1020,10 @@ test(
         const importFromBank = await app.inject({
           method: "POST",
           url: `/api/employer/positions/${bankPositionId}/resume-bank`,
-          payload: { resumeIds: [bankResumeId] },
+          payload: { resumeIds: [bankResumeId, duplicateContactBankResumeId] },
         });
         assert.equal(importFromBank.statusCode, 201);
+        assert.deepEqual(importFromBank.json(), { count: 1, duplicateCount: 1 });
         const continueBankFlow = await app.inject({
           method: "POST",
           url: `/api/employer/positions/${bankPositionId}/continue`,

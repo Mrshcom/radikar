@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BriefcaseBusiness, ChevronLeft, Pencil, Plus } from "lucide-react";
 import { positionWorkflowBadge, useEmployerPositions, useEmployerProfile } from "@/lib/employer";
 import { SectionTitle } from "@/app/(panel)/_components/ui";
+import { HoverTooltip } from "@/app/(panel)/_components/hover-tooltip";
 
 export default function EmployerPositionsPage() {
+  const router = useRouter();
   const profile = useEmployerProfile();
-  const positions = useEmployerPositions();
+  const positions = useEmployerPositions("all");
 
   return (
     <div className="space-y-7">
@@ -48,42 +51,63 @@ export default function EmployerPositionsPage() {
           <p className="mt-2 text-sm text-[#647a70]">اولین پوزیشن را بساز تا ورود رزومه‌ها را شروع کنی.</p>
         </section>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-2">
           {positions.data.map((position) => {
             const canEdit = position.screeningStatus === "not_started" && (position.workflowStage ?? 1) === 1;
             return (
-            <article className="rounded-[20px] border border-[#dfe9e3] bg-white p-5 sm:p-6" key={position.id}>
+            <article
+              className="group flex h-full cursor-pointer flex-col rounded-[20px] border border-[#dfe9e3] bg-linear-to-br from-white to-[#f8fcf9] p-4 shadow-[0_3px_14px_rgba(21,62,45,.035)] transition duration-200 hover:border-[#a9d4bb] hover:shadow-[0_12px_28px_rgba(15,123,98,.09)] sm:p-5"
+              key={position.id}
+              onClick={() => router.push(`/employer/positions/${position.id}`)}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h2 className="m-0 truncate text-lg font-bold text-[#19312f]" title={position.title}>
                     {position.title}
                   </h2>
-                  <p className="mb-0 mt-1 text-xs text-[#71887a]">{position.companyName}</p>
+                  <p className="mb-0 mt-1 text-[10px] text-[#71887a]">{position.companyName}</p>
                 </div>
                 <span
-                  className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold ${positionWorkflowBadge(position).className}`}
+                  className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold ${
+                    position.closedAt
+                      ? position.closureReason === "hired"
+                        ? "bg-[#e5f4ec] text-[#0f7b62]"
+                        : "bg-[#f1f4f2] text-[#63766f]"
+                      : positionWorkflowBadge(position).className
+                  }`}
                 >
-                  {positionWorkflowBadge(position).label}
+                  {position.closedAt ? `بسته‌شده — ${position.closureReason === "hired" ? "استخدام شد" : "متوقف شد"}` : positionWorkflowBadge(position).label}
                 </span>
               </div>
-              <p className="mt-4 line-clamp-2 min-h-12 text-xs leading-6 text-[#647a70]">{position.description}</p>
-              <div className="mt-5 flex w-full flex-wrap items-center justify-between gap-4 border-t border-[#edf1ec] pt-4">
-                {canEdit ? (
+              <HoverTooltip
+                as="div"
+                className="mt-3 block min-w-0"
+                content={position.description}
+                contentClassName="!max-w-[min(420px,calc(100vw-24px))] !whitespace-normal text-right leading-6"
+              >
+                <p className="m-0 line-clamp-1 text-xs leading-6 text-[#647a70]">{position.description}</p>
+              </HoverTooltip>
+              <div className="mt-auto pt-4">
+                <div className="flex w-full flex-wrap items-center justify-between gap-3 border-t border-[#e6eee9] pt-3">
+                  {canEdit ? (
+                    <Link
+                      className="inline-flex items-center gap-1 text-xs font-bold text-[#647a70] no-underline"
+                      href={`/employer/positions/${position.id}/edit`}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <Pencil size={14} /> ویرایش
+                    </Link>
+                  ) : (
+                    <span aria-hidden="true" />
+                  )}
                   <Link
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#647a70] no-underline"
-                    href={`/employer/positions/${position.id}/edit`}
+                    className="inline-flex items-center gap-1.5 text-[10px] font-bold text-[#0f7b62] no-underline transition hover:text-[#095f4c] hover:no-underline"
+                    href={`/employer/positions/${position.id}`}
+                    onClick={(event) => event.stopPropagation()}
                   >
-                    <Pencil size={14} /> ویرایش
+                    ادامهٔ فرایند جذب <ChevronLeft size={15} />
                   </Link>
-                ) : (
-                  <span aria-hidden="true" />
-                )}
-                <Link
-                  className="inline-flex items-center gap-1 text-xs font-bold text-[#0f7b62] no-underline"
-                  href={`/employer/positions/${position.id}`}
-                >
-                  ادامهٔ فرایند جذب <ChevronLeft size={15} />
-                </Link>
+                </div>
               </div>
             </article>
             );

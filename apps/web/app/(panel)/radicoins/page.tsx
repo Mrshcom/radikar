@@ -117,25 +117,30 @@ export default function RadicoinsPage() {
                 ? "موجودی و گردش رادیکوین را ببین و برای پایش رزومه‌ها، دعوت نامزدها یا ارتقای پلن کارفرما از آن استفاده کن."
                 : "با حضور و فعالیت واقعی در رادیکار سکه جمع کن و آن‌ها را برای ارتقای پلن خرج کن. رادیکوین‌های عادی منقضی نمی‌شوند."}
             </p>
-            <Link className="mt-4 inline-flex w-fit items-center gap-2 rounded-[11px] bg-[#0f7b62] px-4 py-2.5 text-[11px] font-bold text-white no-underline transition hover:bg-[#0b6954]" href={isEmployer ? "/employer/radicoins" : "/radicoins/buy"}>
-              خرید و شارژ رادیکوین <ShoppingBag size={16} />
-            </Link>
-            <div className="mt-6 flex w-fit min-w-56 items-center gap-4 rounded-[18px] bg-white/95 px-5 py-4 shadow-[0_16px_45px_rgba(31,76,64,.12)] backdrop-blur-md">
-              <Image
-                alt=""
-                aria-hidden="true"
-                className="size-14 shrink-0 object-contain drop-shadow-[0_8px_18px_rgba(199,145,20,.22)]"
-                height={56}
-                src="/illustrations/radicoin-coin-m-v3.png"
-                width={56}
-              />
-              <div>
-                <span className="block text-[9px] text-[#7b8c87]">موجودی قابل‌استفاده</span>
-                <strong className="mt-1 block text-[27px] font-black leading-none text-[#19312f]">
-                  {balance.toLocaleString("fa-IR")}{" "}
-                  <small className="text-[9px] font-medium text-[#7b8c87]">رادیکوین</small>
-                </strong>
+            <div className="mt-6 flex flex-wrap items-stretch gap-3">
+              <div className="flex min-h-[88px] min-w-56 items-center gap-4 rounded-[18px] bg-white/95 px-5 py-4 shadow-[0_16px_45px_rgba(31,76,64,.12)] backdrop-blur-md">
+                <Image
+                  alt=""
+                  aria-hidden="true"
+                  className="size-14 shrink-0 object-contain drop-shadow-[0_8px_18px_rgba(199,145,20,.22)]"
+                  height={56}
+                  src="/illustrations/radicoin-coin-m-v3.png"
+                  width={56}
+                />
+                <div>
+                  <span className="block text-[9px] text-[#7b8c87]">موجودی قابل‌استفاده</span>
+                  <strong className="mt-1 block text-[27px] font-black leading-none text-[#19312f]">
+                    {balance.toLocaleString("fa-IR")}{" "}
+                    <small className="text-[9px] font-medium text-[#7b8c87]">رادیکوین</small>
+                  </strong>
+                </div>
               </div>
+              <Link
+                className="inline-flex min-h-[88px] items-center justify-center gap-2 rounded-[18px] bg-[#0f7b62] px-5 text-[11px] font-bold text-white no-underline transition hover:bg-[#0b6954]"
+                href="/radicoins/buy"
+              >
+                شارژ رادیکوین <ShoppingBag size={16} />
+              </Link>
             </div>
           </div>
           <div className="relative min-h-[370px] lg:min-h-full">
@@ -231,7 +236,7 @@ export default function RadicoinsPage() {
           </div>
           <Link
             className="inline-flex min-h-10 items-center gap-2 rounded-[11px] bg-[#0f7b62] px-4 text-[10px] font-bold text-white no-underline"
-            href={isEmployer ? "/employer/plans" : "/upgrade"}
+            href="/upgrade"
           >
             مشاهده پلن‌ها و ارتقا <ArrowLeft size={15} />
           </Link>

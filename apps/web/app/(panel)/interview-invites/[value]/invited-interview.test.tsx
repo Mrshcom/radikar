@@ -90,17 +90,16 @@ describe("invited interview conversation", () => {
     expect(screen.queryByRole("textbox", { name: "پاسخ تو" })).toBeNull();
   });
 
-  it("returns to the invited interviews list from the details header", async () => {
+  it("links to the invited interviews list from the details header", async () => {
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
         <InvitedInterview />
       </QueryClientProvider>,
     );
 
-    const backButton = await screen.findByRole("button", { name: "بازگشت به مصاحبه‌های دعوتی" });
-    expect(backButton.closest("header")).toBeNull();
-    fireEvent.click(backButton);
-    expect(mocks.push).toHaveBeenCalledWith("/interview-invites");
+    const backLink = await screen.findByRole("link", { name: "بازگشت به مصاحبه‌های دعوتی" });
+    expect(backLink).toHaveAttribute("href", "/interview-invites");
+    expect(backLink.closest("header")).toBeNull();
   });
 
   it("shows an expired invitation in the report layout without an interview score or entry action", async () => {

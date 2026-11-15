@@ -49,4 +49,25 @@ describe("حالت‌های مشترک جدول داده", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("خطای خواندن");
     expect(screen.queryByText("نباید دیده شود")).not.toBeInTheDocument();
   });
+
+  it("دکمه‌های ستون عملیات را در لبهٔ چپ جدول نگه می‌دارد", () => {
+    render(
+      <DataTable
+        columns={[
+          { key: "name", title: "نام", render: (row: { name: string }) => row.name },
+          {
+            key: "actions",
+            title: "عملیات",
+            sortable: false,
+            render: () => <button type="button">ویرایش</button>,
+          },
+        ]}
+        rows={[{ name: "رادیکار" }]}
+        getRowKey={(row) => row.name}
+      />,
+    );
+
+    expect(screen.getByRole("columnheader", { name: "عملیات" })).toHaveClass("text-center");
+    expect(screen.getByRole("button", { name: "ویرایش" }).parentElement?.parentElement).toHaveAttribute("dir", "ltr");
+  });
 });

@@ -43,12 +43,12 @@ const groups: Array<{ title: string; icon: LucideIcon; links: CenterLink[] }> = 
     icon: CreditCard,
     links: [
       {
-        href: "/employer/radicoins",
+        href: "/radicoins/buy",
         label: "خرید رادیکوین",
         description: "شارژ کیف پول با پرداخت آنلاین",
         icon: ShoppingBag,
       },
-      { href: "/employer/plans", label: "پلن‌های کارفرما", description: "امکانات و ارتقای استخدام", icon: BadgeCheck },
+      { href: "/upgrade", label: "پلن‌های کارفرما", description: "امکانات و ارتقای استخدام", icon: BadgeCheck },
       { href: "/orders", label: "سفارش‌ها و پرداخت‌ها", description: "سوابق پرداخت و وضعیت سفارش", icon: ReceiptText },
     ],
   },
@@ -155,7 +155,7 @@ export default function EmployerAccountCenterPage() {
           </strong>
           <Link
             className="mt-auto inline-flex w-fit items-center gap-1.5 text-xs font-bold text-[#0f7b62] no-underline"
-            href="/employer/plans"
+            href="/upgrade"
           >
             مشاهده پلن‌ها <ArrowLeft aria-hidden="true" size={14} />
           </Link>
@@ -178,7 +178,7 @@ export default function EmployerAccountCenterPage() {
           </strong>
           <Link
             className="mt-auto inline-flex w-fit items-center gap-1.5 text-xs font-bold text-[#876523] no-underline"
-            href="/employer/radicoins"
+            href="/radicoins/buy"
           >
             خرید رادیکوین <ArrowLeft aria-hidden="true" size={14} />
           </Link>

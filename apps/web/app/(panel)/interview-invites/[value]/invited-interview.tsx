@@ -8,7 +8,6 @@ import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import {
   ArrowLeft,
-  ArrowRight,
   BriefcaseBusiness,
   CheckCircle2,
   Clock3,
@@ -28,7 +27,7 @@ import {
   InterviewReportView,
   type InterviewReportViewData,
 } from "../../interview/interview-result";
-import { ConfirmActionModal, SectionTitle } from "../../_components/ui";
+import { ConfirmActionModal, SectionBackLink, SectionTitle } from "../../_components/ui";
 
 type Invitation = {
   companyName: string;
@@ -397,16 +396,7 @@ export default function InvitedInterview() {
             <BriefcaseBusiness size={16} className="text-[#0f7b62]" /> {data.companyName}
           </div>
         }
-        leading={
-          <button
-            type="button"
-            onClick={() => router.push("/interview-invites")}
-            aria-label="بازگشت به مصاحبه‌های دعوتی"
-            className="grid size-9 shrink-0 place-items-center rounded-full text-[#19312f] hover:bg-[#e6f2eb] hover:text-[#0f7b62]"
-          >
-            <ArrowRight size={20} aria-hidden="true" />
-          </button>
-        }
+        leading={<SectionBackLink href="/interview-invites" label="بازگشت به مصاحبه‌های دعوتی" />}
       />
       {expired && !isCompleted && <InterviewReportHero variant="expired" />}
       {!fullscreenReady && integrityWarning && (

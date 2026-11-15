@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, LockKeyhole, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { employerKeys, useEmployerPosition, type EmployerPosition } from "@/lib/employer";
-import { DeleteConfirmModal, SectionTitle } from "@/app/(panel)/_components/ui";
+import { DeleteConfirmModal, SectionBackLink, SectionTitle } from "@/app/(panel)/_components/ui";
 import { PositionForm, type PositionValues } from "../../_components/position-form";
 import { availableHiringStep, HiringWorkflow } from "../../_components/hiring-workflow";
 import { useState } from "react";
@@ -47,13 +47,11 @@ export default function EditEmployerPositionPage() {
   const openStep = (step: 2 | 3 | 4) => router.push(`/employer/positions/${id}?step=${step}`);
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <Link
-        className="inline-flex items-center gap-2 text-xs font-bold text-[#0f7b62] no-underline"
-        href={`/employer/positions/${id}`}
-      >
-        <ArrowRight size={16} /> بازگشت به پوزیشن
-      </Link>
-      <SectionTitle title="ویرایش پوزیشن کاری" description="عنوان و شرایط را پیش از شروع پایش یا ساخت دعوت اصلاح کن." />
+      <SectionTitle
+        title="ویرایش پوزیشن کاری"
+        description="عنوان و شرایط را پیش از شروع پایش یا ساخت دعوت اصلاح کن."
+        leading={<SectionBackLink href={`/employer/positions/${id}`} label="بازگشت به پوزیشن" />}
+      />
       <HiringWorkflow
         currentStep={1}
         availableStep={availableStep}

@@ -23,7 +23,9 @@ import { DashboardSkeleton } from "../_components/skeletons";
 import { SectionTitle } from "../_components/ui";
 import { emptyState, panelSurface, primaryAction, secondaryAction } from "../_components/panel-styles";
 import { useToast } from "@/app/_components/toast";
+import { useAuth } from "@/app/_components/auth";
 import { UpgradeLink } from "@/app/_components/upgrade-link";
+import EmployerDashboard from "@/app/(employer)/employer/employer-dashboard";
 import { useModelTasks } from "../_components/model-task-provider";
 import {
   applicationStore,
@@ -196,7 +198,7 @@ function ExpandableText({
   );
 }
 
-export default function DashboardPage() {
+function CandidateDashboard() {
   const notify = useToast();
   const { runModelTask } = useModelTasks();
   const queryClient = useQueryClient();
@@ -630,4 +632,10 @@ export default function DashboardPage() {
       </section>
     </>
   );
+}
+
+export default function DashboardRoute() {
+  const { user } = useAuth();
+
+  return user?.accountType === "employer" ? <EmployerDashboard /> : <CandidateDashboard />;
 }

@@ -19,7 +19,7 @@ vi.mock("@/lib/radicoins", () => ({
   useRadicoinWallet: () => ({ data: { wallet: { availableCoins: 240 } }, isPending: false }),
 }));
 
-import AccountCenterPage from "./page";
+import AccountCenterPage from "./candidate-account-center";
 
 describe("AccountCenterPage", () => {
   it("groups links to unchanged account, billing, security, and reward pages", () => {

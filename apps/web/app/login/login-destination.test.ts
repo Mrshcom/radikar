@@ -9,9 +9,9 @@ describe("login portal routing", () => {
 
   it("keeps candidate invitation deep links and rejects cross-portal and external redirects", () => {
     expect(loginDestination("candidate", "/interview-invites/invite")).toBe("/interview-invites/invite");
-    expect(loginDestination("candidate", "/employer")).toBe("/dashboard");
-    expect(loginDestination("employer", "//evil.example")).toBe("/employer");
-    expect(loginDestination("employer", "/dashboard")).toBe("/employer");
-    expect(loginDestination("employer", "/employer", "admin")).toBe("/admin");
+    expect(loginDestination("candidate", "/employer/positions")).toBe("/dashboard");
+    expect(loginDestination("employer", "//evil.example")).toBe("/dashboard");
+    expect(loginDestination("employer", "/dashboard")).toBe("/dashboard");
+    expect(loginDestination("employer", "/employer/positions", "admin")).toBe("/admin");
   });
 });

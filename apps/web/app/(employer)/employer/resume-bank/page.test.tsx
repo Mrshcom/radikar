@@ -115,6 +115,19 @@ vi.mock("@/lib/employer", () => ({
 import EmployerResumeBankPage from "./page";
 
 describe("employer resume bank interviews", () => {
+  it("opens the edit dialog for a resume that cannot be deleted", () => {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmployerResumeBankPage />
+      </QueryClientProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "ویرایش اطلاعات سارا" }));
+
+    expect(screen.getByRole("dialog", { name: "ویرایش اطلاعات رزومه" })).toBeVisible();
+    expect(screen.getByDisplayValue("سارا")).toBeVisible();
+  });
+
   it("filters invited resumes for the selected position and opens that interview report", () => {
     render(
       <QueryClientProvider client={new QueryClient()}>

@@ -29,7 +29,7 @@ export type CurrentUser = {
 
 export const authQueryKey = ["auth", "me"] as const;
 const isSharedCustomerPath = (pathname: string) =>
-  ["/account", "/orders", "/settings", "/referrals", "/billing/result"].includes(pathname) ||
+  ["/account", "/account-center", "/orders", "/settings", "/referrals", "/billing/result", "/upgrade"].includes(pathname) ||
   pathname === "/radicoins" ||
   pathname.startsWith("/radicoins/");
 
@@ -52,14 +52,15 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const wrongAccountPanel =
     user?.role === "user" &&
     (user.accountType === "employer") !== pathname.startsWith("/employer") &&
-    !isSharedCustomerPath(pathname);
+    !isSharedCustomerPath(pathname) &&
+    pathname !== "/dashboard";
   useEffect(() => {
     if (!isLoading && !user && error) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
     if (!isLoading && isManagement && !isManagementPath) router.replace("/admin");
     if (!isLoading && user?.role === "user" && pathname.startsWith("/admin")) {
-      router.replace(user.accountType === "employer" ? "/employer" : "/dashboard");
+      router.replace("/dashboard");
     }
-    if (!isLoading && wrongAccountPanel) router.replace(user?.accountType === "employer" ? "/employer" : "/dashboard");
+    if (!isLoading && wrongAccountPanel) router.replace("/dashboard");
   }, [error, isLoading, isManagement, isManagementPath, pathname, router, user, wrongAccountPanel]);
 
   if (

@@ -881,6 +881,13 @@ export const employerPositions = pgTable(
     interviewQuestions: jsonb("interview_questions").$type<string[]>(),
     screeningStartedAt: timestamp("screening_started_at", { withTimezone: true }),
     screeningCompletedAt: timestamp("screening_completed_at", { withTimezone: true }),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    closureReason: text("closure_reason", {
+      enum: ["hired", "cancelled", "changed_need", "duplicate", "other"],
+    }),
+    closureNote: text("closure_note"),
+    hiredCandidateId: uuid("hired_candidate_id"),
+    hiringRewardedAt: timestamp("hiring_rewarded_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
@@ -909,6 +916,8 @@ export const employerResumeBank = pgTable(
   (table) => [
     index("employer_resume_bank_owner_created_idx").on(table.ownerUserId, table.createdAt),
     index("employer_resume_bank_owner_hash_idx").on(table.ownerUserId, table.fileHash),
+    index("employer_resume_bank_owner_email_idx").on(table.ownerUserId, table.email),
+    index("employer_resume_bank_owner_phone_idx").on(table.ownerUserId, table.phone),
   ],
 );
 
@@ -954,6 +963,9 @@ export const employerCandidates = pgTable(
   },
   (table) => [
     index("employer_candidates_position_idx").on(table.positionId),
+    index("employer_candidates_position_hash_idx").on(table.positionId, table.fileHash),
+    index("employer_candidates_position_email_idx").on(table.positionId, table.email),
+    index("employer_candidates_position_phone_idx").on(table.positionId, table.phone),
     uniqueIndex("employer_candidates_invitation_token_unique").on(table.invitationTokenHash),
     index("employer_candidates_invited_user_idx").on(table.invitedUserId),
   ],

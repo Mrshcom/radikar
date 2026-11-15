@@ -129,6 +129,8 @@ describe("interactive panel controls", () => {
         accountType="employer"
         employerStats={{
           positions: 2,
+          activePositions: 2,
+          hiredPositions: 1,
           candidates: 18,
           screenedCandidates: 12,
           interviewInvitations: 4,
@@ -141,14 +143,16 @@ describe("interactive panel controls", () => {
             plan: { name: "جذب حرفه‌ای", features: ["ورود گروهی رزومه‌ها", "دعوت مستقیم به مصاحبه"] },
           } as any
         }
+        showUpgradeAction
       />,
     );
-    expect(screen.getByText("پوزیشن‌های استخدامی")).toBeVisible();
+    expect(screen.getByText("پوزیشن‌های فعال")).toBeVisible();
     expect(screen.getByText("رزومه‌های واردشده")).toBeVisible();
-    expect(screen.getByText("موجودی رادیکوین")).toBeVisible();
-    expect(screen.getByText("دعوت مستقیم به مصاحبه")).toBeVisible();
+    expect(screen.queryByText("موجودی رادیکوین")).toBeNull();
+    expect(screen.queryByText("دعوت مستقیم به مصاحبه")).toBeNull();
     expect(screen.queryByText("ساخت رزومه")).toBeNull();
     expect(screen.queryByText("دانلود PDF")).toBeNull();
     expect(screen.queryByText("تطبیق شغلی")).toBeNull();
+    expect(screen.getByRole("link", { name: /خرید یا ارتقای بسته/ })).toHaveAttribute("href", "/upgrade");
   });
 });

@@ -39,11 +39,11 @@ vi.mock("@/lib/employer", () => ({
   }),
 }));
 
-import EmployerDashboardPage from "./page";
+import EmployerDashboard from "./employer-dashboard";
 
 describe("EmployerDashboardPage", () => {
   it("uses the candidate dashboard visual hierarchy with employer actions and live position states", () => {
-    render(<EmployerDashboardPage />);
+    render(<EmployerDashboard />);
 
     expect(screen.getByRole("heading", { level: 1, name: "داشبورد شرکت نمونه" })).toBeVisible();
     expect(screen.getByRole("banner").querySelector("div")?.firstElementChild?.tagName).toBe("H1");
@@ -62,6 +62,6 @@ describe("EmployerDashboardPage", () => {
     expect(within(completedCard!).getByText("۱")).toBeVisible();
     expect(screen.getByRole("heading", { name: "آخرین پوزیشن‌ها" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "مسیر جذب در رادیکار" })).toBeVisible();
-    expect(screen.getByRole("link", { name: "خرید رادیکوین" })).toHaveAttribute("href", "/employer/radicoins");
+    expect(screen.getByRole("link", { name: "خرید رادیکوین" })).toHaveAttribute("href", "/radicoins/buy");
   });
 });

@@ -64,6 +64,8 @@ import { PanelNavigationProgress } from "./panel-navigation-progress";
 import { ModelTaskStack } from "./model-task-stack";
 import { ProductUpdatesNavLink } from "./product-updates-nav-link";
 import { useMarkAllNotificationsRead, useUserNotifications } from "@/lib/notifications";
+import { useMembership } from "@/lib/billing";
+import { useEmployerProfile } from "@/lib/employer";
 
 type MenuItem = {
   href: string;
@@ -96,7 +98,7 @@ const menuItems: MenuItem[] = [
 ];
 
 const employerMenuItems: MenuItem[] = [
-  { href: "/employer", label: "داشبورد کارفرما", icon: LayoutDashboard, roles: ["user"] },
+  { href: "/dashboard", label: "داشبورد کارفرما", icon: LayoutDashboard, roles: ["user"] },
   { href: "/employer/positions", label: "پوزیشن‌های شغلی", icon: BriefcaseBusiness, roles: ["user"] },
   { href: "/employer/resume-bank", label: "بانک رزومه‌ها", icon: FileText, roles: ["user"] },
 ];
@@ -120,12 +122,10 @@ const pageTitles: Record<string, string> = {
   "/billing/result": "نتیجه پرداخت",
   "/referrals": "دعوت دوستان",
   "/radicoins": "کیف پول رادیکوین",
+  "/radicoins/buy": "خرید رادیکوین",
   "/interview": "آمادگی برای مصاحبه",
   "/interview-invites": "مصاحبه‌های دعوتی",
-  "/employer": "داشبورد کارفرما",
-  "/employer/account-center": "مرکز کارفرما",
   "/employer/profile": "پروفایل شرکت",
-  "/employer/radicoins": "خرید رادیکوین",
   "/employer/positions": "پوزیشن‌های شغلی",
   "/employer/positions/new": "افزودن پوزیشن کاری",
   "/employer/resume-bank": "بانک رزومه‌ها",
@@ -145,7 +145,7 @@ type PanelBreadcrumb = { label: string; href?: string };
 
 function getPanelBreadcrumbs(pathname: string, title: string, isEmployer: boolean, isManagement: boolean): PanelBreadcrumb[] {
   const root = isEmployer
-    ? { href: "/employer", label: "داشبورد کارفرما" }
+    ? { href: "/dashboard", label: "داشبورد کارفرما" }
     : isManagement
       ? { href: "/admin", label: "داشبورد مدیریتی" }
       : { href: "/dashboard", label: "نمای کلی مسیر شغلی" };
@@ -162,7 +162,7 @@ function getPanelBreadcrumbs(pathname: string, title: string, isEmployer: boolea
   } else if (pathname === "/account") {
     parents.push({ href: "/account-center", label: pageTitles["/account-center"] });
   } else if (pathname === "/employer/profile") {
-    parents.push({ href: "/employer/account-center", label: pageTitles["/employer/account-center"] });
+    parents.push({ href: "/account-center", label: pageTitles["/account-center"] });
   }
 
   return [...parents, { label: title }];
@@ -311,6 +311,8 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   const userRole = user?.role;
   const isEmployer = user?.accountType === "employer" && userRole === "user";
   const radicoinWallet = useRadicoinWallet(userRole === "user");
+  const membership = useMembership(userRole === "user");
+  const employerProfile = useEmployerProfile(isEmployer);
   const isManagement = userRole === "admin" || userRole === "superadmin";
   const isSuperadmin = userRole === "superadmin";
   const adminEvents = useAdminEvents(isSuperadmin);
@@ -326,7 +328,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
   );
   const mobilePrimaryMenuItems = useMemo(() => {
     const preferredHrefs = isEmployer
-      ? ["/employer", "/employer/positions", "/employer/resume-bank"]
+      ? ["/dashboard", "/employer/positions", "/employer/resume-bank"]
       : isManagement
         ? ["/admin/users", "/admin/memberships", "/admin", "/admin/orders", "/admin/payments"]
         : ["/jobs", "/match", "/dashboard", "/resumes", "/applications"];
@@ -568,7 +570,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
       <aside className="fixed inset-y-0 start-0 z-20 flex w-[248px] flex-col border-e border-[#e7ebe6] bg-white px-4 pb-[18px] pt-6 max-[820px]:hidden">
         <Link
           className="flex items-center gap-1 border-0 bg-transparent px-[9px] pb-6 text-right text-[#19312f] no-underline"
-          href={isManagement ? "/admin" : isEmployer ? "/employer" : "/dashboard"}
+          href={isManagement ? "/admin" : "/dashboard"}
         >
           <Image
             className="block size-9 shrink-0 object-contain"
@@ -929,20 +931,26 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                         width={40}
                       />
                     </span>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1 text-right">
                       <strong className="block truncate text-[11px] text-[#19312f]">
-                        {user ? userDisplayName(user) : "حساب کاربری"}
+                        {isEmployer
+                          ? employerProfile.data?.profile?.companyName ??
+                            (employerProfile.isLoading ? "در حال دریافت نام شرکت…" : "حساب کارفرما")
+                          : user
+                            ? userDisplayName(user)
+                            : "حساب کاربری"}
                       </strong>
                       {user && (
-                        <small className="mt-0.5 block truncate text-[9px] text-[#7b8b86]" dir="ltr">
+                        <small className="mt-0.5 block truncate text-right text-[9px] text-[#7b8b86]" dir="ltr">
                           {userIdentifier(user)}
                         </small>
                       )}
                     </div>
-                    <span
-                      aria-hidden="true"
-                      className="mr-auto size-2.5 rounded-full bg-[#25a56f] shadow-[0_0_0_3px_#d8f0e4]"
-                    />
+                    {userRole === "user" && (
+                      <span className="shrink-0 self-center text-[8px] font-semibold text-[#5b756b]">
+                        پلن {membership.data?.plan.name ?? (membership.isPending ? "…" : "فعال")}
+                      </span>
+                    )}
                   </div>
                   {userRole === "user" && (
                     <Link
@@ -976,7 +984,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                         ]
                       : isEmployer
                         ? [
-                            { href: "/employer/account-center", label: "مرکز حساب", icon: UserRound },
+                            { href: "/account-center", label: "مرکز حساب", icon: UserRound },
                             { href: "/account", label: "اطلاعات حساب و مصرف", icon: BarChart3 },
                             { href: "/employer/support", label: "پشتیبانی", icon: MessageSquareText },
                           ]
@@ -1169,7 +1177,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
         {mobilePrimaryMenuItems.map((item) => {
           const Icon = item.icon;
           const active = menuItemActive(pathname, item.href);
-          const dashboardItem = item.href === (isManagement ? "/admin" : isEmployer ? "/employer" : "/dashboard");
+          const dashboardItem = item.href === (isManagement ? "/admin" : "/dashboard");
           return (
             <Link
               key={item.href}

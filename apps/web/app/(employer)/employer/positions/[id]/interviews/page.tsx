@@ -2,13 +2,12 @@
 
 import { InterviewReportView } from "@/app/(panel)/interview/interview-result";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { ArrowRight, CheckCircle2, Eye, RefreshCw, Send } from "lucide-react";
+import { CheckCircle2, Eye, RefreshCw, Send } from "lucide-react";
 import { DataTable, type DataTableColumn } from "@/app/(panel)/_components/data-table";
 import { TableActionButton } from "@/app/(panel)/_components/table-action-button";
-import { Modal, SectionTitle } from "@/app/(panel)/_components/ui";
+import { Modal, SectionBackLink, SectionTitle } from "@/app/(panel)/_components/ui";
 import { PersianDateTime } from "@/lib/date-time-display";
 import { useEmployerPosition, useSetEmployerInterviewFeedbackSharing, type EmployerCandidate } from "@/lib/employer";
 
@@ -133,14 +132,9 @@ export default function EmployerInterviewResultsPage() {
 
   return (
     <div className="space-y-6">
-      <Link
-        className="inline-flex items-center gap-1 text-xs font-bold text-[#0f7b62]"
-        href={`/employer/positions/${id}`}
-      >
-        <ArrowRight size={15} aria-hidden="true" /> بازگشت به پوزیشن
-      </Link>
       <SectionTitle
         title="پیگیری مصاحبه‌ها"
+        leading={<SectionBackLink href={`/employer/positions/${id}`} label="بازگشت به پوزیشن" />}
         description={position ? `وضعیت دعوت و نتیجهٔ مصاحبه‌های پوزیشن «${position.title}»` : undefined}
         action={
           <button

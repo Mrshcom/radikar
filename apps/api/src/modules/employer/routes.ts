@@ -29,6 +29,12 @@ const positionSchema = z.object({
 const employerProfileSchema = z.object({ companyName: z.string().trim().min(2).max(120) });
 const idSchema = z.object({ id: z.uuid() });
 const resumeIdSchema = z.object({ id: z.uuid(), candidateId: z.uuid() });
+const bulkResumeDeleteSchema = z.object({ candidateIds: z.array(z.uuid()).min(1).max(100) });
+const positionClosureSchema = z.object({
+  reason: z.enum(["hired", "cancelled", "changed_need", "duplicate", "other"]),
+  note: z.string().trim().max(1_000).optional(),
+  hiredCandidateId: z.uuid().optional(),
+});
 const bankResumeIdSchema = z.object({ resumeId: z.uuid() });
 const bankImportSchema = z.object({ resumeIds: z.array(z.uuid()).min(1).max(100) });
 const reviewMethodSchema = z.object({ method: z.enum(["manual", "smart"]) });
@@ -160,9 +166,24 @@ export function contactOf(text: string) {
         ? `0${digits}`
         : digits;
   return {
-    email: text.match(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,63}/i)?.[0] ?? null,
+    email: text.match(/[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,63}/i)?.[0]?.toLowerCase() ?? null,
     phone: /^09\d{9}$/.test(phone) ? phone : null,
   };
+}
+
+type ResumeIdentity = {
+  fileHash: string;
+  email?: string | null;
+  phone?: string | null;
+};
+
+function isDuplicateResume(resume: ResumeIdentity, knownResumes: readonly ResumeIdentity[]) {
+  return knownResumes.some(
+    (known) =>
+      known.fileHash === resume.fileHash ||
+      (resume.email != null && known.email != null && resume.email.toLowerCase() === known.email.toLowerCase()) ||
+      (resume.phone != null && known.phone != null && resume.phone === known.phone),
+  );
 }
 
 function nameOf(text: string) {
@@ -460,6 +481,38 @@ export function registerEmployerRoutes(
     return { profile: await profileOf(request.auth!.user.id) };
   });
 
+  app.get("/api/employer/activity-stats", async (request, reply) => {
+    if (!customer(request, reply)) return;
+    const ownerUserId = request.auth!.user.id;
+    const [positionStats] = await db
+      .select({
+        positions: sql<number>`count(*)`,
+        activePositions: sql<number>`count(*) filter (where ${employerPositions.closedAt} is null)`,
+        hiredPositions: sql<number>`count(*) filter (where ${employerPositions.closureReason} = 'hired')`,
+      })
+      .from(employerPositions)
+      .where(eq(employerPositions.ownerUserId, ownerUserId));
+    const [candidateStats] = await db
+      .select({
+        candidates: sql<number>`count(*)`,
+        screenedCandidates: sql<number>`count(*) filter (where ${employerCandidates.screeningStatus} = 'ready')`,
+        interviewInvitations: sql<number>`count(*) filter (where ${employerCandidates.invitationStatus} <> 'not_invited')`,
+      })
+      .from(employerCandidates)
+      .innerJoin(employerPositions, eq(employerCandidates.positionId, employerPositions.id))
+      .where(eq(employerPositions.ownerUserId, ownerUserId));
+    const wallet = await radicoin.getWallet(ownerUserId, 0);
+    return {
+      positions: Number(positionStats?.positions ?? 0),
+      activePositions: Number(positionStats?.activePositions ?? 0),
+      hiredPositions: Number(positionStats?.hiredPositions ?? 0),
+      candidates: Number(candidateStats?.candidates ?? 0),
+      screenedCandidates: Number(candidateStats?.screenedCandidates ?? 0),
+      interviewInvitations: Number(candidateStats?.interviewInvitations ?? 0),
+      radicoinBalance: wallet.wallet?.availableCoins ?? 0,
+    };
+  });
+
   app.post("/api/employer/profile", async (request, reply) => {
     if (!customer(request, reply)) return;
     const { companyName } = employerProfileSchema.parse(request.body);
@@ -560,22 +613,21 @@ export function registerEmployerRoutes(
     }
     if (!fileCount) return fail(reply, 400, "فایل رزومه‌ای ارسال نشده است.");
     const existing = await db
-      .select({ fileHash: employerResumeBank.fileHash })
+      .select({ fileHash: employerResumeBank.fileHash, email: employerResumeBank.email, phone: employerResumeBank.phone })
       .from(employerResumeBank)
-      .where(
-        and(
-          eq(employerResumeBank.ownerUserId, request.auth!.user.id),
-          inArray(employerResumeBank.fileHash, [...uniqueFiles.keys()]),
-        ),
-      );
-    const existingHashes = new Set(existing.map((resume) => resume.fileHash));
+      .where(eq(employerResumeBank.ownerUserId, request.auth!.user.id));
     const prepared: Array<typeof employerResumeBank.$inferInsert> = [];
-    for (const [fileHash, file] of uniqueFiles) {
-      if (existingHashes.has(fileHash)) continue;
-      prepared.push(await prepareBankResume(request.auth!.user.id, file.fileName, file.bytes));
+    let duplicateCount = fileCount - uniqueFiles.size;
+    for (const file of uniqueFiles.values()) {
+      const resume = await prepareBankResume(request.auth!.user.id, file.fileName, file.bytes);
+      if (isDuplicateResume(resume, [...existing, ...prepared])) {
+        duplicateCount += 1;
+        continue;
+      }
+      prepared.push(resume);
     }
     if (prepared.length) await db.insert(employerResumeBank).values(prepared);
-    return reply.code(201).send({ count: prepared.length, duplicateCount: fileCount - prepared.length });
+    return reply.code(201).send({ count: prepared.length, duplicateCount });
   });
 
   app.get("/api/employer/resume-bank/:resumeId", async (request, reply) => {
@@ -612,7 +664,7 @@ export function registerEmployerRoutes(
     const values = {
       name: parsed.data.name || null,
       specialty: parsed.data.specialty || null,
-      email: parsed.data.email || null,
+      email: parsed.data.email?.toLowerCase() || null,
       phone,
       updatedAt: new Date(),
     };
@@ -675,10 +727,18 @@ export function registerEmployerRoutes(
 
   app.get("/api/employer/positions", async (request, reply) => {
     if (!customer(request, reply)) return;
+    const { status } = z.object({ status: z.enum(["active", "closed", "all"]).optional() }).parse(request.query);
+    const visibility = status ?? "active";
     return db
       .select()
       .from(employerPositions)
-      .where(eq(employerPositions.ownerUserId, request.auth!.user.id))
+      .where(
+        visibility === "closed"
+          ? and(eq(employerPositions.ownerUserId, request.auth!.user.id), sql`${employerPositions.closedAt} IS NOT NULL`)
+          : visibility === "all"
+            ? eq(employerPositions.ownerUserId, request.auth!.user.id)
+            : and(eq(employerPositions.ownerUserId, request.auth!.user.id), sql`${employerPositions.closedAt} IS NULL`),
+      )
       .orderBy(desc(employerPositions.createdAt), desc(employerPositions.id));
   });
 
@@ -718,6 +778,49 @@ export function registerEmployerRoutes(
       candidates: current.map(publicCandidate),
       costs: { screening: screeningCost, interview: interviewCost },
     };
+  });
+
+  app.post("/api/employer/positions/:id/close", async (request, reply) => {
+    if (!customer(request, reply)) return;
+    const { id } = idSchema.parse(request.params);
+    const input = positionClosureSchema.parse(request.body);
+    const position = await ownedPosition(id, request.auth!.user.id);
+    if (!position) return fail(reply, 404, "پوزیشن پیدا نشد.");
+    if (position.closedAt) return fail(reply, 409, "این پوزیشن قبلاً بسته شده است.");
+    if (input.reason === "hired" && input.hiredCandidateId) {
+      const [candidate] = await db
+        .select({ id: employerCandidates.id })
+        .from(employerCandidates)
+        .where(and(eq(employerCandidates.id, input.hiredCandidateId), eq(employerCandidates.positionId, id)))
+        .limit(1);
+      if (!candidate) return fail(reply, 422, "نامزد انتخاب‌شده متعلق به این پوزیشن نیست.");
+    }
+    const now = new Date();
+    const activeCandidates = await db
+      .select()
+      .from(employerCandidates)
+      .where(and(eq(employerCandidates.positionId, id), inArray(employerCandidates.invitationStatus, ["invited", "accepted", "started"])));
+    await db.transaction(async (tx) => {
+      for (const candidate of activeCandidates) {
+        if (candidate.invitationTokenHash) {
+          await tx.insert(employerInvitationHistory).values({
+            id: randomUUID(), candidateId: candidate.id, positionId: id, invitedUserId: candidate.invitedUserId,
+            tokenHash: candidate.invitationTokenHash, deadline: candidate.invitationDeadline, status: "cancelled",
+            createdAt: candidate.updatedAt, cancelledAt: now,
+          });
+        }
+        await tx.update(employerCandidates).set({ invitationTokenHash: null, invitationDeadline: null, invitationStatus: "expired", updatedAt: now }).where(eq(employerCandidates.id, candidate.id));
+      }
+      await tx.update(employerPositions).set({
+        closedAt: now, closureReason: input.reason, closureNote: input.note || null,
+        hiredCandidateId: input.reason === "hired" ? input.hiredCandidateId ?? null : null,
+        hiringRewardedAt: input.reason === "hired" ? now : null, updatedAt: now,
+      }).where(eq(employerPositions.id, id));
+    });
+    await Promise.all(activeCandidates.map((candidate) => radicoin.settleOperation(position.ownerUserId, candidateReservationKey(candidate), "release")));
+    if (input.reason === "hired")
+      await radicoin.adjust(position.ownerUserId, 5, "هدیهٔ ثبت استخدام موفق", request.auth!.user.id, `position-hired:${id}`);
+    return { closedAt: now, reward: input.reason === "hired" ? 5 : 0 };
   });
 
   app.post("/api/employer/positions/:id/continue", async (request, reply) => {
@@ -811,32 +914,63 @@ export function registerEmployerRoutes(
     if (position.screeningStatus !== "not_started") return fail(reply, 409, "برای این پوزیشن پایش شروع شده است.");
     if (await hasPositionInvitations(id)) return fail(reply, 409, "پس از ساخت دعوت، افزودن رزومه ممکن نیست.");
     if (!request.isMultipart()) return fail(reply, 400, "فایل رزومه‌ای ارسال نشده است.");
-    const existing = await db
-      .select({ id: employerCandidates.id })
-      .from(employerCandidates)
-      .where(eq(employerCandidates.positionId, id));
-    let count = existing.length;
+    const [existingCandidates, bankResumes] = await Promise.all([
+      db
+        .select({ fileHash: employerCandidates.fileHash, email: employerCandidates.email, phone: employerCandidates.phone })
+        .from(employerCandidates)
+        .where(eq(employerCandidates.positionId, id)),
+      db.select().from(employerResumeBank).where(eq(employerResumeBank.ownerUserId, request.auth!.user.id)),
+    ]);
     let batchBytes = 0;
-    const prepared: Array<typeof employerResumeBank.$inferInsert> = [];
+    let fileCount = 0;
+    const uploadedFiles: Array<{ fileName: string; bytes: Buffer }> = [];
     for await (const part of request.parts({ limits: { files: maxFiles, fileSize: maxFileBytes, parts: maxFiles } })) {
       if (part.type !== "file") continue;
-      count += 1;
-      if (count > maxFiles) return fail(reply, 413, "حداکثر ۱۰۰ فایل برای هر پوزیشن پذیرفته می‌شود.");
+      fileCount += 1;
+      if (fileCount > maxFiles) return fail(reply, 413, "حداکثر ۱۰۰ فایل برای هر پوزیشن پذیرفته می‌شود.");
       const bytes = await part.toBuffer();
       batchBytes += bytes.length;
       if (batchBytes > maxBatchBytes) return fail(reply, 413, "حجم کل فایل‌ها باید حداکثر ۴۰ مگابایت باشد.");
-      prepared.push(await prepareBankResume(request.auth!.user.id, part.filename, bytes));
+      uploadedFiles.push({ fileName: part.filename, bytes });
     }
-    if (!prepared.length) return fail(reply, 400, "فایل رزومه‌ای ارسال نشده است.");
-    await db.insert(employerResumeBank).values(prepared);
-    await db.insert(employerCandidates).values(
-      prepared.map(({ ownerUserId: _ownerUserId, specialty: _specialty, ...resume }) => ({
-        ...resume,
-        positionId: id,
-        resumeBankId: resume.id,
-      })),
+    if (!uploadedFiles.length) return fail(reply, 400, "فایل رزومه‌ای ارسال نشده است.");
+    const prepared = await Promise.all(
+      uploadedFiles.map(({ fileName, bytes }) => prepareBankResume(request.auth!.user.id, fileName, bytes)),
     );
-    return reply.code(201).send({ count: prepared.length });
+    const newBankResumes: Array<typeof employerResumeBank.$inferInsert> = [];
+    const newCandidates: Array<typeof employerCandidates.$inferInsert> = [];
+    let duplicateCount = 0;
+    for (const resume of prepared) {
+      if (isDuplicateResume(resume, [...existingCandidates, ...newCandidates])) {
+        duplicateCount += 1;
+        continue;
+      }
+      const bankResume = [...bankResumes, ...newBankResumes].find((known) => isDuplicateResume(resume, [known]));
+      const source = bankResume ?? resume;
+      if (!bankResume) newBankResumes.push(resume);
+      newCandidates.push({
+        id: randomUUID(),
+        positionId: id,
+        resumeBankId: source.id,
+        fileName: source.fileName,
+        fileHash: source.fileHash,
+        fileData: source.fileData,
+        resumeText: source.resumeText,
+        extractionError: source.extractionError,
+        name: source.name,
+        email: source.email,
+        phone: source.phone,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+    if (existingCandidates.length + newCandidates.length > maxFiles)
+      return fail(reply, 413, "حداکثر ۱۰۰ رزومه برای هر پوزیشن پذیرفته می‌شود.");
+    await db.transaction(async (tx) => {
+      if (newBankResumes.length) await tx.insert(employerResumeBank).values(newBankResumes);
+      if (newCandidates.length) await tx.insert(employerCandidates).values(newCandidates);
+    });
+    return reply.code(201).send({ count: newCandidates.length, duplicateCount });
   });
 
   app.post("/api/employer/positions/:id/resume-bank", async (request, reply) => {
@@ -849,7 +983,13 @@ export function registerEmployerRoutes(
     if (await hasPositionInvitations(id)) return fail(reply, 409, "پس از ساخت دعوت، افزودن رزومه ممکن نیست.");
     const [existing, resumes] = await Promise.all([
       db
-        .select({ id: employerCandidates.id, resumeBankId: employerCandidates.resumeBankId })
+        .select({
+          id: employerCandidates.id,
+          resumeBankId: employerCandidates.resumeBankId,
+          fileHash: employerCandidates.fileHash,
+          email: employerCandidates.email,
+          phone: employerCandidates.phone,
+        })
         .from(employerCandidates)
         .where(eq(employerCandidates.positionId, id)),
       db
@@ -862,12 +1002,18 @@ export function registerEmployerRoutes(
           ),
         ),
     ]);
-    if (existing.length + resumes.length > maxFiles)
-      return fail(reply, 413, "حداکثر ۱۰۰ رزومه برای هر پوزیشن پذیرفته می‌شود.");
     if (resumes.length !== new Set(resumeIds).size) return fail(reply, 404, "بعضی رزومه‌های بانک پیدا نشدند.");
-    const existingIds = new Set(existing.map((candidate) => candidate.resumeBankId));
-    const newResumes = resumes.filter((resume) => !existingIds.has(resume.id));
-    if (!newResumes.length) return fail(reply, 409, "رزومه‌های انتخاب‌شده از قبل در این پوزیشن هستند.");
+    const newResumes: typeof resumes = [];
+    let duplicateCount = 0;
+    for (const resume of resumes) {
+      if (isDuplicateResume(resume, [...existing, ...newResumes])) {
+        duplicateCount += 1;
+        continue;
+      }
+      newResumes.push(resume);
+    }
+    if (existing.length + newResumes.length > maxFiles)
+      return fail(reply, 413, "حداکثر ۱۰۰ رزومه برای هر پوزیشن پذیرفته می‌شود.");
     const now = new Date();
     await db.insert(employerCandidates).values(
       newResumes.map((resume) => ({
@@ -886,7 +1032,7 @@ export function registerEmployerRoutes(
         updatedAt: now,
       })),
     );
-    return reply.code(201).send({ count: newResumes.length });
+    return reply.code(201).send({ count: newResumes.length, duplicateCount });
   });
 
   app.get("/api/employer/positions/:id/resumes/:candidateId", async (request, reply) => {
@@ -992,6 +1138,30 @@ export function registerEmployerRoutes(
       .returning({ id: employerCandidates.id });
     if (!deleted) return fail(reply, 404, "رزومه پیدا نشد.");
     return { id: deleted.id };
+  });
+
+  app.delete("/api/employer/positions/:id/resumes", async (request, reply) => {
+    if (!customer(request, reply)) return;
+    const { id } = idSchema.parse(request.params);
+    const { candidateIds } = bulkResumeDeleteSchema.parse(request.body);
+    const position = await ownedPosition(id, request.auth!.user.id);
+    if (!position) return fail(reply, 404, "پوزیشن پیدا نشد.");
+    if (position.screeningStatus !== "not_started") return fail(reply, 409, "پس از شروع پایش، حذف رزومه ممکن نیست.");
+    if (await hasPositionInvitations(id)) return fail(reply, 409, "پس از ساخت دعوت، حذف رزومه ممکن نیست.");
+
+    const candidates = await db
+      .select({ id: employerCandidates.id, invitationStatus: employerCandidates.invitationStatus })
+      .from(employerCandidates)
+      .where(and(eq(employerCandidates.positionId, id), inArray(employerCandidates.id, candidateIds)));
+    if (candidates.length !== candidateIds.length) return fail(reply, 404, "یک یا چند رزومه پیدا نشد.");
+    if (candidates.some((candidate) => candidate.invitationStatus !== "not_invited"))
+      return fail(reply, 409, "رزومهٔ دعوت‌شده را نمی‌توان حذف کرد.");
+
+    const deleted = await db
+      .delete(employerCandidates)
+      .where(and(eq(employerCandidates.positionId, id), inArray(employerCandidates.id, candidateIds)))
+      .returning({ id: employerCandidates.id });
+    return { count: deleted.length };
   });
 
   app.post("/api/employer/positions/:id/screen", async (request, reply) => {

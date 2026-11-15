@@ -2,9 +2,9 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, LoaderCircle } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { interviewSessionStore } from "@/lib/data/stores";
-import { SectionTitle } from "../../../_components/ui";
+import { SectionBackLink, SectionTitle } from "../../../_components/ui";
 import { InterviewResult } from "../../interview-result";
 
 export default function InterviewResultPage() {
@@ -36,11 +36,7 @@ export default function InterviewResultPage() {
             </button>
           ) : undefined
         }
-        leading={
-          <button type="button" onClick={() => router.push("/interview")} aria-label="بازگشت به مصاحبه‌های آزمایشی" className="grid size-9 shrink-0 place-items-center rounded-full text-[#19312f] hover:bg-[#e6f2eb] hover:text-[#0f7b62]">
-            <ArrowRight size={20} />
-          </button>
-        }
+        leading={<SectionBackLink href="/interview" label="بازگشت به مصاحبه‌های آزمایشی" />}
       />
       {isPending ? (
         <div className="flex min-h-[320px] items-center justify-center gap-3 text-[#0f7b62]" role="status">

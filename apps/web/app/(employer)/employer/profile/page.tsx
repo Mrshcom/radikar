@@ -1,12 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Building2, LoaderCircle, Save } from "lucide-react";
-import Link from "next/link";
+import { Building2, LoaderCircle, Save } from "lucide-react";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useToast } from "@/app/_components/toast";
+import { SectionBackLink, SectionTitle } from "@/app/(panel)/_components/ui";
 import { useEmployerProfile, useUpdateEmployerProfile } from "@/lib/employer";
 
 const schema = z.object({
@@ -37,18 +37,11 @@ export default function EmployerProfilePage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl pb-8">
-      <Link
-        className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-[#587069] no-underline hover:text-[#0f7b62]"
-        href="/employer/account-center"
-      >
-        <ArrowRight aria-hidden="true" size={17} /> بازگشت به مرکز کارفرما
-      </Link>
-      <header>
-        <h1 className="m-0 text-[26px] font-black text-[#19312f] sm:text-[30px]">پروفایل شرکت</h1>
-        <p className="mb-0 mt-2 text-sm leading-7 text-[#6c7f79]">
-          نامی که در پوزیشن‌ها و ارتباط با نامزدها نمایش داده می‌شود.
-        </p>
-      </header>
+      <SectionTitle
+        title="پروفایل شرکت"
+        description="نامی که در پوزیشن‌ها و ارتباط با نامزدها نمایش داده می‌شود."
+        leading={<SectionBackLink href="/account-center" label="بازگشت به مرکز حساب" />}
+      />
 
       <form
         className="mt-6 rounded-[22px] border border-[#dbe8e1] bg-white p-5 shadow-[0_12px_32px_rgba(24,64,53,.06)] sm:p-7"

@@ -14,6 +14,6 @@ export function portalFromLoginQuery(search: string): LoginPortal {
 export function loginDestination(portal: LoginPortal, next: string | null, role: string = "user") {
   if (role !== "user") return "/admin";
   const safeNext = safeNextPath(next);
-  if (portal === "employer") return safeNext?.startsWith("/employer") ? safeNext : "/employer";
+  if (portal === "employer") return safeNext?.startsWith("/employer/") || safeNext === "/dashboard" ? safeNext : "/dashboard";
   return safeNext && !safeNext.startsWith("/employer") ? safeNext : "/dashboard";
 }

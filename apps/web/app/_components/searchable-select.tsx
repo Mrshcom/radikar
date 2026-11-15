@@ -67,6 +67,9 @@ export function SearchableSelect({
   const filteredOptions = options.filter((option) =>
     option.label.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()),
   );
+  const listMaxHeight = menuPosition
+    ? Math.max(48, menuPosition.maxHeight - 12 - (searchable || allowCustom ? 40 : 0))
+    : undefined;
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
@@ -221,7 +224,7 @@ export function SearchableSelect({
               id={listboxId}
               role="listbox"
               aria-multiselectable={multiple || undefined}
-              style={{ maxHeight: menuPosition.maxHeight }}
+              style={{ maxHeight: listMaxHeight }}
             >
               {filteredOptions.length || (allowCustom && query.trim()) ? (
                 <>

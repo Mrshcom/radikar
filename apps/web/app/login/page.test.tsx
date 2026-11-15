@@ -63,13 +63,13 @@ describe("LoginPage", () => {
     fireEvent.change(screen.getByPlaceholderText("09123456789"), { target: { value: "09123456789" } });
     fireEvent.click(screen.getByRole("button", { name: "دریافت کد ورود" }));
     await screen.findByRole("button", { name: "تأیید و ورود" });
-    expect(prefetch).toHaveBeenCalledWith("/employer");
+    expect(prefetch).toHaveBeenCalledWith("/dashboard");
     "123456".split("").forEach((digit, index) => {
       fireEvent.change(screen.getByRole("textbox", { name: `رقم ${index + 1} کد یک‌بارمصرف` }), {
         target: { value: digit },
       });
     });
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/employer"));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/dashboard"));
   });
 
   it("shows the provider error without offering a log fallback", async () => {

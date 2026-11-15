@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, BadgeCheck, Clock3, ReceiptText, ShieldCheck, TriangleAlert } from "lucide-react";
-import { useAuth } from "@/app/_components/auth";
 
 const results = {
   success: {
@@ -47,8 +46,6 @@ const results = {
 } as const;
 
 export default function BillingResultPage() {
-  const { user } = useAuth();
-  const isEmployer = user?.accountType === "employer";
   const params = useSearchParams();
   const isCreditPack = Boolean(params.get("packOrder"));
   const isRadicoinPack = Boolean(params.get("radicoinOrder"));
@@ -62,7 +59,7 @@ export default function BillingResultPage() {
             ? "پرداخت تأیید شد و رادیکوین‌های خریداری‌شده به کیف پولت اضافه شدند."
             : results[status].description,
         note: "وضعیت خرید و موجودی جدید را در فروشگاه رادیکوین ببین.",
-        primaryHref: isEmployer ? "/employer/radicoins" : "/radicoins",
+        primaryHref: "/radicoins/buy",
         primaryLabel: status === "success" ? "مشاهده کیف پول و خریدها" : "بازگشت به خرید رادیکوین",
       }
     : isCreditPack
@@ -124,7 +121,7 @@ export default function BillingResultPage() {
               <ArrowLeft aria-hidden="true" className="size-5" />
             </Link>
             <Link
-              href={isEmployer ? "/employer" : "/dashboard"}
+              href="/dashboard"
               className="inline-flex min-h-14 items-center justify-center text-base font-bold text-[#38564e] underline-offset-8 transition-colors duration-200 hover:text-[#0f7b62] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0f7b62]"
             >
               بازگشت به پنل

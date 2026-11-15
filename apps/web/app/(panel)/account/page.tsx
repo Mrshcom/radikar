@@ -10,6 +10,7 @@ import { authQueryKey, useAuth, type CurrentUser } from "@/app/_components/auth"
 import { useToast } from "@/app/_components/toast";
 import { apiRequest } from "@/lib/api-client";
 import { useMembership } from "@/lib/billing";
+import { useEmployerActivityStats } from "@/lib/employer";
 import { MembershipSummary } from "../_components/membership-summary";
 import { MembershipSummarySkeleton } from "../_components/skeletons";
 import { TextField } from "@/app/_components/text-field";
@@ -26,6 +27,8 @@ const knowledgeBaseControlClass =
 export default function AccountPage() {
   const { user } = useAuth();
   const membership = useMembership();
+  const isEmployer = user?.accountType === "employer";
+  const employerStats = useEmployerActivityStats(isEmployer);
   const queryClient = useQueryClient();
   const notify = useToast();
   const form = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { fullName: "" } });
@@ -48,23 +51,34 @@ export default function AccountPage() {
     <div className="mx-auto grid w-full max-w-5xl gap-6">
       <SectionTitle
         className="max-w-5xl"
-        description="وضعیت عضویت، زمان و اعتبار باقی‌مانده را یکجا ببین."
-        title="اطلاعات حساب و میزان مصرف"
+        description={
+          isEmployer
+            ? "پلن استخدام، آمار جذب و اعتبار رادیکوین کسب‌وکارت را یکجا ببین."
+            : "وضعیت عضویت، زمان و اعتبار باقی‌مانده را یکجا ببین."
+        }
+        title={isEmployer ? "حساب کارفرما و وضعیت جذب" : "اطلاعات حساب و میزان مصرف"}
       />
 
-      {membership.isPending && <MembershipSummarySkeleton />}
-      {membership.isError && (
+      {(membership.isPending || (isEmployer && employerStats.isPending)) && <MembershipSummarySkeleton />}
+      {(membership.isError || (isEmployer && employerStats.isError)) && (
         <div className="rounded-[18px] border border-[#f0d7d0] bg-[#fff7f4] p-5 text-[10px] text-[#a44d3e]">
-          دریافت وضعیت پلن ممکن نشد. کمی بعد دوباره تلاش کن.
+          {isEmployer ? "دریافت وضعیت پلن یا آمار جذب ممکن نشد. کمی بعد دوباره تلاش کن." : "دریافت وضعیت پلن ممکن نشد. کمی بعد دوباره تلاش کن."}
         </div>
       )}
-      {membership.data && <MembershipSummary membership={membership.data} showUpgradeAction />}
+      {membership.data && (!isEmployer || employerStats.data) && (
+        <MembershipSummary
+          accountType={isEmployer ? "employer" : "candidate"}
+          employerStats={employerStats.data}
+          membership={membership.data}
+          showUpgradeAction
+        />
+      )}
 
       <form
         className="grid gap-5 rounded-[20px] border border-[#e3e9e3] bg-white p-6"
         onSubmit={form.handleSubmit((values) => update.mutate(values))}
       >
-        <h2 className="m-0 text-[16px] font-black text-[#263d38]">اطلاعات فردی</h2>
+        <h2 className="m-0 text-[16px] font-black text-[#263d38]">{isEmployer ? "اطلاعات مدیر حساب" : "اطلاعات فردی"}</h2>
         <div className="grid items-start gap-5 md:grid-cols-2">
           <FormField
             className="gap-1.5 text-[10px] font-normal text-[#19312f]"

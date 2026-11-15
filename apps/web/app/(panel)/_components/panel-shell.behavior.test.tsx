@@ -50,6 +50,12 @@ vi.mock("@/app/_components/auth", () => ({
   useLogout: () => state.logout,
 }));
 vi.mock("@/app/_components/toast", () => ({ useToast: () => state.notify }));
+vi.mock("@/lib/billing", () => ({
+  useMembership: () => ({ data: { plan: { name: "شروع استخدام" } }, isPending: false }),
+}));
+vi.mock("@/lib/employer", () => ({
+  useEmployerProfile: () => ({ data: { profile: { companyName: "شرکت نمونه" } }, isLoading: false }),
+}));
 vi.mock("@/lib/field-direction", () => ({ useFieldDirectionManager: () => undefined }));
 vi.mock("@/lib/admin-stats", () => ({ useAdminEvents: () => ({ data: { items: state.adminEvents } }) }));
 vi.mock("@/lib/notifications", () => ({
@@ -133,6 +139,7 @@ describe("PanelShell behavior", () => {
     expect(screen.queryByRole("navigation", { name: "دسترسی‌های حساب" })).toBeNull();
     fireEvent.click(screen.getByLabelText("منوی حساب کاربری"));
     expect(screen.getByRole("link", { name: /موجودی رادیکوین/ })).toHaveAttribute("href", "/radicoins");
+    expect(screen.getByText("پلن شروع استخدام")).toBeVisible();
     expect(screen.queryByRole("link", { name: "سفارش‌ها" })).toBeNull();
     const versionLink = screen.getByRole("link", { name: /نسخه 0\.1\.0؛ مشاهدهٔ تغییرات/ });
     expect(versionLink).toHaveAttribute("href", "/updates");
@@ -186,7 +193,7 @@ describe("PanelShell behavior", () => {
     state.accountType = "employer";
     renderShell();
     const nav = screen.getByRole("navigation", { name: "منوی اصلی" });
-    expect(within(nav).getByRole("link", { name: "داشبورد کارفرما" })).toHaveAttribute("href", "/employer");
+    expect(within(nav).getByRole("link", { name: "داشبورد کارفرما" })).toHaveAttribute("href", "/dashboard");
     expect(within(nav).getByRole("link", { name: "پوزیشن‌های شغلی" })).toHaveAttribute("href", "/employer/positions");
     expect(within(nav).queryByRole("link", { name: "مرکز کارفرما" })).toBeNull();
     expect(within(nav).queryByRole("link", { name: "فرصت‌های مناسب من" })).toBeNull();
@@ -195,8 +202,10 @@ describe("PanelShell behavior", () => {
     expect(screen.getByText("هنوز اعلانی نیست")).toBeVisible();
     fireEvent.click(screen.getByLabelText("منوی حساب کاربری"));
     for (const link of screen.getAllByRole("link", { name: "مرکز حساب" })) {
-      expect(link).toHaveAttribute("href", "/employer/account-center");
+      expect(link).toHaveAttribute("href", "/account-center");
     }
+    expect(screen.getByText("شرکت نمونه")).toBeVisible();
+    expect(screen.getByText("0912")).toBeVisible();
     expect(screen.getByRole("link", { name: "اطلاعات حساب و مصرف" })).toHaveAttribute("href", "/account");
     expect(screen.getByRole("button", { name: "خروج از حساب" })).toBeVisible();
   });

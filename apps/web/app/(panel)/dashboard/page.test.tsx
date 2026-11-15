@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   runModelTask: vi.fn(),
 }));
 
+vi.mock("@/app/_components/auth", () => ({ useAuth: () => ({ user: { accountType: "candidate" } }) }));
 vi.mock("@/app/_components/toast", () => ({ useToast: () => mocks.notify }));
 vi.mock("../_components/model-task-provider", () => ({
   useModelTasks: () => ({ runModelTask: mocks.runModelTask }),

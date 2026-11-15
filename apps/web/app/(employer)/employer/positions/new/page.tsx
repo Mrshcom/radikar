@@ -1,11 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
-import { SectionTitle } from "@/app/(panel)/_components/ui";
+import { SectionBackLink, SectionTitle } from "@/app/(panel)/_components/ui";
 import { employerKeys, useEmployerProfile, type EmployerPosition } from "@/lib/employer";
 import { EmployerSetup } from "../_components/employer-setup";
 import { PositionForm, type PositionValues } from "../_components/position-form";
@@ -35,15 +34,10 @@ export default function NewEmployerPositionPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <Link
-        className="inline-flex items-center gap-2 text-xs font-bold text-[#0f7b62] no-underline"
-        href="/employer/positions"
-      >
-        <ArrowRight size={16} /> پوزیشن‌های من
-      </Link>
       <SectionTitle
         title="افزودن پوزیشن کاری"
         description={`ابتدا اطلاعات پوزیشن ${profile.data.profile.companyName} را ثبت کن؛ در قدم بعد مستقیم رزومه‌ها را اضافه می‌کنی.`}
+        leading={<SectionBackLink href="/employer/positions" label="بازگشت به پوزیشن‌های من" />}
       />
       <HiringWorkflow currentStep={1} />
       <PositionForm

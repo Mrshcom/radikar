@@ -1259,7 +1259,11 @@ export class BillingService {
       user.accountType === "employer"
         ? Promise.all([
             this.database
-              .select({ value: count() })
+              .select({
+                value: count(),
+                activePositions: sql<number>`count(*) filter (where ${employerPositions.closedAt} is null)`,
+                hiredPositions: sql<number>`count(*) filter (where ${employerPositions.closureReason} = 'hired')`,
+              })
               .from(employerPositions)
               .where(eq(employerPositions.ownerUserId, userId)),
             this.database
@@ -1286,6 +1290,8 @@ export class BillingService {
               .limit(1),
           ]).then(([positions, candidates, screened, invited, wallet]) => ({
             positions: positions[0]?.value ?? 0,
+            activePositions: Number(positions[0]?.activePositions ?? 0),
+            hiredPositions: Number(positions[0]?.hiredPositions ?? 0),
             candidates: candidates[0]?.value ?? 0,
             screenedCandidates: screened[0]?.value ?? 0,
             interviewInvitations: invited[0]?.value ?? 0,

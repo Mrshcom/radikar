@@ -36,15 +36,19 @@ import {
   positionWorkflowBadge,
   useEmployerPosition,
   useEmployerResumeBank,
+  type EmployerBankResume,
   type EmployerCandidate,
 } from "@/lib/employer";
-import { DeleteConfirmModal, Modal, SectionTitle } from "@/app/(panel)/_components/ui";
+import { ConfirmActionModal, Modal, SectionBackLink, SectionTitle } from "@/app/(panel)/_components/ui";
 import { useToast } from "@/app/_components/toast";
 import { JalaliDatePicker } from "@/app/(panel)/_components/jalali-date-picker";
 import { TimePicker } from "@/app/(panel)/_components/time-picker";
 import { Checkbox } from "@/app/_components/checkbox";
+import { SearchableSelect } from "@/app/_components/searchable-select";
 import { EmployerResumePreview } from "./resume-preview";
+import { EmployerBankResumePreview } from "./resume-bank-preview";
 import { availableHiringStep, HiringWorkflow } from "../_components/hiring-workflow";
+import { Skeleton } from "@/app/(panel)/_components/skeletons/primitives";
 
 const fileSchema = z.object({
   files: z.custom<FileList>(
@@ -67,6 +71,11 @@ const mobileFormSchema = z.object({
     .string()
     .trim()
     .refine((value) => normalizeIranianMobile(value) !== null, "شماره همراه معتبر وارد کن."),
+});
+const closePositionSchema = z.object({
+  reason: z.enum(["hired", "cancelled", "changed_need", "duplicate", "other"]),
+  note: z.string().trim().max(1_000).optional(),
+  hiredCandidateId: z.string().uuid().optional(),
 });
 
 function candidateLabel(candidate: EmployerCandidate) {
@@ -124,6 +133,72 @@ function EmployerActionError({ error, balance, cost }: { error: Error; balance?:
   );
 }
 
+function PositionWorkspaceSkeleton() {
+  return (
+    <div aria-busy="true" className="space-y-6" role="status">
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-3">
+          <span className="block h-3 w-24 animate-pulse rounded-full bg-[#e7f1eb]" />
+          <span className="block h-8 w-48 animate-pulse rounded-xl bg-[#dfece5] sm:w-72" />
+        </div>
+        <span className="h-9 w-24 animate-pulse rounded-full bg-[#e7f5ed]" />
+      </div>
+
+      <section className="overflow-hidden rounded-[24px] border border-[#dce9e2] bg-[linear-gradient(135deg,#ffffff_0%,#f2faf5_100%)] p-5 sm:p-7">
+        <div className="flex flex-col items-center justify-center gap-4 py-9 text-center sm:py-12">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-[#e2f3e9] text-[#0f7b62] shadow-[0_12px_28px_rgba(15,123,98,0.12)]">
+            <LoaderCircle aria-hidden="true" className="animate-spin" size={27} />
+          </span>
+          <div className="space-y-2">
+            <p className="m-0 text-sm font-bold text-[#24453a]">در حال آماده‌سازی فضای جذب</p>
+            <p className="m-0 text-xs text-[#71847b]">اطلاعات پوزیشن و مسیر استخدام در حال بارگذاری است.</p>
+          </div>
+          <div aria-hidden="true" className="grid w-full max-w-md grid-cols-4 gap-2 pt-3">
+            {[0, 1, 2, 3].map((step) => (
+              <span
+                className="h-1.5 animate-pulse rounded-full bg-[#c9e6d5]"
+                key={step}
+                style={{ animationDelay: `${step * 120}ms` }}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AddedResumesSkeleton({ count }: { count: number }) {
+  const displayedCount = Math.min(count, 5);
+  return (
+    <div
+      aria-live="polite"
+      className="overflow-hidden rounded-2xl border border-[#d3e7da] bg-[#f7fcf8] p-3.5"
+      role="status"
+    >
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <span className="inline-flex items-center gap-2 text-xs font-bold text-[#32634d]">
+          <span className="size-2 animate-pulse rounded-full bg-[#0f7b62]" aria-hidden="true" />
+          در حال افزودن رزومه‌ها...
+        </span>
+        <span className="text-[11px] font-bold text-[#6c897a]">{count.toLocaleString("fa-IR")} مورد</span>
+      </div>
+      <div className="space-y-2" aria-hidden="true">
+        {Array.from({ length: displayedCount }, (_, index) => (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-[#e2eee6] bg-white px-3 py-2.5" key={index}>
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <Skeleton className="h-3 w-[min(58%,220px)] bg-[#e3efe7]" />
+              <Skeleton className="h-2 w-24 bg-[#edf5f0]" />
+            </div>
+            <Skeleton className="size-8 shrink-0 rounded-lg bg-[#edf5f0]" />
+          </div>
+        ))}
+      </div>
+      {count > displayedCount && <p className="mb-0 mt-2 text-[11px] text-[#6c897a]">و موارد دیگر در حال آماده‌سازی‌اند.</p>}
+    </div>
+  );
+}
+
 export default function EmployerPositionPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
@@ -145,14 +220,18 @@ export default function EmployerPositionPage() {
   >([]);
   const [copied, setCopied] = useState("");
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [removeIds, setRemoveIds] = useState<string[]>([]);
+  const [removalMode, setRemovalMode] = useState(false);
+  const [removeConfirmationOpen, setRemoveConfirmationOpen] = useState(false);
   const [phoneCandidateId, setPhoneCandidateId] = useState<string | null>(null);
   const [resendCandidateId, setResendCandidateId] = useState<string | null>(null);
   const [expandedReportId, setExpandedReportId] = useState<string | null>(null);
   const [bankSelected, setBankSelected] = useState<string[]>([]);
   const [bankPickerOpen, setBankPickerOpen] = useState(false);
+  const [bankPreview, setBankPreview] = useState<EmployerBankResume | null>(null);
   const [bankSearch, setBankSearch] = useState("");
   const [resumeSource, setResumeSource] = useState<"device" | "bank">("device");
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [viewStep, setViewStep] = useState<1 | 2 | 3 | 4 | null>(() => {
     const step = searchParams.get("step");
     return step === "1" || step === "2" || step === "3" || step === "4" ? (Number(step) as 1 | 2 | 3 | 4) : null;
@@ -171,7 +250,12 @@ export default function EmployerPositionPage() {
     resolver: zodResolver(mobileFormSchema),
     defaultValues: { phone: "" },
   });
+  const closeForm = useForm<z.infer<typeof closePositionSchema>>({
+    resolver: zodResolver(closePositionSchema),
+    defaultValues: { reason: "cancelled", note: "", hiredCandidateId: undefined },
+  });
   const selectedFiles = useWatch({ control: filesForm.control, name: "files" });
+  const closeReason = useWatch({ control: closeForm.control, name: "reason" });
   const candidates = detail.data?.candidates ?? [];
   const resumeBank = useEmployerResumeBank(
     Boolean(detail.data && (detail.data.position.workflowStage === 2 || viewStep === 2) && resumeSource === "bank"),
@@ -197,11 +281,18 @@ export default function EmployerPositionPage() {
     mutationFn: async (files: FileList) => {
       const body = new FormData();
       for (const file of Array.from(files)) body.append("files", file);
-      return apiRequest<{ count: number }>(`/api/employer/positions/${id}/resumes`, { method: "POST", body });
+      return apiRequest<{ count: number; duplicateCount: number }>(`/api/employer/positions/${id}/resumes`, {
+        method: "POST",
+        body,
+      });
     },
-    onSuccess: async ({ count }) => {
+    onSuccess: async ({ count, duplicateCount }) => {
       filesForm.reset();
-      notify(`${count.toLocaleString("fa-IR")} رزومه به این پوزیشن اضافه شد.`);
+      notify(
+        `${count.toLocaleString("fa-IR")} رزومه به این پوزیشن اضافه شد${
+          duplicateCount ? `؛ ${duplicateCount.toLocaleString("fa-IR")} مورد تکراری بود.` : "."
+        }`,
+      );
       await client.invalidateQueries({ queryKey: employerKeys.position(id) });
     },
   });
@@ -228,13 +319,20 @@ export default function EmployerPositionPage() {
       return;
     }
     filesForm.clearErrors("files");
+    upload.mutate(files);
   };
-  const removeResume = useMutation({
-    mutationFn: (candidateId: string) =>
-      apiRequest(`/api/employer/positions/${id}/resumes/${candidateId}`, { method: "DELETE" }),
-    onSuccess: async (_result, candidateId) => {
-      setDeleteId(null);
-      setSelected((current) => current.filter((value) => value !== candidateId));
+  const removeResumes = useMutation({
+    mutationFn: (candidateIds: string[]) =>
+      apiRequest<{ count: number }>(`/api/employer/positions/${id}/resumes`, {
+        method: "DELETE",
+        body: JSON.stringify({ candidateIds }),
+      }),
+    onSuccess: async ({ count }, candidateIds) => {
+      setRemoveIds([]);
+      setRemovalMode(false);
+      setRemoveConfirmationOpen(false);
+      setSelected((current) => current.filter((value) => !candidateIds.includes(value)));
+      notify(`${count.toLocaleString("fa-IR")} رزومه از پوزیشن حذف شد.`);
       await client.invalidateQueries({ queryKey: employerKeys.position(id) });
     },
   });
@@ -256,14 +354,18 @@ export default function EmployerPositionPage() {
   });
   const importFromBank = useMutation({
     mutationFn: () =>
-      apiRequest<{ count: number }>(`/api/employer/positions/${id}/resume-bank`, {
+      apiRequest<{ count: number; duplicateCount: number }>(`/api/employer/positions/${id}/resume-bank`, {
         method: "POST",
         body: JSON.stringify({ resumeIds: bankSelected }),
       }),
-    onSuccess: async ({ count }) => {
+    onSuccess: async ({ count, duplicateCount }) => {
       setBankSelected([]);
       setBankPickerOpen(false);
-      notify(`${count.toLocaleString("fa-IR")} رزومه از بانک به این پوزیشن اضافه شد.`);
+      notify(
+        `${count.toLocaleString("fa-IR")} رزومه از بانک به این پوزیشن اضافه شد${
+          duplicateCount ? `؛ ${duplicateCount.toLocaleString("fa-IR")} مورد تکراری بود.` : "."
+        }`,
+      );
       await client.invalidateQueries({ queryKey: employerKeys.position(id) });
     },
   });
@@ -274,6 +376,23 @@ export default function EmployerPositionPage() {
       await client.invalidateQueries({ queryKey: employerKeys.position(id) });
     },
   });
+  const closePosition = useMutation({
+    mutationFn: (values: z.infer<typeof closePositionSchema>) =>
+      apiRequest<{ reward: number }>(`/api/employer/positions/${id}/close`, {
+        method: "POST",
+        body: JSON.stringify({ ...values, note: values.note || undefined, hiredCandidateId: values.hiredCandidateId || undefined }),
+      }),
+    onSuccess: async ({ reward }) => {
+      setCloseDialogOpen(false);
+      notify(reward ? "پوزیشن بسته شد و ۵ رادیکوین هدیه گرفتی." : "پوزیشن بسته شد.");
+      await Promise.all([
+        client.invalidateQueries({ queryKey: employerKeys.position(id) }),
+        client.invalidateQueries({ queryKey: employerKeys.positions }),
+        wallet.refetch(),
+      ]);
+    },
+  });
+  const submitPositionClosure = closeForm.handleSubmit((values) => closePosition.mutate(values));
   const chooseReview = useMutation({
     mutationFn: (method: "manual" | "smart") =>
       apiRequest(`/api/employer/positions/${id}/review-method`, {
@@ -365,7 +484,7 @@ export default function EmployerPositionPage() {
     screen.mutate();
   };
 
-  if (detail.isLoading) return <p className="text-sm text-[#698073]">در حال دریافت پوزیشن...</p>;
+  if (detail.isLoading) return <PositionWorkspaceSkeleton />;
   if (detail.error || !detail.data)
     return (
       <p role="alert" className="text-sm text-red-600">
@@ -385,6 +504,8 @@ export default function EmployerPositionPage() {
       : (screen.error?.message ?? position.screeningError);
   const processed = candidates.filter((candidate) => candidate.screeningStatus !== "pending").length;
   const hasInvitations = candidates.some((candidate) => candidate.invitationStatus !== "not_invited");
+  const removableCandidates = candidates.filter((candidate) => candidate.invitationStatus === "not_invited");
+  const allRemovableSelected = removableCandidates.length > 0 && removableCandidates.every((candidate) => removeIds.includes(candidate.id));
   const reviewMethodLocked = position.screeningStatus !== "not_started" && position.screeningStatus !== "failed";
   const availableStep = availableHiringStep(position, candidates);
   const visibleStep = viewStep && viewStep <= availableStep ? viewStep : availableStep;
@@ -400,14 +521,23 @@ export default function EmployerPositionPage() {
       .toLocaleLowerCase("fa-IR")
       .includes(bankSearch.trim().toLocaleLowerCase("fa-IR")),
   );
+  const bankSelectionLimit = Math.min(bankMatches.length, remainingSlots);
+  const visibleBankSelectionIds = bankMatches.slice(0, bankSelectionLimit).map((resume) => resume.id);
+  const allVisibleBankMatchesSelected =
+    visibleBankSelectionIds.length > 0 && visibleBankSelectionIds.every((resumeId) => bankSelected.includes(resumeId));
+  const toggleBankResumeSelection = (resumeId: string) => {
+    setBankSelected((current) => {
+      if (current.includes(resumeId)) return current.filter((item) => item !== resumeId);
+      if (current.length >= remainingSlots) return current;
+      return [...current, resumeId];
+    });
+  };
   const phoneCandidate = candidates.find((candidate) => candidate.id === phoneCandidateId);
   return (
     <div className="space-y-6">
-      <Link className="inline-flex items-center gap-1 text-xs font-bold text-[#0f7b62]" href="/employer/positions">
-        <ArrowRight size={15} aria-hidden="true" /> همهٔ پوزیشن‌ها
-      </Link>
       <SectionTitle
         title={position.title}
+        leading={<SectionBackLink href="/employer/positions" label="بازگشت به همهٔ پوزیشن‌ها" />}
         action={
           <div className="flex flex-wrap items-center gap-3">
             <span className={`rounded-full px-4 py-2 text-xs font-bold ${positionWorkflowBadge(position).className}`}>
@@ -428,6 +558,15 @@ export default function EmployerPositionPage() {
               >
                 <Pencil size={15} /> ویرایش پوزیشن
               </Link>
+            )}
+            {!position.closedAt && (
+              <button
+                className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#e6c9c2] bg-white px-4 text-xs font-bold text-[#a95346]"
+                type="button"
+                onClick={() => setCloseDialogOpen(true)}
+              >
+                بستن جذب
+              </button>
             )}
           </div>
         }
@@ -533,23 +672,42 @@ export default function EmployerPositionPage() {
                     </button>
                   </div>
                   {resumeSource === "bank" ? (
-                    <div className="rounded-2xl border border-[#dfe9e3] bg-[#fbfdfb] p-4">
-                      <p className="mt-0 text-xs leading-6 text-[#6b8174]">
-                        {bankResumes.length.toLocaleString("fa-IR")} رزومهٔ قابل افزودن در بانک داری.
-                      </p>
+                    <section className="relative overflow-hidden rounded-[22px] border border-[#cfe5d8] bg-[linear-gradient(115deg,#f2faf5,#ffffff_58%,#edf8f1)]">
+                      <span aria-hidden="true" className="absolute -bottom-12 -left-10 size-36 rounded-full bg-[#d8efe1]/65 blur-2xl" />
+                      <span aria-hidden="true" className="absolute -top-10 left-[32%] size-28 rounded-full bg-white/80 blur-xl" />
+                      <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                        <div className="flex min-w-0 items-start gap-3.5">
+                          <span className="grid size-11 shrink-0 place-items-center rounded-2xl border border-[#c5e3d1] bg-white text-[#0f7b62] shadow-[0_8px_20px_rgba(15,123,98,.08)]">
+                            <Database size={21} aria-hidden="true" />
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <h3 className="m-0 text-sm font-black text-[#19312f]">رزومه‌های آماده در بانک</h3>
+                              <span className="rounded-full bg-[#dff2e7] px-2 py-0.5 text-[10px] font-black text-[#0d7757]">
+                                {bankResumes.length.toLocaleString("fa-IR")} رزومه
+                              </span>
+                            </div>
+                            <p className="mb-0 mt-1.5 text-xs leading-6 text-[#637a6f]">
+                              بدون آپلود دوباره، رزومه‌های مناسب را جست‌وجو و به این پوزیشن اضافه کن.
+                            </p>
+                            <p className="mb-0 mt-2 text-[10px] font-bold text-[#749084]">
+                              ظرفیت باقی‌مانده: {remainingSlots.toLocaleString("fa-IR")} رزومه
+                            </p>
+                          </div>
+                        </div>
                       <button
-                        className="min-h-10 rounded-xl border border-[#b9d8c5] bg-white px-4 text-sm font-bold text-[#0f7b62]"
+                        className="group inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#0f7b62] bg-[#0f7b62] px-5 text-sm font-black text-white shadow-[0_10px_22px_rgba(15,123,98,.18)] transition hover:bg-[#0b6d58] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0f7b62] sm:min-w-56"
                         type="button"
                         onClick={() => setBankPickerOpen(true)}
                       >
+                        <Search size={17} aria-hidden="true" />
                         جست‌وجو و انتخاب رزومه‌ها
+                        <ArrowLeft className="transition-transform group-hover:-translate-x-0.5" size={16} aria-hidden="true" />
                       </button>
                     </div>
+                    </section>
                   ) : (
-                    <form
-                      className="space-y-3"
-                      onSubmit={filesForm.handleSubmit((values) => upload.mutate(values.files))}
-                    >
+                    <div className="space-y-3">
                       <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-[#9bcbb0] bg-[#f7fbf8] px-5 py-8 text-center transition-colors hover:bg-[#edf7f0] focus-within:ring-2 focus-within:ring-[#0f7b62]">
                         <span className="grid size-12 place-items-center rounded-2xl bg-[#e1f2e8] text-[#0f7b62]">
                           <FileUp size={25} />
@@ -569,25 +727,8 @@ export default function EmployerPositionPage() {
                           onChange={handleFilesSelected}
                         />
                       </label>
-                      {selectedCount > 0 && (
-                        <div
-                          className={`rounded-xl p-3 text-xs ${upload.error ? "bg-[#fff8ed] text-[#72502b]" : "bg-[#edf7f0] text-[#32634d]"}`}
-                        >
-                          <strong>
-                            {upload.isPending
-                              ? "در حال ورود فایل‌ها..."
-                              : upload.error
-                                ? "ورود فایل‌ها ناموفق بود"
-                                : `${selectedCount.toLocaleString("fa-IR")} فایل انتخاب شده است`}
-                          </strong>
-                          <ul className="mb-0 mt-2 max-h-28 space-y-1 overflow-auto pr-4">
-                            {Array.from(selectedFiles).map((file, index) => (
-                              <li key={`${file.name}-${index}`} className="truncate" dir="auto">
-                                {file.name}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                      {upload.isPending && selectedCount > 0 && (
+                        <AddedResumesSkeleton count={selectedCount} />
                       )}
                       {selectedCount > remainingSlots && (
                         <p role="alert" className="m-0 text-xs text-red-600">
@@ -600,18 +741,7 @@ export default function EmployerPositionPage() {
                         </p>
                       )}
                       {upload.error && <EmployerActionError error={upload.error} cost={0} />}
-                      {selectedCount > 0 && !filesForm.formState.errors.files && (
-                        <button
-                          className="min-h-10 rounded-xl bg-[#0f7b62] px-4 text-sm font-bold text-white disabled:opacity-50"
-                          type="submit"
-                          disabled={upload.isPending || selectedCount > remainingSlots}
-                        >
-                          {upload.isPending
-                            ? "در حال افزودن..."
-                            : `افزودن ${selectedCount.toLocaleString("fa-IR")} رزومه`}
-                        </button>
-                      )}
-                    </form>
+                    </div>
                   )}
                 </div>
               )}
@@ -621,6 +751,28 @@ export default function EmployerPositionPage() {
                   نیست.
                 </p>
               )}
+              {position.screeningStatus === "not_started" && !hasInvitations && removableCandidates.length > 0 && (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#dce9df] bg-[#f8fbf9] px-3 py-2.5">
+                  {removalMode ? (
+                    <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-[#526c5e]">
+                      <Checkbox aria-label="انتخاب همه رزومه‌های قابل حذف" checked={allRemovableSelected} onChange={(event) => setRemoveIds(event.target.checked ? removableCandidates.map((candidate) => candidate.id) : [])} />
+                      انتخاب همه
+                    </label>
+                  ) : <span className="text-xs font-bold text-[#526c5e]">برای حذف چند رزومه، ابتدا حالت انتخاب را فعال کن.</span>}
+                  <div className="flex items-center gap-3">
+                    {removalMode && <button className="text-xs font-bold text-[#71847a]" type="button" onClick={() => { setRemoveIds([]); setRemovalMode(false); }}>انصراف</button>}
+                    {removalMode && removeIds.length > 0 && <span className="text-xs font-bold text-[#7c6251]">{removeIds.length.toLocaleString("fa-IR")} رزومه انتخاب شده</span>}
+                    <button
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#edccc7] bg-white px-3 text-xs font-bold text-[#ae5549] disabled:cursor-not-allowed disabled:opacity-45"
+                      disabled={removalMode && removeIds.length === 0}
+                      type="button"
+                      onClick={() => removalMode ? setRemoveConfirmationOpen(true) : setRemovalMode(true)}
+                    >
+                      <Trash2 size={14} aria-hidden="true" /> {removalMode ? "حذف انتخاب‌شده‌ها" : "حذف گروهی"}
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="mt-4 space-y-2">
                 {candidates.map((candidate) => (
                   <div
@@ -628,15 +780,29 @@ export default function EmployerPositionPage() {
                     className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-[#edf0ed] py-3 text-sm"
                     dir="rtl"
                   >
-                    <div className="min-w-0 text-right">
-                      <strong className="block truncate">
-                        <bdi>{candidate.fileName}</bdi>
-                      </strong>
-                      {candidate.name && candidate.name !== candidate.fileName && (
-                        <span className="block truncate text-xs text-[#769084]">
-                          <bdi>{candidate.name}</bdi>
-                        </span>
-                      )}
+                    <div className="flex min-w-0 items-start gap-3 text-right">
+                      {position.screeningStatus === "not_started" &&
+                        !hasInvitations &&
+                        removalMode &&
+                        candidate.invitationStatus === "not_invited" && (
+                          <Checkbox
+                            aria-label={`انتخاب ${candidate.fileName} برای حذف`}
+                            checked={removeIds.includes(candidate.id)}
+                            className="mt-0.5"
+                            onChange={(event) =>
+                              setRemoveIds((current) =>
+                                event.target.checked
+                                  ? [...current, candidate.id]
+                                  : current.filter((candidateId) => candidateId !== candidate.id),
+                              )
+                            }
+                          />
+                        )}
+                      <div className="min-w-0 flex-1">
+                        <strong className="block truncate">
+                          <bdi>{candidate.name || "نام کارجو استخراج نشده است"}</bdi>
+                        </strong>
+                      </div>
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <span className="rounded-full bg-[#f1f6f2] px-2 py-1 text-xs text-[#607b6c]">
@@ -656,7 +822,10 @@ export default function EmployerPositionPage() {
                             type="button"
                             aria-label={`حذف ${candidate.fileName}`}
                             className="rounded-lg border border-[#f0d5d0] p-2 text-[#ae5549]"
-                            onClick={() => setDeleteId(candidate.id)}
+                            onClick={() => {
+                              setRemoveIds([candidate.id]);
+                              setRemoveConfirmationOpen(true);
+                            }}
                           >
                             <Trash2 size={15} />
                           </button>
@@ -696,14 +865,16 @@ export default function EmployerPositionPage() {
                   onClick={() => selectReviewMethod("manual")}
                   className={`group rounded-2xl border p-5 text-right transition-colors enabled:hover:border-[#82bda0] enabled:hover:bg-[#f8fcf9] disabled:cursor-default ${selectedReviewMethod === "manual" ? "border-[#80bda0] bg-[#eef8f1]" : "border-[#dfe9e2] bg-[#fafcfb]"}`}
                 >
-                  <span className="flex items-start justify-between gap-3">
-                    <span className="flex size-11 items-center justify-center rounded-xl bg-white text-[#0f7b62]">
-                      <Eye size={22} aria-hidden="true" />
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#0f7b62]">
+                        <Eye size={22} aria-hidden="true" />
+                      </span>
+                      <strong className="truncate text-base text-[#19312f]">بررسی دستی · رایگان</strong>
                     </span>
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#0f7b62]">رایگان</span>
                   </span>
-                  <strong className="mt-4 block text-base text-[#19312f]">بررسی دستی · رایگان</strong>
-                  <span className="mt-1 block text-sm leading-7 text-[#637a6f]">
+                  <span className="mt-4 block text-sm leading-7 text-[#637a6f]">
                     رزومه‌ها را خودت مرور کن و نامزدها را برای مصاحبه انتخاب کن.
                   </span>
                   <span className="mt-4 block border-t border-[#dfe9e2] pt-3 text-xs font-bold text-[#0f7b62]">
@@ -717,16 +888,18 @@ export default function EmployerPositionPage() {
                   onClick={() => selectReviewMethod("smart")}
                   className={`group rounded-2xl border p-5 text-right transition-colors enabled:hover:border-[#82bda0] enabled:hover:bg-[#f8fcf9] disabled:cursor-default ${selectedReviewMethod === "smart" ? "border-[#80bda0] bg-[#eef8f1]" : "border-[#dfe9e2] bg-[#fafcfb]"}`}
                 >
-                  <span className="flex items-start justify-between gap-3">
-                    <span className="flex size-11 items-center justify-center rounded-xl bg-white text-[#0f7b62]">
-                      <Sparkles size={22} aria-hidden="true" />
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#0f7b62]">
+                        <Sparkles size={22} aria-hidden="true" />
+                      </span>
+                      <strong className="truncate text-base text-[#19312f]">پایش هوشمند</strong>
                     </span>
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#0f7b62]">
                       {costs.screening.toLocaleString("fa-IR")} رادیکوین
                     </span>
                   </span>
-                  <strong className="mt-4 block text-base text-[#19312f]">پایش هوشمند</strong>
-                  <span className="mt-1 block text-sm leading-7 text-[#637a6f]">
+                  <span className="mt-4 block text-sm leading-7 text-[#637a6f]">
                     رزومه‌ها بر اساس شرح پوزیشن رتبه‌بندی می‌شوند و شواهد انطباق نمایش داده می‌شود.
                   </span>
                   <span className="mt-4 block border-t border-[#dfe9e2] pt-3 text-xs font-bold text-[#0f7b62]">
@@ -1158,9 +1331,9 @@ export default function EmployerPositionPage() {
             </button>
           )}
         </div>
-        {visibleStep === 2 && selectedCount > 0 && (
+        {visibleStep === 2 && upload.isPending && selectedCount > 0 && (
           <p className="mb-0 mt-3 text-xs text-[#6b8174]">
-            ابتدا فایل‌های انتخاب‌شده را اضافه کن تا بتوانی ادامه بدهی.
+            رزومه‌ها در حال افزودن هستند؛ پس از پایان، می‌توانی ادامه بدهی.
           </p>
         )}
         {visibleStep === 2 && !candidates.length && selectedCount === 0 && (
@@ -1175,9 +1348,17 @@ export default function EmployerPositionPage() {
         )}
       </nav>
       {bankPickerOpen && (
-        <Modal title="انتخاب از بانک رزومه" onClose={() => setBankPickerOpen(false)} showCloseButton wide>
-          <div className="mt-5">
-            <label className="flex min-h-11 items-center gap-2 rounded-xl border border-[#dfe9e3] px-3 text-[#71877a]">
+        <Modal
+          title="انتخاب از بانک رزومه"
+          description="رزومه‌های مناسب را انتخاب کن و بدون آپلود دوباره به این پوزیشن اضافه کن."
+          onClose={() => setBankPickerOpen(false)}
+          showCloseButton
+          modalClassName="!w-[min(750px,calc(100vw-32px))] !max-w-[750px] border-[#dce9e2] bg-[#fcfefd]"
+          headerClassName="border-b border-[#e6eee9] pb-4"
+          titleClassName="font-black text-[#19312f]"
+        >
+          <div className="mt-4">
+            <label className="flex min-h-12 items-center gap-2.5 rounded-2xl border border-[#cfe2d7] bg-white px-3.5 text-[#71877a] shadow-[0_5px_16px_rgba(17,77,57,0.04)] focus-within:border-[#65ad8c] focus-within:ring-4 focus-within:ring-[#0f7b62]/10">
               <Search size={17} aria-hidden="true" />
               <input
                 className="min-w-0 flex-1 border-0 bg-transparent text-sm text-[#19312f] outline-none"
@@ -1187,11 +1368,27 @@ export default function EmployerPositionPage() {
                 onChange={(event) => setBankSearch(event.target.value)}
               />
             </label>
-            <p className="mt-3 text-xs text-[#6b8174]">
-              {bankSelected.length.toLocaleString("fa-IR")} انتخاب‌شده · حداکثر {remainingSlots.toLocaleString("fa-IR")}{" "}
-              رزومهٔ دیگر
-            </p>
-            <div className="max-h-[50vh] space-y-2 overflow-auto">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#edf8f1] px-3 py-2.5">
+              <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-[#2d6750]">
+                <Checkbox
+                  aria-label="انتخاب همه رزومه‌های نمایش‌داده‌شده"
+                  checked={allVisibleBankMatchesSelected}
+                  disabled={bankSelectionLimit === 0}
+                  onChange={(event) =>
+                    setBankSelected((current) =>
+                      event.target.checked
+                        ? Array.from(new Set([...current, ...visibleBankSelectionIds])).slice(0, remainingSlots)
+                        : current.filter((resumeId) => !visibleBankSelectionIds.includes(resumeId)),
+                    )
+                  }
+                />
+                انتخاب همه تا سقف ظرفیت
+              </label>
+              <span className="text-[11px] font-bold text-[#527565]">
+                {bankSelected.length.toLocaleString("fa-IR")} انتخاب‌شده · حداکثر {remainingSlots.toLocaleString("fa-IR")} رزومه
+              </span>
+            </div>
+            <div className="mt-3 max-h-[48vh] space-y-2 overflow-auto pl-1">
               {resumeBank.isLoading && <p className="text-xs text-[#71877a]">در حال دریافت بانک رزومه...</p>}
               {resumeBank.error && <EmployerActionError error={resumeBank.error} cost={0} />}
               {!resumeBank.isLoading && !resumeBank.error && bankMatches.length === 0 && (
@@ -1200,23 +1397,35 @@ export default function EmployerPositionPage() {
                 </p>
               )}
               {bankMatches.map((resume) => (
-                <label
+                <div
                   key={resume.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-xl border border-[#e5ede8] bg-white px-4 py-3 text-xs text-[#40594f]"
+                  className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-3.5 py-3 text-xs transition-colors ${bankSelected.includes(resume.id) ? "border-[#87cbaa] bg-[#f1faf4]" : "border-[#e0ebe4] bg-white hover:border-[#bddbc9]"}`}
+                  onClick={() => toggleBankResumeSelection(resume.id)}
                 >
                   <Checkbox
                     aria-label={`انتخاب ${resume.name || resume.fileName}`}
                     checked={bankSelected.includes(resume.id)}
                     disabled={!bankSelected.includes(resume.id) && bankSelected.length >= remainingSlots}
-                    onChange={(event) =>
-                      setBankSelected((current) =>
-                        event.target.checked ? [...current, resume.id] : current.filter((item) => item !== resume.id),
-                      )
-                    }
+                    onChange={() => toggleBankResumeSelection(resume.id)}
+                    onClick={(event) => event.stopPropagation()}
                   />
-                  <span className="min-w-0 flex-1 truncate font-bold">{resume.name || resume.fileName}</span>
-                  {resume.specialty && <span className="max-w-48 truncate text-[#71877a]">{resume.specialty}</span>}
-                </label>
+                  <div className="min-w-0 flex-1">
+                    <strong className="block truncate text-[#29453a]">{resume.name || resume.fileName}</strong>
+                    <span className="mt-0.5 block truncate text-[11px] text-[#71877a]">{resume.specialty || resume.fileName}</span>
+                  </div>
+                  <button
+                    aria-label={`نمایش رزومه ${resume.name || resume.fileName}`}
+                    className="grid size-9 shrink-0 place-items-center rounded-xl border border-[#cfe1d6] bg-white text-[#0f7b62] transition hover:bg-[#e7f5ed]"
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setBankPickerOpen(false);
+                      setBankPreview(resume);
+                    }}
+                  >
+                    <Eye size={17} aria-hidden="true" />
+                  </button>
+                </div>
               ))}
             </div>
             {importFromBank.error && <EmployerActionError error={importFromBank.error} cost={0} />}
@@ -1236,6 +1445,91 @@ export default function EmployerPositionPage() {
               </button>
             </div>
           </div>
+        </Modal>
+      )}
+      {bankPreview && (
+        <EmployerBankResumePreview
+          resume={bankPreview}
+          onClose={() => {
+            setBankPreview(null);
+            setBankPickerOpen(true);
+          }}
+        />
+      )}
+      {closeDialogOpen && (
+        <Modal title="بستن جذب" description="پس از بستن، دعوت‌های فعال لغو می‌شوند و سوابق پوزیشن حفظ خواهد شد." onClose={() => setCloseDialogOpen(false)} showCloseButton>
+          <form className="mt-5 space-y-4" onSubmit={submitPositionClosure}>
+            <label className="grid gap-1.5 text-xs font-bold text-[#456157]">
+              علت بستن جذب
+              <Controller
+                control={closeForm.control}
+                name="reason"
+                render={({ field }) => (
+                  <SearchableSelect
+                    ariaLabel="علت بستن جذب"
+                    disabled={closePosition.isPending}
+                    options={[
+                      { value: "hired", label: "فرد مناسب استخدام شد" },
+                      { value: "cancelled", label: "فعلاً از جذب منصرف شدیم" },
+                      { value: "changed_need", label: "نیاز سازمان تغییر کرد" },
+                      { value: "duplicate", label: "آگهی تکراری یا اشتباه بود" },
+                      { value: "other", label: "سایر" },
+                    ]}
+                    value={field.value}
+                    onChange={(value) => field.onChange(String(value))}
+                  />
+                )}
+              />
+            </label>
+            {closeReason === "hired" && candidates.length > 0 && (
+              <label className="grid gap-1.5 text-xs font-bold text-[#456157]">
+                فرد استخدام‌شده <span className="font-normal text-[#71877a]">(اختیاری)</span>
+                <Controller
+                  control={closeForm.control}
+                  name="hiredCandidateId"
+                  render={({ field }) => (
+                    <SearchableSelect
+                      ariaLabel="فرد استخدام‌شده"
+                      disabled={closePosition.isPending}
+                      options={[
+                        { value: "", label: "انتخاب نمی‌کنم" },
+                        ...candidates.map((candidate) => ({ value: candidate.id, label: candidateLabel(candidate) })),
+                      ]}
+                      placeholder="انتخاب نمی‌کنم"
+                      searchable
+                      value={field.value ?? ""}
+                      onChange={(value) => field.onChange(String(value) || undefined)}
+                    />
+                  )}
+                />
+                <span className="font-normal text-[#0f7b62]">با ثبت استخدام موفق، ۵ رادیکوین هدیه می‌گیری.</span>
+              </label>
+            )}
+            <label className="grid gap-1.5 text-xs font-bold text-[#456157]">
+              توضیح <span className="font-normal text-[#71877a]">(اختیاری)</span>
+              <textarea
+                className="min-h-20 rounded-xl border border-[#d8e6de] bg-white p-3 text-sm font-normal outline-none transition focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10"
+                {...closeForm.register("note")}
+              />
+            </label>
+            {closeForm.formState.errors.reason && (
+              <p role="alert" className="m-0 text-xs text-[#b84e43]">
+                {closeForm.formState.errors.reason.message}
+              </p>
+            )}
+            {closePosition.error && <EmployerActionError error={closePosition.error} cost={0} />}
+            <div className="flex justify-end gap-2 border-t border-[#edf1ec] pt-4">
+              <button className="min-h-10 rounded-xl border border-[#dfe5df] px-4 text-xs font-bold" type="button" onClick={() => setCloseDialogOpen(false)}>انصراف</button>
+              <button
+                className="min-h-10 rounded-xl bg-[#b84e43] px-4 text-xs font-bold text-white disabled:opacity-50"
+                disabled={closePosition.isPending}
+                type="button"
+                onClick={submitPositionClosure}
+              >
+                {closePosition.isPending ? "در حال ثبت..." : "بستن پوزیشن"}
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
       {previewId && candidates.find((candidate) => candidate.id === previewId) && (
@@ -1396,15 +1690,19 @@ export default function EmployerPositionPage() {
           </form>
         </Modal>
       )}
-      {deleteId && (
-        <DeleteConfirmModal
-          itemName={candidates.find((candidate) => candidate.id === deleteId)?.fileName ?? "رزومه"}
-          description="این رزومه از پوزیشن حذف می‌شود و در پایش بعدی شرکت نمی‌کند. این کار قابل بازگشت نیست."
-          onCancel={() => setDeleteId(null)}
-          onConfirm={() => removeResume.mutate(deleteId)}
+      {removeConfirmationOpen && removeIds.length > 0 && (
+        <ConfirmActionModal
+          confirmIcon={<Trash2 size={15} />}
+          confirmLabel={`حذف ${removeIds.length.toLocaleString("fa-IR")} رزومه`}
+          description="رزومه‌های انتخاب‌شده از پوزیشن حذف می‌شوند و در پایش شرکت نمی‌کنند. این کار قابل بازگشت نیست."
+          pending={removeResumes.isPending}
+          title="تأیید حذف رزومه‌ها"
+          tone="danger"
+          onCancel={() => setRemoveConfirmationOpen(false)}
+          onConfirm={() => removeResumes.mutate(removeIds)}
         />
       )}
-      {removeResume.error && <EmployerActionError error={removeResume.error} cost={0} />}
+      {removeResumes.error && <EmployerActionError error={removeResumes.error} cost={0} />}
     </div>
   );
 }

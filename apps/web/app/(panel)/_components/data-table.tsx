@@ -36,6 +36,10 @@ export type DataTableColumn<T> = {
 export type SortDirection = "asc" | "desc";
 export type SortState = { key: string; direction: SortDirection } | null;
 
+function isActionsColumn<T>(column: DataTableColumn<T>) {
+  return column.title === "عملیات";
+}
+
 function textFromNode(node: ReactNode): string {
   if (node == null || typeof node === "boolean") return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -240,20 +244,29 @@ export function DataTable<T>({
                   role="listitem"
                 >
                   <dl className="m-0">
-                    {columns.map((column) => (
-                      <div
-                        className={cn(
-                          "flex min-h-11 items-center justify-between gap-4 px-4 py-3",
-                          column.key !== columns[0]?.key && "border-t border-[#edf1ee]",
-                        )}
-                        key={column.key}
-                      >
-                        <dt className="w-24 shrink-0 text-[10px] font-bold text-[#7a8985]">{column.title}</dt>
-                        <dd className={cn("m-0 min-w-0 flex-1 text-left text-[11px] text-[#2b4540]", column.className)}>
-                          {column.render(row)}
-                        </dd>
-                      </div>
-                    ))}
+                    {columns.map((column) => {
+                      const actionsColumn = isActionsColumn(column);
+                      return (
+                        <div
+                          className={cn(
+                            "flex min-h-11 items-center justify-between gap-4 px-4 py-3",
+                            column.key !== columns[0]?.key && "border-t border-[#edf1ee]",
+                          )}
+                          key={column.key}
+                        >
+                          <dt className="w-24 shrink-0 text-[10px] font-bold text-[#7a8985]">{column.title}</dt>
+                          <dd className={cn("m-0 min-w-0 flex-1 text-left text-[11px] text-[#2b4540]", column.className)}>
+                            {actionsColumn ? (
+                              <div className="flex w-full justify-start" dir="ltr">
+                                <div dir="rtl">{column.render(row)}</div>
+                              </div>
+                            ) : (
+                              column.render(row)
+                            )}
+                          </dd>
+                        </div>
+                      );
+                    })}
                   </dl>
                 </article>
               ))}
@@ -267,10 +280,11 @@ export function DataTable<T>({
               <tr>
                 {columns.map((column) => {
                   const isSorted = sort?.key === column.key;
+                  const actionsColumn = isActionsColumn(column);
                   return (
                     <th
                       aria-sort={isSorted ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
-                      className={cn("px-4 py-3 font-extrabold", column.headerClassName)}
+                      className={cn("px-4 py-3 font-extrabold", actionsColumn && "text-center", column.headerClassName)}
                       key={column.key}
                     >
                       {column.sortable === false ? (
@@ -305,11 +319,20 @@ export function DataTable<T>({
               <tbody>
                 {sortedRows.map((row) => (
                   <tr className="border-t border-[#edf0ec] transition-colors hover:bg-[#fbfcfa]" key={getRowKey(row)}>
-                    {columns.map((column) => (
-                      <td className={cn("px-4 py-4", column.className)} key={column.key}>
-                        {column.render(row)}
-                      </td>
-                    ))}
+                    {columns.map((column) => {
+                      const actionsColumn = isActionsColumn(column);
+                      return (
+                        <td className={cn("px-4 py-4", actionsColumn && "text-left", column.className)} key={column.key}>
+                          {actionsColumn ? (
+                            <div className="flex w-full justify-start" dir="ltr">
+                              <div dir="rtl">{column.render(row)}</div>
+                            </div>
+                          ) : (
+                            column.render(row)
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>

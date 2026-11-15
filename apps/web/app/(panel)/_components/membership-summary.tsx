@@ -4,7 +4,7 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   Check,
-  Coins,
+  Crown,
   Download,
   FileSearch,
   FileText,
@@ -24,6 +24,8 @@ type UsageKey = keyof Membership["usage"];
 
 export type EmployerMembershipStats = {
   positions: number;
+  activePositions: number;
+  hiredPositions: number;
   candidates: number;
   screenedCandidates: number;
   interviewInvitations: number;
@@ -113,26 +115,21 @@ function UsageCard({
   );
 }
 
-const employerStatItems: Array<{
-  key: keyof EmployerMembershipStats;
+type EmployerUsageItem = {
   label: string;
   description: string;
   icon: LucideIcon;
-}> = [
-  { key: "positions", label: "پوزیشن‌های استخدامی", description: "پوزیشن‌های ساخته‌شده", icon: BriefcaseBusiness },
-  { key: "candidates", label: "رزومه‌های واردشده", description: "نامزدهای ثبت‌شده در پوزیشن‌ها", icon: Users },
-  { key: "screenedCandidates", label: "نامزدهای پایش‌شده", description: "رزومه‌های آماده ارزیابی", icon: FileSearch },
-  {
-    key: "interviewInvitations",
-    label: "دعوت به مصاحبه",
-    description: "دعوت‌های صادرشده برای نامزدها",
-    icon: UserCheck,
-  },
-  { key: "radicoinBalance", label: "موجودی رادیکوین", description: "اعتبار قابل مصرف کارفرما", icon: Coins },
-];
+  used: number;
+  total: number;
+  badge: string;
+  usedLabel: string;
+  totalLabel: string;
+};
 
 const emptyEmployerStats: EmployerMembershipStats = {
   positions: 0,
+  activePositions: 0,
+  hiredPositions: 0,
   candidates: 0,
   screenedCandidates: 0,
   interviewInvitations: 0,
@@ -140,40 +137,94 @@ const emptyEmployerStats: EmployerMembershipStats = {
 };
 
 function EmployerPlanSummary({ membership, stats }: { membership: Membership; stats: EmployerMembershipStats }) {
+  const positionLimit =
+    membership.planId === "employer-free" ? 1 : membership.planId === "employer-growth" ? 3 : membership.planId === "employer-scale" ? 10 : null;
+  const positionTotal = positionLimit ?? Math.max(stats.activePositions, 1);
+  const candidateTotal = Math.max(stats.candidates, 1);
+  const positionCount = Math.max(stats.positions, 1);
+  const employerUsageItems: EmployerUsageItem[] = [
+    {
+      label: "پوزیشن‌های فعال",
+      description: "موقعیت‌های در جریان جذب",
+      icon: BriefcaseBusiness,
+      used: stats.activePositions,
+      total: positionTotal,
+      badge: positionLimit === null ? "فعال" : `${Math.max(0, positionLimit - stats.activePositions).toLocaleString("fa-IR")} باقی‌مانده`,
+      usedLabel: "فعال",
+      totalLabel: positionLimit === null ? "پوزیشن" : `از ${positionLimit.toLocaleString("fa-IR")}`,
+    },
+    {
+      label: "رزومه‌های واردشده",
+      description: "نامزدهای ثبت‌شده در پوزیشن‌ها",
+      icon: Users,
+      used: stats.candidates,
+      total: candidateTotal,
+      badge: `${stats.candidates.toLocaleString("fa-IR")} ثبت‌شده`,
+      usedLabel: "جمع‌آوری‌شده",
+      totalLabel: "رزومه",
+    },
+    {
+      label: "نامزدهای پایش‌شده",
+      description: "رزومه‌های آماده ارزیابی",
+      icon: FileSearch,
+      used: stats.screenedCandidates,
+      total: candidateTotal,
+      badge: `${Math.max(0, stats.candidates - stats.screenedCandidates).toLocaleString("fa-IR")} در انتظار`,
+      usedLabel: "پایش‌شده",
+      totalLabel: `از ${stats.candidates.toLocaleString("fa-IR")}`,
+    },
+    {
+      label: "دعوت به مصاحبه",
+      description: "دعوت‌های صادرشده برای نامزدها",
+      icon: UserCheck,
+      used: stats.interviewInvitations,
+      total: candidateTotal,
+      badge: `${stats.interviewInvitations.toLocaleString("fa-IR")} دعوت`,
+      usedLabel: "دعوت‌شده",
+      totalLabel: `از ${stats.candidates.toLocaleString("fa-IR")}`,
+    },
+    {
+      label: "استخدام موفق",
+      description: "پوزیشن‌های بسته‌شده با نتیجهٔ استخدام",
+      icon: Check,
+      used: stats.hiredPositions,
+      total: positionCount,
+      badge: `${stats.hiredPositions.toLocaleString("fa-IR")} استخدام`,
+      usedLabel: "استخدام‌شده",
+      totalLabel: `از ${stats.positions.toLocaleString("fa-IR")}`,
+    },
+  ];
+
   return (
     <>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {employerStatItems.map((item) => {
+        {employerUsageItems.map((item) => {
           const Icon = item.icon;
+          const percent = Math.min(100, Math.round((item.used / item.total) * 100));
           return (
-            <article
-              className="flex min-w-0 items-center gap-3 rounded-[17px] border border-[#e2e9e4] bg-white p-4"
-              key={item.key}
-            >
-              <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#edf7f2] text-[#0f7b62]">
-                <Icon size={19} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <strong className="block text-[17px] font-black text-[#233d38]">
-                  {stats[item.key].toLocaleString("fa-IR")}
-                </strong>
-                <span className="mt-0.5 block text-[11px] font-bold text-[#405b54]">{item.label}</span>
-                <small className="mt-1 block text-[9px] leading-5 text-[#899792]">{item.description}</small>
-              </span>
+            <article className="grid min-w-0 gap-4 rounded-[17px] border border-[#e2e9e4] bg-white p-4" key={item.label}>
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-[#edf7f2] text-[#0f7b62]">
+                  <Icon size={19} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <strong className="block text-[12px] text-[#233d38]">{item.label}</strong>
+                  <small className="mt-1 block text-[9px] leading-5 text-[#899792]">{item.description}</small>
+                </span>
+                <span className="rounded-full bg-[#edf7f2] px-2.5 py-1 text-[8px] font-bold text-[#14705a]">{item.badge}</span>
+              </div>
+              <div className="grid gap-2">
+                <div className="h-2 overflow-hidden rounded-full bg-[#edf1ed]">
+                  <div className="h-full rounded-full bg-[#2e9b7d]" style={{ width: `${percent}%` }} />
+                </div>
+                <div className="flex items-center justify-between text-[9px] text-[#73827e]">
+                  <span>{item.used.toLocaleString("fa-IR")} {item.usedLabel}</span>
+                  <span>{item.totalLabel}</span>
+                </div>
+              </div>
             </article>
           );
         })}
-      </div>
-      <div className="rounded-[17px] border border-[#e2e9e4] bg-white p-4">
-        <strong className="text-[11px] text-[#233d38]">امکانات پلن کارفرما</strong>
-        <div className="mt-3 grid gap-2 md:grid-cols-2">
-          {membership.plan.features.map((feature) => (
-            <span className="flex items-start gap-2 text-[10px] leading-6 text-[#526b64]" key={feature}>
-              <Check className="mt-1 shrink-0 text-[#0f7b62]" size={14} />
-              {feature}
-            </span>
-          ))}
-        </div>
       </div>
     </>
   );
@@ -193,12 +244,20 @@ export function MembershipSummary({
   return (
     <section className="grid gap-5 rounded-[20px] border border-[#dfe8e2] bg-[#f8fbf9] p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <span className="text-[9px] font-bold text-[#768782]">پلن فعلی</span>
-          <h2 className="mb-0 mt-1 text-[20px] font-black text-[#193a33]">{membership.plan.name}</h2>
-          <small className="mt-1 block text-[9px] text-[#778783]">
-            وضعیت: {membership.status === "active" ? "فعال" : membership.status === "canceled" ? "لغوشده" : "منقضی"}
-          </small>
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="grid size-12 shrink-0 place-items-center rounded-[16px] border border-[#cfe9dc] bg-[radial-gradient(circle_at_30%_24%,#ffffff_0%,#e5f6ed_38%,#ccebdd_100%)] text-[#0f7b62] shadow-[0_8px_20px_rgba(15,123,98,.1)]">
+            <Crown aria-hidden="true" size={22} />
+          </span>
+          <div className="min-w-0">
+            <span className="inline-flex rounded-full bg-[#e7f5ed] px-2.5 py-1 text-[9px] font-bold text-[#16745d]">پلن فعلی شما</span>
+            <h2 className="mb-0 mt-1 text-[21px] font-black tracking-[-.4px] text-[#193a33]">{membership.plan.name}</h2>
+            <small
+              className={`mt-1 inline-flex items-center gap-1.5 text-[9px] font-bold ${membership.status === "active" ? "text-[#178066]" : membership.status === "canceled" ? "text-[#af5647]" : "text-[#9a7420]"}`}
+            >
+              <span className={`size-1.5 rounded-full ${membership.status === "active" ? "bg-[#1ca578]" : membership.status === "canceled" ? "bg-[#d06a58]" : "bg-[#d6a138]"}`} />
+              {membership.status === "active" ? "عضویت فعال" : membership.status === "canceled" ? "عضویت لغوشده" : "عضویت منقضی"}
+            </small>
+          </div>
         </div>
         <div className="flex items-center gap-3 rounded-[14px] border border-[#d8e6de] bg-white px-4 py-3">
           <CalendarDays className="text-[#178066]" size={19} />

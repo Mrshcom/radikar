@@ -118,6 +118,33 @@ describe("employer position pages", () => {
     expect(screen.queryByLabelText("شرح موقعیت و شرایط موردنیاز")).toBeNull();
   });
 
+  it("opens the recruitment workflow when the position card is clicked", () => {
+    renderPage(<EmployerPositionsPage />);
+
+    fireEvent.click(screen.getByRole("heading", { name: "مهندس نرم‌افزار" }).closest("article")!);
+
+    expect(state.push).toHaveBeenCalledWith("/employer/positions/position-1");
+  });
+
+  it("keeps the edit action independent from the position card navigation", () => {
+    renderPage(<EmployerPositionsPage />);
+
+    const editLink = screen.getByRole("link", { name: /ویرایش/ });
+    editLink.addEventListener("click", (event) => event.preventDefault());
+    fireEvent.click(editLink);
+
+    expect(state.push).not.toHaveBeenCalled();
+  });
+
+  it("shows the complete position description in the shared hover tooltip", async () => {
+    renderPage(<EmployerPositionsPage />);
+
+    const description = screen.getByText("شرح شغل آزمایشی");
+    fireEvent.mouseEnter(description.parentElement!);
+
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("شرح شغل آزمایشی");
+  });
+
   it("hides the edit action after the position is locked", () => {
     state.status = "completed";
     renderPage(<EmployerPositionsPage />);

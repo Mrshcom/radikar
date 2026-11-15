@@ -1,7 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, type ReactNode } from "react";
-import { LoaderCircle, Trash2, X } from "lucide-react";
+import { ArrowRight, LoaderCircle, Trash2, X } from "lucide-react";
+
+export function SectionBackLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      aria-label={label}
+      className="grid size-9 shrink-0 place-items-center rounded-full text-[#19312f] no-underline transition-colors hover:bg-[#e6f2eb] hover:text-[#0f7b62] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0f7b62]"
+      href={href}
+      title={label}
+    >
+      <ArrowRight aria-hidden="true" size={20} />
+    </Link>
+  );
+}
 
 export function Modal({
   title,

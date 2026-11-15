@@ -1,1 +1,5 @@
-export { default } from "@/app/(panel)/upgrade/page";
+import { redirect } from "next/navigation";
+
+export default function EmployerPlansRedirect() {
+  redirect("/upgrade");
+}

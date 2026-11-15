@@ -2,6 +2,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError, apiRequest } from "@/lib/api-client";
 import { apiUrl } from "@/lib/api-url";
 
+export type EmployerActivityStats = {
+  positions: number;
+  activePositions: number;
+  hiredPositions: number;
+  candidates: number;
+  screenedCandidates: number;
+  interviewInvitations: number;
+  radicoinBalance: number;
+};
+
 export type EmployerPosition = {
   id: string;
   companyName: string;
@@ -11,6 +21,11 @@ export type EmployerPosition = {
   reviewMethod: "manual" | "smart" | null;
   screeningStatus: "not_started" | "processing" | "completed" | "failed";
   screeningError: string | null;
+  closedAt: string | null;
+  closureReason: "hired" | "cancelled" | "changed_need" | "duplicate" | "other" | null;
+  closureNote: string | null;
+  hiredCandidateId: string | null;
+  hiringRewardedAt: string | null;
   interviewQuestions?: string[] | null;
   createdAt: string;
 };
@@ -115,6 +130,7 @@ export type EmployerPositionDetail = {
 
 export const employerKeys = {
   profile: ["employer", "profile"] as const,
+  activityStats: ["employer", "activity-stats"] as const,
   positions: ["employer", "positions"] as const,
   resumeBank: ["employer", "resume-bank"] as const,
   bankResume: (id: string) => ["employer", "resume-bank", id] as const,
@@ -126,11 +142,21 @@ export const employerKeys = {
   interviews: ["employer", "interviews"] as const,
 };
 
-export function useEmployerProfile() {
+export function useEmployerProfile(enabled = true) {
   return useQuery({
     queryKey: employerKeys.profile,
     queryFn: () => apiRequest<{ profile: EmployerProfile | null }>("/api/employer/profile"),
+    enabled,
     staleTime: 60_000,
+  });
+}
+
+export function useEmployerActivityStats(enabled = true) {
+  return useQuery({
+    queryKey: employerKeys.activityStats,
+    queryFn: () => apiRequest<EmployerActivityStats>("/api/employer/activity-stats"),
+    enabled,
+    staleTime: 30_000,
   });
 }
 
@@ -146,10 +172,10 @@ export function useUpdateEmployerProfile() {
   });
 }
 
-export function useEmployerPositions() {
+export function useEmployerPositions(status: "active" | "closed" | "all" = "active") {
   return useQuery({
-    queryKey: employerKeys.positions,
-    queryFn: () => apiRequest<EmployerPosition[]>("/api/employer/positions"),
+    queryKey: [...employerKeys.positions, status],
+    queryFn: () => apiRequest<EmployerPosition[]>(`/api/employer/positions?status=${status}`),
     staleTime: 30_000,
   });
 }
