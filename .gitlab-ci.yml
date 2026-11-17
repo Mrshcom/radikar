@@ -1,0 +1,85 @@
+stages:
+  - build-push
+  - deploy
+
+default:
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login "$CI_REGISTRY" --username "$CI_REGISTRY_USER" --password-stdin
+
+variables:
+  WEB_IMAGE: "$CI_REGISTRY_IMAGE/web:$CI_COMMIT_TAG"
+  API_IMAGE: "$CI_REGISTRY_IMAGE/api:$CI_COMMIT_TAG"
+  SOURCE_TAG: "$CI_COMMIT_TAG"
+  SOURCE_TAG_PROTECTED: "$CI_COMMIT_REF_PROTECTED"
+
+.dev-vars: &dev-vars
+  DEPLOY_ENV: development
+
+.production-vars: &production-vars
+  DEPLOY_ENV: production
+
+.default_rules:
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/ && $CI_COMMIT_REF_PROTECTED == "true"'
+      variables:
+        <<: *production-vars
+
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+dev$/ && $CI_COMMIT_REF_PROTECTED == "false"'
+      variables:
+        <<: *dev-vars
+
+    - when: never
+
+build-push-web:
+  stage: build-push
+  rules:
+    - !reference [.default_rules, rules]
+  environment:
+    name: "$DEPLOY_ENV"
+  script:
+    - cp "$ENV" apps/web/.env
+    - docker build -f apps/web/Dockerfile -t "$WEB_IMAGE" .
+    - docker push "$WEB_IMAGE"
+  tags:
+    - shared
+
+build-push-api:
+  stage: build-push
+  rules:
+    - !reference [.default_rules, rules]
+  script:
+    - docker build -f apps/api/Dockerfile -t "$API_IMAGE" .
+    - docker push "$API_IMAGE"
+  tags:
+    - shared
+
+deploy-web:
+  stage: deploy
+  rules:
+    - !reference [.default_rules, rules]
+  variables:
+    ENVIRONMENT: "$DEPLOY_ENV"
+  trigger:
+    project: "${CI_PROJECT_ROOT_NAMESPACE}/deployment/${CI_PROJECT_NAME}-web-deployment"
+    strategy: depend
+    branch: main
+    forward:
+      yaml_variables: true
+      pipeline_variables: false
+
+deploy-api:
+  stage: deploy
+  rules:
+    - !reference [.default_rules, rules]
+  variables:
+    ENVIRONMENT: "$DEPLOY_ENV"
+  trigger:
+    project: "${CI_PROJECT_ROOT_NAMESPACE}/deployment/${CI_PROJECT_NAME}-api-deployment"
+    strategy: depend
+    branch: main
+    forward:
+      yaml_variables: true
+      pipeline_variables: false
