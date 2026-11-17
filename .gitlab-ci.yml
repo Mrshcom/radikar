@@ -63,7 +63,7 @@ deploy-web:
   variables:
     ENVIRONMENT: "$DEPLOY_ENV"
   trigger:
-    project: "${CI_PROJECT_ROOT_NAMESPACE}/deployment/${CI_PROJECT_NAME}-next-app-deployment"
+    project: "radikar/deployment/radikar-next-app-deployment"
     strategy: depend
     branch: main
     forward:
@@ -77,7 +77,7 @@ deploy-api:
   variables:
     ENVIRONMENT: "$DEPLOY_ENV"
   trigger:
-    project: "${CI_PROJECT_ROOT_NAMESPACE}/deployment/${CI_PROJECT_NAME}-laravel-api-deployment"
+    project: "radikar/deployment/radikar-laravel-api-deployment"
     strategy: depend
     branch: main
     forward:
