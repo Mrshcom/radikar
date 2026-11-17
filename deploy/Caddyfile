@@ -1,5 +1,4 @@
 {$APP_DOMAIN} {
-  encode zstd gzip
 
   @api path /api/* /health /ready
   handle @api {
@@ -7,6 +6,7 @@
   }
 
   handle {
+    encode zstd gzip
     reverse_proxy web:3161
   }
 
