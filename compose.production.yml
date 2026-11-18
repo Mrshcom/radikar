@@ -36,7 +36,7 @@ services:
       postgres:
         condition: service_healthy
     command: >-
-      sh -c "npm run db:migrate && exec npm run start:api"
+      sh -c "npm run db:migrate && npm run db:seed && exec npm run start:api"
     healthcheck:
       test:
         [

@@ -31,6 +31,18 @@ function startPostgres() {
   }
 }
 
+function prepareDatabase() {
+  const result = spawnSync(npmCommand, ["run", "db:migrate"], { cwd: process.cwd(), stdio: "inherit" });
+  if (result.status !== 0) {
+    throw new Error("اجرای migrationهای دیتابیس ناموفق بود.");
+  }
+
+  const seedResult = spawnSync(npmCommand, ["run", "db:seed"], { cwd: process.cwd(), stdio: "inherit" });
+  if (seedResult.status !== 0) {
+    throw new Error("ایجاد داده‌های اولیهٔ دیتابیس ناموفق بود.");
+  }
+}
+
 function runDev(command) {
   const child = spawn(npmCommand, ["run", command], { cwd: process.cwd(), stdio: "inherit" });
   const stop = (signal) => {
@@ -52,6 +64,7 @@ async function main() {
   }
 
   startPostgres();
+  prepareDatabase();
 
   const missing = state.filter((service) => !service.running);
   if (!missing.length) {

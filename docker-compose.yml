@@ -37,7 +37,7 @@ services:
       postgres:
         condition: service_healthy
     command: >-
-      sh -c "npm run db:migrate && npm run start:api"
+      sh -c "npm run db:migrate && npm run db:seed && npm run start:api"
     restart: unless-stopped
 
 volumes:

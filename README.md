@@ -90,6 +90,14 @@ cp apps/api/.env.example apps/api/.env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3162
 ```
 
+برای فعال‌سازی Google Tag Manager پس از دریافت شناسهٔ کانتینر، مقدار زیر را در
+`apps/web/.env.local` و محیط deploy قرار دهید و Web را restart کنید. تا وقتی مقدار
+معتبر `GTM-…` وارد نشده باشد، هیچ اسکریپت یا event تحلیلی بارگیری نمی‌شود.
+
+```dotenv
+NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX
+```
+
 تنظیم پیش‌فرض اتصال API به PostgreSQL محلی:
 
 ```dotenv

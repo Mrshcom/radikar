@@ -50,6 +50,23 @@ test("home renders the public marketing experience", async () => {
   assert.match(homePage, /<PricingSection/);
 });
 
+test("Google Tag Manager is globally ready but stays disabled without a container ID", async () => {
+  const [layout, tagManager, analytics, environment] = await Promise.all([
+    readFile(new URL("app/layout.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/_components/google-tag-manager.tsx", projectRoot), "utf8"),
+    readFile(new URL("lib/analytics.ts", projectRoot), "utf8"),
+    readFile(new URL(".env.example", projectRoot), "utf8"),
+  ]);
+
+  assert.match(layout, /<GoogleTagManager\s*\/>/);
+  assert.match(tagManager, /NEXT_PUBLIC_GTM_ID/);
+  assert.match(tagManager, /googletagmanager\.com\/gtm\.js/);
+  assert.match(tagManager, /\^GTM-\[A-Z0-9\]\+\$/);
+  assert.match(analytics, /trackGtmEvent/);
+  assert.match(analytics, /window\.dataLayer\.push/);
+  assert.match(environment, /^NEXT_PUBLIC_GTM_ID=$/m);
+});
+
 test("login page uses a two-step validated mobile OTP flow backed by the auth API", async () => {
   const loginPage = await readFile(new URL("app/login/page.tsx", projectRoot), "utf8");
 

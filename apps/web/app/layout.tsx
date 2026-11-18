@@ -6,6 +6,7 @@ import "@fontsource/poppins/500.css";
 import "@fontsource/poppins/600.css";
 import "@fontsource/poppins/700.css";
 import "./globals.css";
+import { GoogleTagManager } from "@/app/_components/google-tag-manager";
 import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       data-scroll-behavior="smooth"
     >
       <body className="m-0 bg-[#f6f7f2] font-sans text-[#19312f] [&_a:focus:not(:focus-visible)]:outline-none [&_button:focus:not(:focus-visible)]:outline-none [&_a:focus-visible]:outline-[#0f7b62] [&_button:focus-visible]:outline-[#0f7b62]">
+        <GoogleTagManager />
         {children}
       </body>
     </html>
