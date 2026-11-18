@@ -436,3 +436,5 @@ graphify path "A" "B"
 > Automated review: 2026-11-18 — project changes were committed; review the affected sections if behavior or architecture changed.
 
 > Automated review: 2026-11-18 — project changes were committed; review the affected sections if behavior or architecture changed.
+
+> Automated review: 2026-11-18 — project changes were committed; review the affected sections if behavior or architecture changed.
