@@ -79,7 +79,7 @@ test("login page uses a two-step validated mobile OTP flow backed by the auth AP
   assert.match(loginPage, /router\.replace\(\s*loginDestination\(/);
   assert.match(loginPage, /ورود به‌عنوان/);
   assert.match(loginPage, /registerPhone\("portal"\)/);
-  assert.match(loginPage, /src="\/radikar-logo\.png"/);
+  assert.match(loginPage, /src="\/radikar-logo-v\d+\.png"/);
 });
 
 test("API requests do not label an empty logout request as JSON", async () => {
@@ -441,7 +441,8 @@ test("employer position list uses the shared eyebrow-free page title", async () 
   assert.match(page, /<SectionTitle/);
   assert.match(page, /title="پوزیشن‌های من"/);
   assert.doesNotMatch(page, /profile\.data\.profile\.companyName/);
-  assert.match(editPage, /<SectionTitle\s+title="ویرایش پوزیشن کاری"/);
+  assert.match(editPage, /import EmployerPositionPage from "\.\.\/page"/);
+  assert.match(editPage, /return <EmployerPositionPage\s*\/>/);
   assert.doesNotMatch(editPage, /position\.companyName/);
   assert.match(detailsPage, /<SectionTitle\s+title=\{position\.title\}/);
   assert.match(detailsPage, /<dt className="text-xs text-\[#71847b\]">شرکت<\/dt>/);
