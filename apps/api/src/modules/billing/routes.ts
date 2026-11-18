@@ -4,6 +4,7 @@ import { requirePermission } from "../auth/routes";
 import { BillingError, BillingService } from "./service";
 import { CreditPackError, interviewPack } from "./credit-pack";
 import { RadicoinPackError, radicoinPacks } from "./radicoin-pack";
+import { renderOfficialInvoicePdf } from "./invoice-pdf";
 
 const pageSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -166,6 +167,20 @@ export function registerBillingRoutes(app: FastifyInstance, billing: BillingServ
           query.sortDirection,
         )
       : billing.listUserOrders(request.auth!.user.id, query.page, query.pageSize, query.search, query.status);
+  });
+
+  app.get<{ Params: { id: string } }>("/api/billing/orders/:id/invoice", async (request, reply) => {
+    if (!requireCustomer(request, reply)) return;
+    const { id } = z.object({ id: z.uuid() }).parse(request.params);
+    const invoice = await billing.getUserInvoice(request.auth!.user.id, id);
+    const buyerName =
+      (invoice.buyer.accountType === "employer" ? invoice.buyer.companyName : invoice.buyer.fullName) ??
+      (invoice.buyer.accountType === "employer" ? "کارفرمای رادیکار" : "کاربر رادیکار");
+    const pdf = await renderOfficialInvoicePdf({ buyerName, buyerPhone: invoice.buyer.phone, order: invoice.order, plan: invoice.plan });
+    return reply
+      .header("content-disposition", `attachment; filename=invoice-${invoice.order.orderNumber}.pdf`)
+      .type("application/pdf")
+      .send(pdf);
   });
 
   app.post("/api/billing/orders", async (request, reply) => {

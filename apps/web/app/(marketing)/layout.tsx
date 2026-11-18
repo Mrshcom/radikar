@@ -23,7 +23,7 @@ const organizationSchema = {
   name: siteConfig.name,
   legalName: siteConfig.legalName,
   url: siteConfig.url,
-  logo: `${siteConfig.url}/radikar-logo.png`,
+  logo: `${siteConfig.url}/radikar-logo-v20261117.png`,
   description: siteConfig.description,
 };
 

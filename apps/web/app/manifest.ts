@@ -13,7 +13,7 @@ export default function manifest(): MetadataRoute.Manifest {
     dir: "rtl",
     icons: [
       {
-        src: "/radikar-logo.png",
+        src: "/radikar-logo-v20261117.png",
         sizes: "1254x1254",
         type: "image/png",
         purpose: "maskable",

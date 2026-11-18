@@ -574,7 +574,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
         >
           <Image
             className="block size-9 shrink-0 object-contain"
-            src="/radikar-logo.png"
+            src="/radikar-logo-v20261117.png"
             width={36}
             height={36}
             alt=""
@@ -663,7 +663,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
             >
               <Menu size={20} />
             </button>
-            <Image className="size-9 shrink-0 object-contain max-[560px]:hidden" src="/radikar-logo.png" width={36} height={36} alt="" />
+            <Image className="size-9 shrink-0 object-contain max-[560px]:hidden" src="/radikar-logo-v20261117.png" width={36} height={36} alt="" />
             <strong className="text-[16px] tracking-[-.4px] max-[560px]:hidden">رادیکار</strong>
           </div>
           <nav aria-label="مسیر صفحه" className="min-w-0 overflow-x-auto whitespace-nowrap text-[11px] text-[#738680] max-[820px]:ms-2 max-[560px]:text-[10px]">
@@ -1076,7 +1076,7 @@ function PanelShellContent({ children }: { children: ReactNode }) {
                 alt="لوگوی رادیکار"
                 className="size-9 shrink-0 object-contain"
                 height={36}
-                src="/radikar-logo.png"
+                src="/radikar-logo-v20261117.png"
                 width={36}
               />
               <span className="flex min-w-0 flex-1 flex-col">

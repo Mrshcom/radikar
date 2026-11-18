@@ -109,6 +109,8 @@ vi.mock("@/app/(panel)/_components/time-picker", () => ({
 }));
 vi.mock("next/navigation", () => ({
   useParams: () => ({ id: "position-1" }),
+  usePathname: () => "/employer/positions/position-1",
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   useSearchParams: () => new URLSearchParams(state.requestedStep),
 }));
 vi.mock("next/link", () => ({
@@ -193,10 +195,7 @@ describe("employer position detail", () => {
     expect(row?.firstElementChild).toContainElement(fileName);
     const workflow = screen.getByRole("navigation", { name: "مراحل جذب برای این پوزیشن" });
     expect(workflow).toBeVisible();
-    expect(workflow.querySelector("ol > li > span[aria-hidden='true']")).toHaveClass(
-      "right-[calc(50%+20px)]",
-      "left-[calc(-50%+20px)]",
-    );
+    expect(workflow.querySelector("ol > span[aria-hidden='true']")).toHaveClass("right-[12.5%]", "left-[12.5%]");
     expect(screen.queryByText("مرحلهٔ ۲ از ۴")).toBeNull();
     expect(screen.getByRole("heading", { name: "افزودن رزومه‌ها" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "روش بررسی رزومه‌ها" })).toBeNull();

@@ -3,7 +3,7 @@
 import { InterviewReportView } from "@/app/(panel)/interview/interview-result";
 
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, type ChangeEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,6 +39,7 @@ import {
   type EmployerBankResume,
   type EmployerCandidate,
 } from "@/lib/employer";
+import { PositionForm, type PositionValues } from "../_components/position-form";
 import { ConfirmActionModal, Modal, SectionBackLink, SectionTitle } from "@/app/(panel)/_components/ui";
 import { useToast } from "@/app/_components/toast";
 import { JalaliDatePicker } from "@/app/(panel)/_components/jalali-date-picker";
@@ -202,6 +203,9 @@ function AddedResumesSkeleton({ count }: { count: number }) {
 export default function EmployerPositionPage() {
   const params = useParams<{ id: string }>();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+  const editMode = pathname.endsWith("/edit");
   const id = params.id;
   const client = useQueryClient();
   const notify = useToast();
@@ -257,6 +261,17 @@ export default function EmployerPositionPage() {
   const selectedFiles = useWatch({ control: filesForm.control, name: "files" });
   const closeReason = useWatch({ control: closeForm.control, name: "reason" });
   const candidates = detail.data?.candidates ?? [];
+  const updatePosition = useMutation({
+    mutationFn: (input: PositionValues) =>
+      apiRequest(`/api/employer/positions/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: employerKeys.position(id) }),
+        client.invalidateQueries({ queryKey: employerKeys.positions }),
+      ]);
+      router.replace(`/employer/positions/${id}`);
+    },
+  });
   const resumeBank = useEmployerResumeBank(
     Boolean(detail.data && (detail.data.position.workflowStage === 2 || viewStep === 2) && resumeSource === "bank"),
   );
@@ -471,6 +486,10 @@ export default function EmployerPositionPage() {
     setScreeningErrorDismissed(true);
   };
   const navigateStep = (step: 1 | 2 | 3 | 4) => {
+    if (editMode && step !== 1) {
+      router.push(`/employer/positions/${id}?step=${step}`);
+      return;
+    }
     dismissWorkflowErrors();
     setViewStep(step);
   };
@@ -508,7 +527,7 @@ export default function EmployerPositionPage() {
   const allRemovableSelected = removableCandidates.length > 0 && removableCandidates.every((candidate) => removeIds.includes(candidate.id));
   const reviewMethodLocked = position.screeningStatus !== "not_started" && position.screeningStatus !== "failed";
   const availableStep = availableHiringStep(position, candidates);
-  const visibleStep = viewStep && viewStep <= availableStep ? viewStep : availableStep;
+  const visibleStep = editMode ? 1 : viewStep && viewStep <= availableStep ? viewStep : availableStep;
   const goForward = () => {
     if (visibleStep === 1) navigateStep(2);
     else if (visibleStep === 2 && selectedCount === 0) {
@@ -551,7 +570,7 @@ export default function EmployerPositionPage() {
                 <SearchCheck size={16} aria-hidden="true" /> پیگیری مصاحبه‌ها
               </Link>
             )}
-            {position.screeningStatus === "not_started" && !hasInvitations && (
+            {!editMode && position.screeningStatus === "not_started" && !hasInvitations && (
               <Link
                 className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#cfe3d8] bg-white px-4 text-xs font-bold text-[#0f7b62] no-underline"
                 href={`/employer/positions/${id}/edit`}
@@ -572,36 +591,48 @@ export default function EmployerPositionPage() {
         }
       />
       <HiringWorkflow currentStep={visibleStep} availableStep={availableStep} onStepChange={navigateStep} />
-      {visibleStep === 1 && (
-        <section className="rounded-[20px] border border-[#dfe9e3] bg-white p-5">
-          <h2 className="mb-3 mt-0 text-lg font-bold text-[#19312f]">اطلاعات پوزیشن</h2>
-          <dl className="mb-0 grid gap-4 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-xs text-[#71847b]">عنوان</dt>
-              <dd className="m-0 mt-1 font-bold">{position.title}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-[#71847b]">شرکت</dt>
-              <dd className="m-0 mt-1 font-bold">{position.companyName}</dd>
-            </div>
-          </dl>
-          <p className="mb-0 mt-4 whitespace-pre-wrap border-t border-[#edf1ec] pt-4 text-sm leading-8 text-[#526c5e]">
-            {position.description}
-          </p>
-          {position.screeningStatus === "not_started" && !hasInvitations ? (
-            <Link
-              className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#cfe3d8] px-4 text-xs font-bold text-[#0f7b62] no-underline"
-              href={`/employer/positions/${id}/edit`}
-            >
-              <Pencil size={15} /> ویرایش اطلاعات
-            </Link>
-          ) : (
-            <p className="mb-0 mt-4 text-xs leading-6 text-[#816145]">
-              پس از شروع پایش یا ساخت دعوت، ویرایش اطلاعات پوزیشن قفل می‌شود تا نتیجه‌ها و لینک‌ها معتبر بمانند.
+      {visibleStep === 1 &&
+        (editMode && position.screeningStatus === "not_started" && !hasInvitations ? (
+          <PositionForm
+            mode="edit"
+            initialValues={{ title: position.title, description: position.description }}
+            companyName={position.companyName}
+            cancelHref={`/employer/positions/${id}`}
+            containerClassName="rounded-[20px] p-5 sm:p-5"
+            isPending={updatePosition.isPending}
+            error={updatePosition.error}
+            onSubmit={(values) => updatePosition.mutate(values)}
+          />
+        ) : (
+          <section className="rounded-[20px] border border-[#dfe9e3] bg-white p-5">
+            <h2 className="mb-3 mt-0 text-lg font-bold text-[#19312f]">اطلاعات پوزیشن</h2>
+            <dl className="mb-0 grid gap-4 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-xs text-[#71847b]">عنوان</dt>
+                <dd className="m-0 mt-1 font-bold">{position.title}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-[#71847b]">شرکت</dt>
+                <dd className="m-0 mt-1 font-bold">{position.companyName}</dd>
+              </div>
+            </dl>
+            <p className="mb-0 mt-4 whitespace-pre-wrap border-t border-[#edf1ec] pt-4 text-sm leading-8 text-[#526c5e]">
+              {position.description}
             </p>
-          )}
-        </section>
-      )}
+            {position.screeningStatus === "not_started" && !hasInvitations ? (
+              <Link
+                className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl border border-[#cfe3d8] px-4 text-xs font-bold text-[#0f7b62] no-underline"
+                href={`/employer/positions/${id}/edit`}
+              >
+                <Pencil size={15} /> ویرایش اطلاعات
+              </Link>
+            ) : (
+              <p className="mb-0 mt-4 text-xs leading-6 text-[#816145]">
+                پس از شروع پایش یا ساخت دعوت، ویرایش اطلاعات پوزیشن قفل می‌شود تا نتیجه‌ها و لینک‌ها معتبر بمانند.
+              </p>
+            )}
+          </section>
+        ))}
       {availableStep > 2 && visibleStep > 2 && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[#dfe9e3] bg-white px-5 py-4">
           <p className="m-0 text-sm text-[#526c5e]">

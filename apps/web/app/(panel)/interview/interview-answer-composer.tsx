@@ -63,7 +63,7 @@ export function InterviewAnswerComposer({
             if (textareaRef) textareaRef.current = element;
             resizeTextarea(element);
           }}
-          className="block h-12 min-h-12 w-full resize-none overflow-hidden rounded-[10px] border border-[#dfe6e0] bg-[#fcfdfb] py-2 pl-14 pr-3 text-[13px] leading-5 text-[#405753] outline-none placeholder:text-[#9aa7a3] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 disabled:opacity-60"
+          className="block h-12 min-h-12 w-full resize-none overflow-hidden rounded-[10px] border border-[#dfe6e0] bg-[#fcfdfb] py-3 pl-14 pr-3 text-[13px] leading-5 text-[#405753] outline-none placeholder:text-[#9aa7a3] focus:border-[#0f7b62] focus:ring-4 focus:ring-[#0f7b62]/10 disabled:opacity-60"
           readOnly={readOnly}
           onInput={(event) => resizeTextarea(event.currentTarget)}
           onPaste={(event) => event.preventDefault()}
@@ -79,16 +79,16 @@ export function InterviewAnswerComposer({
           placeholder="پاسخت را بنویس..."
         />
         <button
-          className="absolute left-1.5 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-lg bg-[#0f7b62] text-white shadow-[0_4px_10px_rgba(15,123,98,.16)] transition-colors hover:bg-[#0d6b57] disabled:cursor-not-allowed disabled:bg-[#d7e4de] disabled:text-[#8ba39a] disabled:shadow-none"
+          className="absolute left-1.5 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-lg bg-[#0f7b62] text-white shadow-[0_4px_10px_rgba(15,123,98,.16)] transition-colors hover:bg-[#0d6b57] disabled:cursor-not-allowed disabled:bg-[#d7e4de] disabled:text-[#8ba39a] disabled:shadow-none"
           type="submit"
           disabled={!answer.trim() || busy}
           aria-label={sendLabel}
           title={sendLabel}
         >
           {sending ? (
-            <LoaderCircle className="animate-spin motion-reduce:animate-none" size={15} aria-hidden="true" />
+            <LoaderCircle className="animate-spin motion-reduce:animate-none" size={18} aria-hidden="true" />
           ) : (
-            <SendHorizontal className="-scale-x-100" size={15} aria-hidden="true" />
+            <SendHorizontal className="-scale-x-100" size={18} aria-hidden="true" />
           )}
         </button>
       </div>

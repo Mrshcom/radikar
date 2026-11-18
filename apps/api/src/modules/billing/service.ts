@@ -3,6 +3,7 @@ import { and, asc, count, desc, eq, gt, gte, ilike, inArray, isNotNull, lt, ne, 
 import type { ModelUsageEvent } from "@radikar/ai";
 import {
   employerCandidates,
+  employerProfiles,
   employerPositions,
   membershipEvents,
   modelUsageEvents,
@@ -357,6 +358,24 @@ export class BillingService {
       this.database.select({ total: count() }).from(orders).where(filter),
     ]);
     return { items, total: totalRows[0]?.total ?? 0, page, pageSize };
+  }
+
+  async getUserInvoice(userId: string, orderId: string) {
+    const [item] = await this.database
+      .select({
+        order: orders,
+        plan: plans,
+        buyer: { fullName: users.fullName, phone: users.phone, accountType: users.accountType, companyName: employerProfiles.companyName },
+      })
+      .from(orders)
+      .innerJoin(plans, eq(orders.planId, plans.id))
+      .innerJoin(users, eq(orders.userId, users.id))
+      .leftJoin(employerProfiles, eq(employerProfiles.userId, users.id))
+      .where(and(eq(orders.id, orderId), eq(orders.userId, userId)))
+      .limit(1);
+    if (!item) throw new BillingError(404, "سفارش پیدا نشد.");
+    if (item.order.status !== "paid") throw new BillingError(409, "فاکتور فقط برای سفارش پرداخت‌شده قابل دریافت است.");
+    return item;
   }
 
   async createOrder(

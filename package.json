@@ -17,6 +17,8 @@
     "dev:web": "turbo run dev --filter=@radikar/web",
     "dev:api": "turbo run dev --filter=@radikar/api",
     "dev:stack": "turbo run dev --filter=@radikar/web --filter=@radikar/api",
+    "dev:all": "node scripts/dev-all.mjs",
+    "dev:status": "node scripts/dev-all.mjs --status",
     "format": "prettier --write \"{apps,packages,scripts}/**/*.{ts,tsx,js,mjs,cjs,json}\" \"*.{js,mjs,cjs,json}\"",
     "format:check": "prettier --check \"{apps,packages,scripts}/**/*.{ts,tsx,js,mjs,cjs,json}\" \"*.{js,mjs,cjs,json}\"",
     "build": "turbo run build",

@@ -126,6 +126,7 @@ export function InterviewConversation({
 }) {
   const messagesRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
+  const followUpScrollTimerRef = useRef<number | null>(null);
   const [visibleReadyAt, setVisibleReadyAt] = useState(firstQuestionSentAt);
   const showFirstQuestion = !firstQuestionSentAt || visibleReadyAt === firstQuestionSentAt;
   const scrollToLatest = useCallback(() => {
@@ -133,6 +134,14 @@ export function InterviewConversation({
     if (!messages) return;
     messages.scrollTop = messages.scrollHeight;
     isNearBottomRef.current = true;
+    if (followUpScrollTimerRef.current !== null) window.clearTimeout(followUpScrollTimerRef.current);
+    // A progressively typed line can expand after this layout pass. Repeat once
+    // in the following frame so a fresh interviewer message never starts mid-chat.
+    followUpScrollTimerRef.current = window.setTimeout(() => {
+      if (!isNearBottomRef.current || !messagesRef.current) return;
+      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+      followUpScrollTimerRef.current = null;
+    }, 0);
   }, []);
   const followTyping = useCallback(() => {
     if (isNearBottomRef.current) scrollToLatest();
@@ -169,6 +178,13 @@ export function InterviewConversation({
     const timeout = window.setTimeout(() => setVisibleReadyAt(firstQuestionSentAt), 700);
     return () => window.clearTimeout(timeout);
   }, [ready, showFirstQuestion, firstQuestionSentAt]);
+
+  useEffect(
+    () => () => {
+      if (followUpScrollTimerRef.current !== null) window.clearTimeout(followUpScrollTimerRef.current);
+    },
+    [],
+  );
 
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-[#dce8e1] bg-white shadow-[0_18px_48px_rgba(27,55,50,.09)]">

@@ -27,9 +27,21 @@ export function HiringWorkflow({ currentStep, availableStep = currentStep, onSte
       aria-label="مراحل جذب برای این پوزیشن"
       className="overflow-hidden rounded-[22px] border border-[#dce9e3] bg-[radial-gradient(circle_at_50%_0%,#f1faf5_0%,#ffffff_52%)] px-4 py-5 sm:px-7 sm:py-6"
     >
-      <ol className="grid grid-cols-4">
+      <ol className="relative isolate grid grid-cols-4">
+        <span
+          aria-hidden="true"
+          className="absolute top-[19px] right-[12.5%] left-[12.5%] -z-10 h-1 overflow-hidden rounded-full bg-[#dfe9e3] sm:top-5"
+        >
+          <span
+            className="ml-auto block h-full rounded-full bg-[#0f7b62] shadow-[0_0_8px_rgba(15,123,98,.38)] transition-[width] duration-[900ms] motion-reduce:transition-none"
+            style={{
+              transitionTimingFunction: "cubic-bezier(0.05, 0.9, 0.1, 1)",
+              width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
+            }}
+          />
+        </span>
         {steps.map((step) => {
-          const complete = step.number < availableStep;
+          const complete = step.number < currentStep;
           const active = step.number === currentStep;
           const content = (
             <>
@@ -54,15 +66,9 @@ export function HiringWorkflow({ currentStep, availableStep = currentStep, onSte
               </span>
             </>
           );
-          const stepClass = "relative z-10 flex w-full flex-col items-center gap-2 px-1 text-center outline-offset-4 focus-visible:outline-2 focus-visible:outline-[#0f7b62]";
+          const stepClass = "relative z-10 flex w-full flex-col items-center gap-2 px-1 text-center outline-offset-4 focus-visible:outline-2 focus-visible:outline-[#0f7b62] enabled:hover:!opacity-100";
           return (
-            <li key={step.number} className="relative isolate min-w-0">
-              {step.number < 4 && (
-                <span
-                  aria-hidden="true"
-                  className={`absolute top-5 right-[calc(50%+20px)] left-[calc(-50%+20px)] z-0 h-px sm:top-[22px] sm:right-[calc(50%+22px)] sm:left-[calc(-50%+22px)] ${complete ? "bg-[#77c5a0]" : "bg-[#dfe9e3]"}`}
-                />
-              )}
+            <li key={step.number} className="relative z-10 min-w-0">
               {onStepChange ? (
                 <button
                   type="button"

@@ -291,7 +291,7 @@ export default function LoginPage() {
           <div className="absolute -bottom-28 -left-20 size-[340px] rounded-full border-[55px] border-white/6" />
           <div className="relative flex items-center gap-3">
             <span className="grid size-12 place-items-center rounded-[15px] bg-white shadow-[0_10px_24px_rgba(2,44,34,.18)]">
-              <Image src="/radikar-logo.png" alt="لوگوی رادیکار" width={42} height={42} />
+              <Image src="/radikar-logo-v20261117.png" alt="لوگوی رادیکار" width={42} height={42} />
             </span>
             <div>
               <strong className="block text-[21px]">رادیکار</strong>
@@ -324,7 +324,7 @@ export default function LoginPage() {
         <div className="flex flex-col justify-center rounded-[24px] bg-white px-5 py-7 shadow-[0_18px_50px_rgba(2,44,34,.22)] sm:px-8 sm:py-9 lg:min-h-[560px] lg:rounded-none lg:px-14 lg:py-10 lg:shadow-none">
           <div className="mb-6 flex items-center gap-3 lg:hidden">
             <span className="grid size-11 place-items-center rounded-[14px] bg-[#edf7f1]">
-              <Image src="/radikar-logo.png" alt="لوگوی رادیکار" width={34} height={34} />
+              <Image src="/radikar-logo-v20261117.png" alt="لوگوی رادیکار" width={34} height={34} />
             </span>
             <strong className="text-[19px] text-[#19312f]">رادیکار</strong>
           </div>

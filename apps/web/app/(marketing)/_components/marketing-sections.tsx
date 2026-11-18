@@ -35,7 +35,7 @@ export function MarketingHeader() {
       <div className="mx-auto flex h-16 w-full max-w-[1180px] items-center justify-between rounded-full border border-black/8 bg-[#fbfcf8]/80 px-3 shadow-[0_10px_40px_rgba(20,30,28,.08)] backdrop-blur-2xl">
         <Link href="/" className="flex items-center gap-1" aria-label="رادیکار">
           <span className="grid size-10 place-items-center">
-            <Image src="/radikar-logo.png" alt="" width={50} height={50} priority />
+            <Image src="/radikar-logo-v20261117.png" alt="" width={50} height={50} priority />
           </span>
           <strong className="text-[17px] font-black text-[#173c30]">رادیکار</strong>
         </Link>
@@ -184,7 +184,7 @@ function ProductStage() {
           <aside className="hidden border-l border-black/6 bg-white p-4 lg:flex lg:flex-col">
             <div className="mb-7 flex items-center gap-2">
               <span className="grid size-8 place-items-center rounded-xl bg-[#164c3a]">
-                <Image src="/radikar-logo.png" alt="" width={27} height={27} />
+                <Image src="/radikar-logo-v20261117.png" alt="" width={27} height={27} />
               </span>
               <div>
                 <strong className="block text-[11px]">رادیکار</strong>
@@ -1055,7 +1055,7 @@ export function MarketingFooter() {
           <div className="col-span-2 max-w-md lg:col-span-1">
             <Link href="/" className="inline-flex items-center gap-3" aria-label="رادیکار">
               <span className="grid size-11 place-items-center rounded-2xl border border-white/15 bg-white/10 shadow-[0_12px_35px_rgba(0,0,0,.2)] backdrop-blur-sm">
-                <Image src="/radikar-logo.png" alt="" width={34} height={34} />
+                <Image src="/radikar-logo-v20261117.png" alt="" width={34} height={34} />
               </span>
               <span>
                 <strong className="block text-xl font-black">رادیکار</strong>

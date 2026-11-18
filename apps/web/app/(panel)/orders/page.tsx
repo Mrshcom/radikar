@@ -2,7 +2,11 @@
 
 import Link from "next/link";
 import { useQueryStates } from "nuqs";
+import { Download } from "lucide-react";
+import { useState } from "react";
+import { useAuth } from "@/app/_components/auth";
 import { DataTable, type DataTableColumn, type SortState } from "../_components/data-table";
+import { TableActionButton } from "../_components/table-action-button";
 import { TableFilterSelect, TableToolbar } from "../_components/table-controls";
 import { TablePagination } from "../_components/table-pagination";
 import { SectionTitle } from "../_components/ui";
@@ -16,6 +20,8 @@ import {
   tableSortByParser,
   tableSortDirectionParser,
 } from "@/lib/table-search-params";
+import { OfficialInvoiceModal } from "./official-invoice";
+import { useEmployerProfile } from "@/lib/employer";
 
 const statusLabel = {
   pending: "در انتظار پرداخت",
@@ -36,6 +42,16 @@ const orderFilterParsers = {
 };
 
 export default function OrdersPage() {
+  const { user } = useAuth();
+  const employerProfile = useEmployerProfile(user?.accountType === "employer");
+  const [invoice, setInvoice] = useState<{ order: Order; plan: Plan } | null>(null);
+  const buyer = {
+    name:
+      user?.accountType === "employer"
+        ? (employerProfile.data?.profile?.companyName ?? user.fullName ?? "کارفرمای رادیکار")
+        : (user?.fullName ?? "کاربر رادیکار"),
+    phone: user?.phone ?? null,
+  };
   const [{ search, status, sortBy, sortDirection }, setFilters] = useQueryStates(orderFilterParsers, {
     ...tableQueryStateOptions,
     urlKeys: { search: "q" },
@@ -62,6 +78,19 @@ export default function OrdersPage() {
       render: ({ order }) => <PersianDateTime value={order.createdAt} />,
     },
     { key: "tracking", title: "کد پیگیری", render: ({ order }) => <span dir="ltr">{order.refId || "—"}</span> },
+    {
+      key: "actions",
+      title: "عملیات",
+      sortable: false,
+      render: ({ order, plan }) =>
+        order.status === "paid" ? (
+          <TableActionButton label="دریافت فاکتور رسمی" onClick={() => setInvoice({ order, plan })}>
+            <Download size={16} />
+          </TableActionButton>
+        ) : (
+          <span className="text-[10px] text-[#84938f]">پس از پرداخت</span>
+        ),
+    },
   ];
   return (
     <div className="grid gap-6">
@@ -128,6 +157,7 @@ export default function OrdersPage() {
           }
         />
       </section>
+      {invoice && <OfficialInvoiceModal buyer={buyer} order={invoice.order} plan={invoice.plan} onClose={() => setInvoice(null)} />}
     </div>
   );
 }

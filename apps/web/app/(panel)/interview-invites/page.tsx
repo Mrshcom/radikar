@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 import { employerKeys } from "@/lib/employer";
 import { SectionTitle } from "../_components/ui";
+import { InvitationDeadlineCountdown } from "../_components/invitation-deadline-countdown";
 import { useToast } from "@/app/_components/toast";
 
 type Interview = {
@@ -106,18 +107,18 @@ export default function InterviewInvitesPage() {
                   تا پایان مهلت فرصت داری مصاحبه‌ات را کامل کنی.
                 </p>
               )}
-              <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-5">
-                <span className={`text-[11px] ${actionable ? "font-semibold text-amber-900" : "text-[#61746f]"}`}>
-                  {interview.status === "cancelled"
-                    ? `لغو در: ${interview.cancelledAt ? new Date(interview.cancelledAt).toLocaleString("fa-IR") : "—"}`
-                    : `مهلت تا: ${interview.deadline ? new Date(interview.deadline).toLocaleString("fa-IR") : "—"}`}
-                </span>
+              <div className="mt-auto flex flex-wrap items-end justify-between gap-2 pt-5">
+                {actionable ? (
+                  <InvitationDeadlineCountdown deadline={interview.deadline} variant="compact" />
+                ) : (
+                  <span className="text-[11px] text-[#61746f]">
+                    {interview.status === "cancelled"
+                      ? `لغو در: ${interview.cancelledAt ? new Date(interview.cancelledAt).toLocaleString("fa-IR") : "—"}`
+                      : `مهلت تا: ${interview.deadline ? new Date(interview.deadline).toLocaleString("fa-IR") : "—"}`}
+                  </span>
+                )}
                 {interview.status !== "cancelled" && (
-                  <span className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap ${
-                    actionable
-                      ? "min-h-9 rounded-xl bg-[#0f7b62] px-3 text-xs font-semibold text-white group-hover:bg-[#0d6b57]"
-                      : "text-[10px] font-normal text-[#0f7b62]"
-                  }`}>
+                  <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px] font-normal text-[#0f7b62]">
                     {invitationActionLabel(interview.status)}
                     <ArrowLeft aria-hidden="true" size={15} />
                   </span>

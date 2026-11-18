@@ -595,6 +595,24 @@ test("production CSS preserves the large textarea height override", async () => 
   assert.match(largeHeightRule, /min-height:[^}]+!important/);
 });
 
+test("paid orders expose a printable official Radikar invoice", async () => {
+  const [ordersPage, invoice] = await Promise.all([
+    readFile(new URL("app/(panel)/orders/page.tsx", projectRoot), "utf8"),
+    readFile(new URL("app/(panel)/orders/official-invoice.tsx", projectRoot), "utf8"),
+  ]);
+
+  assert.match(ordersPage, /label="دریافت فاکتور رسمی"/);
+  assert.match(ordersPage, /order\.status === "paid"/);
+  assert.match(invoice, /فاکتور فروش خدمات/);
+  assert.match(invoice, /رادیکار/);
+  assert.match(invoice, /اطلاعات فروشنده/);
+  assert.match(invoice, /اطلاعات خریدار/);
+  assert.match(invoice, /جزئیات فاکتور/);
+  assert.match(invoice, /دریافت PDF فاکتور/);
+  assert.match(invoice, /\/api\/billing\/orders\/\$\{order\.id\}\/invoice/);
+  assert.match(invoice, /فاکتور فروش خدمات/);
+});
+
 test("skill autocomplete is left aligned while its placeholder stays right aligned", async () => {
   const knowledgeBase = await readFile(new URL("app/(panel)/knowledge-base/page.tsx", projectRoot), "utf8");
 

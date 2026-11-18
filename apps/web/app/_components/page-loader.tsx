@@ -13,7 +13,7 @@ export function PageLoader() {
       <section className="relative w-full max-w-[370px] px-5 py-9 text-center">
         <div className="mx-auto grid size-[82px] place-items-center rounded-[26px] bg-[#e9f6f0]">
           <Image
-            src="/radikar-logo.png"
+            src="/radikar-logo-v20261117.png"
             alt="رادیکار"
             width={62}
             height={62}

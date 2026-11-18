@@ -13,6 +13,8 @@ vi.mock("@/lib/api-client", () => ({ apiRequest: state.apiRequest }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: state.push, replace: state.push }),
   useParams: () => ({ id: "position-1" }),
+  usePathname: () => "/employer/positions/position-1/edit",
+  useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...props }: { href: string; children: ReactNode; className?: string }) => (
@@ -63,6 +65,7 @@ vi.mock("@/lib/employer", () => ({
     isLoading: false,
     error: null,
   }),
+  useEmployerResumeBank: () => ({ data: [], isLoading: false, error: null }),
 }));
 
 import EmployerPositionsPage from "./page";
@@ -192,7 +195,7 @@ describe("employer position pages", () => {
     page.unmount();
     state.status = "completed";
     renderPage(<EditEmployerPositionPage />);
-    expect(screen.getByText("ویرایش این پوزیشن قفل شده است")).toBeVisible();
+    expect(screen.getByText(/پس از شروع پایش یا ساخت دعوت/)).toBeVisible();
     expect(screen.queryByLabelText("عنوان شغلی")).toBeNull();
   });
 
@@ -204,21 +207,9 @@ describe("employer position pages", () => {
     expect(state.push).toHaveBeenCalledWith("/employer/positions/position-1?step=2");
   });
 
-  it("confirms and deletes an editable position from its edit page", async () => {
-    state.apiRequest.mockResolvedValue({});
+  it("keeps the shared position actions while editing the first step", () => {
     renderPage(<EditEmployerPositionPage />);
-    const deleteHeader = screen.getByRole("heading", { name: "حذف پوزیشن" }).parentElement;
-    expect(deleteHeader).toHaveClass("justify-between");
-    expect(deleteHeader).toContainElement(screen.getByRole("button", { name: "حذف پوزیشن" }));
-    fireEvent.click(screen.getByRole("button", { name: "حذف پوزیشن" }));
-    expect(screen.getByText(/این پوزیشن و همهٔ رزومه/)).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "بله، حذف شود" }));
-    await waitFor(() =>
-      expect(state.apiRequest).toHaveBeenCalledWith(
-        "/api/employer/positions/position-1",
-        expect.objectContaining({ method: "DELETE" }),
-      ),
-    );
-    await waitFor(() => expect(state.push).toHaveBeenCalledWith("/employer/positions"));
+    expect(screen.getByRole("button", { name: "بستن جذب" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "حذف پوزیشن" })).toBeNull();
   });
 });

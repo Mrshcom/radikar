@@ -28,6 +28,7 @@ import {
   type InterviewReportViewData,
 } from "../../interview/interview-result";
 import { ConfirmActionModal, SectionBackLink, SectionTitle } from "../../_components/ui";
+import { InvitationDeadlineCountdown } from "../../_components/invitation-deadline-countdown";
 
 type Invitation = {
   companyName: string;
@@ -116,89 +117,6 @@ function formatInvitationDeadline(deadline: string | null) {
   }).format(date);
 
   return `${day}، ${time}`;
-}
-
-function RollingCountdownDigit({ from, digit }: { from: string; digit: string }) {
-  const isRolling = from !== digit;
-
-  return (
-    <span className="relative block h-9 w-[0.65em] overflow-hidden text-3xl font-black leading-9 tabular-nums text-[#0f7b62] sm:h-10 sm:text-4xl sm:leading-10">
-      <span
-        key={digit}
-        className={`block ${isRolling ? "motion-safe:animate-[invitation-countdown-roll_420ms_cubic-bezier(0.22,1,0.36,1)_forwards]" : ""}`}
-      >
-        <span className="block h-9 sm:h-10">{from}</span>
-        <span className="block h-9 sm:h-10">{digit}</span>
-      </span>
-    </span>
-  );
-}
-
-function RollingCountdownNumber({ value, previousValue }: { value: string; previousValue: string }) {
-  return (
-    <span className="flex" aria-label={value}>
-      {Array.from(value).map((digit, index) => (
-        <RollingCountdownDigit key={index} digit={digit} from={Array.from(previousValue)[index] ?? digit} />
-      ))}
-    </span>
-  );
-}
-
-function InvitationDeadlineCountdown({ deadline }: { deadline: string | null }) {
-  const [clock, setClock] = useState(() => {
-    const now = Date.now();
-    return { now, previousNow: now };
-  });
-
-  useEffect(() => {
-    if (!deadline) return;
-    const timer = window.setInterval(() => {
-      setClock((current) => ({ previousNow: current.now, now: Date.now() }));
-    }, 1_000);
-    return () => window.clearInterval(timer);
-  }, [deadline]);
-
-  if (!deadline || Number.isNaN(new Date(deadline).getTime())) return null;
-
-  const deadlineTime = new Date(deadline).getTime();
-  const remaining = (timestamp: number) => {
-    const seconds = Math.max(0, Math.floor((deadlineTime - timestamp) / 1_000));
-    return {
-      days: Math.floor(seconds / 86_400),
-      hours: Math.floor((seconds % 86_400) / 3_600),
-      minutes: Math.floor((seconds % 3_600) / 60),
-      seconds: seconds % 60,
-    };
-  };
-  const current = remaining(clock.now);
-  const previous = remaining(clock.previousNow);
-  const number = (value: number, minimumIntegerDigits = 1) =>
-    new Intl.NumberFormat("fa-IR", { minimumIntegerDigits, useGrouping: false }).format(value);
-  const units = [
-    { label: "روز", value: number(current.days, 2), previousValue: number(previous.days, 2) },
-    { label: "ساعت", value: number(current.hours, 2), previousValue: number(previous.hours, 2) },
-    { label: "دقیقه", value: number(current.minutes, 2), previousValue: number(previous.minutes, 2) },
-    { label: "ثانیه", value: number(current.seconds, 2), previousValue: number(previous.seconds, 2) },
-  ];
-
-  return (
-    <section aria-label="شمارش معکوس مهلت مصاحبه" aria-live="polite" className="flex justify-center pt-1 mt-3">
-      <div className="rounded-2xl border border-[#d8e9df] bg-white px-5 py-4 text-center shadow-[0_10px_26px_rgba(30,67,55,.06)] motion-safe:animate-[invitation-countdown-box-pulse_2.4s_ease-in-out_infinite] sm:px-7">
-        <p className="m-0 text-sm font-bold text-[#526c63]">تا پایان مهلت مصاحبه</p>
-        <div className="mt-3 flex items-start justify-center gap-2.5" dir="ltr">
-            {units.map((unit, index) => (
-              <div key={unit.label} className="flex items-start gap-2.5">
-                {index > 0 && <span className="mt-1 text-3xl font-bold leading-none text-[#9ab1a7]">:</span>}
-                <div className="flex min-w-12 flex-col items-center">
-                  <RollingCountdownNumber value={unit.value} previousValue={unit.previousValue} />
-                  <span className="mt-2 text-[11px] font-bold text-[#60766a]">{unit.label}</span>
-                </div>
-              </div>
-            ))}
-        </div>
-      </div>
-    </section>
-  );
 }
 
 export default function InvitedInterview() {
@@ -451,8 +369,9 @@ export default function InvitedInterview() {
           {showStartConfirmation && (
             <ConfirmActionModal
               title="آمادهٔ شروع مصاحبهٔ دعوتی هستی؟"
-              description="وقتی آماده‌ای و وقت کافی داری، مصاحبه را شروع کن."
+              description="چند نکتهٔ کوتاه را مرور کن؛ سپس وارد جلسه می‌شوی."
               confirmLabel="شرایط را می‌پذیرم و شروع می‌کنم"
+              confirmIcon={<MessageCircleQuestion size={17} />}
               onCancel={() => setShowStartConfirmation(false)}
               onConfirm={() => {
                 setShowStartConfirmation(false);
@@ -468,11 +387,43 @@ export default function InvitedInterview() {
                 })();
               }}
             >
-              <ul className="list-disc space-y-2 ps-5 text-sm leading-7 text-[#526461]">
-                <li>مصاحبه در حالت تمام‌صفحه برگزار می‌شود. در تب مصاحبه بمان و پاسخ‌ها را بدون کمک ابزارهای هوش مصنوعی بنویس.</li>
-                <li>خروج از تمام‌صفحه یا جابه‌جایی بین تب‌ها در طول مصاحبه رصد می‌شود و رعایت‌نکردن شرایط می‌تواند در ارزیابی کارفرما اثر بگذارد.</li>
-                <li>با ثبت خروج از جلسه، مصاحبه پایان می‌یابد و امکان ادامه وجود ندارد. نتیجه بر اساس پاسخ‌های ثبت‌شده برای کارفرما ارسال می‌شود.</li>
-              </ul>
+              <section className="relative overflow-hidden rounded-2xl border border-[#dbeae1] bg-[linear-gradient(135deg,#f5fbf7_0%,#ffffff_58%,#f2faf6_100%)] p-4 sm:p-5">
+                <span aria-hidden="true" className="absolute -top-10 left-8 size-28 rounded-full bg-[#dff1e6]/70 blur-2xl" />
+                <div className="relative">
+                  <div className="mb-4 flex items-center gap-3">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#0f7b62] text-white shadow-[0_8px_18px_rgba(15,123,98,.18)]">
+                      <MessageCircleQuestion size={20} aria-hidden="true" />
+                    </span>
+                    <div>
+                      <p className="m-0 text-[11px] font-bold text-[#0f7b62]">جلسهٔ دعوتی</p>
+                      <p className="m-0 mt-0.5 text-xs text-[#637a70]">محیط مصاحبه پس از تأیید به حالت امن تغییر می‌کند.</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-2.5">
+                    <article className="flex items-start gap-3 rounded-xl border border-white bg-white/90 p-3 shadow-[0_5px_16px_rgba(28,65,50,.04)]">
+                      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#e5f4eb] text-[#0f7b62]"><Maximize size={16} aria-hidden="true" /></span>
+                      <div>
+                        <strong className="block text-xs text-[#27473c]">تمام‌صفحه و تمرکز</strong>
+                        <p className="mb-0 mt-1 text-[11px] leading-5 text-[#647a70]">در تب مصاحبه بمان و پاسخ‌ها را بدون کمک ابزارهای هوش مصنوعی بنویس.</p>
+                      </div>
+                    </article>
+                    <article className="flex items-start gap-3 rounded-xl border border-white bg-white/90 p-3 shadow-[0_5px_16px_rgba(28,65,50,.04)]">
+                      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#fff3df] text-[#a66a21]"><ShieldAlert size={16} aria-hidden="true" /></span>
+                      <div>
+                        <strong className="block text-xs text-[#27473c]">حفظ شرایط جلسه</strong>
+                        <p className="mb-0 mt-1 text-[11px] leading-5 text-[#647a70]">خروج از تمام‌صفحه یا جابه‌جایی بین تب‌ها ثبت می‌شود و می‌تواند در ارزیابی اثر بگذارد.</p>
+                      </div>
+                    </article>
+                    <article className="flex items-start gap-3 rounded-xl border border-white bg-white/90 p-3 shadow-[0_5px_16px_rgba(28,65,50,.04)]">
+                      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#fff0ed] text-[#b45445]"><Clock3 size={16} aria-hidden="true" /></span>
+                      <div>
+                        <strong className="block text-xs text-[#27473c]">پایان جلسه هنگام خروج</strong>
+                        <p className="mb-0 mt-1 text-[11px] leading-5 text-[#647a70]">پس از ثبت خروج، جلسه ادامه ندارد و نتیجه بر اساس پاسخ‌های ثبت‌شده ارسال می‌شود.</p>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              </section>
             </ConfirmActionModal>
           )}
         </>
